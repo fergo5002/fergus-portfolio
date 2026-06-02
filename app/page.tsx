@@ -1,4 +1,5 @@
 import BootSequence from "@/components/BootSequence";
+import Scramble from "@/components/Scramble";
 import Terminal from "@/components/Terminal";
 import Window from "@/components/Window";
 import ImageFrame from "@/components/ImageFrame";
@@ -20,7 +21,9 @@ export default function Home() {
           <div className="hero__grid">
             <div className="hero__text">
               <PromptLine command="whoami" />
-              <h1 className="hero__name">{profile.name}</h1>
+              <h1 className="hero__name">
+                <Scramble text={profile.name} />
+              </h1>
               <p className="hero__tagline">{profile.tagline}</p>
               <p className="hero__loc">{profile.location}</p>
               <p className="hero__edu">{profile.education}</p>
