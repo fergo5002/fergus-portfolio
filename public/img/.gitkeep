@@ -1,0 +1,11 @@
+# Drop your images here, then point the matching content/*.ts entry at them.
+#
+# Suggested files (filenames are up to you — just match them in the content data):
+#   portrait.jpg               -> content/profile.ts  (set `portrait: "/img/portrait.jpg"`)
+#   larry.png                  -> content/projects.ts (set the Larry entry's `image`)
+#   remand.png
+#   under-the-campanile.png
+#   sauna-os.png
+#   contrabot.png
+#
+# Until a file exists and its path is set, the site shows a labelled placeholder box.
