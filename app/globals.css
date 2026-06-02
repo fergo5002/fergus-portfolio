@@ -340,6 +340,13 @@ ul {
   border-color: var(--green);
 }
 
+/* While the pre-paint script has flagged a boot, keep content hidden so it never
+   flashes before the boot overlay appears. Removed by BootSequence on finish. */
+.booting .screen,
+.booting .glyphfield {
+  visibility: hidden;
+}
+
 /* ----- interactive terminal --------------------------------------------- */
 .term {
   border: 1px solid var(--green-line);

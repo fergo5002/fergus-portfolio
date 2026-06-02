@@ -25,9 +25,10 @@ export default function BootSequence({ children }: { children: React.ReactNode }
   const [booting, setBooting] = useState(false);
 
   useEffect(() => {
-    const already = sessionStorage.getItem(SESSION_KEY);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!already && !reduce) setBooting(true);
+    // The pre-paint script in <head> already decided whether to boot (session +
+    // reduced-motion check) and flagged <html> as .booting. Derive from that so we
+    // never flip false->true after first paint (which caused the content flash).
+    if (document.documentElement.classList.contains("booting")) setBooting(true);
   }, []);
 
   const finish = () => {
@@ -36,6 +37,7 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     } catch {
       /* ignore storage errors (private mode) */
     }
+    document.documentElement.classList.remove("booting"); // reveal content
     setBooting(false);
   };
 

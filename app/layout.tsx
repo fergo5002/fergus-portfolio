@@ -31,6 +31,22 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${mono.variable} ${display.variable}`}>
+      <head>
+        <script
+          // Runs before first paint: only on the landing page ("/"), if this session
+          // hasn't booted and the user allows motion, mark <html> as .booting so CSS
+          // hides content until the boot overlay takes over. Prevents the content-
+          // flash-then-boot bug. Path-gated because BootSequence (which clears the
+          // flag) only mounts on "/" — other routes must never get stuck hidden.
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{if(location.pathname!=='/')return;" +
+              "var b=sessionStorage.getItem('fergusos_booted');" +
+              "var r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;" +
+              "if(!b&&!r){document.documentElement.classList.add('booting');}}catch(e){}})();",
+          }}
+        />
+      </head>
       <body>
         <CrtShell>
           <Nav />
