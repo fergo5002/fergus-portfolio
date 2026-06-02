@@ -132,6 +132,23 @@ ul {
   z-index: 8999;
 }
 
+/* Ambient digital-rain canvas: fixed, full-viewport, behind content (.crt__screen
+   is z-index:1) and non-interactive. Kept very low-opacity so text stays legible. */
+.glyphfield {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  z-index: 0;
+  opacity: 0.12;
+  pointer-events: none;
+}
+@media (max-width: 768px) {
+  .glyphfield {
+    opacity: 0.08; /* even subtler on mobile */
+  }
+}
+
 /* ----- layout ------------------------------------------------------------ */
 .screen {
   max-width: var(--maxw);
