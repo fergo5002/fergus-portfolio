@@ -30,7 +30,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${mono.variable} ${display.variable}`}>
+    <html
+      lang="en"
+      className={`${mono.variable} ${display.variable}`}
+      // The pre-paint script below adds the `booting` class to <html> before React
+      // hydrates, so the server/client className intentionally differ. Suppress the
+      // hydration warning for this element (standard theme-flash-script pattern).
+      suppressHydrationWarning
+    >
       <head>
         <script
           // Runs before first paint: only on the landing page ("/"), if this session

@@ -332,6 +332,10 @@ ul {
   position: fixed;
   inset: 0;
   z-index: 9500;
+  /* Opt back into visibility: .boot is a descendant of .screen, which is
+     visibility:hidden while .booting. Without this the boot overlay would be
+     hidden too and the user would see a blank screen during boot. */
+  visibility: visible;
   background: var(--bg);
   color: var(--green);
   padding: clamp(var(--sp-4), 8vw, 120px) clamp(var(--sp-4), 8vw, 140px);
@@ -357,9 +361,13 @@ ul {
   border-color: var(--green);
 }
 
-/* While the pre-paint script has flagged a boot, keep content hidden so it never
-   flashes before the boot overlay appears. Removed by BootSequence on finish. */
+/* While the pre-paint script has flagged a boot, keep the app chrome hidden so it
+   never flashes before the boot overlay appears. The .boot overlay itself lives
+   inside .screen, so it must opt back IN to visibility (see .boot below) — it is
+   fixed + opaque + z-9500 and covers the hidden chrome. Removed by BootSequence
+   on finish. */
 .booting .screen,
+.booting .nav,
 .booting .glyphfield {
   visibility: hidden;
 }
