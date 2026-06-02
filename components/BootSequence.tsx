@@ -38,6 +38,19 @@ export default function BootSequence({ children }: { children: React.ReactNode }
       /* ignore storage errors (private mode) */
     }
     document.documentElement.classList.remove("booting"); // reveal content
+
+    // Play the CRT power-on so the revealed site "switches on" rather than
+    // popping in. Strip the class after the animation so transforms don't linger
+    // (the CSS is gated behind prefers-reduced-motion, so this is a no-op there).
+    const el = document.querySelector(".screen");
+    const nav = document.querySelector(".nav");
+    el?.classList.add("power-on");
+    nav?.classList.add("power-on");
+    window.setTimeout(() => {
+      el?.classList.remove("power-on");
+      nav?.classList.remove("power-on");
+    }, 680);
+
     setBooting(false);
   };
 

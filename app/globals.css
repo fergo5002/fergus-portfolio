@@ -724,6 +724,37 @@ ul {
       opacity: 0;
     }
   }
+
+  /* CRT power-on: played when the boot finishes. The classic CRT turn-off
+     collapses the picture to a bright line then a dot; we run it in reverse so
+     content "switches on" — expanding from a thin bright line with a brightness
+     bloom that settles to normal. Added/removed by BootSequence.finish(). */
+  .power-on {
+    animation: power-on 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+    transform-origin: center;
+  }
+  @keyframes power-on {
+    0% {
+      transform: scaleY(0.004);
+      filter: brightness(3.2);
+      opacity: 0;
+    }
+    9% {
+      transform: scaleY(0.004);
+      filter: brightness(3.2);
+      opacity: 1;
+    }
+    45% {
+      transform: scaleY(0.04);
+      filter: brightness(2);
+      opacity: 1;
+    }
+    100% {
+      transform: scaleY(1);
+      filter: brightness(1);
+      opacity: 1;
+    }
+  }
 }
 
 /* ----- responsive -------------------------------------------------------- */
