@@ -45,6 +45,6 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
   `#ffb000`). Public email = gmail; phone omitted.
 - **2026-06-02** — Retro-animation upgrade researched & planned (digital-rain background,
   CRT power-on transition, hero scramble, theme-flash-pattern boot fix). See active plan.
-- **2026-06-02** — Open decision deferred: bio paragraph in `content/profile.ts` still
-  mentions "sitting the Foundation Scholarship examinations"; owner only asked to remove
-  "predicted Scholar" from the academic highlight. Left bio untouched pending owner input.
+- **2026-06-02** — RESOLVED: owner confirmed the Scholarship reference should go everywhere.
+  Removed "and sitting the Foundation Scholarship examinations" from the bio in
+  `content/profile.ts`. (Academic highlight → "1.1 / 4.0 GPA" still handled by plan Task 5.)

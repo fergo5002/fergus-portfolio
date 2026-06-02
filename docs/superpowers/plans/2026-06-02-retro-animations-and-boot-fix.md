@@ -480,10 +480,8 @@ return (
 { k: "academic", v: "1.1 / 4.0 GPA" },
 ```
 
-- [ ] **Step 2 — (decision) bio line.** `content/profile.ts` bio paragraph 2 still says
-  "...sitting the Foundation Scholarship examinations." The user only asked to drop "predicted
-  Scholar" from the academic highlight, which Step 1 does. Leave the bio as-is unless the user
-  says otherwise; note this in `docs/PROGRESS.md`.
+- [x] **Step 2 — bio line (DONE 2026-06-02).** The Foundation Scholarship reference has been
+  removed from `content/profile.ts` bio per owner confirmation. No further action.
 - [ ] **Step 3 — verify** the landing highlights strip now reads `1.1 / 4.0 GPA`.
 - [ ] **Step 4 — commit.** `git commit -am "content: academic highlight -> 1.1 / 4.0 GPA"`
 

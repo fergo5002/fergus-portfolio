@@ -37,7 +37,7 @@ export const profile: Profile = {
     "BA Computer Science (Major) & Business (Minor) @ Trinity College Dublin — First Class Honours (1.1)",
   bio: [
     "I'm a builder. I co-founded Larry, where I'm the technical founder — I architected and built the whole platform and lead a small engineering team shipping an AI execution layer for project management.",
-    "I'm in my third year of Computer Science & Business at Trinity College Dublin, holding a 1.1 average across first and second year and sitting the Foundation Scholarship examinations.",
+    "I'm in my third year of Computer Science & Business at Trinity College Dublin, holding a 1.1 average across first and second year.",
     "I like shipping real things end-to-end: AI products, a game engine's lighting system, contrarian trading bots — and now ecommerce software at the Hatch105 accelerator.",
     "Outside the terminal you'll find me at a poker table, in the kitchen, or on a Gaelic football pitch.",
   ],
