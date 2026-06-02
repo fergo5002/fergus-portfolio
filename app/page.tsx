@@ -10,7 +10,7 @@ import { skills } from "@/content/skills";
 const highlights = [
   { k: "internship", v: "Hatch105 × HappyStack" },
   { k: "startup", v: "CTO @ Larry" },
-  { k: "academic", v: "1.1 · predicted Scholar" },
+  { k: "academic", v: "1.1 / 4.0 GPA" },
 ];
 
 export default function Home() {
