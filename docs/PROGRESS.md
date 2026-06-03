@@ -35,12 +35,27 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
 - [ ] Hatch105 role + dates — owner to supply (`content/experience.ts`).
 - [ ] Real images — owner drops into `public/img/` and sets paths.
 - [ ] Decide whether to make the GitHub repo public (currently private).
-- [ ] First Vercel deploy (`vercel --prod`).
+- [x] First Vercel deploy — live at https://fergus-portfolio.vercel.app (2026-06-02).
+- [ ] Add a favicon (prod logs a harmless `/favicon.ico` 404).
+- [ ] (Optional) connect the GitHub repo to the Vercel project for auto-deploys — current
+      deploy was a CLI `vercel deploy --prod`, not git-linked.
 
 ---
 
 ## Decision log
 
+- **2026-06-02** — BUGFIX (post-merge): the Task 1 boot-flash rule blanked the screen on a
+  fresh session — `.booting .screen { visibility:hidden }` also hid the `.boot` overlay (which
+  is rendered inside `.screen` via BootSequence), so the boot played invisibly and visitors saw
+  only the nav on a blank screen. Fix: hide screen/nav/glyphfield as chrome while booting and
+  opt `.boot` back into `visibility:visible` (it's fixed/opaque/z-9500 and covers everything);
+  added `suppressHydrationWarning` to `<html>` (pre-paint script mutates its className).
+  Verified with Playwright on both localhost and prod (commit bff8e06). Skills content also
+  refined (dropped interests; added Railway/Docker/Playwright/Vitest etc.).
+- **2026-06-02** — Deployed to Vercel via CLI under scope `fergo5002s-projects`: new project
+  `fergus-portfolio`, live at https://fergus-portfolio.vercel.app. The personal scope had two
+  existing projects (`sauna-os`, `barristersdirectrework`) but no project-count limit was hit,
+  so `barristersdirectrework` was left untouched. Deploy is CLI-based, not git-linked.
 - **2026-06-02** — Stack chosen: Next.js 15 + React 19 + TS, hand-written CSS (no Tailwind),
   no animation libs. Content in `content/*.ts`. Reduced-motion gating mandatory.
 - **2026-06-02** — Style direction: CRT terminal (green primary `#33ff66`, amber accent
