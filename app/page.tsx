@@ -22,7 +22,7 @@ export default function Home() {
             <div className="hero__text">
               <PromptLine command="whoami" />
               <h1 className="hero__name">
-                <Scramble text={profile.name} />
+                <Scramble text={profile.name} repeatMs={20000} />
               </h1>
               <p className="hero__tagline">{profile.tagline}</p>
               <p className="hero__loc">{profile.location}</p>
