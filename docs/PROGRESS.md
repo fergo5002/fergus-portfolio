@@ -37,10 +37,12 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
 - [ ] Real images — owner drops into `public/img/` and sets paths.
 - [ ] Decide whether to make the GitHub repo public (currently private).
 - [x] First Vercel deploy — live at https://fergus-portfolio.vercel.app (2026-06-02).
-- [ ] **2026-07-14 content refresh is committed + pushed (81cf023) but NOT yet deployed** —
-      the Vercel CLI auth on this machine expired (`vercel whoami` → Not authorized) and the
-      project is CLI-deployed, not git-linked. Owner runs `npx vercel login` (scope
-      `fergo5002s-projects`), then `npx vercel deploy --prod` from the repo root.
+- [x] **2026-07-14 content refresh DEPLOYED + LIVE-VERIFIED** — all three routes on
+      https://fergus-portfolio.vercel.app serve the new content (Presterly highlights + bio,
+      Loira AI entry, placeholder and stale dates gone; checked via compressed curl + string
+      markers). The deploy ran outside the agent session (the local Vercel CLI was
+      unauthorised at the time) — if deploys are still CLI-based, `vercel whoami` needs a
+      fresh `npx vercel login` before the next one.
 - [ ] Add a favicon (prod logs a harmless `/favicon.ico` 404).
 - [ ] (Optional) connect the GitHub repo to the Vercel project for auto-deploys — current
       deploy was a CLI `vercel deploy --prod`, not git-linked.
