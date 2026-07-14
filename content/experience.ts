@@ -18,38 +18,41 @@ export type ExperienceEntry = {
 
 export const experience: ExperienceEntry[] = [
   {
-    id: "hatch105",
-    org: "Hatch105 × HappyStack",
-    // TODO: replace with your confirmed title + dates.
-    role: "[ ROLE — TBC ]",
-    dates: "[ DATES — TBC ]",
+    id: "presterly",
+    org: "Presterly",
+    role: "Co-Founder & CTO",
+    dates: "May 2026 – Present",
     location: "Dublin, Ireland",
     isNew: true,
     summary:
-      "Building software for ecommerce within the Hatch105 accelerator, in collaboration with HappyStack.",
+      "Done-for-you retention for consumable Shopify brands, built inside the Hatch105 accelerator: predict each customer's run-out, nudge them over SMS and WhatsApp, convert with a one-tap pre-seeded checkout.",
     bullets: [
-      "Joined the Hatch105 accelerator working alongside HappyStack to build software for ecommerce.",
-      "[ Add the specifics of your role and what you're building once confirmed. ]",
+      "Took Presterly from first commit (12 June 2026) to five live merchant pilots in under a month, inside Hatch105, the Dublin startup accelerator.",
+      "Architected and built the multi-tenant platform end-to-end: Shopify and Klaviyo integrations, token-on-order attribution, and a per-customer, per-product run-out prediction engine backtested against real order history.",
+      "Live today: ~96,000 customers under management, €13.4M of order history analysed, ~200,000 predictions refreshed daily. The first WhatsApp win-back campaign hit 85% open and 17.5% click-through.",
     ],
+    link: { label: "presterly.com", href: "https://presterly.com" },
   },
   {
-    id: "larry",
-    org: "Larry",
-    role: "CTO & Co-Founder",
-    dates: "Feb 2025 – Present",
-    location: "Dublin, Ireland",
+    id: "loira",
+    org: "Loira AI (formerly Larry)",
+    role: "Founding Engineer",
+    dates: "Feb 2026 – Jun 2026",
+    location: "Stockholm, Sweden",
+    summary:
+      "AI startup building an autonomous execution layer for project management, selected into SSE Business Lab at the Stockholm School of Economics.",
     bullets: [
-      "Co-founded a pre-seed AI startup building an autonomous execution layer for project management — replacing manual coordination with intelligent automation across meetings, email, and chat. Live at larry-pm.com.",
-      "Architected and built the full platform as a TypeScript monorepo: Next.js frontend, Fastify v5 API, BullMQ worker pipeline, PostgreSQL, and Redis, integrating LLMs for real-time task extraction and status inference.",
-      "Led a team of 3 engineers through agile sprints — establishing development workflows, code-review standards, and CI/CD to ship an investor-ready MVP on deadline.",
-      "Designed and shipped Slack, Google Calendar, and email integrations enabling live signal ingestion from enterprise communication tools.",
+      "Founding engineer on a platform that turns signals from meetings, email, and chat into tracked, actioned work, replacing manual coordination.",
+      "Architected the platform as a TypeScript monorepo (Next.js frontend, Fastify API, BullMQ worker pipeline, PostgreSQL, Redis), integrating LLMs for real-time task extraction and status inference.",
+      "Drove the company's selection into SSE Business Lab, the Stockholm School of Economics' startup incubator, and set the founding team's engineering workflows, code review standards, and CI/CD.",
+      "Shipped Slack, Google Calendar, and email integrations for live signal ingestion.",
     ],
-    link: { label: "larry-pm.com", href: "https://larry-pm.com" },
+    link: { label: "loira.ai", href: "https://loira.ai" },
   },
   {
     id: "tsmf",
     org: "Trinity Student Managed Fund",
-    role: "Junior Analyst — Tech Hardware",
+    role: "Junior Analyst, Tech Hardware",
     dates: "2024 – 2025",
     location: "Dublin, Ireland",
     bullets: [

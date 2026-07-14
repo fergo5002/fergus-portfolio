@@ -25,14 +25,12 @@ All editable text lives in `content/` — you shouldn't need to touch components
 | File                     | What's in it                                              |
 | ------------------------ | --------------------------------------------------------- |
 | `content/profile.ts`     | Name, tagline, bio, education, contact links, portrait path |
-| `content/experience.ts`  | Hatch105, Larry, Trinity Student Managed Fund             |
-| `content/projects.ts`    | Larry, Remand, Under the Campanile, Sauna OS, ContraBot   |
+| `content/experience.ts`  | Presterly (Hatch105), Loira AI, Trinity Student Managed Fund |
+| `content/projects.ts`    | Presterly, Loira AI, Remand, Under the Campanile, Sauna OS, ContraBot |
 | `content/skills.ts`      | Grouped skills readout                                    |
 
 ### Things to fill in
 
-- **Hatch105 role + dates** — `content/experience.ts`, the `hatch105` entry has
-  `[ ROLE — TBC ]` / `[ DATES — TBC ]` placeholders.
 - **Images** — drop files into `public/img/`, then point the matching entry at them:
   - Portrait → set `portrait: "/img/portrait.jpg"` in `content/profile.ts`.
   - Project screenshots → set each project's `image` in `content/projects.ts`

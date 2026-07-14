@@ -21,23 +21,37 @@ export type Project = {
 
 export const projects: Project[] = [
   {
-    slug: "larry",
-    title: "Larry",
-    tagline: "AI-native project management — an autonomous execution layer for teams.",
-    role: "CTO & Co-Founder",
-    year: "2025 – Present",
+    slug: "presterly",
+    title: "Presterly",
+    tagline: "Never miss a reorder: predictive retention for consumable Shopify brands.",
+    role: "Co-Founder & CTO",
+    year: "2026 – Present",
     bullets: [
-      "Turns signals from meetings, email, and chat into tracked, assigned work — replacing manual coordination with intelligent automation.",
+      "Predicts when each customer will run out of each product, then nudges them over SMS or WhatsApp at exactly that moment with a one-tap pre-seeded checkout.",
+      "Multi-tenant engine live on five merchant pilots: ~96,000 customers under management, €13.4M of order history analysed, ~200,000 predictions refreshed daily.",
+    ],
+    stack: ["TypeScript", "React Router", "Prisma", "PostgreSQL", "Shopify", "Klaviyo", "Railway"],
+    links: [{ label: "live", href: "https://presterly.com" }],
+    image: "",
+  },
+  {
+    slug: "loira",
+    title: "Loira AI (Larry)",
+    tagline: "AI-native project management: an autonomous execution layer for teams.",
+    role: "Founding Engineer",
+    year: "Feb – Jun 2026",
+    bullets: [
+      "Turns signals from meetings, email, and chat into tracked, assigned work, replacing manual coordination with intelligent automation.",
       "TypeScript monorepo: Next.js frontend, Fastify API, BullMQ workers, PostgreSQL + Redis, with LLMs driving task extraction and status inference.",
     ],
     stack: ["TypeScript", "Next.js", "Fastify", "BullMQ", "PostgreSQL", "Redis", "LLMs"],
-    links: [{ label: "live", href: "https://larry-pm.com" }],
+    links: [{ label: "live", href: "https://loira.ai" }],
     image: "",
   },
   {
     slug: "remand",
     title: "Remand",
-    tagline: "Where ideas meet discussion — AI market intelligence from online noise.",
+    tagline: "Where ideas meet discussion: AI market intelligence from online noise.",
     role: "Full-stack / AI",
     year: "HackEurope 2026",
     bullets: [

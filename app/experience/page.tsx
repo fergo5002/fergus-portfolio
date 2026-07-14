@@ -5,7 +5,7 @@ import { experience } from "@/content/experience";
 
 export const metadata: Metadata = {
   title: "Experience — Fergus O'Reilly",
-  description: "Hatch105 × HappyStack, Larry (CTO & Co-Founder), and the Trinity Student Managed Fund.",
+  description: "Presterly (Co-Founder & CTO, Hatch105), Loira AI, and the Trinity Student Managed Fund.",
 };
 
 export default function ExperiencePage() {

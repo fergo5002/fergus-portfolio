@@ -36,9 +36,9 @@ export const profile: Profile = {
   education:
     "BA Computer Science (Major) & Business (Minor) @ Trinity College Dublin — First Class Honours (1.1)",
   bio: [
-    "I'm a builder. I co-founded Larry, where I'm the technical founder — I architected and built the whole platform and lead a small engineering team shipping an AI execution layer for project management.",
+    "I'm a builder. I'm co-founder and CTO of Presterly, built inside the Hatch105 accelerator: we keep customers of consumable Shopify brands reordering by predicting when each one will run out of each product, then nudging them over SMS and WhatsApp at exactly that moment. A month after first commit it's live with five merchant pilots and roughly 96,000 customers under management.",
     "I'm in my third year of Computer Science & Business at Trinity College Dublin, holding a 1.1 average across first and second year.",
-    "I like shipping real things end-to-end: AI products, a game engine's lighting system, contrarian trading bots — and now ecommerce software at the Hatch105 accelerator.",
+    "Before Presterly I was a founding engineer at Loira AI (SSE Business Lab, Stockholm), building an AI execution layer for project management. I like shipping real things end-to-end: AI products, a game engine's lighting system, contrarian trading bots.",
     "Outside the terminal you'll find me at a tennis court, in the mountains, or at the sea.",
   ],
   contact: [

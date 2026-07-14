@@ -8,8 +8,8 @@ import { profile } from "@/content/profile";
 import { skills } from "@/content/skills";
 
 const highlights = [
-  { k: "internship", v: "Hatch105 × HappyStack" },
-  { k: "startup", v: "CTO @ Larry" },
+  { k: "startup", v: "Co-Founder & CTO @ Presterly" },
+  { k: "accelerator", v: "Hatch105" },
   { k: "academic", v: "1.1 / 4.0 GPA" },
 ];
 

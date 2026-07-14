@@ -5,10 +5,10 @@
 
 **Project:** FergusOS Terminal portfolio (`C:\Dev\fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
-**Status (2026-06-02):** v1 site built & deployed-ready. Retro-animation upgrade
-**animations shipped** on branch `feat/retro-animations` (boot-flash fix, CRT power-on, hero
-scramble, glyph-rain, GPA tweak). Tests 16/16 green, `npm run build` clean. A visual pass on a
-preview deploy is still recommended (see verification note in the decision log).
+**Status (2026-07-14):** content refresh shipped — Presterly (Co-Founder & CTO, Hatch105)
+replaces the `[ ROLE — TBC ]` Hatch placeholder as the lead experience entry and top project;
+Larry renamed to Loira AI with corrected dates (Feb–Jun 2026) and the loira.ai link; bio,
+highlights, and page metadata updated to match. Design untouched.
 
 ---
 
@@ -32,7 +32,8 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
 
 ## Backlog / owner-blocked
 
-- [ ] Hatch105 role + dates — owner to supply (`content/experience.ts`).
+- [x] Hatch105 role + dates — resolved 2026-07-14: the entry is now Presterly
+      (Co-Founder & CTO, May 2026 – Present, built inside Hatch105).
 - [ ] Real images — owner drops into `public/img/` and sets paths.
 - [ ] Decide whether to make the GitHub repo public (currently private).
 - [x] First Vercel deploy — live at https://fergus-portfolio.vercel.app (2026-06-02).
@@ -43,6 +44,13 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
 ---
 
 ## Decision log
+
+- **2026-07-14** — Content refresh for the Null Fellows application: Presterly added as lead
+  experience + top project (with live traction numbers pulled from the Presterly memory notes),
+  Larry → Loira AI (Founding Engineer, Feb–Jun 2026, loira.ai; the old "CTO & Co-Founder /
+  Feb 2025 – Present" copy was wrong on both counts), homepage highlights now
+  startup/accelerator/academic. Em dashes removed from prose copy per LANGUAGE.md; pre-existing
+  em-dash title separators (layout/page titles, education line) left as shipped design.
 
 - **2026-06-02** — BUGFIX (post-merge): the Task 1 boot-flash rule blanked the screen on a
   fresh session — `.booting .screen { visibility:hidden }` also hid the `.boot` overlay (which

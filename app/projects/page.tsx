@@ -5,7 +5,7 @@ import { projects } from "@/content/projects";
 
 export const metadata: Metadata = {
   title: "Projects — Fergus O'Reilly",
-  description: "Larry, Remand, Under the Campanile, Sauna OS, and ContraBot.",
+  description: "Presterly, Loira AI, Remand, Under the Campanile, Sauna OS, and ContraBot.",
 };
 
 export default function ProjectsPage() {
