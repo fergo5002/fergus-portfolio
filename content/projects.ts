@@ -28,7 +28,7 @@ export const projects: Project[] = [
     year: "2026 – Present",
     bullets: [
       "Predicts when each customer will run out of each product, then nudges them over SMS or WhatsApp at exactly that moment with a one-tap pre-seeded checkout.",
-      "Multi-tenant engine live on five merchant pilots: ~96,000 customers under management, €13.4M of order history analysed, ~200,000 predictions refreshed daily.",
+      "Multi-tenant engine live on seven merchant brands: 127,000 customers under management, over €18M of order history analysed, ~240,000 predictions refreshed daily.",
     ],
     stack: ["TypeScript", "React Router", "Prisma", "PostgreSQL", "Shopify", "Klaviyo", "Railway"],
     links: [{ label: "live", href: "https://presterly.com" }],

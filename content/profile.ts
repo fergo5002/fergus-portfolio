@@ -36,14 +36,14 @@ export const profile: Profile = {
   education:
     "BA Computer Science (Major) & Business (Minor) @ Trinity College Dublin — First Class Honours (1.1)",
   bio: [
-    "I'm a builder. I'm co-founder and CTO of Presterly, built inside the Hatch105 accelerator: we keep customers of consumable Shopify brands reordering by predicting when each one will run out of each product, then nudging them over SMS and WhatsApp at exactly that moment. A month after first commit it's live with five merchant pilots and roughly 96,000 customers under management.",
+    "I'm a builder. I'm co-founder and CTO of Presterly, built inside the Hatch105 accelerator: we keep customers of consumable Shopify brands reordering by predicting when each one will run out of each product, then nudging them over SMS and WhatsApp at exactly that moment. Six weeks after first commit it's live with seven merchant brands and over 127,000 customers under management.",
     "I'm in my third year of Computer Science & Business at Trinity College Dublin, holding a 1.1 average across first and second year.",
     "Before Presterly I was a founding engineer at Loira AI (SSE Business Lab, Stockholm), building an AI execution layer for project management. I like shipping real things end-to-end: AI products, a game engine's lighting system, contrarian trading bots.",
     "Outside the terminal you'll find me at a tennis court, in the mountains, or at the sea.",
   ],
   contact: [
     { label: "email", value: "oreillferg@gmail.com", href: "mailto:oreillferg@gmail.com" },
-    { label: "github", value: "github.com/fergo5002", href: "https://github.com/fergo5002" },
+    { label: "github", value: "github.com/oreillyfergus", href: "https://github.com/oreillyfergus" },
     {
       label: "linkedin",
       value: "in/patrickfergusoreilly",
