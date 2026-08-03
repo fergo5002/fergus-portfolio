@@ -1472,18 +1472,23 @@ html.js .exp__spine {
    dpr / 30 fps) plus content animation — which is the part anyone actually sees.
    ========================================================================== */
 @media (hover: none) {
-  /* The shader already draws scanlines (`uScanlines`), so the CSS layer was
-     drawing them a second time, full-viewport, every frame. Keep it only as the
-     fallback for when WebGL failed and nothing else would draw them — and even
-     then, static. */
+  /* The shader draws scanlines itself (`uScanlines`), so once the tube is
+     confirmed live this layer is drawing them a second time, full-viewport,
+     every frame. It stands down then — and only then.
+
+     Note the direction. The default on touch is a STATIC version of this layer,
+     and `webgl-ok` (added by PhosphorScreen once the renderer exists) removes
+     it. Keying it the other way round, on a "no-webgl" failure flag, meant a
+     visitor whose JS never ran got neither the layer nor the tube: a CRT site
+     rendered perfectly flat. Only JS can know WebGL worked, so only success is
+     safe to signal. */
   .crt__scanlines {
-    display: none;
-  }
-  html.no-webgl .crt__scanlines {
-    display: block;
     animation: none;
     bottom: 0;
     opacity: calc(var(--scanline-intensity) * 0.5);
+  }
+  html.webgl-ok .crt__scanlines {
+    display: none;
   }
   /* An infinite animation on a fixed full-viewport layer, for a flicker nobody
      notices on a 6" screen in daylight. */

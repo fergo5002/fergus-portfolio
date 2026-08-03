@@ -31,9 +31,15 @@ export default function Magnetic({
   const springX = useSpring(x, { stiffness: 260, damping: 18, mass: 0.4 });
   const springY = useSpring(y, { stiffness: 260, damping: 18, mass: 0.4 });
 
-  if (reduce) return <span className={className}>{children}</span>;
-
+  // Deliberately NOT `if (reduce) return <span>…</span>`.
+  //
+  // `useReducedMotion` resolves during the first client render, so the server
+  // always assumes false and a visitor with "reduce motion" on would render a
+  // different element than the one that was sent — a hydration mismatch on every
+  // nav link. Rendering the same `motion.span` either way and simply never
+  // setting x/y leaves it at rest, which is exactly what `reduce` should mean.
   const onMove = (e: ReactPointerEvent<HTMLSpanElement>) => {
+    if (reduce) return;
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();

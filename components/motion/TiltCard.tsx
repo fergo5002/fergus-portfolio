@@ -60,6 +60,7 @@ export default function TiltCard({
 
   const onMove = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (reducedMotion) return;
       // A finger only steers the card while it is held down; a mouse steers by
       // being over it at all.
       if (e.pointerType === "touch" && !ref.current?.classList.contains("is-pressed")) return;
@@ -67,12 +68,12 @@ export default function TiltCard({
       // cursor does, so the full angle reads as the card lurching away from it.
       applyFrom(e.clientX, e.clientY, e.pointerType === "touch" ? 0.6 : 1);
     },
-    [applyFrom],
+    [applyFrom, reducedMotion],
   );
 
   const onDown = useCallback(
     (e: ReactPointerEvent<HTMLDivElement>) => {
-      if (e.pointerType !== "touch") return;
+      if (reducedMotion || e.pointerType !== "touch") return;
       const el = ref.current;
       if (!el) return;
       window.clearTimeout(traceTimer.current);
@@ -80,7 +81,7 @@ export default function TiltCard({
       el.classList.add("is-pressed");
       applyFrom(e.clientX, e.clientY, 0.6);
     },
-    [applyFrom],
+    [applyFrom, reducedMotion],
   );
 
   const release = useCallback(() => {
@@ -103,10 +104,20 @@ export default function TiltCard({
     el.style.setProperty("--rx", "0deg");
   }, []);
 
-  if (reducedMotion) {
-    return <div className={`tilt ${className}`.trim()}>{children}</div>;
-  }
-
+  // The markup is identical whatever the motion preference, and the handlers
+  // above no-op under `reduce`.
+  //
+  // It used to return a different tree entirely when `reducedMotion` was true.
+  // That value is resolved by a `matchMedia` read during the FIRST client render
+  // (SystemProvider), so the server always assumed false while a visitor with
+  // "reduce motion" enabled computed true — two structurally different trees at
+  // hydration, on every project card and experience entry. Same failure as the
+  // one already fixed in CursorTrail, and the reason that fix defers to an
+  // effect rather than branching at first render.
+  //
+  // Nothing is lost by rendering the live tree: every `.tilt.is-live` rule in
+  // globals.css sits inside `@media (prefers-reduced-motion: no-preference)`, so
+  // under `reduce` the tilt, glare and trace are all inert anyway.
   return (
     <div
       ref={ref}

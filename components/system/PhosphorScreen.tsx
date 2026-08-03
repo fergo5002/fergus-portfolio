@@ -246,16 +246,40 @@ export default function PhosphorScreen() {
         powerPreference: "low-power",
       });
     } catch {
-      // No WebGL. Flag it so the CSS falls back to a static scanline layer —
-      // without this the site would have no scanlines at all, since the shader
-      // is normally the only thing drawing them.
-      document.documentElement.classList.add("no-webgl");
+      // No WebGL. The CSS already has the static scanline layer showing by
+      // default, so there is nothing to switch on here — see `webgl-ok` below.
       return;
     }
 
     const gl = renderer.gl;
     gl.canvas.className = "phosphor__canvas";
     host.appendChild(gl.canvas);
+
+    // The tube is confirmed live, so the CSS scanline layer can stand down —
+    // the shader draws scanlines itself, and on touch drawing them twice is a
+    // full-viewport repaint nobody sees the benefit of.
+    //
+    // Deliberately a "confirmed working" flag rather than a "failed" one. Only
+    // JS can know WebGL succeeded, so anything keyed on failure silently never
+    // fires when JS does not run at all — which on touch would have left a CRT
+    // site with no scanlines and no tube, flat. Defaulting to the static layer
+    // and switching it off on success makes JS-off, WebGL-refused and
+    // context-lost all degrade the same way.
+    const root = document.documentElement;
+    root.classList.add("webgl-ok");
+
+    // iOS in particular drops WebGL contexts under memory pressure. Without
+    // this the canvas would freeze on its last frame and the fallback would
+    // never come back, because the only signal was read once at construction.
+    const onContextLost = (event: Event) => {
+      event.preventDefault();
+      root.classList.remove("webgl-ok");
+    };
+    const onContextRestored = () => {
+      root.classList.add("webgl-ok");
+    };
+    gl.canvas.addEventListener("webglcontextlost", onContextLost);
+    gl.canvas.addEventListener("webglcontextrestored", onContextRestored);
 
     const program = new Program(gl, {
       vertex: VERT,
@@ -294,12 +318,18 @@ export default function PhosphorScreen() {
     // naive handler would resize the drawing buffer (an expensive reallocation)
     // on every flick of a scroll. Only react when the width actually changes, or
     // when the height moves by more than the toolbar's own height.
+    //
+    // Gated on `isSmall`, because the canvas box is CSS-sized (100vw/100dvh) and
+    // does not wait for us: skipping a resize means the old drawing buffer gets
+    // stretched into the new box, and everything keyed on uResolution distorts
+    // with it. On a desktop that would turn any small window-height drag into a
+    // visibly stretched tube, so desktop keeps resizing exactly as it always did.
     let lastW = 0;
     let lastH = 0;
     const resize = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
-      if (w === lastW && Math.abs(h - lastH) < 120) return;
+      if (isSmall && w === lastW && Math.abs(h - lastH) < 120) return;
       lastW = w;
       lastH = h;
       renderer.setSize(w, h);
@@ -355,6 +385,9 @@ export default function PhosphorScreen() {
       draw(0);
       return () => {
         window.removeEventListener("resize", resize);
+        gl.canvas.removeEventListener("webglcontextlost", onContextLost);
+        gl.canvas.removeEventListener("webglcontextrestored", onContextRestored);
+        root.classList.remove("webgl-ok");
         gl.canvas.remove();
         renderer.gl.getExtension("WEBGL_lose_context")?.loseContext();
       };
@@ -365,6 +398,10 @@ export default function PhosphorScreen() {
     return () => {
       unsubscribe();
       window.removeEventListener("resize", resize);
+      gl.canvas.removeEventListener("webglcontextlost", onContextLost);
+      gl.canvas.removeEventListener("webglcontextrestored", onContextRestored);
+      // The tube is going away, so the static scanline layer takes over again.
+      root.classList.remove("webgl-ok");
       gl.canvas.remove();
       renderer.gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
