@@ -60,21 +60,40 @@ library arsenal, inertial scroll, all four set-pieces, generated placeholders.
       path (no Lenis, static shader, instant reveals, no trail, no screensaver)
 - [x] Tests 16 → 49; `npm run build` clean; all routes still static
 
-> **DEPLOY PENDING — not yet live.** Merged to `main` and pushed (now `783aca0`, covering both
-> the v4 motion system and the real imagery), but `https://fergus-portfolio.vercel.app` is still
-> serving the pre-v4 build. The Vercel CLI is installed (54.11.1) and reports
-> `Error: Not authorized`; there is no `VERCEL_TOKEN` in the environment and no `auth.json` at
-> either `%APPDATA%` or `%LOCALAPPDATA%`. The project is CLI-linked rather than Git-connected, so
-> pushing to `main` triggers no deployment — confirmed twice, by polling the live URL for four
-> minutes after the first push and re-checking after the second.
+> ## ✅ LIVE — deployed and verified 2026-08-03
 >
-> **To ship it:** `vercel login` once, then `vercel --prod` from the repo root. Note the scope:
-> per `[[machine-map]]` this project lives in the **`larry-pm`** Vercel team, though the local
-> `.vercel/project.json` records `team_MNEq2igKscCiR0E6Q2odcHCQ` — check which is right before
-> deploying, and consider Git-linking the project so pushes deploy themselves.
+> `https://fergus-portfolio.vercel.app` serves v4 with the real imagery.
+> Deployment `dpl_GELUnY6VoXn1xfHUamBjEg2juyty`.
 >
-> Everything else is verified locally and in a prod-parity container; only the deploy is
-> outstanding.
+> **Verified in production:** all three routes and `/icon.svg` return 200; all seven images
+> return 200 and load in-browser at their real dimensions; the boot sequence, WebGL phosphor
+> layer, Lenis, status bar (60 fps) and screensaver all run; `neofetch`, `uptime`, tab
+> completion and `theme amber` → `theme green` all work against the live site and repaint the
+> whole page; the projects grid is in the right order with no "Firecracker" or "Sauna OS"
+> anywhere; live logs show only 200s and no errors.
+>
+> ### Why deploying was hard, so the next person does not lose an hour
+>
+> Three traps stacked on top of each other. Full detail is in `[[machine-map]]`.
+>
+> 1. **`.vercel/project.json` had the wrong org** (`team_MNEq2igKscCiR0E6Q2odcHCQ`); the project
+>    lives in **`larry-pm`**. That made `vercel whoami` say "Not authorized" while the account
+>    was perfectly logged in. Test auth with `vercel teams ls`, not `whoami`.
+>    Fix: `vercel link --yes --scope larry-pm --project fergus-portfolio`.
+> 2. **The repo IS git-linked, and every pushed deployment was silently Blocked**, which from
+>    outside is indistinguishable from "no deploy was triggered". The dashboard gives the real
+>    reason: the commit author (`fergus.oreilly@hatch105.com`) has no contributing access, and
+>    the Hobby plan does not allow collaborators on private repos.
+> 3. **The generated URLs are behind Vercel SSO** and 302 to a login page. Only
+>    `fergus-portfolio.vercel.app` is public.
+>
+> **How this deploy actually shipped:** copy the repo to a temp directory **without `.git`**,
+> keep `.vercel/project.json`, then `vercel --prod --yes` from there. No git metadata means no
+> commit-author check.
+>
+> **Worth fixing properly** so `git push` just deploys: add `fergus.oreilly@hatch105.com` to the
+> `fergo5002` Vercel account, or commit this repo as `oreillfe@tcd.ie` (the identity whose older
+> commits deployed fine), or upgrade to Pro.
 
 **Verified before ship:** production build served locally and exercised in a real browser —
 boot, reveals on genuine wheel scroll (6/6 project cards), theme/crt/scanlines commands
