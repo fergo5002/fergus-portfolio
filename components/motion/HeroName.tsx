@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { randomGlyph, scrambleFrame } from "@/lib/scramble";
+import { splitWordsWithOffsets } from "@/lib/text";
 import { useSystem } from "@/components/system/SystemProvider";
 
 /** How far from the cursor a character still feels the field, in px. */
@@ -124,7 +125,11 @@ export default function HeroName({ text, className }: { text: string; className?
   return (
     <span ref={hostRef} className={`heroname ${className ?? ""}`.trim()} aria-label={text}>
       <span aria-hidden="true">
-        {display.split("").map((ch, i) => (
+        {splitWordsWithOffsets(display).map(({ word, start }, w) => (
+          <span key={w} className="heroname__word">
+            {word.split("").map((ch, j) => {
+          const i = start + j;
+          return (
           <span
             key={i}
             className="heroname__ch"
@@ -133,6 +138,9 @@ export default function HeroName({ text, className }: { text: string; className?
             }}
           >
             {ch === " " ? " " : ch}
+          </span>
+          );
+            })}
           </span>
         ))}
       </span>

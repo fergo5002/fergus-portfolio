@@ -200,6 +200,9 @@ ul {
   );
   background-size: 100% 3px;
   opacity: var(--scanline-intensity);
+  /* Promote to its own layer so the drift below is a compositor transform rather
+     than a full-viewport repaint. See `scan-drift`. */
+  will-change: transform;
 }
 .crt__vignette {
   background:
@@ -425,17 +428,26 @@ html.crt-off body {
     contrast(1.06);
   transition: filter 420ms ease;
 }
-.imgframe:hover .imgframe__img,
-.tilt.is-live:hover .imgframe__img {
-  filter: none;
+/* Gated on hover existing: a touch browser keeps `:hover` on the last element
+   tapped, so ungated this would resolve a card to full colour and leave it that
+   way. On touch the press handles it — see the `(hover: none)` block below. */
+@media (hover: hover) {
+  .imgframe:hover .imgframe__img,
+  .tilt.is-live:hover .imgframe__img {
+    filter: none;
+  }
 }
-/* No hover on touch, so the reveal can never be earned. Rather than stranding
-   mobile visitors on fully green images (or dropping the tint entirely, which
-   leaves six colour rectangles fighting the terminal around them), settle on a
-   light phosphor cast: the content reads, and it still belongs to the screen. */
+/* No hover on touch, so the reveal cannot be earned by pointing at it. Two
+   things happen instead: the resting tint is lighter than the desktop duotone so
+   the content reads unaided, and pressing the card resolves it to full colour —
+   the same reward as hover, earned by the gesture a phone actually has. */
 @media (hover: none) {
   .imgframe__img {
     filter: grayscale(0.3) sepia(0.34) hue-rotate(var(--duotone-hue)) saturate(1.4) contrast(1.02);
+  }
+  .tilt.is-pressed .imgframe__img,
+  .tilt.is-tracing .imgframe__img {
+    filter: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -879,6 +891,12 @@ html.crt-off body {
 /* ----- motion (only when the user is OK with it) ------------------------- */
 @media (prefers-reduced-motion: no-preference) {
   .crt__scanlines {
+    /* Drift by moving the layer, NOT its background-position. Animating
+       `background-position` on a fixed full-viewport element repaints the entire
+       viewport every frame; measured on a throttled Pixel 7 it alone held the
+       site at 20 fps, and disabling it recovered 60. A transform is composited.
+       The extra 3px of height below the fold is what it travels into. */
+    bottom: -3px;
     animation: scan-drift 8s linear infinite;
   }
   .crt__flicker {
@@ -893,10 +911,10 @@ html.crt-off body {
   }
   @keyframes scan-drift {
     from {
-      background-position: 0 0;
+      transform: translate3d(0, 0, 0);
     }
     to {
-      background-position: 0 3px;
+      transform: translate3d(0, 3px, 0);
     }
   }
   @keyframes flicker {
@@ -1028,6 +1046,13 @@ html.crt-off body {
 /* ----- hero name ---------------------------------------------------------- */
 .heroname {
   display: inline-block;
+}
+/* Each word is one unbreakable group. Without this the per-character
+   inline-blocks below are independent boxes and the line may break between any
+   two letters — which is what rendered the name as "O'Re / illy" on a phone. */
+.heroname__word {
+  display: inline-block;
+  white-space: nowrap;
 }
 .heroname__ch {
   display: inline-block;
@@ -1311,18 +1336,62 @@ html.js .exp__spine {
     transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
     transition: transform 140ms ease-out;
   }
-  .tilt.is-live:hover .tilt__glare {
-    opacity: 1;
-    transition: opacity 260ms ease-out;
-  }
-  .tilt.is-live:hover .tilt__trace {
-    opacity: 1;
-    animation: trace-spin 2.8s linear infinite;
-    transition: opacity 260ms ease-out;
+  /* Hover rules are gated on hover actually existing.
+     A touch browser leaves `:hover` asserted on the last element tapped until
+     something else is tapped, so an ungated `:hover` rule does not simply fail
+     to fire on a phone — it fires and then sticks. With the glare no longer
+     hidden on mobile, that left every tapped card lit up indefinitely. */
+  @media (hover: hover) {
+    .tilt.is-live:hover .tilt__glare {
+      opacity: 1;
+      transition: opacity 260ms ease-out;
+    }
+    .tilt.is-live:hover .tilt__trace {
+      opacity: 1;
+      animation: trace-spin 2.8s linear infinite;
+      transition: opacity 260ms ease-out;
+    }
   }
   @keyframes trace-spin {
     to {
       --trace-a: 360deg;
+    }
+  }
+
+  /* ── touch: the press is the affordance ──────────────────────────────────
+     A finger has no hover, so on a phone the card responds to being held. The
+     tilt itself comes from the same --rx/--ry variables the cursor path writes,
+     so there is one transform rule, not two. */
+  .tilt.is-live.is-pressed {
+    transition: transform 90ms ease-out;
+  }
+  .tilt.is-live.is-pressed .tilt__glare {
+    opacity: 1;
+    transition: opacity 160ms ease-out;
+  }
+  /* Springs back rather than snapping: the overshoot is what makes it read as a
+     physical panel settling instead of a div returning to zero. */
+  .tilt.is-live.is-tracing {
+    transition: transform 420ms cubic-bezier(0.22, 1.4, 0.36, 1);
+  }
+  /* The beam runs the perimeter exactly once on release. */
+  .tilt.is-live.is-tracing .tilt__trace {
+    animation: trace-once 900ms linear 1 both;
+  }
+  @keyframes trace-once {
+    0% {
+      --trace-a: 0deg;
+      opacity: 0;
+    }
+    14% {
+      opacity: 1;
+    }
+    78% {
+      opacity: 1;
+    }
+    100% {
+      --trace-a: 360deg;
+      opacity: 0;
     }
   }
 
@@ -1382,8 +1451,97 @@ html.js .exp__spine {
   }
 }
 
-/* ----- responsive -------------------------------------------------------- */
+/* ==========================================================================
+   MOBILE CHROME BUDGET
+   Keyed on `(hover: none)`, i.e. the input, not the width — a narrow desktop
+   window has a mouse and a GPU, a phone has neither.
+
+   The measured problem: on an iPhone 14 Pro (WebKit) the site ran at 1 fps, and
+   on a 4x-throttled Pixel 7 at 10-20 fps idle / 6 fps scrolling, against a 61 fps
+   about:blank control. Every animation was running — `document.getAnimations()`
+   listed them all, with no console errors — the phone simply could not paint
+   them, which is exactly what "no animations on mobile" looks like from outside.
+
+   Attribution, fps on the throttled Pixel with one layer forced off:
+     .crt__scanlines off -> 60      .phosphor off -> 58
+     .cursortrail off    -> 19      .crt__glass off -> 9
+     backdrop-filter off -> 9       everything off -> 61
+
+   So the two saturating layers each get removed or made static here, and the
+   rest lose their per-frame cost. What remains on a phone is the shader (at 0.6
+   dpr / 30 fps) plus content animation — which is the part anyone actually sees.
+   ========================================================================== */
+@media (hover: none) {
+  /* The shader already draws scanlines (`uScanlines`), so the CSS layer was
+     drawing them a second time, full-viewport, every frame. Keep it only as the
+     fallback for when WebGL failed and nothing else would draw them — and even
+     then, static. */
+  .crt__scanlines {
+    display: none;
+  }
+  html.no-webgl .crt__scanlines {
+    display: block;
+    animation: none;
+    bottom: 0;
+    opacity: calc(var(--scanline-intensity) * 0.5);
+  }
+  /* An infinite animation on a fixed full-viewport layer, for a flicker nobody
+     notices on a 6" screen in daylight. */
+  .crt__flicker {
+    display: none;
+  }
+  /* Its gradient interpolates --scroll-v, so it repainted the whole viewport on
+     every frame of every scroll. Fixed angle, fixed alpha: still reads as glass. */
+  .crt__glass {
+    background: linear-gradient(
+      104deg,
+      rgba(255, 255, 255, 0) 38%,
+      rgba(255, 255, 255, 0.016) 47%,
+      rgba(255, 255, 255, 0) 56%
+    );
+  }
+  /* backdrop-filter on a fixed bar is one of the reliable mobile killers: it
+     re-samples what is behind it every frame the page moves. */
+  .nav,
+  .statusbar {
+    backdrop-filter: none;
+    background: rgba(8, 12, 8, 0.97);
+  }
+  /* Full opacity: with the CSS scanline layer gone there is nothing left to
+     double up with, and the tube should read at its proper strength. */
+  .phosphor {
+    opacity: 1;
+  }
+  /* Convergence loss on headings is driven by --scroll-v, so every heading on
+     the page repaints its text-shadow on every frame of every scroll. That is a
+     text repaint, not a composite, and it was the last thing holding scrolling
+     under 20fps on a throttled phone. The tube still smears — the shader reads
+     the same velocity — the type just stays sharp. */
+  html.js .page__title,
+  html.js .exp__org,
+  html.js .project__title {
+    text-shadow: var(--glow);
+  }
+}
+
+/* ==========================================================================
+   SMALL SCREENS
+   Treated as its own design rather than the desktop squeezed into a column.
+   The desktop layout assumes a 1040px measure and a mouse; at 390px the same
+   rules produce a 13-word-per-line mono column, a nav 150px wider than the
+   screen, and a portrait floating in dead space.
+   ========================================================================== */
 @media (max-width: 768px) {
+  :root {
+    /* Tighter rhythm. The 8pt scale is right for a 1040px page and too airy for
+       a 390px one, where the same gaps push everything below the fold. */
+    --sp-4: 18px;
+    --sp-5: 24px;
+    --sp-6: 32px;
+    --nav-h: 40px;
+    --status-h: 22px;
+  }
+
   .statusbar__hide-sm {
     display: none;
   }
@@ -1391,26 +1549,109 @@ html.js .exp__spine {
     font-size: 0.62rem;
     gap: var(--sp-2);
   }
-  /* Tilt is a pointer affordance; a finger has no hover, so drop the cost. */
-  .tilt.is-live {
-    transform: none;
+
+  /* Body copy down from 16px. A monospace face at 16px on a 390px screen fits
+     roughly 26 characters per line, which is why every bullet wrapped four or
+     five times. 15px with tighter leading buys back about a fifth of the page
+     height without straining to read. */
+  body {
+    font-size: 15px;
+    line-height: 1.55;
   }
-  .tilt__glare,
-  .tilt__trace {
-    display: none;
-  }
+
   .screen {
     padding: calc(var(--nav-h) + var(--sp-4)) var(--sp-3) calc(var(--sp-5) + var(--status-h));
   }
+  .window__body {
+    padding: var(--sp-3);
+  }
+  .stack {
+    gap: var(--sp-4);
+  }
+
+  /* ── nav ────────────────────────────────────────────────────────────────
+     The prompt is the whole reason the bar overflowed: measured at 464-539px of
+     content in a 393px bar, so "cd projects" sat off-screen on every route with
+     no affordance suggesting it was there. The path is already in the status bar
+     at the bottom, so dropping the prompt here loses no information. */
+  .nav {
+    font-size: 0.8rem;
+    gap: 0;
+    padding: 0 var(--sp-3);
+    justify-content: center;
+    overflow-x: visible;
+  }
+  .nav__prompt {
+    display: none;
+  }
+  .nav__list {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    gap: var(--sp-2);
+  }
+  /* Real touch targets. 44px is the floor Apple and WCAG 2.2 both land on, and
+     these were 20px tall links in a 44px bar. */
+  .nav__link {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 var(--sp-2);
+  }
+
+  /* ── hero ───────────────────────────────────────────────────────────────
+     Portrait first, then the name. On a phone the photograph is the fastest
+     thing to read and the strongest thing on the page; burying it under five
+     lines of wrapped type wasted the one screen everybody sees. */
   .hero__grid {
     grid-template-columns: 1fr;
+    gap: var(--sp-4);
   }
   .hero__portrait {
-    max-width: 220px;
+    order: -1;
+    max-width: 190px;
+    margin: 0 auto;
+    width: 100%;
   }
+  .hero__text {
+    text-align: center;
+  }
+  .hero__name {
+    /* Sized to fit "Patrick" on one line at 390px, so the name never has to
+       break at all. */
+    font-size: clamp(1.9rem, 8.5vw, 2.6rem);
+    margin: var(--sp-1) 0 var(--sp-2);
+  }
+  .hero__tagline {
+    font-size: 1rem;
+  }
+  .hero__loc,
+  .hero__edu {
+    font-size: 0.82rem;
+  }
+  .hero .promptline {
+    font-size: 0.8rem;
+  }
+
+  /* ── highlights ─────────────────────────────────────────────────────────
+     Three full-width blocks of mostly air became three rows that read as a
+     table, which is what they are. */
   .highlights {
     grid-template-columns: 1fr;
+    gap: var(--sp-2);
   }
+  .hl {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    padding: var(--sp-2) var(--sp-3);
+  }
+  .hl__v {
+    font-size: 0.92rem;
+    text-align: right;
+  }
+
   .proj__grid {
     grid-template-columns: 1fr;
   }
@@ -1419,12 +1660,96 @@ html.js .exp__spine {
     grid-template-columns: 1fr;
     gap: var(--sp-1);
   }
-  /* tone the CRT effects down on small screens */
-  .crt__scanlines {
-    opacity: 0.32;
-  }
-  .nav {
-    font-size: 0.78rem;
+
+  /* ── experience timeline ────────────────────────────────────────────────
+     The spine held a 24px left gutter plus its own border out of a 390px
+     column — about 12% of the width, spent on decoration, which is why the
+     bullets wrapped so hard. It now runs behind the cards rather than beside
+     them, and each entry's node sits on the card edge. */
+  .exp__list {
+    border-left: none;
+    padding-left: var(--sp-3);
     gap: var(--sp-3);
+  }
+  .exp__spine {
+    left: 0;
+  }
+  .exp {
+    padding: var(--sp-3);
+  }
+  .exp::before {
+    left: calc(-1 * var(--sp-3) - 4px);
+    top: 22px;
+    width: 7px;
+    height: 7px;
+  }
+  .exp__org {
+    font-size: 1.25rem;
+  }
+  .exp__bullets li,
+  .project__bullets li {
+    padding-left: 1.1em;
+  }
+
+  /* ── project cards ──────────────────────────────────────────────────────
+     The image ratios are left exactly as authored. 16:9 is the shorter frame,
+     not the taller one, so overriding it to 4:3 would have added roughly 65px
+     of height to every card — the opposite of the density this block is for —
+     and cropped the sides of images built to be 16:9 in the first place. */
+  .project__title {
+    font-size: 1.25rem;
+  }
+  .project__tagline {
+    font-size: 0.9rem;
+  }
+  .project__bullets li {
+    font-size: 0.86rem;
+  }
+  .page__title {
+    font-size: clamp(1.8rem, 9vw, 2.4rem);
+  }
+
+  /* ── terminal ───────────────────────────────────────────────────────────
+     iOS zooms the whole page when a focused input is under 16px, and this was
+     14.4px — so tapping the prompt yanked the layout sideways and left the
+     visitor scrolled off the edge of a site about a terminal. */
+  .term__form {
+    font-size: 1rem;
+  }
+  .term__input {
+    font-size: 16px;
+  }
+  .term__scroll {
+    max-height: 190px;
+    font-size: 0.84rem;
+  }
+  .term__hint {
+    /* Was a 20px-tall pill; now a target a thumb can actually hit. */
+    padding: var(--sp-1) var(--sp-3);
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* ----- touch affordances -------------------------------------------------
+   A magnetic spring means nothing without a cursor, so on touch the nav links
+   answer to being pressed instead. */
+@media (hover: none) {
+  .nav__link,
+  .term__hint,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nav__link:active {
+    color: var(--green-bright);
+    text-shadow: 0 0 6px var(--green-faint), var(--glow);
+  }
+  .term__hint:active {
+    background: rgba(51, 255, 102, 0.16);
+    color: var(--green-bright);
+  }
+  a:active {
+    color: var(--amber-bright);
   }
 }

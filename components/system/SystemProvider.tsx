@@ -105,6 +105,14 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
+  // Lenis smooths the wheel. It does not smooth touch (`syncTouch` is off, and
+  // turning it on fights iOS's own momentum), so on a phone it is pure overhead:
+  // a scroll listener, a root class, and a `lenis.raf()` call every frame, all to
+  // hand back the same numbers the native path already computes from `scrollY`.
+  // Resolved during the first client render for the same reason as `reducedMotion`.
+  const [coarsePointer] = useState<boolean>(
+    () => typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches,
+  );
   const [mounted, setMounted] = useState(false);
 
   // ── settings: hydrate from storage, then keep the DOM in sync ──────────────
@@ -131,21 +139,67 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", apply);
   }, []);
 
-  // ── pointer tracking (ref only — never state, this fires constantly) ───────
+  // ── pointer + touch tracking (ref only — never state, this fires constantly) ─
+  //
+  // A mouse makes the pointer "active" simply by being on the page. A finger has
+  // no such resting state: it is either on the glass or it is not. So on a coarse
+  // pointer the field engages on `pointerdown`, tracks the finger while it moves,
+  // and decays once it lifts — which is what makes every pointer-driven effect
+  // (hero magnetism, the shader's deflection ripple) work on a phone without
+  // running, and costing, anything at rest.
   useEffect(() => {
-    const onMove = (e: PointerEvent) => {
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+
+    const track = (e: PointerEvent) => {
       const f = frame.current;
       f.pointerX = e.clientX / window.innerWidth;
       f.pointerY = e.clientY / window.innerHeight;
-      f.pointerTargetActive = 1;
     };
+
+    const onMove = (e: PointerEvent) => {
+      track(e);
+      // On touch, only a held finger counts as an active field.
+      if (!coarse || frame.current.touchDown > 0) frame.current.pointerTargetActive = 1;
+    };
+
+    const onDown = (e: PointerEvent) => {
+      const f = frame.current;
+      track(e);
+      f.touchDown = 1;
+      f.pointerTargetActive = 1;
+      // A tap is a knock on the glass: the shader rings out from where it landed.
+      //
+      // Touch only. A mouse already deflects the tube continuously just by being
+      // near it, so adding a shockwave to every desktop click would be a second
+      // effect answering an input that is already answered — and the brief was
+      // to fix the phone, not to change what works.
+      if (e.pointerType !== "mouse") {
+        f.tapAt = performance.now();
+        f.tapX = f.pointerX;
+        f.tapY = f.pointerY;
+      }
+    };
+
+    const onUp = () => {
+      const f = frame.current;
+      f.touchDown = 0;
+      if (coarse) f.pointerTargetActive = 0;
+    };
+
     const onLeave = () => {
       frame.current.pointerTargetActive = 0;
     };
+
     window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerdown", onDown, { passive: true });
+    window.addEventListener("pointerup", onUp, { passive: true });
+    window.addEventListener("pointercancel", onUp, { passive: true });
     document.addEventListener("pointerleave", onLeave);
     return () => {
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
       document.removeEventListener("pointerleave", onLeave);
     };
   }, []);
@@ -158,9 +212,13 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
     let last = startedAt;
     let lastScrollY = window.scrollY;
     // Only write CSS variables when they move meaningfully; a style write every
-    // frame on <html> is a needless invalidation.
+    // frame on <html> is a needless invalidation — it dirties every rule that
+    // reads the variable, all the way down the tree. Touch devices get a coarser
+    // threshold because they have the least headroom and the effects reading
+    // --scroll-v there are ambient, so nobody can see the quantisation.
     let publishedVel = -1;
     let publishedProg = -1;
+    const velEpsilon = window.matchMedia("(pointer: coarse)").matches ? 0.06 : 0.012;
 
     const loop = (time: number) => {
       raf = requestAnimationFrame(loop);
@@ -194,7 +252,7 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
       f.live += (f.targetLive - f.live) * 0.05;
 
       const absVel = Math.min(1, Math.abs(f.scrollVelocity));
-      if (Math.abs(absVel - publishedVel) > 0.012) {
+      if (Math.abs(absVel - publishedVel) > velEpsilon) {
         publishedVel = absVel;
         document.documentElement.style.setProperty("--scroll-v", absVel.toFixed(3));
       }
@@ -279,8 +337,11 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
   return (
     <SystemContext.Provider value={value}>
       {/* Inertial scroll is the point of the effect, but it is motion — so under
-          `reduce` we simply never mount it and the browser's native scroll stands. */}
-      {!reducedMotion && <ReactLenis root options={LENIS_OPTIONS} ref={lenisRef} />}
+          `reduce` we simply never mount it and the browser's native scroll stands.
+          Same on touch, where it costs frames and smooths nothing. */}
+      {!reducedMotion && !coarsePointer && (
+        <ReactLenis root options={LENIS_OPTIONS} ref={lenisRef} />
+      )}
       {children}
     </SystemContext.Provider>
   );

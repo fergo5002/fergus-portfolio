@@ -5,7 +5,12 @@
 
 **Project:** FergusOS Terminal portfolio (`C:\Dev\fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
-**Status (2026-08-03):** **v4 "Phosphor" motion system shipped.** The site now behaves like a
+**Status (2026-08-03):** **v4.1 — the motion system now works on a phone.** v4 shipped animations
+that ran at 1 fps on iPhone-class WebKit, which from outside is indistinguishable from having no
+animations at all. The frame budget is reclaimed, touch is a first-class input, and 390px is now
+its own layout. See "Mobile motion + layout" below.
+
+**Previously (2026-08-03):** **v4 "Phosphor" motion system shipped.** The site now behaves like a
 CRT rather than depicting one — a single WebGL shader owns the tube (glyph rain, aperture
 grille, scroll-driven beam smear, cursor magnetism, degauss), Lenis drives inertial scroll,
 the terminal became a real mini-OS whose commands rewrite the live site, and cards/timelines
@@ -17,6 +22,54 @@ Previous (2026-07-14): content refresh — Presterly (Co-Founder & CTO, Hatch105
 to Loira AI with corrected dates (Feb–Jun 2026) and the loira.ai link.
 
 ---
+
+## Mobile motion + layout — 2026-08-03
+
+Branch `feat/mobile-motion`. Plan:
+`docs/superpowers/plans/2026-08-03-mobile-motion-and-layout.md`.
+
+**The finding that reframed the job.** Reported as "not a single animation works on mobile". They
+all worked. `document.getAnimations()` listed every one of them running, with no console errors.
+The phone could not paint them: **1 fps** on an iPhone 14 Pro (WebKit), **6 fps scrolling** on a
+4x-throttled Pixel 7, against a 61 fps `about:blank` control. At 1 fps a 720 ms reveal is one
+frame. Two layers each saturated the budget alone — the animated `background-position` on a fixed
+full-viewport gradient, and the DPR-2 fullscreen shader.
+
+This is the second time a "resized desktop viewport" mobile check has missed a WebKit frame-rate
+collapse on one of Fergus's projects. See
+`[[coding-mistakes#"Mobile 390 clean" was a resized desktop viewport]]`.
+
+- [x] **Frame budget** — `scan-drift` composited instead of repainting; CSS scanline layer dropped
+      on touch (the shader already draws them) with a static `html.no-webgl` fallback; tube at
+      0.6 dpr / 30 fps on mobile (drawing buffer 780x1688 → 234x506, ~22x less fragment work per
+      second); flicker, scroll-driven glass gradient, `backdrop-filter` and per-heading
+      convergence all dropped on touch; `CursorTrail` no longer mounts on a coarse pointer; Lenis
+      not mounted on touch
+- [x] **Touch motion** — tap fires the shockwave from the point touched (`uTap`/`uTapPos`, touch
+      only); press-to-tilt with tracking glare; perimeter beam runs once on release; press
+      resolves an image to full colour; hero magnetism and shader ripple engage on touch and decay
+      on release; every `:hover` rule gated behind `(hover: hover)`
+- [x] **Mobile layout** — nav fits (was 464-539px of content in a 393px bar, so "cd projects" was
+      off-screen on every route); hero name no longer breaks mid-word; terminal input 16px so iOS
+      stops zooming; portrait leads the hero; tighter type and spacing; timeline spine stops
+      holding a gutter
+- [x] `lib/text.ts` + 6 tests for the word-grouping fix; 49 → 55 tests; build clean
+
+**Measured after, throttled Pixel 7 (the realistic proxy):** idle 10-20 → **57-61 fps**, scrolling
+6 → **27-36 fps**, all reveals firing (4/4, 3/3, 6/6), zero horizontal overflow, terminal input
+16px, no console errors. Desktop unregressed. Re-verified identically against a Docker
+prod-parity container.
+
+> **Windows WebKit is a software rasteriser.** It reports 1-3 fps for this site *and* reports the
+> same with every site layer forced off, so its absolute numbers are a floor, not a reading. Use
+> the throttled Pixel as the proxy and verify the GPU reduction directly (canvas buffer size ×
+> frame rate), which is what was done here.
+
+**Harness:** `phone-audit.mjs` (in the session scratchpad) runs the matrix. It has a hard
+precondition that every referenced client chunk returns 200 — a `next start` left holding the port
+serves fresh HTML against a stale manifest, the page renders as static markup with nothing
+running, and the harness then reports a serene 61 fps for a dead site. That happened twice during
+this work before the guard was added.
 
 ## Real imagery — 2026-08-03
 
@@ -139,6 +192,20 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
 ---
 
 ## Decision log
+
+- **2026-08-03 (mobile)** — Design forks settled with Fergus up front: touch becomes a real input
+  ("the finger is the beam") rather than scroll-only ambient; **no gyroscope** (iOS needs a
+  permission prompt behind a gesture, which is friction on a page a recruiter opens once); a
+  purpose-built mobile layout rather than bug-fixes-only; and the shader kept on mobile but at
+  reduced resolution rather than removed.
+  - **Deviation from the brief (deliberate):** the chosen touch package included a phosphor trail
+    following the finger. Implemented in the **shader** (its existing pointer glow, re-enabled on
+    mobile while a finger is down) rather than as a second canvas. A fullscreen blended canvas is
+    precisely the class of layer the performance work was removing, so adding one back to draw a
+    trail would have undone the fix it was bundled with.
+  - **Reverted mid-flight:** project images were briefly forced to 4:3 on mobile on the reasoning
+    that 16:9 wasted height. That is backwards — 4:3 is the taller frame, so it added roughly 65px
+    to every card and cropped images authored as 16:9. Ratios are left as authored.
 
 - **2026-07-14** — Content refresh for the Null Fellows application: Presterly added as lead
   experience + top project (with live traction numbers pulled from the Presterly memory notes),
