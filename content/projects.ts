@@ -32,7 +32,21 @@ export const projects: Project[] = [
     ],
     stack: ["TypeScript", "React Router", "Prisma", "PostgreSQL", "Shopify", "Klaviyo", "Railway"],
     links: [{ label: "live", href: "https://presterly.com" }],
-    image: "",
+    image: "/img/presterly.png",
+  },
+  {
+    slug: "firecracker",
+    title: "Firecracker",
+    tagline: "Booking and operations for a working sauna business, front of house to back office.",
+    role: "Co-Founder & CTO",
+    year: "2026 – Present",
+    bullets: [
+      "Multi-tenant booking platform: sessions, memberships and native upsells, with Stripe Connect so each venue is paid directly.",
+      "Front-of-house booking flow plus a typed operations and growth backend, live and taking real bookings.",
+    ],
+    stack: ["Next.js", "TypeScript", "Supabase", "PostgreSQL", "Stripe Connect", "Railway"],
+    links: [{ label: "live", href: "https://firecracker-sauna.ie" }],
+    image: "/img/firecracker.png",
   },
   {
     slug: "loira",
@@ -46,7 +60,7 @@ export const projects: Project[] = [
     ],
     stack: ["TypeScript", "Next.js", "Fastify", "BullMQ", "PostgreSQL", "Redis", "LLMs"],
     links: [{ label: "live", href: "https://loira.ai" }],
-    image: "",
+    image: "/img/loira.png",
   },
   {
     slug: "remand",
@@ -60,7 +74,7 @@ export const projects: Project[] = [
     ],
     stack: ["Next.js", "React 19", "FastAPI", "Supabase", "pgvector", "OpenAI", "Anthropic"],
     links: [{ label: "live", href: "https://nybblers.vercel.app" }],
-    image: "",
+    image: "/img/remand.png",
   },
   {
     slug: "under-the-campanile",
@@ -74,20 +88,7 @@ export const projects: Project[] = [
     ],
     stack: ["TypeScript", "Phaser 3", "GLSL", "WebGL"],
     links: [],
-    image: "",
-  },
-  {
-    slug: "sauna-os",
-    title: "Sauna OS",
-    tagline: "Booking and operations platform for modern sauna businesses.",
-    role: "Founder / Engineer",
-    bullets: [
-      "Multi-tenant booking and operations system with memberships and native upsells.",
-      "Stripe Connect payments so each venue gets paid directly.",
-    ],
-    stack: ["Next.js", "TypeScript", "Supabase", "Stripe Connect"],
-    links: [],
-    image: "",
+    image: "/img/under-the-campanile.png",
   },
   {
     slug: "contrabot",
@@ -100,6 +101,6 @@ export const projects: Project[] = [
     ],
     stack: ["Python", "Anthropic API", "Alpaca"],
     links: [],
-    image: "",
+    image: "/img/contrabot.png",
   },
 ];

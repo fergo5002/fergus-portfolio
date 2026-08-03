@@ -41,6 +41,9 @@
   --scroll-v: 0; /* 0..1 absolute scroll speed */
   --scroll-p: 0; /* 0..1 progress through the document */
   --scanline-intensity: 0.55;
+  /* Rotates the sepia base of the image duotone onto each phosphor. Sepia is
+     already amber, hence 0deg for that theme. */
+  --duotone-hue: 70deg;
 }
 
 /* ----- phosphor themes ---------------------------------------------------
@@ -59,6 +62,7 @@ html[data-theme="amber"] {
   --amber: #9fe8ff;
   --amber-bright: #d6f5ff;
   --glow: 0 0 2px rgba(255, 179, 64, 0.7), 0 0 7px rgba(255, 179, 64, 0.35);
+  --duotone-hue: 0deg;
 }
 
 html[data-theme="ice"] {
@@ -73,6 +77,7 @@ html[data-theme="ice"] {
   --amber: #ffcf70;
   --amber-bright: #ffe3a8;
   --glow: 0 0 2px rgba(143, 220, 255, 0.7), 0 0 7px rgba(143, 220, 255, 0.35);
+  --duotone-hue: 165deg;
 }
 
 * {
@@ -410,12 +415,33 @@ html.crt-off body {
   overflow: hidden;
   background: #060906;
 }
+/* Phosphor duotone so imagery lives inside the CRT world, resolving to full
+   colour on hover — the tint keeps the grid as one world, the reveal is the
+   reward. Done with `filter` alone rather than `mix-blend-mode`, because filters
+   are animatable and a blend-mode swap would snap ugly mid-transition. */
 .imgframe__img {
   object-fit: cover;
-  /* green-duotone tint so photos live in the CRT world; dial down per taste */
-  filter: grayscale(1) brightness(1.05) sepia(1) hue-rotate(70deg) saturate(2.2) contrast(0.95);
-  mix-blend-mode: screen;
-  opacity: 0.92;
+  filter: grayscale(1) sepia(1) hue-rotate(var(--duotone-hue)) saturate(2.6) brightness(1.02)
+    contrast(1.06);
+  transition: filter 420ms ease;
+}
+.imgframe:hover .imgframe__img,
+.tilt.is-live:hover .imgframe__img {
+  filter: none;
+}
+/* No hover on touch, so the reveal can never be earned. Rather than stranding
+   mobile visitors on fully green images (or dropping the tint entirely, which
+   leaves six colour rectangles fighting the terminal around them), settle on a
+   light phosphor cast: the content reads, and it still belongs to the screen. */
+@media (hover: none) {
+  .imgframe__img {
+    filter: grayscale(0.3) sepia(0.34) hue-rotate(var(--duotone-hue)) saturate(1.4) contrast(1.02);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .imgframe__img {
+    transition: none;
+  }
 }
 .imgframe__placeholder {
   position: absolute;

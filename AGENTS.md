@@ -102,7 +102,28 @@ See `docs/PROGRESS.md`.
 ## Content still needing the owner (Fergus)
 
 - **Hatch105 role + dates** — `content/experience.ts`, `hatch105` entry (`[ ROLE — TBC ]`).
-- **Images** — drop into `public/img/`, then set `portrait` in `content/profile.ts` and each
-  project's `image` in `content/projects.ts`. Until set, each slot renders a procedural CRT
-  alignment plate (`SignalPlate`) seeded from the project slug. The plate is deliberately a
-  test card, not a fake screenshot; real files take over automatically with no code change.
+- (Nothing outstanding on images — see below.)
+
+## Images
+
+Everything in `public/img/` is a **derived artefact built by `scripts/build-images.mjs`**. Do not
+hand-edit the PNGs; change the script and re-run `node scripts/build-images.mjs`. Sources live
+outside the repo (Fergus's photo library, the Trinity game project, the live brand marks), and the
+script skips politely with a message when one is missing, so a fresh clone still builds what it can.
+
+- `portrait.jpg` — from `IMG_1018.HEIC`. **sharp cannot decode HEIC** (its libvips has no HEVC
+  decoder; it reads the metadata then fails on the pixels), so the HEIC is decoded to PNG with
+  `ffmpeg` first and the script crops from that.
+- `presterly.png`, `loira.png`, `firecracker.png` — brand marks composited onto 16:9 cards. The
+  Firecracker lockup is white-on-transparent, so it is negated (alpha preserved) to put black ink
+  on white rather than an invisible white-on-white.
+- `remand.png`, `contrabot.png` — authored SVG, rasterised. Deliberately not stock screenshots.
+  In `contrabot`, **all geometry is in screen coordinates where a smaller y is a higher price** —
+  getting that backwards once produced a rising chart captioned as a profitable short.
+- `under-the-campanile.png` — real gameplay, cropped to drop the browser scrollbars.
+
+Any project whose `image` is `""` falls back to `SignalPlate`, a procedural CRT alignment card
+seeded from its slug. That is deliberately a test card, never a fake screenshot.
+
+Imagery is phosphor-duotoned at rest and resolves to full colour on hover (a light cast on touch,
+where there is no hover to earn it). The duotone hue is per-theme via `--duotone-hue`.

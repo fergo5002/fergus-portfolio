@@ -36,7 +36,7 @@ export default function Home() {
                 alt="Portrait of Fergus O'Reilly"
                 label="portrait.jpg"
                 plate="fergus-oreilly"
-                ratio="1 / 1"
+                ratio="4 / 5"
               />
             </div>
           </div>

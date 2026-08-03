@@ -50,5 +50,5 @@ export const profile: Profile = {
       href: "https://www.linkedin.com/in/patrickfergusoreilly/",
     },
   ],
-  portrait: "",
+  portrait: "/img/portrait.jpg",
 };
