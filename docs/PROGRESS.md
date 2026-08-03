@@ -43,6 +43,14 @@ library arsenal, inertial scroll, all four set-pieces, generated placeholders.
       path (no Lenis, static shader, instant reveals, no trail, no screensaver)
 - [x] Tests 16 → 49; `npm run build` clean; all routes still static
 
+> **DEPLOY PENDING — not yet live.** Merged to `main` and pushed (`8d630a7`), but
+> `https://fergus-portfolio.vercel.app` is still serving the pre-v4 build. The Vercel CLI is
+> installed (54.11.1) but reports `Error: Not authorized`, there is no `VERCEL_TOKEN` in the
+> environment, no `auth.json`, and the project is CLI-linked rather than Git-connected, so
+> pushing to `main` triggers no deployment (confirmed by polling the live URL for four minutes
+> after the push). Fergus needs to run `vercel login` once, then `vercel --prod` from the repo
+> root. Everything else is verified; only the deploy step is outstanding.
+
 **Verified before ship:** production build served locally and exercised in a real browser —
 boot, reveals on genuine wheel scroll (6/6 project cards), theme/crt/scanlines commands
 mutating the live DOM and persisting, tab completion, route-change overlay + focus move,
