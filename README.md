@@ -26,23 +26,23 @@ All editable text lives in `content/` — you shouldn't need to touch components
 | ------------------------ | --------------------------------------------------------- |
 | `content/profile.ts`     | Name, tagline, bio, education, contact links, portrait path |
 | `content/experience.ts`  | Presterly (Hatch105), Loira AI, Trinity Student Managed Fund |
-| `content/projects.ts`    | Presterly, Loira AI, Remand, Under the Campanile, Sauna OS, ContraBot |
+| `content/projects.ts`    | Presterly, Firespark, Loira AI, Remand, Under the Campanile, ContraBot |
 | `content/skills.ts`      | Grouped skills readout                                    |
 
-### Things to fill in
+### Images
 
-- **Images** — drop files into `public/img/`, then point the matching entry at them:
-  - Portrait → set `portrait: "/img/portrait.jpg"` in `content/profile.ts`.
-  - Project screenshots → set each project's `image` in `content/projects.ts`
-    (e.g. `image: "/img/larry.png"`).
-  - Until a path is set, the site shows a labelled placeholder box.
+Everything in `public/img/` is built by `node scripts/build-images.mjs`. Don't hand-edit
+the files — change the script and re-run it. See the Images section of `AGENTS.md` for
+where each source comes from and why. Set `image` **and `imageAlt`** together on a
+project; a project with no `image` falls back to a procedural CRT alignment card.
 
 ## Customising the look
 
 The whole CRT theme is driven by CSS variables at the top of `app/globals.css`
 (`--green`, `--amber`, `--bg`, spacing scale, glow). Change those to retune colours.
-The image tint lives in `.imgframe__img` (the `filter:` line) — dial it down or
-remove it if you'd rather show photos in full colour.
+Three phosphor themes ship (`green`, `amber`, `ice`) and are switchable live from the
+site's own terminal with `theme amber`. Imagery is phosphor-tinted at rest and resolves
+to full colour on hover; that tint lives in `.imgframe__img` (the `filter:` line).
 
 Motion (scanline drift, flicker, blinking cursor, boot animation) is automatically
 disabled for visitors who set `prefers-reduced-motion`.

@@ -1,11 +1,9 @@
-# Drop your images here, then point the matching content/*.ts entry at them.
+# Everything in this directory is BUILT, not hand-placed.
 #
-# Suggested files (filenames are up to you — just match them in the content data):
-#   portrait.jpg               -> content/profile.ts  (set `portrait: "/img/portrait.jpg"`)
-#   larry.png                  -> content/projects.ts (set the Larry entry's `image`)
-#   remand.png
-#   under-the-campanile.png
-#   sauna-os.png
-#   contrabot.png
+#   node scripts/build-images.mjs
 #
-# Until a file exists and its path is set, the site shows a labelled placeholder box.
+# That script is the single source of truth for what lands here and where each
+# source comes from. Don't drop files in by hand or edit the outputs — they get
+# overwritten on the next run. To change an image, change the script.
+#
+# See the "Images" section of AGENTS.md for the per-file recipe.

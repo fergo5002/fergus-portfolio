@@ -92,43 +92,80 @@ async function campanile() {
 // Rebuilt in Firespark's own design language rather than just dropping the logo
 // on a blank card: the ember spark and wordmark lockup from its header, its
 // near-black on white, and its own product line underneath.
-const EMBER = "#E0501E";
 const FIRESPARK_INK = "#0A0C10";
+const FIRESPARK_FONT = "Inter, 'Segoe UI', Helvetica, Arial, sans-serif";
+
+/**
+ * Render a line of text and trim it to its real ink, returning the buffer and
+ * its true pixel width.
+ *
+ * The lockup has to be centred as a unit, which needs the wordmark's width. That
+ * width cannot be predicted: the font stack resolves differently per machine
+ * (Inter is not actually installed here, so this falls through to Segoe UI, and
+ * a bare Linux box would land somewhere else again). Estimating it from a
+ * per-glyph average would silently drift off-centre, or overlap the mark. So
+ * measure the pixels instead of guessing at them.
+ */
+async function measuredText(text, { size, weight = 400, fill, tracking = 0 }) {
+  const pad = 40;
+  const box = Math.ceil(size * text.length * 1.2) + pad * 2;
+  const markup = svg(`
+<svg xmlns="http://www.w3.org/2000/svg" width="${box}" height="${Math.ceil(size * 2)}">
+  <text x="${pad}" y="${Math.round(size * 1.2)}" font-family="${FIRESPARK_FONT}"
+        font-size="${size}" font-weight="${weight}" letter-spacing="${tracking}"
+        fill="${fill}">${text}</text>
+</svg>`);
+  const { data, info } = await sharp(markup)
+    .png()
+    .trim({ threshold: 1 })
+    .toBuffer({ resolveWithObject: true });
+  return { buffer: data, width: info.width, height: info.height };
+}
 
 async function firespark() {
   const src = join(SOURCES, "firespark-spark.svg");
   if (!existsSync(src)) return skip("firespark.png", "vendored spark mark missing");
 
-  // The mark is square (24x24 viewBox), so its rendered width equals its height.
-  // Everything else is positioned off that, keeping the lockup centred as a unit
-  // instead of guessing at absolute coordinates and running off the card edge.
-  const SPARK = 112;
+  const SPARK = 112; // the mark is square (24x24 viewBox), so width === height
   const GAP = 24;
-  const FONT = 82;
-  // "Firespark" is 9 glyphs; ~0.53em average advance for a bold grotesque.
-  const wordWidth = Math.round(9 * FONT * 0.53);
-  const lockup = SPARK + GAP + wordWidth;
-  const startX = Math.round((CARD_W - lockup) / 2);
   const midY = 250;
 
   const spark = await sharp(src, { density: 700 }).resize({ height: SPARK }).toBuffer();
+  const word = await measuredText("Firespark", {
+    size: 82,
+    weight: 700,
+    fill: FIRESPARK_INK,
+    tracking: -2.5,
+  });
+  const tag = await measuredText("Booking and operations software for saunas", {
+    size: 26,
+    fill: "#5b636e",
+  });
 
-  const type = svg(`
-<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_W}" height="${CARD_H}">
-  <text x="${startX + SPARK + GAP}" y="${midY + Math.round(FONT * 0.36)}"
-        font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif"
-        font-size="${FONT}" font-weight="700" letter-spacing="-2.5" fill="${FIRESPARK_INK}">Firespark</text>
-  <text x="${CARD_W / 2}" y="${midY + 118}" text-anchor="middle"
-        font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif"
-        font-size="26" fill="#5b636e">Booking and operations software for saunas</text>
-</svg>`);
+  const lockup = SPARK + GAP + word.width;
+  const startX = Math.round((CARD_W - lockup) / 2);
+
+  if (startX < 0) {
+    throw new Error(
+      `firespark: lockup is ${lockup}px, wider than the ${CARD_W}px card. Reduce the font size.`,
+    );
+  }
 
   const info = await sharp({
     create: { width: CARD_W, height: CARD_H, channels: 4, background: "#ffffff" },
   })
     .composite([
       { input: spark, left: startX, top: midY - Math.round(SPARK / 2) },
-      { input: type, left: 0, top: 0 },
+      {
+        input: word.buffer,
+        left: startX + SPARK + GAP,
+        top: midY - Math.round(word.height / 2),
+      },
+      {
+        input: tag.buffer,
+        left: Math.round((CARD_W - tag.width) / 2),
+        top: midY + 96,
+      },
     ])
     .png({ compressionLevel: 9 })
     .toFile(join(OUT, "firespark.png"));
