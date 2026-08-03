@@ -45,6 +45,15 @@ export type SystemFrame = {
   scrollProgress: number;
   /** performance.now() of the last degauss pulse, or -Infinity when idle. */
   degaussAt: number;
+  /** performance.now() of the last tap, or -Infinity when idle. */
+  tapAt: number;
+  /** Where that tap landed, in 0..1 viewport space. */
+  tapX: number;
+  tapY: number;
+  /** 1 while a finger is held down. Distinct from `pointerActive`, which a mouse
+   *  raises merely by existing — on touch there is no hover, so "is the user
+   *  touching the glass right now" is its own signal. */
+  touchDown: number;
   /** performance.now() until which digital rain is boosted to full. */
   rainBoostUntil: number;
   /** 0 while booting, 1 once the desktop is live. Fades the shader in. */
@@ -66,6 +75,10 @@ export function createSystemFrame(): SystemFrame {
     scrollVelocity: 0,
     scrollProgress: 0,
     degaussAt: -Infinity,
+    tapAt: -Infinity,
+    tapX: 0.5,
+    tapY: 0.5,
+    touchDown: 0,
     rainBoostUntil: -Infinity,
     live: 1,
     targetLive: 1,

@@ -45,6 +45,8 @@ uniform float uIntensity;    // master CRT intensity (0 when "crt off")
 uniform float uScanlines;    // 0..1 user setting
 uniform vec3  uPhosphor;
 uniform float uMobile;       // 1.0 on small screens: cheaper path
+uniform float uTap;          // seconds since the last tap; 999 = idle
+uniform vec2  uTapPos;       // where that tap landed, in UV
 
 const vec3 BASE = vec3(0.039, 0.055, 0.039);
 
@@ -114,14 +116,32 @@ void main() {
   float aspect = uResolution.x / max(uResolution.y, 1.0);
   float glow = 0.0;
 
-  // ── magnetic deflection around the cursor ────────────────────────────────
-  if (uMobile < 0.5 && uPointerActive > 0.01) {
+  // ── magnetic deflection around the pointer ───────────────────────────────
+  // On a phone this is the finger, and uPointerActive decays to zero the moment
+  // it lifts — so the ripple only ever costs anything while someone is actually
+  // touching the glass. That is why it is no longer mobile-gated: the cost is
+  // already paid for by the interaction that asked for it.
+  // (No backticks in here: this whole shader is a template literal.)
+  if (uPointerActive > 0.01) {
     vec2 toP = uv - uPointer;
     toP.x *= aspect;
     float d = length(toP);
     float ripple = sin(d * 34.0 - t * 2.6) * exp(-d * 7.0);
     uv += normalize(toP + 1e-5) * ripple * 0.0045 * uPointerActive;
     glow += exp(-d * 5.0) * 0.05 * uPointerActive;
+  }
+
+  // ── tap shockwave, centred on the point touched ──────────────────────────
+  // The same physics as the degauss below, but originating where the finger
+  // landed rather than at the centre of the tube: a tap is a knock on the glass.
+  if (uTap < 1.6) {
+    vec2 toT = uv - uTapPos;
+    toT.x *= aspect;
+    float d = length(toT);
+    float radius = uTap * 0.72;
+    float band = exp(-pow((d - radius) * 9.0, 2.0)) * exp(-uTap * 2.2);
+    uv += normalize(toT + 1e-5) * band * 0.04;
+    glow += band * 0.5;
   }
 
   // ── degauss shockwave ────────────────────────────────────────────────────
@@ -205,6 +225,16 @@ export default function PhosphorScreen() {
     const host = hostRef.current;
     if (!host) return;
 
+    // A phone's fragment budget is the binding constraint on this whole site
+    // (measured: DPR-2 fullscreen rain ran the tube at 1 fps on iPhone WebKit),
+    // so mobile renders the tube at well under device resolution and lets the
+    // browser upscale. The scanlines and grille hide the resample completely —
+    // this is a CRT, softness is the point — and it cuts the fragment count by
+    // roughly 11x against the old DPR-2 path.
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    const isSmall = coarse || window.innerWidth < 768;
+    const targetDpr = isSmall ? 0.6 : Math.min(window.devicePixelRatio || 1, 2);
+
     let renderer: Renderer;
     try {
       renderer = new Renderer({
@@ -212,11 +242,14 @@ export default function PhosphorScreen() {
         antialias: false,
         depth: false,
         stencil: false,
-        dpr: Math.min(window.devicePixelRatio || 1, 2),
+        dpr: targetDpr,
         powerPreference: "low-power",
       });
     } catch {
-      // No WebGL: the CSS scanline/vignette layers alone still read as a CRT.
+      // No WebGL. Flag it so the CSS falls back to a static scanline layer —
+      // without this the site would have no scanlines at all, since the shader
+      // is normally the only thing drawing them.
+      document.documentElement.classList.add("no-webgl");
       return;
     }
 
@@ -240,6 +273,8 @@ export default function PhosphorScreen() {
         uScanlines: { value: 0.55 },
         uPhosphor: { value: THEME_PHOSPHOR.green },
         uMobile: { value: 0 },
+        uTap: { value: 999 },
+        uTapPos: { value: [0.5, 0.5] },
       },
     });
 
@@ -254,22 +289,43 @@ export default function PhosphorScreen() {
     let degraded = false;
     let lowFrames = 0;
 
+    // Mobile browsers fire `resize` every time the URL bar collapses, and the
+    // canvas is sized in `innerHeight` px while its CSS box is `100dvh` — so a
+    // naive handler would resize the drawing buffer (an expensive reallocation)
+    // on every flick of a scroll. Only react when the width actually changes, or
+    // when the height moves by more than the toolbar's own height.
+    let lastW = 0;
+    let lastH = 0;
     const resize = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
+      if (w === lastW && Math.abs(h - lastH) < 120) return;
+      lastW = w;
+      lastH = h;
       renderer.setSize(w, h);
       u.uResolution.value = [gl.canvas.width, gl.canvas.height];
-      u.uMobile.value = degraded || w < 768 ? 1 : 0;
+      u.uMobile.value = degraded || isSmall || w < 768 ? 1 : 0;
     };
     resize();
     window.addEventListener("resize", resize, { passive: true });
 
+    // Half-rate on mobile. The ambient layer is rain and a slow hum bar; neither
+    // reads any differently at 30 fps, and the halved GPU work is the difference
+    // between the content scrolling smoothly and not.
+    const minFrameMs = isSmall ? 1000 / 30 : 0;
+    let lastDrawn = -Infinity;
+
     const draw = (time: number) => {
+      if (time - lastDrawn < minFrameMs) return;
+      lastDrawn = time;
+
       const f = frame.current;
       const s = settingsRef.current;
       const now = performance.now();
 
       u.uTime.value = time / 1000;
+      u.uTap.value = Number.isFinite(f.tapAt) ? (now - f.tapAt) / 1000 : 999;
+      u.uTapPos.value = [f.tapX, 1 - f.tapY]; // GL origin is bottom-left
       u.uPointer.value = [f.pointerX, 1 - f.pointerY]; // GL origin is bottom-left
       u.uPointerActive.value = f.pointerActive;
       u.uScrollVel.value = f.scrollVelocity;

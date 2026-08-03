@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { THEME_PHOSPHOR } from "@/lib/system";
 import { useSystem } from "./SystemProvider";
 
@@ -18,13 +18,27 @@ import { useSystem } from "./SystemProvider";
 export default function CursorTrail() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { frame, onFrame, reducedMotion, settings } = useSystem();
+  // The canvas is never committed to the DOM on a phone. It used to mount and
+  // simply never draw, leaving a 300x150 backing buffer stretched over the whole
+  // viewport under `mix-blend-mode: screen` — a permanent compositing layer
+  // rendering nothing. The finger's own phosphor glow is drawn by the shader.
+  //
+  // Decided in an effect, starting `false`, rather than in a lazy initialiser:
+  // the server cannot know the pointer type, so resolving it during the first
+  // client render makes the client's tree differ from the server's and React
+  // fails hydration (#418). Starting false means both agree, and the trail — a
+  // decorative, aria-hidden layer — simply arrives one tick later on a mouse.
+  const [enabled, setEnabled] = useState(false);
 
   const themeRef = useRef(settings.theme);
   themeRef.current = settings.theme;
 
   useEffect(() => {
-    if (reducedMotion) return;
-    if (window.matchMedia("(pointer: coarse)").matches) return;
+    setEnabled(!reducedMotion && !window.matchMedia("(pointer: coarse)").matches);
+  }, [reducedMotion]);
+
+  useEffect(() => {
+    if (!enabled) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -87,8 +101,8 @@ export default function CursorTrail() {
       unsubscribe();
       window.removeEventListener("resize", resize);
     };
-  }, [frame, onFrame, reducedMotion]);
+  }, [frame, onFrame, enabled]);
 
-  if (reducedMotion) return null;
+  if (!enabled) return null;
   return <canvas ref={canvasRef} className="cursortrail" aria-hidden="true" />;
 }
