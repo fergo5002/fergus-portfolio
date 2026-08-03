@@ -1,0 +1,277 @@
+"use client";
+
+import { ReactLenis } from "lenis/react";
+import type { LenisRef } from "lenis/react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import type { ReactNode } from "react";
+import {
+  DEFAULT_SETTINGS,
+  createSystemFrame,
+  loadSettings,
+  saveSettings,
+} from "@/lib/system";
+import type { SystemFrame, SystemSettings, Theme } from "@/lib/system";
+
+/**
+ * A frame callback. Receives the rAF timestamp and the clamped delta in ms.
+ * Subscribers read per-frame values straight off the frame ref — they must not
+ * call setState from here.
+ */
+export type FrameCallback = (time: number, dt: number) => void;
+
+type SystemContextValue = {
+  /** Live, mutated-in-place per-frame values. Read inside a frame callback. */
+  frame: { current: SystemFrame };
+  settings: SystemSettings;
+  reducedMotion: boolean;
+  setTheme: (theme: Theme) => void;
+  setCrtEnabled: (enabled: boolean) => void;
+  setScanlines: (value: number) => void;
+  /** Fire the magnetic-deflection shockwave. */
+  degauss: () => void;
+  /** Drive digital rain to full for `ms`, then let it decay back. */
+  burstRain: (ms: number) => void;
+  /** Subscribe to the single system frame loop. Returns an unsubscribe fn. */
+  onFrame: (cb: FrameCallback) => () => void;
+  /** Scroll to a y position (or element) through Lenis when it is mounted. */
+  scrollTo: (target: number | string | HTMLElement) => void;
+};
+
+/**
+ * An inert default so any component using `useSystem()` still renders outside a
+ * provider (SSR of an isolated component, unit tests, Storybook-style usage)
+ * instead of throwing.
+ */
+const INERT: SystemContextValue = {
+  frame: { current: createSystemFrame() },
+  settings: DEFAULT_SETTINGS,
+  reducedMotion: false,
+  setTheme: () => {},
+  setCrtEnabled: () => {},
+  setScanlines: () => {},
+  degauss: () => {},
+  burstRain: () => {},
+  onFrame: () => () => {},
+  scrollTo: () => {},
+};
+
+const SystemContext = createContext<SystemContextValue>(INERT);
+
+export function useSystem(): SystemContextValue {
+  return useContext(SystemContext);
+}
+
+const LENIS_OPTIONS = {
+  // Short and firm. Long durations read as lag on a site people came to skim.
+  duration: 0.9,
+  lerp: 0.11,
+  smoothWheel: true,
+  wheelMultiplier: 1,
+  touchMultiplier: 1.6,
+  autoRaf: false,
+} as const;
+
+/**
+ * Owns the single frame clock for the whole site. Lenis, the WebGL phosphor
+ * layer, the cursor trail and the status bar all tick from here, so scroll,
+ * springs and shader time can never drift apart.
+ *
+ * Under `prefers-reduced-motion` Lenis is not mounted at all (native scroll is
+ * restored) and the loop still runs, but at a much lower cost — subscribers
+ * check `reducedMotion` and render static.
+ */
+export default function SystemProvider({ children }: { children: ReactNode }) {
+  const frame = useRef<SystemFrame>(createSystemFrame());
+  const lenisRef = useRef<LenisRef>(null);
+  const subscribers = useRef<Set<FrameCallback>>(new Set());
+
+  const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // ── settings: hydrate from storage, then keep the DOM in sync ──────────────
+  useEffect(() => {
+    setSettings(loadSettings());
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const root = document.documentElement;
+    root.dataset.theme = settings.theme;
+    root.classList.toggle("crt-off", !settings.crtEnabled);
+    root.style.setProperty("--scanline-intensity", String(settings.scanlines));
+    saveSettings(settings);
+  }, [settings, mounted]);
+
+  // ── reduced motion, watched live so a system-preference change takes hold ──
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => setReducedMotion(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  // ── pointer tracking (ref only — never state, this fires constantly) ───────
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const f = frame.current;
+      f.pointerX = e.clientX / window.innerWidth;
+      f.pointerY = e.clientY / window.innerHeight;
+      f.pointerTargetActive = 1;
+    };
+    const onLeave = () => {
+      frame.current.pointerTargetActive = 0;
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    document.addEventListener("pointerleave", onLeave);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      document.removeEventListener("pointerleave", onLeave);
+    };
+  }, []);
+
+  // ── the one frame loop ─────────────────────────────────────────────────────
+  useEffect(() => {
+    const f = frame.current;
+    const startedAt = performance.now();
+    let raf = 0;
+    let last = startedAt;
+    let lastScrollY = window.scrollY;
+    // Only write CSS variables when they move meaningfully; a style write every
+    // frame on <html> is a needless invalidation.
+    let publishedVel = -1;
+    let publishedProg = -1;
+
+    const loop = (time: number) => {
+      raf = requestAnimationFrame(loop);
+      const dt = Math.min(64, Math.max(1, time - last));
+      last = time;
+
+      lenisRef.current?.lenis?.raf(time);
+
+      f.uptimeMs = time - startedAt;
+      f.fps += (1000 / dt - f.fps) * 0.08;
+
+      // Scroll velocity: Lenis reports its own smoothed velocity; without it we
+      // difference the native scroll position. Normalised so an ordinary brisk
+      // scroll lands near 1.
+      const lenis = lenisRef.current?.lenis;
+      let raw: number;
+      if (lenis) {
+        raw = lenis.velocity;
+        f.scrollProgress = Number.isFinite(lenis.progress) ? lenis.progress : 0;
+      } else {
+        const y = window.scrollY;
+        raw = ((y - lastScrollY) * 16.67) / dt;
+        lastScrollY = y;
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        f.scrollProgress = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
+      }
+      const target = Math.max(-2, Math.min(2, raw / 45));
+      f.scrollVelocity += (target - f.scrollVelocity) * 0.18;
+
+      f.pointerActive += (f.pointerTargetActive - f.pointerActive) * 0.09;
+      f.live += (f.targetLive - f.live) * 0.05;
+
+      const absVel = Math.min(1, Math.abs(f.scrollVelocity));
+      if (Math.abs(absVel - publishedVel) > 0.012) {
+        publishedVel = absVel;
+        document.documentElement.style.setProperty("--scroll-v", absVel.toFixed(3));
+      }
+      if (Math.abs(f.scrollProgress - publishedProg) > 0.004) {
+        publishedProg = f.scrollProgress;
+        document.documentElement.style.setProperty("--scroll-p", f.scrollProgress.toFixed(3));
+      }
+
+      if (document.hidden) return;
+      subscribers.current.forEach((cb) => cb(time, dt));
+    };
+
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
+  const onFrame = useCallback((cb: FrameCallback) => {
+    subscribers.current.add(cb);
+    return () => {
+      subscribers.current.delete(cb);
+    };
+  }, []);
+
+  const degauss = useCallback(() => {
+    frame.current.degaussAt = performance.now();
+  }, []);
+
+  const burstRain = useCallback((ms: number) => {
+    frame.current.rainBoostUntil = performance.now() + ms;
+  }, []);
+
+  const scrollTo = useCallback((target: number | string | HTMLElement) => {
+    const lenis = lenisRef.current?.lenis;
+    if (lenis) {
+      lenis.scrollTo(target as never, { offset: -80 });
+      return;
+    }
+    if (typeof target === "number") {
+      window.scrollTo({ top: target });
+      return;
+    }
+    const el = typeof target === "string" ? document.querySelector(target) : target;
+    el?.scrollIntoView({ block: "start" });
+  }, []);
+
+  const setTheme = useCallback((theme: Theme) => setSettings((s) => ({ ...s, theme })), []);
+  const setCrtEnabled = useCallback(
+    (crtEnabled: boolean) => setSettings((s) => ({ ...s, crtEnabled })),
+    [],
+  );
+  const setScanlines = useCallback(
+    (value: number) => setSettings((s) => ({ ...s, scanlines: Math.min(1, Math.max(0, value)) })),
+    [],
+  );
+
+  const value = useMemo<SystemContextValue>(
+    () => ({
+      frame,
+      settings,
+      reducedMotion,
+      setTheme,
+      setCrtEnabled,
+      setScanlines,
+      degauss,
+      burstRain,
+      onFrame,
+      scrollTo,
+    }),
+    [
+      settings,
+      reducedMotion,
+      setTheme,
+      setCrtEnabled,
+      setScanlines,
+      degauss,
+      burstRain,
+      onFrame,
+      scrollTo,
+    ],
+  );
+
+  return (
+    <SystemContext.Provider value={value}>
+      {/* Inertial scroll is the point of the effect, but it is motion — so under
+          `reduce` we simply never mount it and the browser's native scroll stands. */}
+      {!reducedMotion && <ReactLenis root options={LENIS_OPTIONS} ref={lenisRef} />}
+      {children}
+    </SystemContext.Provider>
+  );
+}

@@ -5,12 +5,49 @@
 
 **Project:** FergusOS Terminal portfolio (`C:\Dev\fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
-**Status (2026-07-14):** content refresh shipped — Presterly (Co-Founder & CTO, Hatch105)
-replaces the `[ ROLE — TBC ]` Hatch placeholder as the lead experience entry and top project;
-Larry renamed to Loira AI with corrected dates (Feb–Jun 2026) and the loira.ai link; bio,
-highlights, and page metadata updated to match. Design untouched.
+**Status (2026-08-03):** **v4 "Phosphor" motion system shipped.** The site now behaves like a
+CRT rather than depicting one — a single WebGL shader owns the tube (glyph rain, aperture
+grille, scroll-driven beam smear, cursor magnetism, degauss), Lenis drives inertial scroll,
+the terminal became a real mini-OS whose commands rewrite the live site, and cards/timelines
+paint themselves in as the beam reaches them. Spec:
+`docs/superpowers/specs/2026-08-03-phosphor-motion-system-design.md`.
+
+Previous (2026-07-14): content refresh — Presterly (Co-Founder & CTO, Hatch105) replaces the
+`[ ROLE — TBC ]` Hatch placeholder as the lead experience entry and top project; Larry renamed
+to Loira AI with corrected dates (Feb–Jun 2026) and the loira.ai link.
 
 ---
+
+## v4 "Phosphor" — shipped 2026-08-03
+
+Branch `feat/phosphor-motion-system`. Design forks were settled with Fergus up front: full
+library arsenal, inertial scroll, all four set-pieces, generated placeholders.
+
+- [x] `SystemProvider` — one rAF clock driving Lenis, shader, trail and status bar; per-frame
+      state on a ref (never React state); settings persisted + restored pre-paint
+- [x] `PhosphorScreen` — OGL fullscreen-quad GLSL: dot-matrix glyph rain, aperture grille,
+      scanlines, barrel curve, hum bar, scroll-velocity beam smear + chromatic aberration,
+      cursor magnetic ripple, degauss shockwave, three phosphor palettes, adaptive quality
+- [x] `RasterReveal` — the house reveal (block paints in behind a travelling beam line)
+- [x] Hero — per-character magnetic repulsion with RGB convergence loss
+- [x] Boot — BIOS header, counting memory test, device list, loading bar, degauss → power-on
+- [x] Terminal → mini-OS — tab completion with ghost text, ↑/↓ history, Ctrl+L, and commands
+      that genuinely rewrite the site (`theme`, `crt`, `scanlines`, `matrix`, `degauss`,
+      `neofetch`, `top`, `uptime`, `resume`, `open`, `sudo rm -rf /` → reboot)
+- [x] Living cards — decrypt-on-scroll titles, cursor tilt + specular glare, perimeter beam
+      trace, per-project signal meter; experience timeline draws its own spine
+- [x] Ambient life — status bar (uptime/pwd/memory address/fps/coords), phosphor cursor trail,
+      channel-change route transitions, 45s idle screensaver
+- [x] `SignalPlate` — procedural per-project CRT alignment plates for empty image slots
+- [x] Accessibility — skip link, focus moved to `main` on route change, full reduced-motion
+      path (no Lenis, static shader, instant reveals, no trail, no screensaver)
+- [x] Tests 16 → 49; `npm run build` clean; all routes still static
+
+**Verified before ship:** production build served locally and exercised in a real browser —
+boot, reveals on genuine wheel scroll (6/6 project cards), theme/crt/scanlines commands
+mutating the live DOM and persisting, tab completion, route-change overlay + focus move,
+screensaver appearing at 45s and waking on input, reduced-motion emulation, 390px mobile with
+no horizontal overflow. 88–94 fps on desktop viewport.
 
 ## Done
 

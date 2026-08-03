@@ -1,0 +1,27 @@
+# Production-parity check container.
+#
+# Not a deployment artefact — the site ships to Vercel. This exists to prove the
+# build succeeds from a clean lockfile install on the Node version Vercel runs,
+# rather than only on a laptop with a warm node_modules. Run it before shipping:
+#
+#   docker build -f Dockerfile.parity -t fergus-portfolio-parity .
+#   docker run --rm -p 3200:3000 fergus-portfolio-parity
+#
+FROM node:24-bookworm-slim
+
+WORKDIR /app
+
+# Install from the lockfile only, so a dependency missing from package.json fails
+# here instead of in production.
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+
+RUN npm run build
+RUN npm test
+
+ENV NODE_ENV=production
+ENV PORT=3000
+EXPOSE 3000
+CMD ["npm", "start"]

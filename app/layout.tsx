@@ -3,6 +3,7 @@ import { JetBrains_Mono, VT323 } from "next/font/google";
 import "./globals.css";
 import CrtShell from "@/components/CrtShell";
 import Nav from "@/components/Nav";
+import SystemProvider from "@/components/system/SystemProvider";
 import { profile } from "@/content/profile";
 
 const mono = JetBrains_Mono({
@@ -40,25 +41,44 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <script
-          // Runs before first paint: only on the landing page ("/"), if this session
-          // hasn't booted and the user allows motion, mark <html> as .booting so CSS
-          // hides content until the boot overlay takes over. Prevents the content-
-          // flash-then-boot bug. Path-gated because BootSequence (which clears the
-          // flag) only mounts on "/" — other routes must never get stuck hidden.
+          // Runs before first paint and does three things:
+          //
+          //  1. Flags `.js` on <html>. Scroll reveals hide their content behind this
+          //     class only, so a visitor without JavaScript is never left staring at
+          //     a permanently clipped block.
+          //  2. Restores the saved phosphor theme before paint, so a returning
+          //     visitor on amber never sees a flash of green.
+          //  3. On the landing page only, if this session hasn't booted and the user
+          //     allows motion, marks <html> as .booting so CSS hides content until the
+          //     boot overlay takes over. Path-gated because BootSequence (which clears
+          //     the flag) only mounts on "/" — other routes must never get stuck hidden.
           dangerouslySetInnerHTML={{
             __html:
-              "(function(){try{if(location.pathname!=='/')return;" +
+              "(function(){var d=document.documentElement;d.classList.add('js');" +
+              "try{var s=JSON.parse(localStorage.getItem('fergusos_settings')||'{}');" +
+              "if(s.theme)d.dataset.theme=s.theme;" +
+              "if(s.crtEnabled===false)d.classList.add('crt-off');" +
+              "if(typeof s.scanlines==='number')d.style.setProperty('--scanline-intensity',String(s.scanlines));" +
+              "}catch(e){}" +
+              "try{if(location.pathname!=='/')return;" +
               "var b=sessionStorage.getItem('fergusos_booted');" +
               "var r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;" +
-              "if(!b&&!r){document.documentElement.classList.add('booting');}}catch(e){}})();",
+              "if(!b&&!r){d.classList.add('booting');}}catch(e){}})();",
           }}
         />
       </head>
       <body>
-        <CrtShell>
-          <Nav />
-          <main className="screen">{children}</main>
-        </CrtShell>
+        <a href="#main" className="skiplink">
+          skip to content
+        </a>
+        <SystemProvider>
+          <CrtShell>
+            <Nav />
+            <main id="main" className="screen">
+              {children}
+            </main>
+          </CrtShell>
+        </SystemProvider>
       </body>
     </html>
   );
