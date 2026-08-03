@@ -94,7 +94,17 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
   const subscribers = useRef<Set<FrameCallback>>(new Set());
 
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  // Resolved during the very first client render, not in an effect. ReactLenis
+  // constructs the real Lenis instance (and attaches its wheel listeners) in its
+  // OWN effect, and React runs child effects before parent ones — so deciding
+  // this in an effect here would let Lenis briefly go live for a reduced-motion
+  // user before we could unmount it. Safe for SSR: ReactLenis renders null with
+  // no children, so server and client produce identical DOM either way.
+  const [reducedMotion, setReducedMotion] = useState<boolean>(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
   const [mounted, setMounted] = useState(false);
 
   // ── settings: hydrate from storage, then keep the DOM in sync ──────────────

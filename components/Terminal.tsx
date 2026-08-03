@@ -105,10 +105,23 @@ export default function Terminal() {
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    // Escape always releases the field, whatever else is going on.
+    if (e.key === "Escape") {
+      e.currentTarget.blur();
+      return;
+    }
+
     if (e.key === "Tab") {
-      e.preventDefault();
+      // Never swallow Shift+Tab, and only swallow forward Tab when there is
+      // genuinely something left to complete. Otherwise this input becomes a
+      // keyboard trap: focus could never move past the terminal in either
+      // direction, which strands keyboard users before the rest of the page
+      // (WCAG 2.1.2). Pressing Tab once completes; pressing it again moves on.
+      if (e.shiftKey) return;
       const completed = complete(value);
-      if (completed && completed !== value) setValue(completed);
+      if (!completed || completed === value) return;
+      e.preventDefault();
+      setValue(completed);
       return;
     }
 

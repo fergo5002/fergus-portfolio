@@ -1068,10 +1068,14 @@ html.crt-off body {
   top: 0;
   width: 2px;
   height: 100%;
-  transform: scaleY(0);
   transform-origin: top;
   background: linear-gradient(var(--green-bright), var(--green));
   box-shadow: 0 0 10px var(--green-faint);
+}
+/* Only start collapsed when JS is there to draw it. Without JS the line simply
+   stands, which is what it would have done before it learned to animate. */
+html.js .exp__spine {
+  transform: scaleY(0);
 }
 
 /* ----- status bar --------------------------------------------------------- */
