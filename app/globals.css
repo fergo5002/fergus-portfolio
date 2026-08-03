@@ -31,9 +31,48 @@
   --sp-6: 48px;
 
   --nav-h: 44px;
+  --status-h: 26px;
   --maxw: 1040px;
   --radius: 6px;
   --glow: 0 0 2px rgba(51, 255, 102, 0.7), 0 0 7px rgba(51, 255, 102, 0.35);
+
+  /* Live values published by the system frame loop. Declared here so every rule
+     that reads them has a sane value before the first frame lands. */
+  --scroll-v: 0; /* 0..1 absolute scroll speed */
+  --scroll-p: 0; /* 0..1 progress through the document */
+  --scanline-intensity: 0.55;
+}
+
+/* ----- phosphor themes ---------------------------------------------------
+   Swapped live by the `theme` command and restored pre-paint from localStorage.
+   Only the palette changes; every other rule reads these variables. The shader's
+   matching colours live in THEME_PHOSPHOR in lib/system.ts. */
+html[data-theme="amber"] {
+  --bg: #0e0a04;
+  --bg-panel: #140d05;
+  --bg-panel-2: #1a1108;
+  --green: #ffb340;
+  --green-bright: #ffd694;
+  --green-dim: #a86a10;
+  --green-faint: rgba(255, 179, 64, 0.55);
+  --green-line: rgba(255, 179, 64, 0.24);
+  --amber: #9fe8ff;
+  --amber-bright: #d6f5ff;
+  --glow: 0 0 2px rgba(255, 179, 64, 0.7), 0 0 7px rgba(255, 179, 64, 0.35);
+}
+
+html[data-theme="ice"] {
+  --bg: #05090e;
+  --bg-panel: #070d14;
+  --bg-panel-2: #0a121b;
+  --green: #8fdcff;
+  --green-bright: #d7f2ff;
+  --green-dim: #3d7f99;
+  --green-faint: rgba(143, 220, 255, 0.55);
+  --green-line: rgba(143, 220, 255, 0.24);
+  --amber: #ffcf70;
+  --amber-bright: #ffe3a8;
+  --glow: 0 0 2px rgba(143, 220, 255, 0.7), 0 0 7px rgba(143, 220, 255, 0.35);
 }
 
 * {
@@ -48,6 +87,42 @@ body {
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Lenis owns scrolling when it is mounted; native smooth scrolling would fight
+   it. These are the library's required host styles. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* Keyboard users get a way past the chrome before anything else. */
+.skiplink {
+  position: fixed;
+  top: -60px;
+  left: var(--sp-3);
+  z-index: 10000;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--bg-panel-2);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  border-radius: var(--radius);
+  transition: top 0.15s ease;
+}
+.skiplink:focus {
+  top: var(--sp-2);
 }
 
 body {
@@ -119,7 +194,7 @@ ul {
     rgba(0, 0, 0, 0.28) 3px
   );
   background-size: 100% 3px;
-  opacity: 0.55;
+  opacity: var(--scanline-intensity);
 }
 .crt__vignette {
   background:
@@ -132,28 +207,76 @@ ul {
   z-index: 8999;
 }
 
-/* Ambient digital-rain canvas: fixed, full-viewport, behind content (.crt__screen
-   is z-index:1) and non-interactive. Kept very low-opacity so text stays legible. */
-.glyphfield {
+/* The tube. A fixed full-viewport WebGL canvas behind all content
+   (.crt__screen is z-index:1) and non-interactive. Brightness is controlled
+   inside the shader rather than by CSS opacity, so the base colour stays exactly
+   --bg and text contrast is unaffected. */
+.phosphor {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100dvh;
   z-index: 0;
-  opacity: 0.12;
   pointer-events: none;
 }
+.phosphor__canvas {
+  display: block;
+  width: 100vw;
+  height: 100dvh;
+}
 @media (max-width: 768px) {
-  .glyphfield {
-    opacity: 0.08; /* even subtler on mobile */
+  .phosphor {
+    opacity: 0.75;
   }
+}
+
+/* Phosphor persistence behind the cursor. Above content so the glow falls over
+   panels, but faint enough never to touch legibility. */
+.cursortrail {
+  position: fixed;
+  inset: 0;
+  z-index: 8998;
+  width: 100vw;
+  height: 100dvh;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: screen;
+}
+
+/* Specular sheen on the glass. The highlight slides with scroll velocity, which
+   is what makes the screen read as a curved physical surface you are moving past
+   rather than a flat backdrop. */
+.crt__glass {
+  position: fixed;
+  inset: 0;
+  z-index: 8997;
+  pointer-events: none;
+  background: linear-gradient(
+    calc(104deg + var(--scroll-v) * 8deg),
+    rgba(255, 255, 255, 0) 38%,
+    rgba(255, 255, 255, calc(0.012 + var(--scroll-v) * 0.02)) 47%,
+    rgba(255, 255, 255, 0) 56%
+  );
+}
+
+/* "crt off" strips the illusion back to flat pixels. */
+html.crt-off .crt__scanlines,
+html.crt-off .crt__vignette,
+html.crt-off .crt__glass,
+html.crt-off .crt__flicker,
+html.crt-off .cursortrail {
+  display: none;
+}
+html.crt-off body {
+  text-shadow: none;
 }
 
 /* ----- layout ------------------------------------------------------------ */
 .screen {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: calc(var(--nav-h) + var(--sp-5)) var(--sp-4) var(--sp-6);
+  padding: calc(var(--nav-h) + var(--sp-5)) var(--sp-4) calc(var(--sp-6) + var(--status-h));
+}
+.screen:focus {
+  outline: none;
 }
 .stack {
   display: flex;
@@ -184,6 +307,19 @@ ul {
   font-size: 0.86rem;
   overflow-x: auto;
   white-space: nowrap;
+}
+/* Reading progress, drawn along the bottom edge of the nav. */
+.nav::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 100%;
+  height: 1px;
+  background: var(--amber);
+  box-shadow: 0 0 8px var(--amber);
+  transform: scaleX(var(--scroll-p));
+  transform-origin: left;
 }
 .nav__prompt {
   color: var(--green-dim);
@@ -284,25 +420,30 @@ ul {
 .imgframe__placeholder {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--sp-2);
-  color: var(--green-dim);
-  font-size: 0.85rem;
-  text-align: center;
-  padding: var(--sp-3);
-  background-image: repeating-linear-gradient(
-      45deg,
-      rgba(51, 255, 102, 0.06) 0,
-      rgba(51, 255, 102, 0.06) 1px,
-      transparent 1px,
-      transparent 7px
-    );
+  color: var(--green);
 }
-.imgframe__placeholder-mark {
-  font-size: 1.8rem;
+/* The procedural alignment plate. Every stroke uses currentColor, so it
+   recolours with the phosphor theme for free. */
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.5;
+}
+/* A faint diagonal hatch behind the plate, so an empty slot still reads as a
+   deliberately unfilled area rather than a rendering failure. */
+.imgframe__placeholder::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.022) 0,
+    rgba(255, 255, 255, 0.022) 1px,
+    transparent 1px,
+    transparent 8px
+  );
 }
 .imgframe__scan {
   position: absolute;
@@ -368,7 +509,8 @@ ul {
    on finish. */
 .booting .screen,
 .booting .nav,
-.booting .glyphfield {
+.booting .statusbar,
+.booting .phosphor {
   visibility: hidden;
 }
 
@@ -782,10 +924,457 @@ ul {
   }
 }
 
+/* ==========================================================================
+   PHOSPHOR MOTION SYSTEM
+   Everything below is the v4 motion layer. Two gates apply throughout:
+     - `html.js`  — set pre-paint, so nothing is ever hidden from a no-JS visitor
+     - prefers-reduced-motion — the animation itself, never the content
+   ========================================================================== */
+
+@property --trace-a {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* ----- raster reveal ------------------------------------------------------ */
+.raster {
+  position: relative;
+}
+.raster__beam {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--green-bright), transparent);
+  box-shadow: 0 0 14px 2px var(--green-faint);
+}
+
+/* ----- tilt panels -------------------------------------------------------- */
+.tilt {
+  position: relative;
+}
+.tilt__glare,
+.tilt__trace {
+  position: absolute;
+  pointer-events: none;
+  opacity: 0;
+}
+.tilt__glare {
+  inset: 0;
+  border-radius: var(--radius);
+  background: radial-gradient(
+    340px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(255, 255, 255, 0.09),
+    transparent 62%
+  );
+}
+/* A beam that runs the perimeter, drawn as a conic gradient masked to a 1px
+   ring so it traces the border rather than filling the card. */
+.tilt__trace {
+  inset: -1px;
+  border-radius: calc(var(--radius) + 1px);
+  padding: 1px;
+  background: conic-gradient(
+    from var(--trace-a),
+    transparent 0 72%,
+    var(--green-bright) 84%,
+    transparent 92%
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+
+/* ----- magnetic controls -------------------------------------------------- */
+.magnetic {
+  display: inline-block;
+}
+
+/* ----- hero name ---------------------------------------------------------- */
+.heroname {
+  display: inline-block;
+}
+.heroname__ch {
+  display: inline-block;
+  white-space: pre;
+  text-shadow:
+    calc(var(--split, 0) * -1px) 0 rgba(255, 80, 80, 0.72),
+    calc(var(--split, 0) * 1px) 0 rgba(80, 170, 255, 0.72),
+    var(--glow);
+}
+
+/* ----- signal meter ------------------------------------------------------- */
+.project__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+  flex-wrap: wrap;
+}
+.signal {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 13px;
+}
+.signal__bar {
+  width: 3px;
+  background: var(--green-dim);
+  opacity: 0.3;
+}
+.signal__bar:nth-child(1) {
+  height: 3px;
+}
+.signal__bar:nth-child(2) {
+  height: 5px;
+}
+.signal__bar:nth-child(3) {
+  height: 7px;
+}
+.signal__bar:nth-child(4) {
+  height: 10px;
+}
+.signal__bar:nth-child(5) {
+  height: 13px;
+}
+.signal__bar.is-on {
+  background: var(--green-bright);
+  opacity: 1;
+  box-shadow: 0 0 6px var(--green-faint);
+}
+.project__links {
+  margin: 0;
+  display: flex;
+  gap: var(--sp-3);
+}
+
+/* ----- experience spine --------------------------------------------------- */
+.exp__list {
+  position: relative;
+}
+.exp__spine {
+  position: absolute;
+  left: -2px;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  transform-origin: top;
+  background: linear-gradient(var(--green-bright), var(--green));
+  box-shadow: 0 0 10px var(--green-faint);
+}
+/* Only start collapsed when JS is there to draw it. Without JS the line simply
+   stands, which is what it would have done before it learned to animate. */
+html.js .exp__spine {
+  transform: scaleY(0);
+}
+
+/* ----- status bar --------------------------------------------------------- */
+.statusbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--status-h);
+  z-index: 9100;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-3);
+  background: rgba(8, 12, 8, 0.9);
+  border-top: 1px solid var(--green-line);
+  backdrop-filter: blur(2px);
+  font-size: 0.68rem;
+  color: var(--green-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+}
+.statusbar__brand {
+  color: var(--green);
+}
+.statusbar__pwd {
+  color: var(--amber);
+}
+.statusbar__mem {
+  color: var(--green-faint);
+}
+
+/* ----- screensaver -------------------------------------------------------- */
+.saver {
+  position: fixed;
+  inset: 0;
+  z-index: 9400;
+  background: #000;
+}
+.saver__plate {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: rgba(10, 14, 10, 0.75);
+}
+.saver__title {
+  font-family: var(--font-screen);
+  font-size: 2.1rem;
+  line-height: 1;
+  color: var(--green-bright);
+}
+.saver__sub {
+  font-size: 0.68rem;
+  color: var(--green-dim);
+}
+
+/* ----- channel change ----------------------------------------------------- */
+.channel {
+  position: fixed;
+  inset: 0;
+  z-index: 9300;
+  pointer-events: none;
+  overflow: hidden;
+}
+.channel::before,
+.channel::after {
+  content: "";
+  position: absolute;
+}
+.channel::before {
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.07) 0 1px,
+    transparent 1px 2px
+  );
+  mix-blend-mode: screen;
+}
+.channel::after {
+  left: 0;
+  right: 0;
+  height: 24vh;
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.11), transparent);
+}
+
+/* ----- boot extras -------------------------------------------------------- */
+.boot__mem,
+.boot__bar {
+  margin-top: var(--sp-2);
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+  white-space: pre;
+}
+
+/* ----- terminal ghost completion ------------------------------------------ */
+.term__field {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+.term__ghost {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  font: inherit;
+  white-space: pre;
+  overflow: hidden;
+}
+.term__ghost-typed {
+  color: transparent;
+}
+.term__ghost-rest {
+  color: var(--green-dim);
+  opacity: 0.65;
+}
+/* Visually hidden, still announced. */
+.term__srhint {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ----- motion (only when the user is OK with it) -------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  /* Hidden with opacity ALONE, never clip-path.
+     IntersectionObserver folds an element's own clip-path into its intersection
+     rect, so clipping the block to zero height here would stop the observer ever
+     reporting it as visible — the block would hide itself and then never be told
+     to appear. Opacity is ignored by the observer, so it is the only safe way to
+     pre-hide something whose reveal is triggered by its own visibility. The clip
+     lives purely inside the keyframes below. */
+  html.js .raster:not(.is-revealed) {
+    opacity: 0;
+  }
+  html.js .raster.is-revealed {
+    animation: raster-in 720ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--reveal-delay, 0ms) both;
+  }
+  html.js .raster.is-revealed .raster__beam {
+    animation: raster-beam 720ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--reveal-delay, 0ms) both;
+  }
+  @keyframes raster-in {
+    0% {
+      clip-path: inset(0 -80px 100% -80px);
+      opacity: 0;
+      filter: brightness(2.6);
+    }
+    30% {
+      opacity: 1;
+    }
+    100% {
+      clip-path: inset(0 -80px 0% -80px);
+      opacity: 1;
+      filter: brightness(1);
+    }
+  }
+  @keyframes raster-beam {
+    0% {
+      top: 0;
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    88% {
+      opacity: 1;
+    }
+    100% {
+      top: 100%;
+      opacity: 0;
+    }
+  }
+
+  /* Staggered pop for the highlight tiles inside their reveal. */
+  html.js .raster.is-revealed .hl {
+    animation: hl-in 420ms ease-out calc(var(--reveal-delay, 0ms) + var(--hl-i, 0) * 90ms) both;
+  }
+  @keyframes hl-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .tilt.is-live {
+    transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 140ms ease-out;
+  }
+  .tilt.is-live:hover .tilt__glare {
+    opacity: 1;
+    transition: opacity 260ms ease-out;
+  }
+  .tilt.is-live:hover .tilt__trace {
+    opacity: 1;
+    animation: trace-spin 2.8s linear infinite;
+    transition: opacity 260ms ease-out;
+  }
+  @keyframes trace-spin {
+    to {
+      --trace-a: 360deg;
+    }
+  }
+
+  /* Headings lose convergence in proportion to scroll speed. */
+  html.js .page__title,
+  html.js .exp__org,
+  html.js .project__title {
+    text-shadow:
+      calc(var(--scroll-v) * -2.5px) 0 rgba(255, 70, 70, 0.5),
+      calc(var(--scroll-v) * 2.5px) 0 rgba(70, 160, 255, 0.5),
+      var(--glow);
+  }
+
+  .channel::before {
+    animation: channel-static 520ms steps(5) both;
+  }
+  .channel::after {
+    animation: channel-band 520ms ease-out both;
+  }
+  @keyframes channel-static {
+    from {
+      opacity: 0.85;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes channel-band {
+    from {
+      top: -26vh;
+      opacity: 1;
+    }
+    to {
+      top: 106vh;
+      opacity: 0;
+    }
+  }
+
+  /* `sudo rm -rf /` — the tube collapsing before the reboot. */
+  .term.is-wiping {
+    animation: term-wipe 1.5s cubic-bezier(0.7, 0, 0.85, 0) both;
+    transform-origin: center;
+  }
+  @keyframes term-wipe {
+    0% {
+      filter: brightness(1);
+    }
+    70% {
+      filter: brightness(2.8);
+      transform: scaleY(1);
+    }
+    100% {
+      filter: brightness(6);
+      transform: scaleY(0.002);
+      opacity: 0;
+    }
+  }
+}
+
 /* ----- responsive -------------------------------------------------------- */
 @media (max-width: 768px) {
+  .statusbar__hide-sm {
+    display: none;
+  }
+  .statusbar {
+    font-size: 0.62rem;
+    gap: var(--sp-2);
+  }
+  /* Tilt is a pointer affordance; a finger has no hover, so drop the cost. */
+  .tilt.is-live {
+    transform: none;
+  }
+  .tilt__glare,
+  .tilt__trace {
+    display: none;
+  }
   .screen {
-    padding: calc(var(--nav-h) + var(--sp-4)) var(--sp-3) var(--sp-5);
+    padding: calc(var(--nav-h) + var(--sp-4)) var(--sp-3) calc(var(--sp-5) + var(--status-h));
   }
   .hero__grid {
     grid-template-columns: 1fr;

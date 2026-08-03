@@ -1,0 +1,56 @@
+import { describe, it, expect } from "vitest";
+import { formatUptime, isTheme, memoryAddress, THEME_PHOSPHOR, THEMES } from "@/lib/system";
+
+describe("formatUptime", () => {
+  it("renders zero as a padded clock", () => {
+    expect(formatUptime(0)).toBe("00:00:00");
+  });
+
+  it("rolls seconds, minutes and hours", () => {
+    expect(formatUptime(5_000)).toBe("00:00:05");
+    expect(formatUptime(65_000)).toBe("00:01:05");
+    expect(formatUptime(3_725_000)).toBe("01:02:05");
+  });
+
+  it("keeps counting past 24 hours rather than wrapping", () => {
+    expect(formatUptime(90_000_000)).toBe("25:00:00");
+  });
+});
+
+describe("memoryAddress", () => {
+  it("is a fixed-width hex address", () => {
+    expect(memoryAddress(0)).toMatch(/^0x[0-9A-F]{8}$/);
+    expect(memoryAddress(1)).toMatch(/^0x[0-9A-F]{8}$/);
+  });
+
+  it("increases with scroll progress", () => {
+    const low = parseInt(memoryAddress(0.1).slice(2), 16);
+    const high = parseInt(memoryAddress(0.9).slice(2), 16);
+    expect(high).toBeGreaterThan(low);
+  });
+
+  it("clamps out-of-range progress instead of producing junk", () => {
+    expect(memoryAddress(-5)).toBe(memoryAddress(0));
+    expect(memoryAddress(99)).toBe(memoryAddress(1));
+  });
+});
+
+describe("themes", () => {
+  it("recognises only the known phosphors", () => {
+    expect(isTheme("green")).toBe(true);
+    expect(isTheme("amber")).toBe(true);
+    expect(isTheme("ice")).toBe(true);
+    expect(isTheme("purple")).toBe(false);
+  });
+
+  it("has a shader colour for every theme", () => {
+    for (const theme of THEMES) {
+      const rgb = THEME_PHOSPHOR[theme];
+      expect(rgb).toHaveLength(3);
+      for (const channel of rgb) {
+        expect(channel).toBeGreaterThanOrEqual(0);
+        expect(channel).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+});
