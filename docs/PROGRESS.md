@@ -65,6 +65,29 @@ prod-parity container.
 > the throttled Pixel as the proxy and verify the GPU reduction directly (canvas buffer size ×
 > frame rate), which is what was done here.
 
+> ## ✅ LIVE — deployed and verified in production 2026-08-03
+>
+> `https://fergus-portfolio.vercel.app` · deployment `dpl_8gj9gThbaMPhN63ZpSVsqhhWozGi` (Ready,
+> no errors in build logs). Shipped with the documented CLI workaround (copy without `.git`,
+> keep `.vercel/project.json`, `vercel --prod --yes`), because git-linked deploys on this repo
+> are still silently Blocked — see "Why deploying was hard" below, which is unchanged.
+>
+> **Verified against the live URL, not localhost:** all three routes + `/icon.svg` return 200;
+> the live CSS bundle contains every new marker (`webgl-ok`, `heroname__word`, `is-pressed`,
+> `is-tracing`, `trace-once`, the `hover:none` block); on an emulated iPhone the canvas buffer is
+> **234x506** (was 780x1688), the cursor-trail canvas is absent, Lenis is not mounted, the CSS
+> scanline layer is off with `webgl-ok` set, and the nav fits (393/393). Press-and-release on a
+> live project card: `is-pressed` + glare 1 + image resolving to colour, then fully cleared back
+> to the resting duotone on release. Hero name occupies **one line box**. Zero console errors.
+> Throttled Pixel 7 on production: **28-60 fps idle, 24-37 scrolling**, all reveals firing
+> (4/4, 3/3, 6/6), zero horizontal overflow, terminal input 16px.
+>
+> **Honest caveat:** no physical iPhone was tested. Windows WebKit reports 1-3 fps for this site
+> *and* reports the same with every layer forced off, so it is a software-rasteriser floor rather
+> than a reading. The throttled Pixel is the proxy, and the GPU reduction was additionally
+> verified rasteriser-independently as buffer size × frame rate (~22x less fragment work per
+> second). Worth a look on Fergus's actual phone.
+
 **Harness:** `phone-audit.mjs` (in the session scratchpad) runs the matrix. It has a hard
 precondition that every referenced client chunk returns 200 — a `next start` left holding the port
 serves fresh HTML against a stale manifest, the page renders as static markup with nothing
