@@ -25,13 +25,13 @@ All six project slots and the hero portrait now carry real images, built reprodu
 
 - [x] Hero portrait from `IMG_1018.HEIC` (Dolomites), cropped 4:5. sharp cannot decode HEIC, so
       ffmpeg decodes to PNG first.
-- [x] Presterly "P" and Loira "L" brand marks; Firecracker's real lockup from
-      firecracker-sauna.ie, negated to black-on-white (the original is white on transparent)
+- [x] Presterly "P" and Loira "L" brand marks; Firespark rebuilt as its own lockup (ember spark
+      + wordmark + product line) in the design language of firespark.vercel.app
 - [x] Under the Campanile: real gameplay from the Trinity Front Square scene, showing the
       Campanile and the dynamic lighting Fergus wrote
 - [x] Remand and ContraBot: authored SVG plates rather than stock imagery
-- [x] Sauna OS entry replaced by **Firecracker**, moved to second, role Co-Founder & CTO, linked
-      to firecracker-sauna.ie
+- [x] Sauna OS entry replaced by **Firespark**, moved to second, role Co-Founder & CTO, linked
+      to firespark.vercel.app
 - [x] Imagery phosphor-duotoned at rest, full colour on hover, light cast on touch; hue is
       per-theme via `--duotone-hue`
 

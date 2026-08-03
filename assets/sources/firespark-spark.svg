@@ -1,0 +1,5 @@
+<!-- Firespark's four-pointed ember spark, taken from the mark on
+     https://firespark.vercel.app. Brand colour is "ember", #E0501E. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <path d="M12 1.4c.5 4.02 1.62 6.6 3.36 8.03C16.9 10.7 19.1 11.4 22.6 12c-3.5.6-5.7 1.3-7.24 2.57C13.62 16 12.5 18.58 12 22.6c-.5-4.02-1.62-6.6-3.36-8.03C7.1 13.3 4.9 12.6 1.4 12c3.5-.6 5.7-1.3 7.24-2.57C10.38 8 11.5 5.42 12 1.4Z" fill="#E0501E"/>
+</svg>

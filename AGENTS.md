@@ -107,20 +107,28 @@ See `docs/PROGRESS.md`.
 ## Images
 
 Everything in `public/img/` is a **derived artefact built by `scripts/build-images.mjs`**. Do not
-hand-edit the PNGs; change the script and re-run `node scripts/build-images.mjs`. Sources live
-outside the repo (Fergus's photo library, the Trinity game project, the live brand marks), and the
-script skips politely with a message when one is missing, so a fresh clone still builds what it can.
+hand-edit the images; change the script and re-run `node scripts/build-images.mjs`. Brand marks are
+vendored in `assets/sources/`; the two large sources stay where they live (the photo library and the
+Trinity coursework). The script skips politely with a message when a source is missing, so a fresh
+clone still builds everything else.
 
 - `portrait.jpg` — from `IMG_1018.HEIC`. **sharp cannot decode HEIC** (its libvips has no HEVC
-  decoder; it reads the metadata then fails on the pixels), so the HEIC is decoded to PNG with
-  `ffmpeg` first and the script crops from that.
-- `presterly.png`, `loira.png`, `firecracker.png` — brand marks composited onto 16:9 cards. The
-  Firecracker lockup is white-on-transparent, so it is negated (alpha preserved) to put black ink
-  on white rather than an invisible white-on-white.
+  decoder; it reads the metadata then fails on the pixels), so the script shells out to `ffmpeg`
+  to decode to PNG first and crops from that. ffmpeg on PATH is needed for this step only.
+- `presterly.png`, `loira.png` — brand marks composited onto 16:9 cards.
+- `firespark.png` — rebuilt as a lockup in Firespark's own design language (its ember spark
+  `#E0501E`, near-black on white, product line beneath), not a bare logo dropped on a card.
+  **Firespark is Fergus's own venture with Connell. Firecracker Saunas is a customer, a
+  different thing — do not confuse them.** See `[[firespark]]` and `[[sauna-os]]` in the vault.
 - `remand.png`, `contrabot.png` — authored SVG, rasterised. Deliberately not stock screenshots.
   In `contrabot`, **all geometry is in screen coordinates where a smaller y is a higher price** —
   getting that backwards once produced a rising chart captioned as a profitable short.
-- `under-the-campanile.png` — real gameplay, cropped to drop the browser scrollbars.
+- `under-the-campanile.jpg` — real gameplay, cropped to drop the browser scrollbars. JPEG, not
+  PNG: it is the one photographic card, and lossless cost ~8x the bytes for no visible gain.
+
+Alt text lives in `content/projects.ts` as `imageAlt`, per project. Do **not** reintroduce a
+blanket `"${title} screenshot"` — most of these are brand marks or authored illustrations, and
+mislabelling them is a false claim about the work.
 
 Any project whose `image` is `""` falls back to `SignalPlate`, a procedural CRT alignment card
 seeded from its slug. That is deliberately a test card, never a fake screenshot.

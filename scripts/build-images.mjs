@@ -6,20 +6,34 @@
  *
  *   node scripts/build-images.mjs
  *
- * Sources are read from outside the repo (Fergus's photo library, the Trinity
- * game project, the brand marks). If a source is missing the script says which
- * one and carries on, so a machine without them still builds what it can.
+ * Brand marks are vendored in `assets/sources/` so they survive the live sites
+ * being redesigned. The two large sources stay where they live: the original
+ * photo in the photo library, and the game screenshot with its Trinity
+ * coursework. If a source is missing the script says which one and carries on,
+ * so a machine without them still builds everything else.
+ *
+ * Requires ffmpeg on PATH for the HEIC step only.
  */
 
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "public", "img");
-const SCRATCH =
-  "C:/Users/oreil/AppData/Local/Temp/claude/C--Users-oreil/3400afd0-1c32-4e5e-8da9-286877a725e3/scratchpad";
+
+/** Brand marks are vendored, since they are small and the live sites will change. */
+const SOURCES = join(ROOT, "assets", "sources");
+
+/** The one source too large to vendor: the original photo, straight from the library. */
+const HERO_HEIC = "C:/Users/oreil/iCloudPhotos/Photos/IMG_1018.HEIC";
+
+/** The game screenshot lives with the Trinity coursework it came from. */
+const GAME_SHOT =
+  "C:/Users/oreil/OneDrive - Trinity College Dublin/Projects/CSU22013-SwEng-2DGameEngine/sweng26_group23_2dgameengine/Sweng26/docs/shading-screenshots/day14-FrontSquareScene.png";
 
 mkdirSync(OUT, { recursive: true });
 
@@ -35,10 +49,19 @@ const skip = (name, why) => console.warn(`  --  ${name.padEnd(28)} skipped: ${wh
 // Shot in the Dolomites. Cropped to 4:5 around Fergus so the mountains still
 // read behind him, which ties the hero to the "in the mountains" line in his bio.
 async function portrait() {
-  // ffmpeg decodes the HEIC (sharp's libvips has no HEVC decoder), so this is
-  // the intermediate PNG. See the README note in docs/PROGRESS.md.
-  const src = `${SCRATCH}/hero-full.png`;
-  if (!existsSync(src)) return skip("portrait.jpg", "decoded HEIC not found");
+  if (!existsSync(HERO_HEIC)) return skip("portrait.jpg", `no photo at ${HERO_HEIC}`);
+
+  // sharp cannot do this step: its libvips reads HEIC metadata happily and then
+  // fails on the pixels, because the prebuilt binary ships no HEVC decoder. So
+  // ffmpeg decodes to an intermediate PNG in the OS temp dir first.
+  const src = join(tmpdir(), "fergus-portfolio-hero.png");
+  try {
+    execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-i", HERO_HEIC, src], {
+      stdio: "pipe",
+    });
+  } catch {
+    return skip("portrait.jpg", "ffmpeg is needed to decode HEIC and is not on PATH");
+  }
 
   const info = await sharp(src)
     .extract({ left: 350, top: 900, width: 2106, height: 2632 })
@@ -53,39 +76,63 @@ async function portrait() {
 // the lamppost casting the dynamic lighting Fergus wrote. Cropped to drop the
 // browser scrollbars down the right and bottom edges.
 async function campanile() {
-  const src =
-    "C:/Users/oreil/OneDrive - Trinity College Dublin/Projects/CSU22013-SwEng-2DGameEngine/sweng26_group23_2dgameengine/Sweng26/docs/shading-screenshots/day14-FrontSquareScene.png";
-  if (!existsSync(src)) return skip("under-the-campanile.png", "screenshot not found");
+  if (!existsSync(GAME_SHOT)) return skip("under-the-campanile.jpg", "screenshot not found");
 
-  const info = await sharp(src)
+  // JPEG, not PNG: this is the one photographic card (gradients and soft
+  // lighting), and lossless encoding of it costs ~8x the bytes for no visible gain.
+  const info = await sharp(GAME_SHOT)
     .extract({ left: 0, top: 15, width: 1044, height: 587 })
     .resize(CARD_W, CARD_H, { fit: "cover" })
-    .png({ compressionLevel: 9 })
-    .toFile(join(OUT, "under-the-campanile.png"));
-  done("under-the-campanile.png", `${info.width}x${info.height} ${(info.size / 1024).toFixed(0)}KB`);
+    .jpeg({ quality: 84, mozjpeg: true })
+    .toFile(join(OUT, "under-the-campanile.jpg"));
+  done("under-the-campanile.jpg", `${info.width}x${info.height} ${(info.size / 1024).toFixed(0)}KB`);
 }
 
-// ── 3. Firecracker ──────────────────────────────────────────────────────────
-// The real brand lockup from firecracker-sauna.ie is white artwork on a
-// transparent background, which would be invisible on a light card. Negating the
-// colour channels while preserving alpha turns the white ink black; flattening
-// then puts it on clean white.
-async function firecracker() {
-  const src = `${SCRATCH}/fc-logo.png`;
-  if (!existsSync(src)) return skip("firecracker.png", "brand logo not downloaded");
+// ── 3. Firespark ────────────────────────────────────────────────────────────
+// Rebuilt in Firespark's own design language rather than just dropping the logo
+// on a blank card: the ember spark and wordmark lockup from its header, its
+// near-black on white, and its own product line underneath.
+const EMBER = "#E0501E";
+const FIRESPARK_INK = "#0A0C10";
 
-  const mark = await sharp(src)
-    .negate({ alpha: false })
-    .resize(760, 434, { fit: "inside" })
-    .toBuffer();
+async function firespark() {
+  const src = join(SOURCES, "firespark-spark.svg");
+  if (!existsSync(src)) return skip("firespark.png", "vendored spark mark missing");
+
+  // The mark is square (24x24 viewBox), so its rendered width equals its height.
+  // Everything else is positioned off that, keeping the lockup centred as a unit
+  // instead of guessing at absolute coordinates and running off the card edge.
+  const SPARK = 112;
+  const GAP = 24;
+  const FONT = 82;
+  // "Firespark" is 9 glyphs; ~0.53em average advance for a bold grotesque.
+  const wordWidth = Math.round(9 * FONT * 0.53);
+  const lockup = SPARK + GAP + wordWidth;
+  const startX = Math.round((CARD_W - lockup) / 2);
+  const midY = 250;
+
+  const spark = await sharp(src, { density: 700 }).resize({ height: SPARK }).toBuffer();
+
+  const type = svg(`
+<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_W}" height="${CARD_H}">
+  <text x="${startX + SPARK + GAP}" y="${midY + Math.round(FONT * 0.36)}"
+        font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="${FONT}" font-weight="700" letter-spacing="-2.5" fill="${FIRESPARK_INK}">Firespark</text>
+  <text x="${CARD_W / 2}" y="${midY + 118}" text-anchor="middle"
+        font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="26" fill="#5b636e">Booking and operations software for saunas</text>
+</svg>`);
 
   const info = await sharp({
     create: { width: CARD_W, height: CARD_H, channels: 4, background: "#ffffff" },
   })
-    .composite([{ input: mark, gravity: "centre" }])
+    .composite([
+      { input: spark, left: startX, top: midY - Math.round(SPARK / 2) },
+      { input: type, left: 0, top: 0 },
+    ])
     .png({ compressionLevel: 9 })
-    .toFile(join(OUT, "firecracker.png"));
-  done("firecracker.png", `${info.width}x${info.height} ${(info.size / 1024).toFixed(0)}KB`);
+    .toFile(join(OUT, "firespark.png"));
+  done("firespark.png", `${info.width}x${info.height} ${(info.size / 1024).toFixed(0)}KB`);
 }
 
 // ── 4. Presterly ────────────────────────────────────────────────────────────
@@ -106,8 +153,8 @@ async function presterly() {
 // ── 5. Loira ────────────────────────────────────────────────────────────────
 // The Loira "L" swash mark, taken from loira.ai's own landing assets.
 async function loira() {
-  const src = `${SCRATCH}/l-logo-white.svg`;
-  if (!existsSync(src)) return skip("loira.png", "L mark not downloaded");
+  const src = join(SOURCES, "loira-l-white.svg");
+  if (!existsSync(src)) return skip("loira.png", "vendored L mark missing");
 
   const mark = await sharp(src, { density: 400 })
     .resize({ height: 360, fit: "inside" })
@@ -237,7 +284,7 @@ async function contrabot() {
 console.log("building public/img ...");
 await portrait();
 await campanile();
-await firecracker();
+await firespark();
 await presterly();
 await loira();
 await remand();
