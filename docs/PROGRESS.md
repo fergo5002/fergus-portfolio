@@ -18,6 +18,23 @@ to Loira AI with corrected dates (Feb–Jun 2026) and the loira.ai link.
 
 ---
 
+## Real imagery — 2026-08-03
+
+All six project slots and the hero portrait now carry real images, built reproducibly by
+`scripts/build-images.mjs` (see the Images section of `AGENTS.md`).
+
+- [x] Hero portrait from `IMG_1018.HEIC` (Dolomites), cropped 4:5. sharp cannot decode HEIC, so
+      ffmpeg decodes to PNG first.
+- [x] Presterly "P" and Loira "L" brand marks; Firespark rebuilt as its own lockup (ember spark
+      + wordmark + product line) in the design language of firespark.vercel.app
+- [x] Under the Campanile: real gameplay from the Trinity Front Square scene, showing the
+      Campanile and the dynamic lighting Fergus wrote
+- [x] Remand and ContraBot: authored SVG plates rather than stock imagery
+- [x] Sauna OS entry replaced by **Firespark**, moved to second, role Co-Founder & CTO, linked
+      to firespark.vercel.app
+- [x] Imagery phosphor-duotoned at rest, full colour on hover, light cast on touch; hue is
+      per-theme via `--duotone-hue`
+
 ## v4 "Phosphor" — shipped 2026-08-03
 
 Branch `feat/phosphor-motion-system`. Design forks were settled with Fergus up front: full

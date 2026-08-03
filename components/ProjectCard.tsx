@@ -28,7 +28,10 @@ export default function ProjectCard({ project, index = 0 }: { project: Project; 
           <span id={project.slug} className="anchor" />
           <ImageFrame
             src={project.image || undefined}
-            alt={`${project.title} screenshot`}
+            // Never a blanket "screenshot": most of these are brand marks or
+            // authored illustrations, and mislabelling them would be a false
+            // claim about the work. See `imageAlt` in content/projects.ts.
+            alt={project.imageAlt ?? `${project.title} project image`}
             label={`${project.slug}.png`}
             plate={project.slug}
             ratio="16 / 9"

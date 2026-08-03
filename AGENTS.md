@@ -102,7 +102,36 @@ See `docs/PROGRESS.md`.
 ## Content still needing the owner (Fergus)
 
 - **Hatch105 role + dates** — `content/experience.ts`, `hatch105` entry (`[ ROLE — TBC ]`).
-- **Images** — drop into `public/img/`, then set `portrait` in `content/profile.ts` and each
-  project's `image` in `content/projects.ts`. Until set, each slot renders a procedural CRT
-  alignment plate (`SignalPlate`) seeded from the project slug. The plate is deliberately a
-  test card, not a fake screenshot; real files take over automatically with no code change.
+- (Nothing outstanding on images — see below.)
+
+## Images
+
+Everything in `public/img/` is a **derived artefact built by `scripts/build-images.mjs`**. Do not
+hand-edit the images; change the script and re-run `node scripts/build-images.mjs`. Brand marks are
+vendored in `assets/sources/`; the two large sources stay where they live (the photo library and the
+Trinity coursework). The script skips politely with a message when a source is missing, so a fresh
+clone still builds everything else.
+
+- `portrait.jpg` — from `IMG_1018.HEIC`. **sharp cannot decode HEIC** (its libvips has no HEVC
+  decoder; it reads the metadata then fails on the pixels), so the script shells out to `ffmpeg`
+  to decode to PNG first and crops from that. ffmpeg on PATH is needed for this step only.
+- `presterly.png`, `loira.png` — brand marks composited onto 16:9 cards.
+- `firespark.png` — rebuilt as a lockup in Firespark's own design language (its ember spark
+  `#E0501E`, near-black on white, product line beneath), not a bare logo dropped on a card.
+  **Firespark is Fergus's own venture with Connell. Firecracker Saunas is a customer, a
+  different thing — do not confuse them.** See `[[firespark]]` and `[[sauna-os]]` in the vault.
+- `remand.png`, `contrabot.png` — authored SVG, rasterised. Deliberately not stock screenshots.
+  In `contrabot`, **all geometry is in screen coordinates where a smaller y is a higher price** —
+  getting that backwards once produced a rising chart captioned as a profitable short.
+- `under-the-campanile.jpg` — real gameplay, cropped to drop the browser scrollbars. JPEG, not
+  PNG: it is the one photographic card, and lossless cost ~8x the bytes for no visible gain.
+
+Alt text lives in `content/projects.ts` as `imageAlt`, per project. Do **not** reintroduce a
+blanket `"${title} screenshot"` — most of these are brand marks or authored illustrations, and
+mislabelling them is a false claim about the work.
+
+Any project whose `image` is `""` falls back to `SignalPlate`, a procedural CRT alignment card
+seeded from its slug. That is deliberately a test card, never a fake screenshot.
+
+Imagery is phosphor-duotoned at rest and resolves to full colour on hover (a light cast on touch,
+where there is no hover to earn it). The duotone hue is per-theme via `--duotone-hue`.

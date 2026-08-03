@@ -13,10 +13,17 @@ export type Project = {
   stack: string[];
   links: ProjectLink[];
   /**
-   * Public path to a screenshot, e.g. "/img/larry.png".
-   * Leave as "" to show a placeholder box until you add the file.
+   * Public path to the card image, e.g. "/img/larry.png".
+   * Leave as "" to fall back to a procedural SignalPlate alignment card.
    */
   image: string;
+  /**
+   * Accessible description of that image. Required whenever `image` is set,
+   * because these are not all screenshots — some are brand marks and some are
+   * authored illustrations, and calling a logo a screenshot on a portfolio is a
+   * factual claim about your own work.
+   */
+  imageAlt?: string;
 };
 
 export const projects: Project[] = [
@@ -32,7 +39,23 @@ export const projects: Project[] = [
     ],
     stack: ["TypeScript", "React Router", "Prisma", "PostgreSQL", "Shopify", "Klaviyo", "Railway"],
     links: [{ label: "live", href: "https://presterly.com" }],
-    image: "",
+    image: "/img/presterly.png",
+    imageAlt: "The Presterly logo mark",
+  },
+  {
+    slug: "firespark",
+    title: "Firespark",
+    tagline: "Booking, payments and operations for saunas. It drops into the website you already have.",
+    role: "Co-Founder & CTO",
+    year: "2026 – Present",
+    bullets: [
+      "Multi-tenant booking and payments: sessions, memberships and native upsells, with Stripe Connect so each venue is paid directly.",
+      "An embeddable booking widget for a venue's existing site, plus one operations screen for arrivals, takings and no-shows.",
+    ],
+    stack: ["Next.js", "TypeScript", "Supabase", "PostgreSQL", "Stripe Connect", "Vercel"],
+    links: [{ label: "live", href: "https://firespark.vercel.app" }],
+    image: "/img/firespark.png",
+    imageAlt: "The Firespark logo: a four-pointed ember spark beside the Firespark wordmark",
   },
   {
     slug: "loira",
@@ -46,7 +69,8 @@ export const projects: Project[] = [
     ],
     stack: ["TypeScript", "Next.js", "Fastify", "BullMQ", "PostgreSQL", "Redis", "LLMs"],
     links: [{ label: "live", href: "https://loira.ai" }],
-    image: "",
+    image: "/img/loira.png",
+    imageAlt: "The Loira AI logo mark, a looping letter L",
   },
   {
     slug: "remand",
@@ -60,7 +84,8 @@ export const projects: Project[] = [
     ],
     stack: ["Next.js", "React 19", "FastAPI", "Supabase", "pgvector", "OpenAI", "Anthropic"],
     links: [{ label: "live", href: "https://nybblers.vercel.app" }],
-    image: "",
+    image: "/img/remand.png",
+    imageAlt: "Illustration: a list of forum threads with vote counts, clustering into one rising demand signal",
   },
   {
     slug: "under-the-campanile",
@@ -74,20 +99,8 @@ export const projects: Project[] = [
     ],
     stack: ["TypeScript", "Phaser 3", "GLSL", "WebGL"],
     links: [],
-    image: "",
-  },
-  {
-    slug: "sauna-os",
-    title: "Sauna OS",
-    tagline: "Booking and operations platform for modern sauna businesses.",
-    role: "Founder / Engineer",
-    bullets: [
-      "Multi-tenant booking and operations system with memberships and native upsells.",
-      "Stripe Connect payments so each venue gets paid directly.",
-    ],
-    stack: ["Next.js", "TypeScript", "Supabase", "Stripe Connect"],
-    links: [],
-    image: "",
+    image: "/img/under-the-campanile.jpg",
+    imageAlt: "Gameplay screenshot: Trinity College Front Square at night, the Campanile lit by a lamppost",
   },
   {
     slug: "contrabot",
@@ -100,6 +113,7 @@ export const projects: Project[] = [
     ],
     stack: ["Python", "Anthropic API", "Alpaca"],
     links: [],
-    image: "",
+    image: "/img/contrabot.png",
+    imageAlt: "Illustration: candlesticks falling while a crowd-sentiment line climbs against them",
   },
 ];
