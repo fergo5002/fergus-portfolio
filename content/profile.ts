@@ -40,7 +40,7 @@ export const profile: Profile = {
     "BA Computer Science (Major) & Business (Minor) @ Trinity College Dublin, First Class Honours (1.1)",
   bio: [
     "I'm a builder. I like making things that are genuinely nice to look at, and I like making them hold up once real traffic turns up. Those two pull against each other most days, and getting both is the part I actually enjoy.",
-    "Right now that mostly means Presterly, where I'm co-founder and CTO. We work out when a Shopify brand's customers are about to run out of what they bought, then reach them over SMS and WhatsApp at that moment. It's installed on 34 merchant brands, with 423,000 customers under management and nearly €19M of order history analysed.",
+    "Right now that mostly means Presterly, where I'm co-founder and CTO. We work out when a Shopify brand's customers are about to run out of what they bought, then reach them over SMS and WhatsApp at that moment. It's installed on 34 Shopify stores holding 423,000 customers between them, and we've analysed nearly €19M of order history.",
     "I'm in third year of Computer Science and Business at Trinity College Dublin, on a 1.1 across first and second year.",
     "Before Presterly I was a founding engineer at Loira AI in Stockholm, building an AI execution layer for project management. I've also written a game engine's lighting system, a contrarian trading bot, and a booking and payments platform for saunas. I like starting things, and I like shipping them end to end.",
     "Outside the terminal you'll find me at a tennis court, in the mountains, or at the sea.",

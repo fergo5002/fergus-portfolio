@@ -29,7 +29,7 @@ export const experience: ExperienceEntry[] = [
     bullets: [
       "Took Presterly from first commit (12 June 2026) to its first live merchant brands in six weeks, inside Hatch105, the Dublin startup accelerator.",
       "Built the multi-tenant platform end to end: Shopify and Klaviyo integrations, token-on-order attribution, and a per-customer, per-product run-out prediction engine backtested against real order history.",
-      "Installed today on 34 merchant brands: 423,000 customers under management, nearly €19M of order history analysed, and roughly 292,000 run-out predictions.",
+      "Installed today on 34 Shopify stores, holding 423,000 customers between them. Nearly €19M of order history analysed, and roughly 292,000 run-out predictions live.",
       "Took Presterly through Meta's approval as a WhatsApp Business Platform Tech Provider, so a merchant onboards its own number through Embedded Signup and keeps ownership of it.",
     ],
     link: { label: "presterly.com", href: "https://presterly.com" },

@@ -107,16 +107,44 @@ See `docs/PROGRESS.md`.
 
 ## Keeping the numbers honest
 
-`content/` carries live traction claims (customers under management, order value analysed,
-merchant count) on a page whose footer invites people to check. **They are claims, not decoration,
-and they go stale silently.** They were last verified against the Presterly production database on
-**2026-08-04** via the read-only Supabase MCP, and had drifted a long way: the page said seven
-brands / 127,000 customers / €18M when the truth was 34 brands / 426,000 / €20M.
+`content/` carries live traction claims (customers under management, order value analysed, store
+count) on a page whose footer invites people to check. **They are claims, not decoration, and they
+go stale silently.** Last verified against the Presterly production database on **2026-08-04** via
+the read-only Supabase MCP.
 
-The merchant count is the one to be careful with. `shops` had 105 rows marked installed, but that
-includes dev and test installs. The published 34 is the defensible floor: installed, not
-uninstalled, and carrying 1,000+ customers. Do not publish the raw install count. Re-check before
-any application or outreach push, and do not round upward.
+**The scoped query is the only one to publish from.** The trap, hit twice on 2026-08-04, is pairing
+a filtered store count with unfiltered platform totals. Scope every figure to the same set:
+
+```sql
+with live as (
+  select s.id from shops s
+  where s.installed_at is not null and s.uninstalled_at is null
+    and (select count(*) from customers c where c.shop_id = s.id) >= 1000
+)
+select (select count(*) from live),
+       (select count(*) from customers where shop_id in (select id from live)),
+       (select currency, sum(total_price) from orders where shop_id in (select id from live) group by currency),
+       (select count(*) from predictions where shop_id in (select id from live));
+```
+
+Verified 2026-08-04: **34 stores, 423,624 customers, EUR 18,956,608 + GBP 941,244, 292,745
+predictions.** Published rounded **down**, as 34 / 423,000 / nearly €19M / roughly 292,000.
+
+Three rules that came out of getting it wrong:
+
+1. **Never sum `orders.total_price` across shops without grouping by `currency`.** It is stored in
+   each shop's own currency. The published euro figure is the EUR subtotal alone, which is true
+   without the GBP and errs low. Do not pick an FX rate to make a bigger number.
+2. **Say what the query proves.** It proves *installation*, so the copy says "installed on", not
+   "live on". Of the 34, only **14 have any orders at all**, which is why the order value is a
+   separate sentence and never sits behind a colon under the store count. Likewise a
+   `count(*)` on `predictions` proves rows exist, not that any are fresh, so no freshness verb
+   unless someone actually checks `updated_at`.
+3. **Do not publish the raw install count.** `shops` had 105 rows marked installed, including dev
+   and test installs. The 34 is the defensible floor. Checked the same day: 34 stores resolve to 34
+   distinct brand roots, and none of the domains look like dev or staging stores.
+
+Re-check before any application or outreach push, and never round upward.
 
 ## Images
 

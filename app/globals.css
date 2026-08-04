@@ -706,6 +706,11 @@ html.crt-off body {
 }
 .skills__label {
   color: var(--amber);
+  /* The Scramble glyph pool ends in katakana, which JetBrains Mono does not
+     cover, so a fallback CJK face renders those frames at roughly double the
+     advance. One frame in eleven would otherwise wrap the key and jolt the whole
+     list at an 18ms cadence. Overflowing a frame silently is the cheaper sin. */
+  white-space: nowrap;
 }
 .skills__items {
   margin: 0;

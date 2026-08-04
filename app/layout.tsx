@@ -24,10 +24,13 @@ export const metadata: Metadata = {
   // content layer, and a hand-written duplicate here would quietly go on
   // advertising the old tagline in search results after the hero was updated.
   title: `${profile.shortName} · Terminal`,
-  description: `${profile.name}: ${profile.tagline}. Projects, experience, and contact.`,
+  // Trinity is appended rather than left to the tagline: the tagline was
+  // shortened to fit one line in the hero, which is a pixel decision that should
+  // not quietly cost the page its strongest search keyword.
+  description: `${profile.name}: ${profile.tagline}. CS & Business @ Trinity College Dublin. Projects, experience, and contact.`,
   openGraph: {
     title: `${profile.shortName} · Terminal`,
-    description: `${profile.name}: ${profile.tagline}.`,
+    description: `${profile.name}: ${profile.tagline}. CS & Business @ Trinity College Dublin.`,
     type: "website",
   },
 };
