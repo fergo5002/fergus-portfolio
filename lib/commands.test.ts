@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { complete, runCommand } from "@/lib/commands";
+import { complete, runCommand, HELP_LINES } from "@/lib/commands";
 import { profile } from "@/content/profile";
 import { projects } from "@/content/projects";
 
@@ -274,5 +274,63 @@ describe("complete", () => {
     expect(complete("")).toBeNull();
     expect(complete("zzz")).toBeNull();
     expect(complete("echo something")).toBeNull();
+  });
+});
+
+describe("physical commands", () => {
+  it("drops gravity by default and lifts it on request", () => {
+    const on = runCommand("gravity");
+    expect(on).toMatchObject({ type: "effect", effect: { kind: "gravity", on: true } });
+    const off = runCommand("gravity off");
+    expect(off).toMatchObject({ type: "effect", effect: { kind: "gravity", on: false } });
+  });
+
+  it("tells the visitor how to get out of gravity, not just into it", () => {
+    const res = runCommand("gravity");
+    if (res.type !== "effect") throw new Error("expected an effect");
+    expect(res.lines.join(" ")).toMatch(/esc/i);
+  });
+
+  it("ejects and docks with two names for one behaviour", () => {
+    expect(runCommand("eject")).toMatchObject({ effect: { kind: "eject", on: true } });
+    expect(runCommand("dock")).toMatchObject({ effect: { kind: "eject", on: false } });
+    expect(runCommand("eject off")).toMatchObject({ effect: { kind: "eject", on: false } });
+  });
+
+  it("requires an explicit argument for sound rather than guessing", () => {
+    expect(runCommand("sound")).toMatchObject({ type: "output" });
+    expect(runCommand("sound on")).toMatchObject({ effect: { kind: "sound", on: true } });
+    expect(runCommand("sound off")).toMatchObject({ effect: { kind: "sound", on: false } });
+  });
+
+  it("lists every new command in help, so none of them are secrets", () => {
+    const help = HELP_LINES.join("\n");
+    for (const cmd of ["gravity", "eject", "sound"]) {
+      expect(help).toContain(cmd);
+    }
+  });
+
+  it("completes on/off for sound and gravity", () => {
+    expect(complete("sound o")).toBe("sound o");
+    expect(complete("sound of")).toBe("sound off");
+    expect(complete("gravity of")).toBe("gravity off");
+  });
+});
+
+describe("reduced motion", () => {
+  it("declines gravity and says why, rather than promising it", () => {
+    const res = runCommand("gravity", { reducedMotion: true });
+    expect(res.type).toBe("output");
+    if (res.type !== "output") throw new Error("expected output");
+    expect(res.lines.join(" ")).toMatch(/declined/);
+  });
+
+  it("declines eject too", () => {
+    expect(runCommand("eject", { reducedMotion: true }).type).toBe("output");
+  });
+
+  it("still lets you turn both back off", () => {
+    expect(runCommand("gravity off", { reducedMotion: true })).toMatchObject({ type: "effect" });
+    expect(runCommand("dock", { reducedMotion: true })).toMatchObject({ type: "effect" });
   });
 });

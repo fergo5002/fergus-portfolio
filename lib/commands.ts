@@ -17,6 +17,9 @@ export type SystemEffect =
   | { kind: "scanlines"; value: number }
   | { kind: "matrix"; ms: number }
   | { kind: "degauss" }
+  | { kind: "gravity"; on: boolean }
+  | { kind: "eject"; on: boolean }
+  | { kind: "sound"; on: boolean }
   | { kind: "reboot" };
 
 export type CommandResult =
@@ -31,6 +34,12 @@ export type CommandContext = {
   now?: Date;
   uptimeMs?: number;
   theme?: Theme;
+  /**
+   * Whether the visitor has asked for reduced motion. The commands that take
+   * over the viewport refuse in that case, and say so rather than printing a
+   * confident line about something that is not going to happen.
+   */
+  reducedMotion?: boolean;
 };
 
 /** Sections reachable from the terminal. */
@@ -54,6 +63,10 @@ export const COMMANDS = [
   "scanlines",
   "matrix",
   "degauss",
+  "gravity",
+  "eject",
+  "dock",
+  "sound",
   "history",
   "echo",
   "date",
@@ -63,7 +76,7 @@ export const COMMANDS = [
 ] as const;
 
 export const HELP_LINES: string[] = [
-  "FergusOS 4.0 · command reference",
+  "FergusOS 5.0 · command reference",
   "",
   "  navigate",
   "    whoami            who is this",
@@ -83,6 +96,11 @@ export const HELP_LINES: string[] = [
   "    scanlines <0-100> set mask intensity",
   "    matrix            let it rain",
   "    degauss           thump the magnets",
+  "",
+  "  physical",
+  "    gravity           drop the page. drag it. throw it.",
+  "    eject / dock      pull the camera back off the glass",
+  "    sound <on|off>    the tube has a voice",
   "",
   "  shell",
   "    history · echo · date · pwd · clear · help",
@@ -108,9 +126,9 @@ function neofetch(ctx: CommandContext): string[] {
   const info = [
     `${profile.user}@${profile.host}`,
     "─────────────────────────",
-    `OS       FergusOS 4.0 "Phosphor"`,
+    `OS       FergusOS 5.0 "Mass"`,
     `Host     Trinity College Dublin`,
-    `Kernel   next-15 · react-19 · webgl`,
+    `Kernel   next-15 · react-19 · webgl · webaudio`,
     `Uptime   ${formatUptime(ctx.uptimeMs ?? 0)}`,
     `Shell    fsh 4.0`,
     `Display  ${ctx.theme ?? "green"} phosphor · 4:3`,
@@ -261,6 +279,57 @@ export function runCommand(input: string, ctx: CommandContext = {}): CommandResu
     case "degauss":
       return { type: "effect", effect: { kind: "degauss" }, lines: ["*THWOMP*"] };
 
+    case "gravity": {
+      const on = arg !== "off" && arg !== "0";
+      if (on && ctx.reducedMotion)
+        return ok([
+          "gravity: declined.",
+          "your system asks for reduced motion, and there is no still version of",
+          "this one. everything on the page stays where it is.",
+        ]);
+      return {
+        type: "effect",
+        effect: { kind: "gravity", on },
+        lines: on
+          ? [
+              "gravity: 9.81 m/s² restored.",
+              "drag a word · space shakes the tube · esc puts it back",
+            ]
+          : ["gravity: released. reassembling."],
+      };
+    }
+
+    case "eject":
+    case "dock": {
+      // `eject` with no argument pulls back, `dock` pushes in; either accepts an
+      // explicit on/off so the two names stay one behaviour rather than two.
+      const on = cmd === "eject" ? arg !== "off" : arg === "on";
+      if (on && ctx.reducedMotion)
+        return ok([
+          "eject: declined.",
+          "your system asks for reduced motion. the camera stays where it is.",
+        ]);
+      return {
+        type: "effect",
+        effect: { kind: "eject", on },
+        lines: on
+          ? ["stepping back from the glass..."]
+          : ["back against the tube."],
+      };
+    }
+
+    case "sound": {
+      if (arg !== "on" && arg !== "off") return ok(["usage: sound on|off"]);
+      const on = arg === "on";
+      return {
+        type: "effect",
+        effect: { kind: "sound", on },
+        lines: on
+          ? ["audio: 15.625 kHz flyback · 50 Hz mains · unmuted.", "(everything you hear is synthesised. there are no audio files.)"]
+          : ["audio: muted."],
+      };
+    }
+
     case "history": {
       const h = ctx.history ?? [];
       if (h.length === 0) return ok(["(no history yet)"]);
@@ -332,7 +401,7 @@ export function complete(input: string): string | null {
   if (cmd === "cd") pool = [...SECTIONS];
   else if (cmd === "open") pool = projects.map((p) => p.slug);
   else if (cmd === "theme") pool = ["green", "amber", "ice"];
-  else if (cmd === "crt") pool = ["on", "off"];
+  else if (cmd === "crt" || cmd === "sound" || cmd === "gravity") pool = ["on", "off"];
   else if (cmd === "cat") pool = ["about.txt"];
   else return null;
 

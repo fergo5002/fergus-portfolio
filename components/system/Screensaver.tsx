@@ -17,11 +17,18 @@ const IDLE_MS = 45_000;
 export default function Screensaver() {
   const [active, setActive] = useState(false);
   const plateRef = useRef<HTMLDivElement>(null);
-  const { onFrame, reducedMotion, degauss } = useSystem();
+  const { onFrame, reducedMotion, degauss, gravityOn } = useSystem();
 
   // ── idle detection ────────────────────────────────────────────────────────
   useEffect(() => {
     if (reducedMotion) return;
+    // Watching a pile of your own words settle is not being idle. Without this,
+    // standing back to enjoy the physics for forty-five seconds is rewarded with
+    // a "no signal" plate over the top of it.
+    if (gravityOn) {
+      setActive(false);
+      return;
+    }
 
     let timer: ReturnType<typeof setTimeout>;
     let isActive = false;
@@ -46,7 +53,7 @@ export default function Screensaver() {
       clearTimeout(timer);
       events.forEach((e) => window.removeEventListener(e, wake));
     };
-  }, [reducedMotion]);
+  }, [reducedMotion, gravityOn]);
 
   // ── the bounce ────────────────────────────────────────────────────────────
   useEffect(() => {

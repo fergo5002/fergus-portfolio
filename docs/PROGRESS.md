@@ -3,23 +3,60 @@
 > Update this file as you work. It is the handoff contract: the next agent reads it first.
 > Keep the status line current, tick task boxes, and append to the decision log.
 
-**Project:** FergusOS Terminal portfolio (`C:\Dev\fergus-portfolio`)
+**Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
-**Status (2026-08-03):** **v4.1 — the motion system now works on a phone.** v4 shipped animations
-that ran at 1 fps on iPhone-class WebKit, which from outside is indistinguishable from having no
-animations at all. The frame budget is reclaimed, touch is a first-class input, and 390px is now
-its own layout. See "Mobile motion + layout" below.
+**Status (2026-08-04):** **v5 "Mass" shipped.** The tube became a machine: it has memory
+(a GPU persistence buffer with real burn-in), mass (a rigid-body solver that drops the live
+page on the floor and lets you throw it), a voice (everything synthesised at runtime, no audio
+files), and a body (an `eject` that pulls the camera back to reveal the monitor on a desk in a
+dark room, with the site still running inside it). Spec:
+`docs/superpowers/specs/2026-08-04-mass-memory-voice-design.md`.
 
-**Previously (2026-08-03):** **v4 "Phosphor" motion system shipped.** The site now behaves like a
-CRT rather than depicting one — a single WebGL shader owns the tube (glyph rain, aperture
-grille, scroll-driven beam smear, cursor magnetism, degauss), Lenis drives inertial scroll,
-the terminal became a real mini-OS whose commands rewrite the live site, and cards/timelines
-paint themselves in as the beam reaches them. Spec:
-`docs/superpowers/specs/2026-08-03-phosphor-motion-system-design.md`.
+---
 
-Previous (2026-07-14): content refresh — Presterly (Co-Founder & CTO, Hatch105) replaces the
-`[ ROLE — TBC ]` Hatch placeholder as the lead experience entry and top project; Larry renamed
-to Loira AI with corrected dates (Feb–Jun 2026) and the loira.ai link.
+## v5 "Mass" — 2026-08-04
+
+Branch `feat/v5-mass-memory-voice`.
+
+- [x] **`lib/physics.ts`** — oriented boxes, SAT with a clipped two-point manifold, sequential
+      impulses with warm starting, friction, restitution, sleeping, sweep-and-prune broadphase.
+      Departs from Box2D-Lite on split impulses (no landing hop at restitution 0) and fixed
+      sub-stepping (a backgrounded tab cannot teleport the pile through the floor). 24 tests,
+      including a twelve-box stack that must not explode over 600 steps.
+- [x] **`lib/audio.ts`** — runtime synth. 15.625 kHz flyback, 50 Hz mains, beam hiss tracking
+      scroll velocity, key clicks, relay clunk, the degauss sweep with its tremolo. Inert
+      without Web Audio rather than throwing. 15 tests.
+- [x] **`lib/eject.ts`** — the one definition of the screen rectangle, shared by the CSS
+      transform and the shader that draws the bezel around it. 14 tests.
+- [x] **`PhosphorScreen`** — two passes, ping-pong persistence at half resolution, burn-in in
+      alpha under the two static strips, scroll-advected smear, degauss that drags the ghost
+      before scrubbing it, impact lights, the power-on strike-and-open, and the room.
+- [x] **`GravityStage`** — measures words with `Range` rects (zero mutation of the live page),
+      drops clones carrying the real text, grab/throw/push/shake, springs home on release.
+- [x] **`MachineControls`** — sound, gravity, eject as real buttons in the status strip, which
+      is no longer `aria-hidden` (its readouts are hidden individually instead).
+- [x] **Terminal** — `gravity`, `eject`/`dock`, `sound on|off`, key clicks, honest refusals
+      under reduced motion.
+- [x] **Boot** — a genuine cold start, ~5.4s, skippable.
+- [x] 66 → 132 tests; build clean; verified on an Intel Iris Xe at 60 fps with both passes live.
+
+### Decisions
+
+- **Hand-rolled the solver.** A library was the obvious call and the wrong one: 90 kB for a
+  page-drop effect, and the split-impulse change was needed regardless. See the spec.
+- **8-bit render targets, not half-float.** WebGL1 half-float needs two extensions that mobile
+  GPUs advertise inconsistently. The present pass dithers instead.
+- **Gravity and eject are mutually exclusive.** The pile lives in viewport coordinates.
+- **Nothing under `prefers-reduced-motion`.** Refused, not degraded, and the terminal says so.
+- **The canvas stays visible during boot.** v4 hid it, which was right then and became the bug
+  that made the entire v5 power-on invisible.
+
+### Trap worth remembering
+
+`npm run build` while `npm run dev` is running overwrites `.next` and leaves the dev server
+serving production chunks against development RSC. It presents as React silently failing to
+hydrate, with two confusing "RSC payload" errors and no component mounting. Restart dev after
+any build.
 
 ---
 

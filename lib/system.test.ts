@@ -1,5 +1,15 @@
 import { describe, it, expect } from "vitest";
-import { formatUptime, isTheme, memoryAddress, THEME_PHOSPHOR, THEMES } from "@/lib/system";
+import {
+  DEFAULT_SETTINGS,
+  MAX_FRAME_IMPACTS,
+  createSystemFrame,
+  formatUptime,
+  isTheme,
+  memoryAddress,
+  pushImpact,
+  THEME_PHOSPHOR,
+  THEMES,
+} from "@/lib/system";
 
 describe("formatUptime", () => {
   it("renders zero as a padded clock", () => {
@@ -52,5 +62,36 @@ describe("themes", () => {
         expect(channel).toBeLessThanOrEqual(1);
       }
     }
+  });
+});
+
+describe("audio setting", () => {
+  it("is off by default, whatever else is configured", () => {
+    expect(DEFAULT_SETTINGS.audio).toBe(false);
+  });
+});
+
+describe("pushImpact", () => {
+  const impact = (energy: number) => ({ x: 0.5, y: 0.5, energy, at: 0 });
+
+  it("collects impacts up to the shader's slot count", () => {
+    const f = createSystemFrame();
+    for (let i = 0; i < MAX_FRAME_IMPACTS; i++) pushImpact(f, impact(0.1 * (i + 1)));
+    expect(f.impacts).toHaveLength(MAX_FRAME_IMPACTS);
+  });
+
+  it("keeps the loudest when the slots are full, not the first to arrive", () => {
+    const f = createSystemFrame();
+    for (let i = 0; i < MAX_FRAME_IMPACTS; i++) pushImpact(f, impact(0.5));
+    pushImpact(f, impact(0.9));
+    expect(f.impacts).toHaveLength(MAX_FRAME_IMPACTS);
+    expect(f.impacts.some((p) => p.energy === 0.9)).toBe(true);
+  });
+
+  it("drops an impact quieter than everything already held", () => {
+    const f = createSystemFrame();
+    for (let i = 0; i < MAX_FRAME_IMPACTS; i++) pushImpact(f, impact(0.5));
+    pushImpact(f, impact(0.01));
+    expect(f.impacts.every((p) => p.energy === 0.5)).toBe(true);
   });
 });

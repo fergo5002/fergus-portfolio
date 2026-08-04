@@ -11,11 +11,11 @@ import { useSystem } from "@/components/system/SystemProvider";
 
 type Entry = { cmd: string; lines: string[] };
 
-const HINTS = ["help", "neofetch", "theme amber", "matrix", "sudo hire-me"];
+const HINTS = ["gravity", "eject", "sound on", "neofetch", "sudo hire-me"];
 
 const WELCOME: string[] = [
-  "FergusOS 4.0 'Phosphor' · interactive shell ready.",
-  "tab completes · up/down recalls · try 'help' or 'neofetch'.",
+  "FergusOS 5.0 'Mass' · interactive shell ready.",
+  "tab completes · up/down recalls · try 'help', or 'gravity' if you are brave.",
 ];
 
 /**
@@ -34,7 +34,20 @@ export default function Terminal() {
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { frame, settings, setTheme, setCrtEnabled, setScanlines, degauss, burstRain } = useSystem();
+  const {
+    frame,
+    settings,
+    setTheme,
+    setCrtEnabled,
+    setScanlines,
+    setAudioEnabled,
+    setGravity,
+    setEjected,
+    degauss,
+    burstRain,
+    audio,
+    reducedMotion,
+  } = useSystem();
 
   const applyEffect = (effect: SystemEffect) => {
     switch (effect.kind) {
@@ -53,6 +66,15 @@ export default function Terminal() {
         break;
       case "degauss":
         degauss();
+        break;
+      case "gravity":
+        setGravity(effect.on);
+        break;
+      case "eject":
+        setEjected(effect.on);
+        break;
+      case "sound":
+        setAudioEnabled(effect.on);
         break;
       case "reboot":
         degauss();
@@ -78,6 +100,7 @@ export default function Terminal() {
       history: commands,
       uptimeMs: frame.current.uptimeMs,
       theme: settings.theme,
+      reducedMotion,
     });
 
     if (res.type === "navigate") {
@@ -105,6 +128,12 @@ export default function Terminal() {
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    // One click per key that actually does something. Modifiers on their own are
+    // silent, because a real keyboard's shift key does not click either.
+    if (e.key.length === 1 || e.key === "Enter" || e.key === "Backspace" || e.key === "Tab") {
+      audio.key();
+    }
+
     // Escape always releases the field, whatever else is going on.
     if (e.key === "Escape") {
       e.currentTarget.blur();
