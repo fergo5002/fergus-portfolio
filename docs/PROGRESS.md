@@ -5,12 +5,13 @@
 
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
-**Status (2026-08-04):** **v5 "Mass" is merged to `main` and NOT YET DEPLOYED.** Production
-(`fergus-portfolio.vercel.app`) still served 4.0 thirteen minutes after the push, so this is not a
-slow build: the project deploys by hand with `vercel --prod` (see Commands in AGENTS.md), not
-through a Vercel git integration, and the CLI on this machine returns `Error: Not authorized` with
-no token in the auth vault. **Someone with the Vercel login has to run `vercel --prod`**, then
-confirm `machine__btn` appears in the live HTML and walk the four features.
+**Status (2026-08-04):** **v5 "Mass" is LIVE.** Verified on
+`https://fergus-portfolio.vercel.app`: FergusOS 5.0 serving, all three routes 200, 59.9 fps with
+both shader passes and WebGL up, zero console errors, and every feature exercised against
+production, not a local build. Gravity dropped 120 pieces with none landing behind the status
+strip and restored the page cleanly; eject pulled back to the room and docked again with the
+spacer released; sound went live and persisted. The deploy took longer than the first 13 minutes
+of polling suggested, which is why an earlier commit here claimed it had not shipped.
 
 **What v5 is.** The tube became a machine: it has memory
 (a GPU persistence buffer with real burn-in), mass (a rigid-body solver that drops the live
