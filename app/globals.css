@@ -1772,3 +1772,225 @@ html.js .exp__spine {
     color: var(--amber-bright);
   }
 }
+
+/* ============================================================================
+   v5 — mass, memory and voice
+   ========================================================================== */
+
+/* ----- the assembly ------------------------------------------------------
+   Inert while docked: no transform, so no containing block is created for the
+   fixed-position chrome inside it and nothing about the docked site changes.
+   `is-ejecting` is added by EjectRig only while the camera is off the glass. */
+.crt__assembly {
+  position: relative;
+}
+
+.eject-spacer {
+  height: 0;
+  pointer-events: none;
+}
+
+html.is-ejecting .crt__assembly {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  transform-origin: 50% 50%;
+  will-change: transform;
+  /* Rounded to match the shader's screen SDF corner radius, so the DOM content
+     is clipped by the same curve the bezel is drawn against. */
+  border-radius: 10px;
+  /* Above the tube canvas, below nothing else. */
+  z-index: 2;
+}
+
+/* The content is out of flow while ejected, so its scroll position is mirrored
+   from the document rather than inherited. */
+html.is-ejecting .crt__screen {
+  will-change: transform;
+}
+
+/* Reflections and glass belong to the screen, so they shrink with it. */
+html.is-ejecting .crt__scanlines,
+html.is-ejecting .crt__vignette,
+html.is-ejecting .crt__glass,
+html.is-ejecting .crt__flicker,
+html.is-ejecting .cursortrail,
+html.is-ejecting .statusbar,
+html.is-ejecting .nav {
+  position: absolute;
+}
+html.is-ejecting .crt__scanlines,
+html.is-ejecting .crt__vignette,
+html.is-ejecting .crt__glass,
+html.is-ejecting .crt__flicker,
+html.is-ejecting .cursortrail {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+html.is-ejecting .nav {
+  top: 0;
+  left: 0;
+  right: 0;
+}
+html.is-ejecting .statusbar {
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+/* ----- scroll lock -------------------------------------------------------
+   Physics mode freezes the document. Lenis is told to stop where it is mounted;
+   this covers touch and reduced motion, where it is not. */
+html.scroll-locked,
+html.scroll-locked body {
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+/* ----- gravity stage -----------------------------------------------------
+   Real text in real fonts, positioned by the solver. Not a canvas: every piece
+   below is a live DOM node, which is why the type still looks like type when it
+   is lying in a heap at the bottom of the screen. */
+.gravity {
+  position: fixed;
+  inset: 0;
+  z-index: 8500;
+  /* Pointer events are handled on `window` by the stage, so the layer itself
+     must never intercept them — otherwise the status-bar controls (including
+     the one that turns gravity off) would stop responding. */
+  pointer-events: none;
+  contain: strict;
+}
+
+.gravity__piece {
+  position: fixed;
+  margin: 0;
+  padding: 0;
+  display: block;
+  white-space: nowrap;
+  transform-origin: 50% 50%;
+  will-change: transform;
+  backface-visibility: hidden;
+  /* The pieces carry their own copied colour and font; this only adds the
+     phosphor bloom the rest of the site's text has. */
+  text-shadow: var(--glow);
+}
+.gravity__piece.is-held {
+  filter: brightness(1.45);
+}
+.gravity__piece img,
+.gravity__piece.is-held img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* The real page, still exactly where it was, just no longer lit. Kept in the
+   document (rather than removed) so nothing reflows and the return is exact. */
+html.is-gravity .crt__screen {
+  opacity: 0.06;
+  transition: opacity 260ms ease-out;
+}
+html.is-gravity .crt__screen,
+html.is-gravity .gravity {
+  cursor: grab;
+}
+html.is-gravity .statusbar {
+  /* The way out has to stay lit and clickable while everything else is on the
+     floor. */
+  z-index: 8600;
+}
+
+/* ----- machine controls --------------------------------------------------- */
+.statusbar__readouts {
+  display: contents;
+}
+
+.machine {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-left: auto;
+  padding-right: 2px;
+}
+
+.machine__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--green-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+  transition:
+    color 140ms ease,
+    border-color 140ms ease,
+    background-color 140ms ease;
+}
+@media (hover: hover) {
+  .machine__btn:hover {
+    color: var(--green-bright);
+    border-color: var(--green-line);
+    background: rgba(255, 255, 255, 0.03);
+  }
+}
+.machine__btn:focus-visible {
+  outline: 1px solid var(--green);
+  outline-offset: 1px;
+  color: var(--green-bright);
+}
+.machine__btn.is-on {
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
+  text-shadow: 0 0 6px color-mix(in srgb, var(--amber) 55%, transparent);
+}
+.machine__glyph {
+  font-size: 10px;
+}
+
+/* The invitation. A speaker that is quietly asking to be pressed — this is the
+   only affordance on the page for a feature nobody expects a website to have,
+   so it is allowed to draw a little attention to itself. */
+@media (prefers-reduced-motion: no-preference) {
+  .machine__btn--audio.is-inviting .machine__glyph {
+    animation: machine-pulse 2.6s ease-in-out infinite;
+  }
+}
+@keyframes machine-pulse {
+  0%,
+  72%,
+  100% {
+    opacity: 0.55;
+    text-shadow: none;
+  }
+  84% {
+    opacity: 1;
+    text-shadow: 0 0 8px var(--green);
+  }
+}
+
+@media (max-width: 560px) {
+  /* On a narrow strip the labels are the first thing to go; the glyphs and the
+     title attributes carry the meaning. */
+  .machine__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .machine__btn {
+    padding: 2px 5px;
+  }
+}
+
+/* Under `reduce`, gravity and eject are never offered (see MachineControls) and
+   the stage never mounts, so there is nothing here to disable. */

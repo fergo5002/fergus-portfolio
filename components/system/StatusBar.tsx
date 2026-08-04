@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { formatUptime, memoryAddress } from "@/lib/system";
 import { useSystem } from "./SystemProvider";
+import MachineControls from "./MachineControls";
 
 /**
  * A fixed instrument strip along the bottom of the tube: uptime, the current
@@ -53,22 +54,29 @@ export default function StatusBar() {
   const pwd = path === "/" ? "~" : `~${path}`;
 
   return (
-    <div className="statusbar" aria-hidden="true">
-      <span className="statusbar__seg statusbar__brand">FergusOS 4.0</span>
-      <span className="statusbar__seg">
-        up <span ref={uptimeRef}>00:00:00</span>
+    // The readouts are decorative and stay hidden from assistive tech, but the
+    // strip itself no longer can be: it now holds real controls, and an
+    // aria-hidden ancestor would take them out of the accessibility tree while
+    // leaving them focusable — the worst of both.
+    <div className="statusbar">
+      <span className="statusbar__readouts" aria-hidden="true">
+        <span className="statusbar__seg statusbar__brand">FergusOS 5.0</span>
+        <span className="statusbar__seg">
+          up <span ref={uptimeRef}>00:00:00</span>
+        </span>
+        <span className="statusbar__seg statusbar__pwd">{pwd}</span>
+        <span className="statusbar__seg statusbar__mem">
+          <span ref={memRef}>0x00400000</span>
+        </span>
+        <span className="statusbar__seg statusbar__hide-sm">
+          <span ref={fpsRef}>60</span> fps
+        </span>
+        <span className="statusbar__seg statusbar__hide-sm">
+          <span ref={posRef}>500,500</span>
+        </span>
+        <span className="statusbar__seg statusbar__hide-sm">{settings.theme}</span>
       </span>
-      <span className="statusbar__seg statusbar__pwd">{pwd}</span>
-      <span className="statusbar__seg statusbar__mem">
-        <span ref={memRef}>0x00400000</span>
-      </span>
-      <span className="statusbar__seg statusbar__hide-sm">
-        <span ref={fpsRef}>60</span> fps
-      </span>
-      <span className="statusbar__seg statusbar__hide-sm">
-        <span ref={posRef}>500,500</span>
-      </span>
-      <span className="statusbar__seg statusbar__hide-sm">{settings.theme}</span>
+      <MachineControls />
     </div>
   );
 }

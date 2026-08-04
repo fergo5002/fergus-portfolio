@@ -30,6 +30,27 @@ export const THEME_PHOSPHOR: Record<Theme, [number, number, number]> = {
   ice: [0.55, 0.87, 1.0],
 };
 
+/**
+ * A collision worth lighting up and making a noise about, in viewport 0..1
+ * space. `at` is a `performance.now()` stamp: impacts are kept for a few
+ * hundred milliseconds and faded out rather than existing for exactly one
+ * frame, because a 16ms flash is not a flash, it is a dropped frame.
+ */
+export type FrameImpact = { x: number; y: number; energy: number; at: number };
+
+/** How long an impact keeps glowing. */
+export const IMPACT_LIFETIME_MS = 340;
+
+/** An impact's remaining brightness, 1 at the moment of contact. */
+export function impactFalloff(ageMs: number): number {
+  if (ageMs <= 0) return 1;
+  if (ageMs >= IMPACT_LIFETIME_MS) return 0;
+  return Math.exp(-ageMs / 130) * (1 - ageMs / IMPACT_LIFETIME_MS);
+}
+
+/** How many impacts the shader is willing to light in one frame. */
+export const MAX_FRAME_IMPACTS = 6;
+
 /** Per-frame values. Mutated in place; never cloned, never set into state. */
 export type SystemFrame = {
   /** Pointer in 0..1 viewport space. */
@@ -64,6 +85,24 @@ export type SystemFrame = {
   fps: number;
   /** ms since the system booted, for uptime readouts. */
   uptimeMs: number;
+
+  /** 0 (against the glass) to 1 (across the room). Eased towards `ejectTarget`. */
+  eject: number;
+  ejectTarget: number;
+  /** 0..1 blend into physics mode. Dims the tube and arms the impact lights. */
+  gravity: number;
+  gravityTarget: number;
+  /**
+   * The most recent collisions, in viewport 0..1 space. Written by the physics
+   * stage and read by the shader and the audio engine in the same frame, which
+   * is why it lives on the frame rather than in either of them: a word landing
+   * has to flash the phosphor and click at the same instant or it reads as two
+   * unrelated effects.
+   */
+  impacts: FrameImpact[];
+  /** 0..1 power-on ramp, driving the shader's turn-on line and vertical roll. */
+  boot: number;
+  bootTarget: number;
 };
 
 export function createSystemFrame(): SystemFrame {
@@ -84,7 +123,34 @@ export function createSystemFrame(): SystemFrame {
     targetLive: 1,
     fps: 60,
     uptimeMs: 0,
+    eject: 0,
+    ejectTarget: 0,
+    gravity: 0,
+    gravityTarget: 0,
+    impacts: [],
+    boot: 1,
+    bootTarget: 1,
   };
+}
+
+/**
+ * Record a collision for this frame, keeping only the loudest.
+ *
+ * A collapsing pile produces far more contacts than there are uniform slots in
+ * the shader, and taking the first six would light whichever ones the solver
+ * happened to visit first rather than the ones a person would notice.
+ */
+export function pushImpact(frame: SystemFrame, impact: FrameImpact): void {
+  const list = frame.impacts;
+  if (list.length < MAX_FRAME_IMPACTS) {
+    list.push(impact);
+    return;
+  }
+  let weakest = 0;
+  for (let i = 1; i < list.length; i++) {
+    if (list[i].energy < list[weakest].energy) weakest = i;
+  }
+  if (impact.energy > list[weakest].energy) list[weakest] = impact;
 }
 
 export type SystemSettings = {
@@ -93,12 +159,20 @@ export type SystemSettings = {
   crtEnabled: boolean;
   /** 0..1 scanline/mask intensity. */
   scanlines: number;
+  /**
+   * Whether the tube is allowed to make noise. Always starts false on a fresh
+   * visitor — every browser blocks audio before a gesture anyway, and a site
+   * that starts humming at someone in an open-plan office has misjudged the
+   * room. Persisted, so anyone who turns it on gets it back next time.
+   */
+  audio: boolean;
 };
 
 export const DEFAULT_SETTINGS: SystemSettings = {
   theme: "green",
   crtEnabled: true,
   scanlines: 0.55,
+  audio: false,
 };
 
 export const SETTINGS_KEY = "fergusos_settings";
@@ -120,6 +194,7 @@ export function loadSettings(): SystemSettings {
         typeof parsed.scanlines === "number" && Number.isFinite(parsed.scanlines)
           ? Math.min(1, Math.max(0, parsed.scanlines))
           : DEFAULT_SETTINGS.scanlines,
+      audio: typeof parsed.audio === "boolean" ? parsed.audio : DEFAULT_SETTINGS.audio,
     };
   } catch {
     return DEFAULT_SETTINGS;
