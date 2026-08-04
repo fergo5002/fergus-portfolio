@@ -5,7 +5,14 @@
 
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
-**Status (2026-08-04):** **v5 "Mass" shipped.** The tube became a machine: it has memory
+**Status (2026-08-04):** **v5 "Mass" is merged to `main` and NOT YET DEPLOYED.** Production
+(`fergus-portfolio.vercel.app`) still served 4.0 thirteen minutes after the push, so this is not a
+slow build: the project deploys by hand with `vercel --prod` (see Commands in AGENTS.md), not
+through a Vercel git integration, and the CLI on this machine returns `Error: Not authorized` with
+no token in the auth vault. **Someone with the Vercel login has to run `vercel --prod`**, then
+confirm `machine__btn` appears in the live HTML and walk the four features.
+
+**What v5 is.** The tube became a machine: it has memory
 (a GPU persistence buffer with real burn-in), mass (a rigid-body solver that drops the live
 page on the floor and lets you throw it), a voice (everything synthesised at runtime, no audio
 files), and a body (an `eject` that pulls the camera back to reveal the monitor on a desk in a
