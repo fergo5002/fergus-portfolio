@@ -13,10 +13,16 @@
  * browser gets a silent site rather than a broken one.
  */
 
-/** 625 lines x 25 frames. The whine a CRT left on fills a room with. */
+/**
+ * 625 lines x 25 frames: the line frequency of a European tube.
+ *
+ * The power-on ramp still sweeps up to it, which is the moment it is worth
+ * hearing. It used to also run continuously, along with a 50 Hz mains hum, as an
+ * ambient bed. That was removed: a nonstop tone plus a nonstop drone is a whirr,
+ * and a whirr is what someone reaches for the mute button over. Nothing sounds
+ * at rest now, only when something actually happens.
+ */
 export const FLYBACK_HZ = 15625;
-/** European mains. Fergus is in Dublin; a 60 Hz hum would be someone else's tube. */
-export const MAINS_HZ = 50;
 
 export function clamp01(v: number): number {
   if (!Number.isFinite(v)) return 0;
@@ -78,13 +84,20 @@ export class TubeAudio {
   }
 
   /**
-   * Build the graph and start the ambient bed. Must be called from a user
-   * gesture: every browser refuses to start a context otherwise. Returns
-   * whether audio is actually available.
+   * Build the graph. Should be called from a user gesture, since that is the
+   * only moment a browser will let the context leave the suspended state.
+   * Returns whether audio is available at all.
+   *
+   * The graph is built BEFORE resuming, and the resume is deliberately not
+   * awaited. Under the autoplay policy `resume()` does not always reject when
+   * it cannot proceed: it can simply stay pending indefinitely. Awaiting it
+   * first therefore left the whole synth unbuilt and this method hung forever,
+   * so no sound would play even once the context later unblocked. Building
+   * first means everything is wired and ready the instant it does.
    */
   async enable(): Promise<boolean> {
     if (this.ctx) {
-      await this.ctx.resume().catch(() => {});
+      void this.ctx.resume().catch(() => {});
       this.setMuted(false);
       return true;
     }
@@ -98,7 +111,6 @@ export class TubeAudio {
       return false;
     }
     this.ctx = ctx;
-    await ctx.resume().catch(() => {});
 
     // A compressor on the master bus, because a pile of words landing at once
     // can stack twenty impact voices in the same 50ms and clip hard without it.
@@ -133,84 +145,24 @@ export class TubeAudio {
     this.noise = buf;
 
     this.startAmbient();
+    void ctx.resume().catch(() => {});
     return true;
   }
 
-  /** The bed: flyback whine, mains hum, phosphor hiss, and the beam noise bus. */
+  /**
+   * The one continuous voice: beam noise, and it is silent until you scroll.
+   *
+   * There used to be an ambient bed under this (a 15.625 kHz flyback whine, a
+   * 50 Hz mains hum with two harmonics, and a highpassed phosphor hiss). All
+   * three are gone. Individually each was a defensible piece of CRT modelling;
+   * together they were a nonstop drone, and a nonstop drone is the thing people
+   * mute. The tube now makes no sound at all at rest, which also means enabling
+   * audio costs nothing until the visitor does something.
+   */
   private startAmbient(): void {
     const ctx = this.ctx;
     const bus = this.ambient;
     if (!ctx || !bus || !this.noise) return;
-    const t = ctx.currentTime;
-
-    // ── flyback whine ────────────────────────────────────────────────────────
-    // The fundamental is above what most laptop speakers reproduce and above
-    // what many adults hear at all, which is exactly right: it should be a thing
-    // some people notice and others cannot. The half-frequency partial is there
-    // so the rest get something.
-    const whineGain = ctx.createGain();
-    whineGain.gain.value = 0;
-    whineGain.gain.linearRampToValueAtTime(0.05, t + 2.2);
-    whineGain.connect(bus);
-
-    const fly = ctx.createOscillator();
-    fly.type = "sine";
-    fly.frequency.value = FLYBACK_HZ;
-    fly.connect(whineGain);
-    fly.start();
-
-    const sub = ctx.createOscillator();
-    sub.type = "sine";
-    sub.frequency.value = FLYBACK_HZ / 2;
-    const subGain = ctx.createGain();
-    subGain.gain.value = 0.1;
-    sub.connect(subGain).connect(whineGain);
-    sub.start();
-
-    // Slow drift, so it never sits as a dead synthetic tone.
-    const wobble = ctx.createOscillator();
-    wobble.frequency.value = 0.27;
-    const wobbleAmt = ctx.createGain();
-    wobbleAmt.gain.value = 6;
-    wobble.connect(wobbleAmt);
-    wobbleAmt.connect(fly.detune);
-    wobbleAmt.connect(sub.detune);
-    wobble.start();
-
-    // ── mains hum ────────────────────────────────────────────────────────────
-    const humFilter = ctx.createBiquadFilter();
-    humFilter.type = "lowpass";
-    humFilter.frequency.value = 420;
-    const humGain = ctx.createGain();
-    humGain.gain.value = 0;
-    humGain.gain.linearRampToValueAtTime(1, t + 1.6);
-    humFilter.connect(humGain).connect(bus);
-
-    for (const [mult, level] of [
-      [1, 0.05],
-      [2, 0.024],
-      [3, 0.008],
-    ] as const) {
-      const o = ctx.createOscillator();
-      o.type = "sine";
-      o.frequency.value = MAINS_HZ * mult;
-      const g = ctx.createGain();
-      g.gain.value = level;
-      o.connect(g).connect(humFilter);
-      o.start();
-    }
-
-    // ── phosphor hiss ────────────────────────────────────────────────────────
-    const hiss = ctx.createBufferSource();
-    hiss.buffer = this.noise;
-    hiss.loop = true;
-    const hissHp = ctx.createBiquadFilter();
-    hissHp.type = "highpass";
-    hissHp.frequency.value = 5200;
-    const hissGain = ctx.createGain();
-    hissGain.gain.value = 0.008;
-    hiss.connect(hissHp).connect(hissGain).connect(bus);
-    hiss.start();
 
     // ── beam noise, driven per-frame by scroll velocity ──────────────────────
     const beamSrc = ctx.createBufferSource();

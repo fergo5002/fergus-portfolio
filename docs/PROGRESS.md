@@ -31,9 +31,11 @@ Branch `feat/v5-mass-memory-voice`.
       Departs from Box2D-Lite on split impulses (no landing hop at restitution 0) and fixed
       sub-stepping (a backgrounded tab cannot teleport the pile through the floor). 24 tests,
       including a twelve-box stack that must not explode over 600 steps.
-- [x] **`lib/audio.ts`**: runtime synth. 15.625 kHz flyback, 50 Hz mains, beam hiss tracking
-      scroll velocity, key clicks, relay clunk, the degauss sweep with its tremolo. Inert
-      without Web Audio rather than throwing. 15 tests.
+- [x] **`lib/audio.ts`**: runtime synth. Key clicks, relay clunk, the degauss sweep with its
+      tremolo, collision ticks, power-on ramp, and beam hiss tracking scroll velocity. Inert
+      without Web Audio rather than throwing. 14 tests.
+      **Revised same day:** the continuous ambient bed (flyback whine, mains hum, phosphor
+      hiss) was cut. It read as whirring, which it was. Nothing loops at rest now.
 - [x] **`lib/eject.ts`**: the one definition of the screen rectangle, shared by the CSS
       transform and the shader that draws the bezel around it. 14 tests.
 - [x] **`PhosphorScreen`**: two passes, ping-pong persistence at half resolution, burn-in in
@@ -56,6 +58,12 @@ Branch `feat/v5-mass-memory-voice`.
   GPUs advertise inconsistently. The present pass dithers instead.
 - **Gravity and eject are mutually exclusive.** The pile lives in viewport coordinates.
 - **Nothing under `prefers-reduced-motion`.** Refused, not degraded, and the terminal says so.
+- **`CursorTrail` is deleted.** It was a second full-viewport canvas, screen-blended at 50%,
+  drawing a comet tail behind the pointer. Against v5's persistence buffer it read as a grey
+  smear rather than phosphor, and it was drawing the same effect twice: the sim pass already
+  deposits a glow under the pointer and decays it properly. Earlier sections of this file
+  reference the component; they are history, the file is gone.
+- **No ambient audio.** See the audio entry above. Do not reintroduce a resting tone.
 - **The canvas stays visible during boot.** v4 hid it, which was right then and became the bug
   that made the entire v5 power-on invisible.
 

@@ -6,7 +6,6 @@ import {
   impactFreq,
   impactGain,
   FLYBACK_HZ,
-  MAINS_HZ,
 } from "./audio";
 
 describe("clamp01", () => {
@@ -79,13 +78,9 @@ describe("beamNoiseGain", () => {
 
 describe("tube frequencies", () => {
   it("uses the real horizontal line frequency of a 625-line tube", () => {
-    // 15625 Hz = 15.625 kHz: 625 lines x 25 frames. The whine everyone under
-    // about 35 remembers hearing from a room with a television left on.
+    // 15625 Hz = 15.625 kHz: 625 lines x 25 frames. Now only heard as the
+    // target of the power-on sweep; it no longer runs as a continuous tone.
     expect(FLYBACK_HZ).toBe(15625);
-  });
-
-  it("hums at European mains, not American", () => {
-    expect(MAINS_HZ).toBe(50);
   });
 });
 

@@ -236,18 +236,11 @@ ul {
   }
 }
 
-/* Phosphor persistence behind the cursor. Above content so the glow falls over
-   panels, but faint enough never to touch legibility. */
-.cursortrail {
-  position: fixed;
-  inset: 0;
-  z-index: 8998;
-  width: 100vw;
-  height: 100dvh;
-  pointer-events: none;
-  opacity: 0.5;
-  mix-blend-mode: screen;
-}
+/* The cursor's phosphor persistence used to be a second full-viewport canvas
+   here, screen-blended at 50%, which read as a grey smear trailing the pointer.
+   It is gone. The tube's own persistence buffer already deposits a glow under
+   the pointer and decays it, so the effect survives in the one place it belongs
+   and the compositing layer does not. */
 
 /* Specular sheen on the glass. The highlight slides with scroll velocity, which
    is what makes the screen read as a curved physical surface you are moving past
@@ -269,8 +262,7 @@ ul {
 html.crt-off .crt__scanlines,
 html.crt-off .crt__vignette,
 html.crt-off .crt__glass,
-html.crt-off .crt__flicker,
-html.crt-off .cursortrail {
+html.crt-off .crt__flicker {
   display: none;
 }
 html.crt-off body {
@@ -1496,8 +1488,11 @@ html.js .exp__spine {
 
    Attribution, fps on the throttled Pixel with one layer forced off:
      .crt__scanlines off -> 60      .phosphor off -> 58
-     .cursortrail off    -> 19      .crt__glass off -> 9
-     backdrop-filter off -> 9       everything off -> 61
+     .crt__glass off     -> 9       backdrop-filter off -> 9
+     everything off      -> 61
+     (a `.cursortrail` canvas measured 19 here. It was deleted in v5: it drew a
+     second full-viewport comet tail that read as a grey smear against the
+     tube's own persistence buffer, so do not go looking for it below.)
 
    So the two saturating layers each get removed or made static here, and the
    rest lose their per-frame cost. What remains on a phone is the shader (at 0.6
@@ -1832,7 +1827,6 @@ html.is-ejecting .crt__scanlines,
 html.is-ejecting .crt__vignette,
 html.is-ejecting .crt__glass,
 html.is-ejecting .crt__flicker,
-html.is-ejecting .cursortrail,
 html.is-ejecting .statusbar,
 html.is-ejecting .nav {
   position: absolute;
@@ -1840,8 +1834,7 @@ html.is-ejecting .nav {
 html.is-ejecting .crt__scanlines,
 html.is-ejecting .crt__vignette,
 html.is-ejecting .crt__glass,
-html.is-ejecting .crt__flicker,
-html.is-ejecting .cursortrail {
+html.is-ejecting .crt__flicker {
   inset: 0;
   width: 100%;
   height: 100%;

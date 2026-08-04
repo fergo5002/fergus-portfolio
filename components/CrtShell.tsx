@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import PhosphorScreen from "./system/PhosphorScreen";
-import CursorTrail from "./system/CursorTrail";
 import StatusBar from "./system/StatusBar";
 import Screensaver from "./system/Screensaver";
 import RouteTransition from "./system/RouteTransition";
@@ -28,7 +27,6 @@ export default function CrtShell({ children }: { children: ReactNode }) {
       <PhosphorScreen />
       <div className="crt__assembly">
         <div className="crt__screen">{children}</div>
-        <CursorTrail />
         <div className="crt__scanlines" aria-hidden="true" />
         <div className="crt__vignette" aria-hidden="true" />
         <div className="crt__glass" aria-hidden="true" />

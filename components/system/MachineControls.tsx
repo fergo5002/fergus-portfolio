@@ -35,7 +35,7 @@ export default function MachineControls() {
         title={
           audioOn
             ? "Mute the tube"
-            : "Unmute: 15.625 kHz flyback whine, 50 Hz mains hum, and everything else this thing does. All synthesised."
+            : "Unmute. Key clicks, relay clunks, the degauss sweep, collisions. All synthesised at runtime, and silent until something happens."
         }
       >
         <span className="machine__glyph" aria-hidden="true">

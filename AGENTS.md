@@ -28,7 +28,10 @@ could not express, and each one is now a subsystem:
   `GravityStage` drops the live text into it. Collisions feed the same frame the shader and
   the synth read, so an impact lights the phosphor and clicks at the same instant.
 - **Voice.** `lib/audio.ts` synthesises everything at runtime; there are no audio files and
-  there must not be. Off by default, and every method is inert until enabled.
+  there must not be. Off by default, every method inert until enabled, and **silent at rest**:
+  it had a continuous ambient bed (flyback whine, mains hum, phosphor hiss) and that turned out
+  to be a drone people mute. Nothing loops now except beam noise, which is zero until you
+  scroll. Do not reintroduce a resting tone.
 - **Body.** `eject` pulls the camera off the glass. `lib/eject.ts` is the single definition of
   where the screen sits, because CSS scales the DOM into a rectangle that the shader draws a
   bezel around, and they have to agree to the pixel.
@@ -103,7 +106,7 @@ Deploy: Vercel, zero config: `vercel` (preview) / `vercel --prod` (production).
 app/            layout (fonts, metadata, CRT shell) + the 3 routes + globals.css + icon.svg
 components/
   system/       SystemProvider (frame clock + settings + synth), PhosphorScreen (WebGL tube:
-                persistence sim + present + room), CursorTrail, StatusBar, MachineControls,
+                persistence sim + present + room), StatusBar, MachineControls,
                 Screensaver, RouteTransition, EjectRig
   physics/      GravityStage (measures the page, drops it, puts it back)
   motion/       RasterReveal (the house reveal), HeroName, TiltCard, Magnetic, TimelineSpine

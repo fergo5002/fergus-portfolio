@@ -22,7 +22,7 @@ effect it could still gain would have been another way of drawing light *now*.
 |---|---|---|
 | Memory | Persistence, trails, burn-in, a degauss worth pressing | `PhosphorScreen` sim pass |
 | Mass | Content that can be dropped, thrown and stacked | `lib/physics.ts` + `GravityStage` |
-| Voice | Flyback whine, mains hum, relay clunks, the degauss sweep | `lib/audio.ts` |
+| Voice | Key clicks, relay clunks, the degauss sweep, collisions | `lib/audio.ts` |
 | Body | A bezel, a desk, a room, a power LED | `lib/eject.ts` + the room shader |
 
 Each is a property of the object, not an effect layered on it. That is the test for anything
@@ -79,6 +79,15 @@ degauss has to sweep on the same curve the shader's shockwave expands on. Neithe
 
 Off by default. Every browser blocks audio before a gesture anyway, and a portfolio that starts
 humming at someone in an open-plan office has misjudged the room. The affordance pulses instead.
+
+**Silent at rest (revised 2026-08-04).** The first cut ran a continuous bed under everything: a
+15.625 kHz flyback whine with a half-frequency partial, a 50 Hz mains hum with two harmonics, and
+a highpassed phosphor hiss. Each was defensible on its own and the three together were a drone.
+Fergus heard it as whirring, which is the correct read. They are gone. The only looping source
+left is the beam noise, whose gain is zero below a scroll velocity of 0.02, so an idle page makes
+no sound at all and the flyback frequency survives only as the target of the power-on sweep.
+The lesson generalises: ambient audio on a page is not scenery, it is something the visitor has
+to actively tolerate.
 
 ## Body: the pull-back
 

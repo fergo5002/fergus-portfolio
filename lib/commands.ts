@@ -325,7 +325,10 @@ export function runCommand(input: string, ctx: CommandContext = {}): CommandResu
         type: "effect",
         effect: { kind: "sound", on },
         lines: on
-          ? ["audio: 15.625 kHz flyback · 50 Hz mains · unmuted.", "(everything you hear is synthesised. there are no audio files.)"]
+          ? [
+              "audio: unmuted. silent at rest, so it only speaks when you do something.",
+              "(everything you hear is synthesised at runtime. there are no audio files.)",
+            ]
           : ["audio: muted."],
       };
     }

@@ -111,9 +111,10 @@ export default function TiltCard({
   // That value is resolved by a `matchMedia` read during the FIRST client render
   // (SystemProvider), so the server always assumed false while a visitor with
   // "reduce motion" enabled computed true: two structurally different trees at
-  // hydration, on every project card and experience entry. Same failure as the
-  // one already fixed in CursorTrail, and the reason that fix defers to an
-  // effect rather than branching at first render.
+  // hydration, on every project card and experience entry. The general rule is
+  // to render one tree and gate it in CSS, or to flip it from an effect, never
+  // to branch the tree on a client-only media query. `MachineControls` carries
+  // the same note.
   //
   // Nothing is lost by rendering the live tree: every `.tilt.is-live` rule in
   // globals.css sits inside `@media (prefers-reduced-motion: no-preference)`, so
