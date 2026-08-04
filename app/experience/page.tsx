@@ -4,9 +4,10 @@ import ExperienceItem from "@/components/ExperienceItem";
 import Scramble from "@/components/Scramble";
 import TimelineSpine from "@/components/motion/TimelineSpine";
 import { experience } from "@/content/experience";
+import { profile } from "@/content/profile";
 
 export const metadata: Metadata = {
-  title: "Experience — Fergus O'Reilly",
+  title: `Experience · ${profile.shortName}`,
   description:
     "Presterly (Co-Founder & CTO, Hatch105), Loira AI, and the Trinity Student Managed Fund.",
 };

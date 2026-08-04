@@ -691,7 +691,12 @@ html.crt-off body {
 
 .skills__row {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  /* In ch for the same reason as .contact__row: the keys are JetBrains Mono, so
+     one ch is one character. `app/page.tsx` renders the label with a trailing
+     slash, so the budget is the longest label + 1. "commerce & messaging/" is
+     21 and overflowed the old fixed 140px (14.5 characters) at every desktop
+     width. A test pins the length so this cannot silently regress. */
+  grid-template-columns: 23ch 1fr;
   gap: var(--sp-3);
   padding: var(--sp-1) 0;
   border-bottom: 1px dashed var(--green-line);

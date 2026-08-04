@@ -218,12 +218,27 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
 
 - **2026-08-04 (content refresh: skills, voice, live numbers)** — Fergus asked for the skills to
   match recent work and for the prose to read more relaxed, while still coming across as ambitious.
-  - **The traction numbers were badly stale, and understated him.** Checked against the Presterly
-    production database (read-only Supabase MCP) rather than trusted: the page claimed seven
-    brands / 127,000 customers / €18M, the truth was 34 brands / 426,307 customers / €20.2M. All
-    updated. The **34** is deliberately conservative: `shops` shows 105 installed, but that
-    includes dev and test installs, so the published figure is installed-and-not-uninstalled with
-    1,000+ customers. Fergus picked that framing over the raw count. See the new AGENTS.md section.
+  - **The traction numbers were stale.** Checked against the Presterly production database
+    (read-only Supabase MCP) rather than trusted. The **34** is deliberately conservative: `shops`
+    shows 105 installed, but that includes dev and test installs, so the published figure is
+    installed-and-not-uninstalled with 1,000+ customers. Fergus picked that framing over the raw
+    count. See the new AGENTS.md section.
+  - **The first pass at those numbers was wrong, and code review caught it before it shipped.**
+    The draft paired the filtered 34 with *unfiltered* platform totals (426,000 customers, "over
+    €20M", 296,000 predictions), which reads as though all of it sits inside those 34 brands.
+    Rescoped to the same 34, the real figures are **423,624 customers, €19,897,852 and 292,745
+    predictions**. So "over €20M" was simply false, by 0.5%. Published as 423,000 / nearly €19M /
+    roughly 292,000, each rounded **down**.
+  - **The currency was wrong too.** `orders.total_price` is stored in each shop's own currency and
+    was being summed across them under a euro sign. Within the 34: **EUR €18,956,608 across 335,337
+    orders, plus GBP £941,244 across 37,718**. "Nearly €19M" is now the EUR figure alone, which is
+    true without the GBP and errs low. Never sum `total_price` across shops without grouping by
+    `currency` first.
+  - **"live across" became "installed on".** The query proves installation, not activation. Two
+    different claims, and only one of them was evidenced.
+  - **"kept current" was dropped from the prediction count.** A `count(*)` proves rows exist, not
+    that they are fresh. No refresh cadence was verified, so the verb was not earned. (The previous
+    copy's "~240,000 refreshed daily" could not be substantiated either.)
   - **Killed a claim that had become false.** The Presterly experience entry said he "shipped a
     hosted tier so a merchant never has to own WhatsApp infrastructure of their own". The hosted
     tier was built, but the hosted-by-default model was **superseded on 2026-07-27** in favour of
@@ -257,6 +272,15 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
     nicer address to show, and the extra hop costs nothing). The two mentions of the old URL further up
     this file are left alone — they are historical statements about what the design was copied
     from, and rewriting them would falsify the record.
+  - **The em dash guard was content-only, and the bug was in `app/`.** `app/experience/page.tsx`
+    and `app/projects/page.tsx` both shipped `"… — Fergus O'Reilly"` page titles while the suite sat
+    green, which is a guard that produces the feeling of coverage without the coverage.
+    `content/voice.test.ts` now walks every `.ts`/`.tsx` under `app/`, `components/`, `content/`
+    and `lib/`, strips comments, and reports file and line. Proven to fail by reintroducing the
+    exact title it missed. Its en-dash rule was also vacuous (it never scanned `dates` or `year`,
+    the only fields containing one) and its regex rejected `"Feb – Jun 2026"`, which is real data.
+    It now strips valid ranges and asserts nothing survives, so one good range cannot launder a bad
+    dash elsewhere in the same string.
   - **New `content/links.test.ts`** guards every outbound href in `content/*.ts`: absolute,
     parseable, `https:`/`mailto:` only, plus both GitHub accounts and the Firespark domain. Nothing
     covered these before, so a typo in a public link shipped silently. Proven to fail against the

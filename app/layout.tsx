@@ -20,11 +20,14 @@ const display = VT323({
 });
 
 export const metadata: Metadata = {
+  // Derived from content/profile.ts, never retyped. AGENTS.md keeps copy in the
+  // content layer, and a hand-written duplicate here would quietly go on
+  // advertising the old tagline in search results after the hero was updated.
   title: `${profile.shortName} · Terminal`,
-  description: `${profile.name}: technical founder, CS @ Trinity, builds beautiful things that scale. Projects, experience, and contact.`,
+  description: `${profile.name}: ${profile.tagline}. Projects, experience, and contact.`,
   openGraph: {
     title: `${profile.shortName} · Terminal`,
-    description: `${profile.name}: technical founder, CS @ Trinity, builds beautiful things that scale.`,
+    description: `${profile.name}: ${profile.tagline}.`,
     type: "website",
   },
 };

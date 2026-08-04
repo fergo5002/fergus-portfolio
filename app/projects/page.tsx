@@ -3,9 +3,10 @@ import PromptLine from "@/components/PromptLine";
 import ProjectCard from "@/components/ProjectCard";
 import Scramble from "@/components/Scramble";
 import { projects } from "@/content/projects";
+import { profile } from "@/content/profile";
 
 export const metadata: Metadata = {
-  title: "Projects — Fergus O'Reilly",
+  title: `Projects · ${profile.shortName}`,
   description: "Presterly, Firespark, Loira AI, Remand, Under the Campanile, and ContraBot.",
 };
 
