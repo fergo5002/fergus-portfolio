@@ -11,7 +11,7 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
  * This is the one place a physics runtime earns its keep. The ambient layers are
  * all continuous per-frame writes where a spring library only adds overhead, but
  * a discrete control that must overshoot slightly and settle is exactly what
- * `useSpring` models well — and getting that settle right by hand is fiddly.
+ * `useSpring` models well: and getting that settle right by hand is fiddly.
  */
 export default function Magnetic({
   children,
@@ -35,7 +35,7 @@ export default function Magnetic({
   //
   // `useReducedMotion` resolves during the first client render, so the server
   // always assumes false and a visitor with "reduce motion" on would render a
-  // different element than the one that was sent — a hydration mismatch on every
+  // different element than the one that was sent: a hydration mismatch on every
   // nav link. Rendering the same `motion.span` either way and simply never
   // setting x/y leaves it at rest, which is exactly what `reduce` should mean.
   const onMove = (e: ReactPointerEvent<HTMLSpanElement>) => {

@@ -12,7 +12,7 @@ import MachineControls from "./MachineControls";
  * and cursor coordinates.
  *
  * Its job is to make the machine feel like it is running rather than merely
- * displayed. Values are written straight into text nodes on a ~10 Hz throttle —
+ * displayed. Values are written straight into text nodes on a ~10 Hz throttle,
  * fast enough to read as live, slow enough to be legible and cheap.
  */
 export default function StatusBar() {
@@ -57,7 +57,7 @@ export default function StatusBar() {
     // The readouts are decorative and stay hidden from assistive tech, but the
     // strip itself no longer can be: it now holds real controls, and an
     // aria-hidden ancestor would take them out of the accessibility tree while
-    // leaving them focusable — the worst of both.
+    // leaving them focusable: the worst of both.
     <div className="statusbar">
       <span className="statusbar__readouts" aria-hidden="true">
         <span className="statusbar__seg statusbar__brand">FergusOS 5.0</span>

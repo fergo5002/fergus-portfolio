@@ -8,7 +8,7 @@ import SignalPlate from "./SignalPlate";
  * When `src` is empty it renders a procedural CRT alignment plate rather than an
  * empty box, so the layout looks finished today and upgrades itself the moment a
  * real file is dropped into /public/img. The plate never pretends to be the
- * missing image — it is visibly a test card, and its accessible name says so.
+ * missing image: it is visibly a test card, and its accessible name says so.
  * The aspect ratio is reserved either way to avoid CLS.
  */
 export default function ImageFrame({
@@ -22,7 +22,7 @@ export default function ImageFrame({
   alt: string;
   /** Shown inside the placeholder, e.g. "portrait.jpg". */
   label?: string;
-  /** Seed for the procedural plate — normally the project slug. */
+  /** Seed for the procedural plate: normally the project slug. */
   plate?: string;
   ratio?: string;
 }) {

@@ -36,7 +36,7 @@ type Phase = "dark" | "head" | "memory" | "devices" | "bar";
  * single bright horizontal line, then opens it vertically over about a second
  * and a half while the vertical hold rolls a few times before locking. The BIOS
  * text types into that opening band, which is why the sequence starts dark and
- * silent for four hundred milliseconds — the machine has not finished striking
+ * silent for four hundred milliseconds: the machine has not finished striking
  * yet, and text appearing before it would give the game away.
  *
  * Skippable at any point, never shown twice in a session, and never shown under

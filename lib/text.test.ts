@@ -43,7 +43,7 @@ describe("splitWordsWithOffsets", () => {
   });
 
   it("handles a scrambled frame, where glyphs stand in for letters", () => {
-    // Mid-scramble the hero renders glyphs, not the real name — the grouping has
+    // Mid-scramble the hero renders glyphs, not the real name: the grouping has
     // to hold for whatever the current frame happens to be.
     const spans = splitWordsWithOffsets("P#tr!ck F$rgus");
     expect(spans.map((s) => s.word)).toEqual(["P#tr!ck", " ", "F$rgus"]);

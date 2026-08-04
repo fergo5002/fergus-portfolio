@@ -10,7 +10,7 @@ import { useSystem } from "@/components/system/SystemProvider";
  * beam traces its perimeter (see `.tilt` in globals.css).
  *
  * Everything is published as CSS custom properties and rendered by CSS, so the
- * only JS work per move is one rect read and four `setProperty` calls — and the
+ * only JS work per move is one rect read and four `setProperty` calls: and the
  * whole effect switches off by simply not attaching the handlers under
  * `prefers-reduced-motion`.
  *
@@ -24,7 +24,7 @@ import { useSystem } from "@/components/system/SystemProvider";
  *
  * The touch path is chosen from `event.pointerType` rather than from a media
  * query resolved at render, so the server and the client always agree on the
- * markup — deciding it during the first client render is what causes React
+ * markup: deciding it during the first client render is what causes React
  * hydration failures on exactly the devices this is meant to serve.
  */
 export default function TiltCard({
@@ -110,7 +110,7 @@ export default function TiltCard({
   // It used to return a different tree entirely when `reducedMotion` was true.
   // That value is resolved by a `matchMedia` read during the FIRST client render
   // (SystemProvider), so the server always assumed false while a visitor with
-  // "reduce motion" enabled computed true — two structurally different trees at
+  // "reduce motion" enabled computed true: two structurally different trees at
   // hydration, on every project card and experience entry. Same failure as the
   // one already fixed in CursorTrail, and the reason that fix defers to an
   // effect rather than branching at first render.

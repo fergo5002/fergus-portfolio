@@ -9,7 +9,7 @@ import { useSystem } from "./SystemProvider";
  *
  * On every path change the tube loses lock for a moment: a burst of static, a
  * horizontal roll, and a degauss pulse through the shader. It also moves focus to
- * the main region, which is the bit that actually matters — client-side
+ * the main region, which is the bit that actually matters: client-side
  * navigation otherwise strands screen-reader and keyboard users at the top of a
  * document that has silently swapped underneath them.
  */

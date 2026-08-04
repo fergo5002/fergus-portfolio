@@ -2,7 +2,7 @@
  * A small, honest 2D rigid-body engine.
  *
  * This exists because "the page has mass" is only convincing if the mass is
- * real. Fake physics — springs on a timer, CSS falling — reads as an animation
+ * real. Fake physics (springs on a timer, CSS falling) reads as an animation
  * within about two seconds of someone grabbing a word and trying to stack it on
  * another one. So this is the actual thing: oriented boxes, SAT collision with a
  * clipped two-point manifold, sequential impulses with warm starting, Coulomb
@@ -435,6 +435,17 @@ export function collide(a: Body, b: Body): Manifold | null {
 
 /* ── the world ───────────────────────────────────────────────────────────── */
 
+/**
+ * Conservative radius of a box about its centre: the half diagonal, which is
+ * its maximum extent along any axis at any rotation.
+ *
+ * Shared by the broadphase sort key and the sweep's break test, which is the
+ * whole point of it being a function. See the note in `broadphase`.
+ */
+function radius(b: Body): number {
+  return Math.hypot(b.hw, b.hh);
+}
+
 const SUB_DT = 1 / 120;
 /** Never consume more than this much wall clock in one call. */
 const MAX_STEP = 1 / 24;
@@ -566,7 +577,14 @@ export class World {
       b.y += (b.vy + b.psy) * h;
       b.angle += (b.av + b.psa) * h;
 
-      if (speed < SLEEP_LINEAR && Math.abs(b.av) < SLEEP_ANGULAR) {
+      // The pseudo velocity counts towards being awake. Split impulses resolve
+      // penetration without ever touching real velocity, so a body being pushed
+      // out of a deep overlap looks perfectly still by the real-velocity test
+      // and falls asleep mid-correction: permanently, since the broadphase
+      // skips pairs where both bodies are asleep. It would then sit inside its
+      // neighbour forever.
+      const correcting = Math.hypot(b.psx, b.psy);
+      if (speed < SLEEP_LINEAR && correcting < SLEEP_LINEAR && Math.abs(b.av) < SLEEP_ANGULAR) {
         if (++b.idle > SLEEP_FRAMES) {
           b.awake = false;
           b.vx = 0;
@@ -581,16 +599,25 @@ export class World {
 
   /**
    * Sweep and prune along x. The array is kept between frames and insertion
-   * sorted, which on a settled pile is O(n) — bodies barely reorder once they
+   * sorted, which on a settled pile is O(n): bodies barely reorder once they
    * stop moving.
    */
   private broadphase(): void {
     const order = this.axisOrder;
     for (let i = 1; i < order.length; i++) {
       const b = order[i];
-      const key = b.x - b.hw - b.hh;
+      // The sort key and the sweep's break test MUST use the same radius.
+      // They did not: this sorted by `hw + hh` while the loop below broke on
+      // `hypot(hw, hh)`. Those are different conservative bounds (`hw + hh` is
+      // up to sqrt(2) larger, worst case on a square), so the array was not
+      // monotonic in the quantity the break test read, and the sweep could exit
+      // before reaching a genuinely overlapping body. A near-square image next
+      // to a long thin word is exactly that geometry, and because a settled pile
+      // keeps its x-order, a pair missed once stayed missed: the two bodies sat
+      // inside each other permanently.
+      const key = b.x - radius(b);
       let j = i - 1;
-      while (j >= 0 && order[j].x - order[j].hw - order[j].hh > key) {
+      while (j >= 0 && order[j].x - radius(order[j]) > key) {
         order[j + 1] = order[j];
         j--;
       }
@@ -601,12 +628,11 @@ export class World {
     seen.clear();
     for (let i = 0; i < order.length; i++) {
       const a = order[i];
-      // Conservative radius: the box's half diagonal, valid at any rotation.
-      const ra = Math.hypot(a.hw, a.hh);
+      const ra = radius(a);
       const aMax = a.x + ra;
       for (let j = i + 1; j < order.length; j++) {
         const b = order[j];
-        const rb = Math.hypot(b.hw, b.hh);
+        const rb = radius(b);
         if (b.x - rb > aMax) break;
         if (a.static && b.static) continue;
         if (!a.awake && !b.awake) continue;
@@ -629,7 +655,7 @@ export class World {
         //
         // Both must be dynamic. A static body carries `awake: false` forever, so
         // without that guard every box resting on the floor would read as "one
-        // awake, one not" and be woken again on the very frame it fell asleep —
+        // awake, one not" and be woken again on the very frame it fell asleep,
         // nothing would ever settle, and the solver would run at full cost on a
         // completely motionless pile.
         if (!first.static && !second.static && first.awake !== second.awake) {

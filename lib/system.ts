@@ -1,5 +1,5 @@
 /**
- * FergusOS system bus — the shared state every animated layer reads from.
+ * FergusOS system bus: the shared state every animated layer reads from.
  *
  * Split deliberately in two:
  *
@@ -21,7 +21,7 @@ export function isTheme(value: string): value is Theme {
 
 /**
  * Phosphor colour per theme, as linear-ish 0..1 RGB for the shader. Kept in sync
- * with the `html[data-theme]` blocks in globals.css by eye — these feed the WebGL
+ * with the `html[data-theme]` blocks in globals.css by eye: these feed the WebGL
  * layer, those feed the DOM.
  */
 export const THEME_PHOSPHOR: Record<Theme, [number, number, number]> = {
@@ -72,7 +72,7 @@ export type SystemFrame = {
   tapX: number;
   tapY: number;
   /** 1 while a finger is held down. Distinct from `pointerActive`, which a mouse
-   *  raises merely by existing — on touch there is no hover, so "is the user
+   *  raises merely by existing: on touch there is no hover, so "is the user
    *  touching the glass right now" is its own signal. */
   touchDown: number;
   /** performance.now() until which digital rain is boosted to full. */
@@ -161,7 +161,7 @@ export type SystemSettings = {
   scanlines: number;
   /**
    * Whether the tube is allowed to make noise. Always starts false on a fresh
-   * visitor — every browser blocks audio before a gesture anyway, and a site
+   * visitor: every browser blocks audio before a gesture anyway, and a site
    * that starts humming at someone in an open-plan office has misjudged the
    * room. Persisted, so anyone who turns it on gets it back next time.
    */
@@ -178,7 +178,7 @@ export const DEFAULT_SETTINGS: SystemSettings = {
 export const SETTINGS_KEY = "fergusos_settings";
 
 /**
- * Read persisted settings. Tolerates absent, malformed, or partial storage —
+ * Read persisted settings. Tolerates absent, malformed, or partial storage,
  * anything unreadable falls back to defaults rather than throwing.
  */
 export function loadSettings(): SystemSettings {
@@ -206,7 +206,7 @@ export function saveSettings(settings: SystemSettings): void {
   try {
     window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
   } catch {
-    /* private mode / quota — the site works fine unpersisted */
+    /* private mode / quota: the site works fine unpersisted */
   }
 }
 

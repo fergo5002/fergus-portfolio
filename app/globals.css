@@ -1,5 +1,5 @@
 /* ============================================================================
-   FergusOS Terminal — global stylesheet
+   FergusOS Terminal: global stylesheet
    CRT phosphor aesthetic. Colours/spacing are CSS variables for easy tweaking.
    All motion is gated behind `prefers-reduced-motion: no-preference`.
    ========================================================================== */
@@ -419,7 +419,7 @@ html.crt-off body {
   background: #060906;
 }
 /* Phosphor duotone so imagery lives inside the CRT world, resolving to full
-   colour on hover — the tint keeps the grid as one world, the reveal is the
+   colour on hover: the tint keeps the grid as one world, the reveal is the
    reward. Done with `filter` alone rather than `mix-blend-mode`, because filters
    are animatable and a blend-mode swap would snap ugly mid-transition. */
 .imgframe__img {
@@ -430,7 +430,7 @@ html.crt-off body {
 }
 /* Gated on hover existing: a touch browser keeps `:hover` on the last element
    tapped, so ungated this would resolve a card to full colour and leave it that
-   way. On touch the press handles it — see the `(hover: none)` block below. */
+   way. On touch the press handles it: see the `(hover: none)` block below. */
 @media (hover: hover) {
   .imgframe:hover .imgframe__img,
   .tilt.is-live:hover .imgframe__img {
@@ -439,7 +439,7 @@ html.crt-off body {
 }
 /* No hover on touch, so the reveal cannot be earned by pointing at it. Two
    things happen instead: the resting tint is lighter than the desktop duotone so
-   the content reads unaided, and pressing the card resolves it to full colour —
+   the content reads unaided, and pressing the card resolves it to full colour,
    the same reward as hover, earned by the gesture a phone actually has. */
 @media (hover: none) {
   .imgframe__img {
@@ -970,7 +970,7 @@ html.crt-off body {
 
   /* CRT power-on: played when the boot finishes. The classic CRT turn-off
      collapses the picture to a bright line then a dot; we run it in reverse so
-     content "switches on" — expanding from a thin bright line with a brightness
+     content "switches on": expanding from a thin bright line with a brightness
      bloom that settles to normal. Added/removed by BootSequence.finish(). */
   .power-on {
     animation: power-on 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
@@ -1003,8 +1003,8 @@ html.crt-off body {
 /* ==========================================================================
    PHOSPHOR MOTION SYSTEM
    Everything below is the v4 motion layer. Two gates apply throughout:
-     - `html.js`  — set pre-paint, so nothing is ever hidden from a no-JS visitor
-     - prefers-reduced-motion — the animation itself, never the content
+     - `html.js` : set pre-paint, so nothing is ever hidden from a no-JS visitor
+     - prefers-reduced-motion: the animation itself, never the content
    ========================================================================== */
 
 @property --trace-a {
@@ -1081,7 +1081,7 @@ html.crt-off body {
 }
 /* Each word is one unbreakable group. Without this the per-character
    inline-blocks below are independent boxes and the line may break between any
-   two letters — which is what rendered the name as "O'Re / illy" on a phone. */
+   two letters: which is what rendered the name as "O'Re / illy" on a phone. */
 .heroname__word {
   display: inline-block;
   white-space: nowrap;
@@ -1304,7 +1304,7 @@ html.js .exp__spine {
   /* Hidden with opacity ALONE, never clip-path.
      IntersectionObserver folds an element's own clip-path into its intersection
      rect, so clipping the block to zero height here would stop the observer ever
-     reporting it as visible — the block would hide itself and then never be told
+     reporting it as visible: the block would hide itself and then never be told
      to appear. Opacity is ignored by the observer, so it is the only safe way to
      pre-hide something whose reveal is triggered by its own visibility. The clip
      lives purely inside the keyframes below. */
@@ -1371,7 +1371,7 @@ html.js .exp__spine {
   /* Hover rules are gated on hover actually existing.
      A touch browser leaves `:hover` asserted on the last element tapped until
      something else is tapped, so an ungated `:hover` rule does not simply fail
-     to fire on a phone — it fires and then sticks. With the glare no longer
+     to fire on a phone: it fires and then sticks. With the glare no longer
      hidden on mobile, that left every tapped card lit up indefinitely. */
   @media (hover: hover) {
     .tilt.is-live:hover .tilt__glare {
@@ -1462,7 +1462,7 @@ html.js .exp__spine {
     }
   }
 
-  /* `sudo rm -rf /` — the tube collapsing before the reboot. */
+  /* `sudo rm -rf /`: the tube collapsing before the reboot. */
   .term.is-wiping {
     animation: term-wipe 1.5s cubic-bezier(0.7, 0, 0.85, 0) both;
     transform-origin: center;
@@ -1485,13 +1485,13 @@ html.js .exp__spine {
 
 /* ==========================================================================
    MOBILE CHROME BUDGET
-   Keyed on `(hover: none)`, i.e. the input, not the width — a narrow desktop
+   Keyed on `(hover: none)`, i.e. the input, not the width: a narrow desktop
    window has a mouse and a GPU, a phone has neither.
 
    The measured problem: on an iPhone 14 Pro (WebKit) the site ran at 1 fps, and
    on a 4x-throttled Pixel 7 at 10-20 fps idle / 6 fps scrolling, against a 61 fps
-   about:blank control. Every animation was running — `document.getAnimations()`
-   listed them all, with no console errors — the phone simply could not paint
+   about:blank control. Every animation was running: `document.getAnimations()`
+   listed them all, with no console errors: the phone simply could not paint
    them, which is exactly what "no animations on mobile" looks like from outside.
 
    Attribution, fps on the throttled Pixel with one layer forced off:
@@ -1501,12 +1501,12 @@ html.js .exp__spine {
 
    So the two saturating layers each get removed or made static here, and the
    rest lose their per-frame cost. What remains on a phone is the shader (at 0.6
-   dpr / 30 fps) plus content animation — which is the part anyone actually sees.
+   dpr / 30 fps) plus content animation: which is the part anyone actually sees.
    ========================================================================== */
 @media (hover: none) {
   /* The shader draws scanlines itself (`uScanlines`), so once the tube is
      confirmed live this layer is drawing them a second time, full-viewport,
-     every frame. It stands down then — and only then.
+     every frame. It stands down then: and only then.
 
      Note the direction. The default on touch is a STATIC version of this layer,
      and `webgl-ok` (added by PhosphorScreen once the renderer exists) removes
@@ -1552,8 +1552,8 @@ html.js .exp__spine {
   /* Convergence loss on headings is driven by --scroll-v, so every heading on
      the page repaints its text-shadow on every frame of every scroll. That is a
      text repaint, not a composite, and it was the last thing holding scrolling
-     under 20fps on a throttled phone. The tube still smears — the shader reads
-     the same velocity — the type just stays sharp. */
+     under 20fps on a throttled phone. The tube still smears: the shader reads
+     the same velocity: the type just stays sharp. */
   html.js .page__title,
   html.js .exp__org,
   html.js .project__title {
@@ -1700,7 +1700,7 @@ html.js .exp__spine {
 
   /* ── experience timeline ────────────────────────────────────────────────
      The spine held a 24px left gutter plus its own border out of a 390px
-     column — about 12% of the width, spent on decoration, which is why the
+     column: about 12% of the width, spent on decoration, which is why the
      bullets wrapped so hard. It now runs behind the cards rather than beside
      them, and each entry's node sits on the card edge. */
   .exp__list {
@@ -1731,7 +1731,7 @@ html.js .exp__spine {
   /* ── project cards ──────────────────────────────────────────────────────
      The image ratios are left exactly as authored. 16:9 is the shorter frame,
      not the taller one, so overriding it to 4:3 would have added roughly 65px
-     of height to every card — the opposite of the density this block is for —
+     of height to every card: the opposite of the density this block is for,
      and cropped the sides of images built to be 16:9 in the first place. */
   .project__title {
     font-size: 1.25rem;
@@ -1748,7 +1748,7 @@ html.js .exp__spine {
 
   /* ── terminal ───────────────────────────────────────────────────────────
      iOS zooms the whole page when a focused input is under 16px, and this was
-     14.4px — so tapping the prompt yanked the layout sideways and left the
+     14.4px: so tapping the prompt yanked the layout sideways and left the
      visitor scrolled off the edge of a site about a terminal. */
   .term__form {
     font-size: 1rem;
@@ -1792,7 +1792,7 @@ html.js .exp__spine {
 }
 
 /* ============================================================================
-   v5 — mass, memory and voice
+   v5: mass, memory and voice
    ========================================================================== */
 
 /* ----- the assembly ------------------------------------------------------
@@ -1876,7 +1876,7 @@ html.scroll-locked body {
   inset: 0;
   z-index: 8500;
   /* Pointer events are handled on `window` by the stage, so the layer itself
-     must never intercept them — otherwise the status-bar controls (including
+     must never intercept them: otherwise the status-bar controls (including
      the one that turns gravity off) would stop responding. */
   pointer-events: none;
   contain: strict;
@@ -1973,7 +1973,7 @@ html.is-gravity .statusbar {
   font-size: 10px;
 }
 
-/* The invitation. A speaker that is quietly asking to be pressed — this is the
+/* The invitation. A speaker that is quietly asking to be pressed: this is the
    only affordance on the page for a feature nobody expects a website to have,
    so it is allowed to draw a little attention to itself. */
 @media (prefers-reduced-motion: no-preference) {
@@ -2012,3 +2012,16 @@ html.is-gravity .statusbar {
 
 /* Under `reduce`, gravity and eject are never offered (see MachineControls) and
    the stage never mounts, so there is nothing here to disable. */
+
+/* Gravity and the pull-back are hidden under `reduce` rather than removed from
+   the tree. Branching JSX on a client-only media query is a hydration mismatch
+   for exactly the visitors the preference protects; `display: none` also takes
+   them out of the focus order, which visual hiding would not. */
+@media (prefers-reduced-motion: reduce) {
+  .machine__motion {
+    display: none;
+  }
+}
+.machine__motion {
+  display: contents;
+}

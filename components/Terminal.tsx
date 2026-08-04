@@ -21,7 +21,7 @@ const WELCOME: string[] = [
 /**
  * A real (if playful) command line, and the only place in the app allowed to
  * apply a `SystemEffect`. Commands like `theme` and `crt` genuinely rewrite the
- * running site — the parser decides what should happen, this decides how.
+ * running site: the parser decides what should happen, this decides how.
  */
 export default function Terminal() {
   const [history, setHistory] = useState<Entry[]>([{ cmd: "", lines: WELCOME }]);
@@ -84,7 +84,7 @@ export default function Terminal() {
         try {
           sessionStorage.removeItem("fergusos_booted");
         } catch {
-          /* private mode — the reload is still the point */
+          /* private mode: the reload is still the point */
         }
         window.setTimeout(() => window.location.reload(), 1600);
         break;

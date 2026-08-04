@@ -24,7 +24,7 @@ import { TubeAudio } from "@/lib/audio";
 
 /**
  * A frame callback. Receives the rAF timestamp and the clamped delta in ms.
- * Subscribers read per-frame values straight off the frame ref — they must not
+ * Subscribers read per-frame values straight off the frame ref: they must not
  * call setState from here.
  */
 export type FrameCallback = (time: number, dt: number) => void;
@@ -43,6 +43,12 @@ type SystemContextValue = {
    * AudioContext.
    */
   setAudioEnabled: (enabled: boolean) => void;
+  /**
+   * Whether the tube is genuinely audible right now. Distinct from
+   * `settings.audio`, which is the persisted preference and is restored before
+   * any gesture has been able to start an AudioContext.
+   */
+  audioLive: boolean;
   /**
    * The live synth. Stable across renders, and safe to call on every frame:
    * every method is a no-op until `setAudioEnabled(true)` has succeeded.
@@ -83,6 +89,7 @@ const INERT: SystemContextValue = {
   setCrtEnabled: () => {},
   setScanlines: () => {},
   setAudioEnabled: () => {},
+  audioLive: false,
   audio: new TubeAudio(),
   setEjected: () => {},
   ejected: false,
@@ -117,7 +124,7 @@ const LENIS_OPTIONS = {
  * springs and shader time can never drift apart.
  *
  * Under `prefers-reduced-motion` Lenis is not mounted at all (native scroll is
- * restored) and the loop still runs, but at a much lower cost — subscribers
+ * restored) and the loop still runs, but at a much lower cost: subscribers
  * check `reducedMotion` and render static.
  */
 export default function SystemProvider({ children }: { children: ReactNode }) {
@@ -128,7 +135,7 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<SystemSettings>(DEFAULT_SETTINGS);
   // Resolved during the very first client render, not in an effect. ReactLenis
   // constructs the real Lenis instance (and attaches its wheel listeners) in its
-  // OWN effect, and React runs child effects before parent ones — so deciding
+  // OWN effect, and React runs child effects before parent ones: so deciding
   // this in an effect here would let Lenis briefly go live for a reduced-motion
   // user before we could unmount it. Safe for SSR: ReactLenis renders null with
   // no children, so server and client produce identical DOM either way.
@@ -148,9 +155,15 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [ejected, setEjectedState] = useState(false);
   const [gravityOn, setGravityState] = useState(false);
+  /**
+   * Whether the synth graph is actually built and unmuted, as opposed to
+   * `settings.audio`, which is only the persisted *preference*. The two differ
+   * on every page load for a returning visitor, and the UI must show this one.
+   */
+  const [audioLive, setAudioLive] = useState(false);
 
   // One synth for the life of the page. Constructed eagerly because the
-  // constructor touches nothing — the AudioContext is only built on `enable()`,
+  // constructor touches nothing: the AudioContext is only built on `enable()`,
   // which has to happen inside a user gesture.
   const audioRef = useRef<TubeAudio | null>(null);
   if (!audioRef.current) audioRef.current = new TubeAudio();
@@ -180,12 +193,12 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", apply);
   }, []);
 
-  // ── pointer + touch tracking (ref only — never state, this fires constantly) ─
+  // ── pointer + touch tracking (ref only: never state, this fires constantly) ─
   //
   // A mouse makes the pointer "active" simply by being on the page. A finger has
   // no such resting state: it is either on the glass or it is not. So on a coarse
   // pointer the field engages on `pointerdown`, tracks the finger while it moves,
-  // and decays once it lifts — which is what makes every pointer-driven effect
+  // and decays once it lifts: which is what makes every pointer-driven effect
   // (hero magnetism, the shader's deflection ripple) work on a phone without
   // running, and costing, anything at rest.
   useEffect(() => {
@@ -212,7 +225,7 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
       //
       // Touch only. A mouse already deflects the tube continuously just by being
       // near it, so adding a shockwave to every desktop click would be a second
-      // effect answering an input that is already answered — and the brief was
+      // effect answering an input that is already answered: and the brief was
       // to fix the phone, not to change what works.
       if (e.pointerType !== "mouse") {
         f.tapAt = performance.now();
@@ -253,7 +266,7 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
     let last = startedAt;
     let lastScrollY = window.scrollY;
     // Only write CSS variables when they move meaningfully; a style write every
-    // frame on <html> is a needless invalidation — it dirties every rule that
+    // frame on <html> is a needless invalidation: it dirties every rule that
     // reads the variable, all the way down the tree. Touch devices get a coarser
     // threshold because they have the least headroom and the effects reading
     // --scroll-v there are ambient, so nobody can see the quantisation.
@@ -338,7 +351,7 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
       // Drained after the subscribers so every layer has already seen this
       // frame's collisions. Sounding is keyed on the timestamp rather than on
       // clearing the list, because the shader needs the impact to persist for a
-      // few hundred milliseconds to be visible at all — a one-frame flash is
+      // few hundred milliseconds to be visible at all: a one-frame flash is
       // indistinguishable from a dropped frame.
       const impacts = f.impacts;
       if (impacts.length > 0) {
@@ -382,6 +395,25 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [audio, settings.audio]);
 
+  // A returning visitor who left sound on has the preference restored, but no
+  // AudioContext: browsers require a fresh gesture on every page load, and one
+  // has not happened yet. Without this the speaker would read as "on" over a
+  // silent tube, and pressing it to fix that would toggle the preference OFF,
+  // the opposite of what the person is asking for. So the preference arms a
+  // one-shot listener and the very first gesture, whatever it is, starts the
+  // graph.
+  useEffect(() => {
+    if (!mounted || !settings.audio || audioLive) return;
+    const start = () => {
+      void audio.enable().then((ok) => {
+        if (ok) setAudioLive(true);
+      });
+    };
+    const events = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+    events.forEach((e) => window.addEventListener(e, start, { once: true, passive: true }));
+    return () => events.forEach((e) => window.removeEventListener(e, start));
+  }, [mounted, settings.audio, audioLive, audio]);
+
   useEffect(() => () => audio.dispose(), [audio]);
 
   const setAudioEnabled = useCallback(
@@ -389,11 +421,13 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
       setSettings((s) => ({ ...s, audio: enabled }));
       if (!enabled) {
         audio.setMuted(true);
+        setAudioLive(false);
         return;
       }
       // Fired straight from the click, not from an effect: the gesture is the
       // only thing that lets the context start, and it does not survive a tick.
       void audio.enable().then((ok) => {
+        setAudioLive(ok);
         if (ok) audio.powerOn();
       });
     },
@@ -486,6 +520,7 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
       setCrtEnabled,
       setScanlines,
       setAudioEnabled,
+      audioLive,
       audio,
       setEjected,
       ejected,
@@ -504,6 +539,7 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
       setCrtEnabled,
       setScanlines,
       setAudioEnabled,
+      audioLive,
       audio,
       setEjected,
       ejected,
@@ -519,7 +555,7 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
 
   return (
     <SystemContext.Provider value={value}>
-      {/* Inertial scroll is the point of the effect, but it is motion — so under
+      {/* Inertial scroll is the point of the effect, but it is motion: so under
           `reduce` we simply never mount it and the browser's native scroll stands.
           Same on touch, where it costs frames and smooths nothing. */}
       {!reducedMotion && !coarsePointer && (

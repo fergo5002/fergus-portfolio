@@ -154,7 +154,7 @@ describe("World", () => {
     expect(maxUp).toBeGreaterThan(-40);
   });
 
-  it("stacks without exploding — the stability guarantee the whole effect rests on", () => {
+  it("stacks without exploding: the stability guarantee the whole effect rests on", () => {
     const w = new World();
     w.add(ground(600));
     const boxes: Body[] = [];
@@ -264,5 +264,61 @@ describe("World", () => {
     expect(w.bodies).not.toContain(a);
     for (let i = 0; i < 60; i++) w.step(1 / 60);
     expect(Number.isFinite(b.y)).toBe(true);
+  });
+});
+
+describe("broadphase", () => {
+  /** Deepest penetration still present between two bodies, 0 when apart. */
+  const worstOverlap = (a: Body, b: Body): number => {
+    const m = collide(a, b);
+    if (!m) return 0;
+    return Math.min(...m.points.map((p) => p.separation));
+  };
+
+  it("does not miss an overlapping pair because of the sweep order", () => {
+    // Regression, and it needs this exact shape to bite.
+    //
+    // The sort key used `hw + hh` while the sweep's break test used
+    // `hypot(hw, hh)`. Those are different conservative radii (the first is up
+    // to sqrt(2) larger), so the array was not monotonic in the quantity the
+    // break test read, and the sweep could exit one body too early.
+    //
+    // `spacer` is near-square, so its two radii differ the most. Under the old
+    // key it sorted between the other two and its `x - hypot` sat past `a`'s
+    // reach, triggering the early break. It is parked far away in y and made
+    // static so it cannot itself nudge anything apart: otherwise the pair
+    // separates for an unrelated reason and the test passes on the broken code,
+    // which is exactly how the first version of this test fooled me.
+    const w = new World({ gravityY: 0 });
+    const a = box(0, 0, 10, 10, { restitution: 0 });
+    const spacer = createBody({ x: 90, y: 500, hw: 50, hh: 50, mass: 0 });
+    const thin = box(95, 0, 100, 1, { restitution: 0 });
+    w.add(a);
+    w.add(spacer);
+    w.add(thin);
+
+    expect(worstOverlap(a, thin)).toBeLessThan(-10);
+    for (let i = 0; i < 400; i++) w.step(1 / 60);
+
+    // Solved down to the resting slop. Note the assertion is on penetration
+    // DEPTH, not on `collide` returning null: two bodies resting against each
+    // other still produce a manifold, and expecting null here is asserting that
+    // they fly apart, which is not what a solver is for.
+    expect(worstOverlap(a, thin)).toBeGreaterThan(-0.5);
+  });
+
+  it("finds the same pairs whichever order the bodies were added in", () => {
+    const run = (reverse: boolean) => {
+      const w = new World({ gravityY: 0 });
+      const a = box(0, 0, 10, 10, { restitution: 0 });
+      const spacer = createBody({ x: 90, y: 500, hw: 50, hh: 50, mass: 0 });
+      const thin = box(95, 0, 100, 1, { restitution: 0 });
+      const all = [a, spacer, thin];
+      (reverse ? [...all].reverse() : all).forEach((body) => w.add(body));
+      for (let i = 0; i < 400; i++) w.step(1 / 60);
+      return worstOverlap(a, thin);
+    };
+    expect(run(false)).toBeGreaterThan(-0.5);
+    expect(run(true)).toBeGreaterThan(-0.5);
   });
 });

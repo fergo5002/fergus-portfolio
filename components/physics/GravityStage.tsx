@@ -17,7 +17,7 @@ import { useSystem } from "@/components/system/SystemProvider";
  * rectangles, which needs no wrapper spans and cannot disturb layout, and the
  * clones are built into a separate fixed overlay. The original content is left
  * exactly where it was, faded out and made `inert`, so returning is a matter of
- * deleting the overlay — there is no reassembly step that could get it wrong.
+ * deleting the overlay: there is no reassembly step that could get it wrong.
  *
  * Note the effect below deliberately does **not** depend on `gravityOn`. Tearing
  * the scene down the instant gravity is switched off would mean the return
@@ -189,6 +189,8 @@ export default function GravityStage() {
       returning: boolean;
     };
     let scene: Scene | null = null;
+    /** Set when `build()` found nothing, cleared when gravity is switched off. */
+    let buildFailed = false;
 
     let grabbed: Piece | null = null;
     let anchorX = 0;
@@ -361,9 +363,18 @@ export default function GravityStage() {
       const wanted = wantedRef.current;
 
       if (wanted && !scene) {
+        // One attempt per activation. `build()` walks the whole page with a
+        // TreeWalker and getComputedStyle, so retrying it every frame because
+        // there happened to be nothing to measure would burn a full layout pass
+        // sixty times a second for as long as the flag stayed on.
+        if (buildFailed) return;
         scene = build();
-        if (!scene) return;
+        if (!scene) {
+          buildFailed = true;
+          return;
+        }
       }
+      if (!wanted) buildFailed = false;
       if (!scene) return;
 
       if (!wanted && !scene.returning) {

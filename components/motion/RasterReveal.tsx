@@ -8,7 +8,7 @@ import type { ElementType, ReactNode } from "react";
  * beam line, the way a CRT draws a frame.
  *
  * Deliberately CSS-driven rather than a Motion component. The animation is
- * one-shot and non-interactive, so a JS animation runtime buys nothing — and
+ * one-shot and non-interactive, so a JS animation runtime buys nothing: and
  * gating the hidden state behind the `.js` class (set pre-paint in the document
  * head) means a visitor without JavaScript sees the content in full rather than
  * a permanently clipped block.

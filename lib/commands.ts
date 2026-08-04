@@ -6,7 +6,7 @@ import type { Theme } from "@/lib/system";
 
 /**
  * Side effects a command can ask the host page to perform. `runCommand` stays a
- * pure function of its inputs — it describes what should happen to the machine
+ * pure function of its inputs: it describes what should happen to the machine
  * and the Terminal component is the only thing that actually touches it. That is
  * what keeps commands like `theme` and `matrix`, which visibly rewrite the whole
  * site, unit-testable.
@@ -180,7 +180,7 @@ function resume(): string[] {
 }
 
 /**
- * Pure terminal command parser. No DOM, router or system access — callers act on
+ * Pure terminal command parser. No DOM, router or system access: callers act on
  * the returned CommandResult.
  */
 export function runCommand(input: string, ctx: CommandContext = {}): CommandResult {

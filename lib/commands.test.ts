@@ -254,7 +254,7 @@ describe("complete", () => {
   });
 
   it("completes only as far as the shared prefix when ambiguous", () => {
-    // "c" spans cd, cat, contact, crt, clear — they share nothing beyond "c".
+    // "c" spans cd, cat, contact, crt, clear: they share nothing beyond "c".
     expect(complete("c")).toBe("c");
   });
 

@@ -5,7 +5,7 @@
  * different renderers have to agree on it to the pixel: CSS scales the live DOM
  * into the monitor, and the fragment shader draws the bezel, the light spill and
  * the desk *around* that same rectangle. If they drift by even a few pixels the
- * illusion dies instantly — the text visibly hangs over the plastic.
+ * illusion dies instantly: the text visibly hangs over the plastic.
  *
  * Screen space here is 0..1 across the viewport with y pointing **down**, i.e.
  * CSS's convention. The shader flips it once on the way in.

@@ -9,11 +9,11 @@ import { useSystem } from "./SystemProvider";
  *
  * The shader draws the bezel, the desk and the light spill around a rectangle;
  * this scales the live DOM into that same rectangle, from the same function, on
- * the same frame. Nothing is duplicated between the two — see `lib/eject.ts`.
+ * the same frame. Nothing is duplicated between the two: see `lib/eject.ts`.
  *
  * The awkward part is scrolling. Once the assembly is `position: fixed` its
  * content is out of flow, so the document collapses to nothing and the page
- * cannot scroll — which would freeze a visitor mid-page the moment they pressed
+ * cannot scroll: which would freeze a visitor mid-page the moment they pressed
  * eject. Rather than reimplementing scrolling, a spacer restores the document's
  * original height so the native scrollbar, wheel, keyboard and Lenis all keep
  * working exactly as before, and the assembly's contents are simply translated

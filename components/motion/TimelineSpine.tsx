@@ -9,7 +9,7 @@ import { useSystem } from "@/components/system/SystemProvider";
  * there. Fills from the top of the list to wherever the middle of the viewport
  * currently sits.
  *
- * Renders fully drawn under `prefers-reduced-motion` — the line is meaningful
+ * Renders fully drawn under `prefers-reduced-motion`: the line is meaningful
  * furniture, only its drawing is decorative.
  */
 export default function TimelineSpine() {

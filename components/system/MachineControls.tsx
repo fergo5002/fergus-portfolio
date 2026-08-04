@@ -11,14 +11,18 @@ import { useSystem } from "./SystemProvider";
  * still be able to find the sound, drop the page on the floor, and step back to
  * look at the machine.
  *
- * Real buttons, in a real focus order, with real labels — the effects they fire
+ * Real buttons, in a real focus order, with real labels: the effects they fire
  * are decorative but the controls themselves are not.
  */
 export default function MachineControls() {
-  const { settings, setAudioEnabled, gravityOn, setGravity, ejected, setEjected, audio, reducedMotion } =
+  const { setAudioEnabled, audioLive, gravityOn, setGravity, ejected, setEjected, audio } =
     useSystem();
 
-  const audioOn = settings.audio;
+  // Deliberately `audioLive`, not the persisted preference. A returning visitor
+  // has the preference back but no AudioContext until they touch something, and
+  // showing the speaker as lit over a silent tube would make the button that is
+  // supposed to fix that mute them instead.
+  const audioOn = audioLive;
 
   return (
     <div className="machine">
@@ -41,43 +45,50 @@ export default function MachineControls() {
       </button>
 
       {/* Physics and the pull-back are both motion, and both take over the whole
-          viewport. Under `reduce` they are not offered at all rather than
-          offered and then refused. */}
-      {!reducedMotion && (
-        <>
-          <button
-            type="button"
-            className={`machine__btn${gravityOn ? " is-on" : ""}`}
-            onClick={() => setGravity(!gravityOn)}
-            onPointerEnter={() => audio.hover()}
-            aria-pressed={gravityOn}
-            title={
-              gravityOn
-                ? "Put the page back together"
-                : "Drop the page. Drag the words, throw them, stack them. Space shakes it, Esc puts it back."
-            }
-          >
-            <span className="machine__glyph" aria-hidden="true">
-              {gravityOn ? "◆" : "◇"}
-            </span>
-            <span className="machine__label">gravity</span>
-          </button>
+          viewport, so under `reduce` they are not offered at all: `setGravity`
+          and `setEjected` refuse outright, and these two are hidden with them.
 
-          <button
-            type="button"
-            className={`machine__btn${ejected ? " is-on" : ""}`}
-            onClick={() => setEjected(!ejected)}
-            onPointerEnter={() => audio.hover()}
-            aria-pressed={ejected}
-            title={ejected ? "Back against the glass" : "Step back and look at the machine"}
-          >
-            <span className="machine__glyph" aria-hidden="true">
-              {ejected ? "▣" : "▢"}
-            </span>
-            <span className="machine__label">{ejected ? "dock" : "eject"}</span>
-          </button>
-        </>
-      )}
+          Hidden in CSS, NOT branched out of the tree. `reducedMotion` is
+          resolved in a lazy `useState` initialiser during the first client
+          render, so the server always assumes false; returning a structurally
+          different tree for it is a hydration mismatch on every load, for
+          exactly the visitors the preference exists to protect. TiltCard.tsx
+          carries the same warning from the last time this bit. `display: none`
+          takes them out of the focus order too, which `hidden` visually would
+          not. */}
+      <div className="machine__motion">
+        <button
+          type="button"
+          className={`machine__btn${gravityOn ? " is-on" : ""}`}
+          onClick={() => setGravity(!gravityOn)}
+          onPointerEnter={() => audio.hover()}
+          aria-pressed={gravityOn}
+          title={
+            gravityOn
+              ? "Put the page back together"
+              : "Drop the page. Drag the words, throw them, stack them. Space shakes it, Esc puts it back."
+          }
+        >
+          <span className="machine__glyph" aria-hidden="true">
+            {gravityOn ? "◆" : "◇"}
+          </span>
+          <span className="machine__label">gravity</span>
+        </button>
+
+        <button
+          type="button"
+          className={`machine__btn${ejected ? " is-on" : ""}`}
+          onClick={() => setEjected(!ejected)}
+          onPointerEnter={() => audio.hover()}
+          aria-pressed={ejected}
+          title={ejected ? "Back against the glass" : "Step back and look at the machine"}
+        >
+          <span className="machine__glyph" aria-hidden="true">
+            {ejected ? "▣" : "▢"}
+          </span>
+        <span className="machine__label">{ejected ? "dock" : "eject"}</span>
+        </button>
+      </div>
     </div>
   );
 }

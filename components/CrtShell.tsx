@@ -17,7 +17,7 @@ import GravityStage from "./physics/GravityStage";
  * the way real glass would. Every overlay is aria-hidden and pointer-events:none.
  *
  * v5 adds `.crt__assembly` around everything the tube displays. It is inert while
- * docked — no transform, no containing block, no cost — and becomes the thing the
+ * docked (no transform, no containing block, no cost) and becomes the thing the
  * camera pulls back from when ejected. Grouping the glass layers and the status
  * strip inside it is what lets the whole display shrink into the bezel as one
  * object instead of the content sliding out from under its own reflections.

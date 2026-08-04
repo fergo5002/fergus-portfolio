@@ -14,7 +14,7 @@ const STRENGTH = 26;
  * The hero name as a magnetised row of characters.
  *
  * Each character is pushed away from the cursor with a quadratic falloff, and the
- * further it is pushed the further its red and blue channels separate — the tube
+ * further it is pushed the further its red and blue channels separate: the tube
  * losing convergence under a magnet held against the glass. It also decodes out of
  * scramble on mount and re-glitches periodically.
  *

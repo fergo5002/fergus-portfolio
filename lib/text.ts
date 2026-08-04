@@ -20,7 +20,7 @@ export type WordSpan = {
  * together and restores breaking at spaces.
  *
  * The `start` offset travels with each word so the caller can keep addressing
- * characters by their original flat index — the magnetic field in `HeroName`
+ * characters by their original flat index: the magnetic field in `HeroName`
  * stores one entry per character and must not care how they were grouped.
  *
  * Whitespace runs are returned as their own spans rather than being dropped, so

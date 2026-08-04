@@ -2,7 +2,7 @@
  * The tube's voice.
  *
  * Every sound on this site is synthesised at runtime from oscillators and
- * shaped noise — there is not one audio file in the repo. That is partly taste
+ * shaped noise: there is not one audio file in the repo. That is partly taste
  * (a portfolio that ships a megabyte of WAVs to play a click has lost the plot)
  * and partly the only honest way to do it: the degauss sound has to sweep with
  * the same curve the shader's shockwave expands on, and the beam hiss has to
@@ -79,7 +79,7 @@ export class TubeAudio {
 
   /**
    * Build the graph and start the ambient bed. Must be called from a user
-   * gesture — every browser refuses to start a context otherwise. Returns
+   * gesture: every browser refuses to start a context otherwise. Returns
    * whether audio is actually available.
    */
   async enable(): Promise<boolean> {
@@ -340,7 +340,7 @@ export class TubeAudio {
 
   /**
    * The degauss coil: a decaying low sweep with a heavy tremolo on it. This is
-   * the sound the whole feature is worth building for — everyone over about
+   * the sound the whole feature is worth building for: everyone over about
    * twenty-five recognises it instantly and has no idea why.
    */
   degauss(): void {

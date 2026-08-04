@@ -1,4 +1,4 @@
-# v5 "Mass" — design
+# v5 "Mass": design
 
 **Date:** 2026-08-04
 **Supersedes nothing.** Extends `2026-08-03-phosphor-motion-system-design.md`; every rule in
@@ -42,7 +42,7 @@ Two passes, ping-ponging between two half-resolution render targets.
   physically pulled apart before it is scrubbed.
 
 Only the nav and status strips burn in, because they are the only chrome that never moves.
-Burning in the body text would be wrong — it scrolls.
+Burning in the body text would be wrong: it scrolls.
 
 **8-bit targets, not half-float.** WebGL1 needs `OES_texture_half_float` *and*
 `OES_texture_half_float_linear`, and a meaningful share of mobile GPUs advertise one without
@@ -59,7 +59,7 @@ they are all the same quantity in the same buffer.
 `lib/physics.ts` is a real engine, not an approximation: oriented boxes, SAT with a clipped
 two-point manifold, sequential impulses with warm starting, Coulomb friction, restitution and
 sleeping. Structure follows Box2D-Lite with two deliberate departures, both documented in the
-file — split impulses (so a restitution-0 word does not hop when it lands) and fixed
+file: split impulses (so a restitution-0 word does not hop when it lands) and fixed
 sub-stepping (so a backgrounded tab cannot teleport the pile through the floor).
 
 Fake physics was considered and rejected. A CSS fall reads as an animation within about two
@@ -74,7 +74,7 @@ was, faded and `inert`, so returning is a deletion rather than a reassembly.
 ## Voice: the synth
 
 Every sound is generated at runtime. There are no audio files in the repo and there must not
-be — partly taste, mostly necessity: the beam hiss tracks scroll velocity continuously and the
+be: partly taste, mostly necessity: the beam hiss tracks scroll velocity continuously and the
 degauss has to sweep on the same curve the shader's shockwave expands on. Neither is a sample.
 
 Off by default. Every browser blocks audio before a gesture anyway, and a portfolio that starts
@@ -93,7 +93,7 @@ would actually light a dark room.
 
 Scrolling was the awkward part. A fixed assembly takes its content out of flow, so the document
 collapses and the page cannot scroll. Rather than reimplementing scrolling, a spacer restores
-the original document height — native scrollbar, wheel, keyboard and Lenis all keep working —
+the original document height: native scrollbar, wheel, keyboard and Lenis all keep working,
 and the content is translated by the live scroll position each frame. The site stays fully
 usable while you are looking at it from across the room, which is most of the point.
 

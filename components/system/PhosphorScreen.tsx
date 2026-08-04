@@ -15,12 +15,12 @@ import { useSystem } from "./SystemProvider";
  * ten minutes keeps a faint ghost of it forever. Neither is expressible without
  * somewhere to remember, so:
  *
- *  1. **Sim pass** — ping-pongs between two render targets at half resolution.
+ *  1. **Sim pass**: ping-pongs between two render targets at half resolution.
  *     RGB is short-lived persistence (decays over roughly a third of a second);
  *     alpha is burn-in, which accumulates over minutes and is only ever cleared
  *     by a degauss. Everything that emits light writes here: the beam, the
  *     pointer, taps, degauss rings, and physics impacts.
- *  2. **Present pass** — draws the rain at full resolution, adds the blurred
+ *  2. **Present pass**: draws the rain at full resolution, adds the blurred
  *     persistence buffer over the top, then applies the glass: curvature,
  *     aperture grille, scanlines, chromatic aberration, vignette. Also owns the
  *     power-on line and, when the camera pulls back, the entire room.
@@ -159,7 +159,7 @@ void main() {
 
   // ── burn-in ──────────────────────────────────────────────────────────────
   // Only the chrome that never moves burns in: the nav strip and the status
-  // strip. That is the honest model — a ghost of the body text would be wrong,
+  // strip. That is the honest model: a ghost of the body text would be wrong,
   // because the body text scrolls.
   float staticMask =
     step(uNavBand.x, uv.y) * step(uv.y, uNavBand.y) +
@@ -247,7 +247,7 @@ float sdRoundBox(vec2 p, vec2 b, float r) {
    Everything from here to the room boundary works in suv, which is the full
    viewport when docked and the monitor's rectangle when ejected. lineScale
    keeps the scanline pitch constant on the physical display as the image
-   shrinks — a smaller picture with the same line count is technically more
+   shrinks: a smaller picture with the same line count is technically more
    correct but aliases into moire the moment it is scaled. */
 vec3 tubeImage(vec2 suv, float lineScale) {
   vec2 uv = suv;
@@ -314,7 +314,7 @@ vec3 tubeImage(vec2 suv, float lineScale) {
   col *= sl;
 
   // The grille is a physical mask at the tube's own pitch, so unlike the
-  // scanlines it cannot be rescaled — it is faded out instead as the image
+  // scanlines it cannot be rescaled: it is faded out instead as the image
   // shrinks past the point where three device pixels still resolve it.
   if (uMobile < 0.5) {
     float m = mod(gl_FragCoord.x, 3.0);
@@ -336,7 +336,7 @@ vec3 tubeImage(vec2 suv, float lineScale) {
 /**
  * How brightly the tube is lighting the room, without re-rendering it.
  *
- * The obvious implementation — call tubeImage again and take its luminance —
+ * The obvious implementation: call tubeImage again and take its luminance,
  * costs three more rain evaluations on every single room pixel, which is most
  * of the screen once ejected. The persistence buffer already holds a blurred
  * record of everything the tube emitted, which is precisely what a room would
@@ -350,7 +350,7 @@ float tubeGlow(vec2 suv) {
 
 /* ── the room ─────────────────────────────────────────────────────────────
    Drawn only when the camera has pulled back. Everything is 2D signed-distance
-   work in aspect-corrected space, lit by the tube's own output — the monitor is
+   work in aspect-corrected space, lit by the tube's own output: the monitor is
    the only light source in the room, which is what makes the pull-back land. */
 vec3 room(vec2 uv, vec2 rectMin, vec2 rectMax, float screenLuma) {
   vec2 q = (uv - 0.5) * vec2(uAspect, 1.0);
@@ -383,13 +383,14 @@ vec3 room(vec2 uv, vec2 rectMin, vec2 rectMax, float screenLuma) {
   float onDesk = smoothstep(deskY + 0.004, deskY - 0.004, q.y);
   if (onDesk > 0.0) {
     vec3 desk = vec3(0.026, 0.024, 0.022);
-    // Wood-ish grain, very low contrast: enough to read as a surface.
-    desk *= 0.85 + 0.3 * hash21(vec2(q.x * 90.0, floor(q.y * 260.0)));
+    // Wood-ish grain, very low contrast: enough to read as a surface, and not
+    // worth a hash per pixel on the cheap path.
+    if (uMobile < 0.5) desk *= 0.85 + 0.3 * hash21(vec2(q.x * 90.0, floor(q.y * 260.0)));
 
     // Reflection: the persistence buffer, mirrored about the desk edge. Glow is
     // the only part of a screen that meaningfully reflects off matte wood, so
     // sampling the sim buffer rather than the full image is both cheaper and
-    // closer to right. Sampled in SCREEN space, not viewport space — the sim
+    // closer to right. Sampled in SCREEN space, not viewport space: the sim
     // buffer is the tube's own image, and the monitor no longer fills the view.
     float depth = deskY - q.y;
     float sx = (uv.x - rectMin.x) / max(rectMax.x - rectMin.x, 1e-4);
@@ -402,7 +403,10 @@ vec3 room(vec2 uv, vec2 rectMin, vec2 rectMax, float screenLuma) {
 
   // ── dust in the beam ─────────────────────────────────────────────────────
   // Only visible where the light is, which is the only place dust is ever
-  // visible in a dark room.
+  // visible in a dark room. Skipped entirely on the cheap path: it is four
+  // hashes and a sin per pixel for something nobody resolves on a phone, and
+  // unbudgeted per-pixel work on mobile is how this project lost v4.
+  if (uMobile < 0.5) {
   vec2 dg = q * 26.0 + vec2(0.0, uTime * 0.09);
   vec2 dcell = floor(dg);
   vec2 dfrac = fract(dg) - 0.5;
@@ -411,13 +415,14 @@ vec3 room(vec2 uv, vec2 rectMin, vec2 rectMax, float screenLuma) {
   float mote = exp(-length(dfrac - dpos) * 42.0);
   mote *= step(0.93, dseed) * (0.5 + 0.5 * sin(uTime * 1.7 + dseed * 40.0));
   col += uPhosphor * mote * spill * 2.2;
+  }
 
   // ── the bezel itself ─────────────────────────────────────────────────────
   float bezelMask = smoothstep(0.002, -0.002, dBezel) * smoothstep(-0.002, 0.002, dScreen);
   if (bezelMask > 0.0) {
     vec3 plastic = vec3(0.072, 0.070, 0.066);
     // Injection-moulded grain.
-    plastic *= 0.9 + 0.2 * hash21(q * 420.0);
+    if (uMobile < 0.5) plastic *= 0.9 + 0.2 * hash21(q * 420.0);
 
     // Lit from above and from the screen itself: the inner edge catches the
     // phosphor, which is the single detail that makes plastic read as plastic.
@@ -617,10 +622,28 @@ export default function PhosphorScreen() {
     let targets: [RenderTarget, RenderTarget] | null = null;
     let read = 0;
 
-    const makeTargets = (w: number, h: number) => {
+    /**
+     * Size the persistence buffers, allocating them only once.
+     *
+     * `new RenderTarget` on every resize would leak: ogl has no dispose on
+     * either RenderTarget or Texture (its Texture.js still carries a
+     * `// TODO: delete texture`), so the old framebuffer and its two textures
+     * are simply dropped on the floor. A desktop window drag fires `resize` for
+     * every pixel of the drag, which is a few hundred orphaned framebuffers in a
+     * couple of seconds and eventually a lost context. `setSize` reuses the
+     * existing objects and is a no-op when the dimensions have not moved.
+     */
+    const sizeTargets = (w: number, h: number) => {
+      const width = Math.max(2, Math.round(w * SIM_SCALE));
+      const height = Math.max(2, Math.round(h * SIM_SCALE));
+      if (targets) {
+        targets[0].setSize(width, height);
+        targets[1].setSize(width, height);
+        return;
+      }
       const opts = {
-        width: Math.max(2, Math.round(w * SIM_SCALE)),
-        height: Math.max(2, Math.round(h * SIM_SCALE)),
+        width,
+        height,
         depth: false,
         stencil: false,
         minFilter: gl.LINEAR,
@@ -658,7 +681,7 @@ export default function PhosphorScreen() {
       su.uNavBand.value = [1 - navH / h, 1];
       su.uStatusBand.value = [0, statusH / h];
 
-      makeTargets(gl.canvas.width, gl.canvas.height);
+      sizeTargets(gl.canvas.width, gl.canvas.height);
     };
     resize();
     window.addEventListener("resize", resize, { passive: true });
@@ -767,6 +790,13 @@ export default function PhosphorScreen() {
       gl.canvas.removeEventListener("webglcontextrestored", onContextRestored);
       root.classList.remove("webgl-ok");
       gl.canvas.remove();
+      // ogl frees nothing itself, so the framebuffers and their textures are
+      // released explicitly before the context goes.
+      for (const t of targets ?? []) {
+        gl.deleteFramebuffer(t.buffer);
+        for (const tex of t.textures) gl.deleteTexture(tex.texture);
+      }
+      targets = null;
       renderer.gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
   }, [frame, onFrame, reducedMotion]);

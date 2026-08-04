@@ -2,7 +2,7 @@
  * A procedural CRT test plate, drawn per project from its slug.
  *
  * This fills the screenshot slot until a real capture exists. It is deliberately
- * NOT a fake screenshot — it is a broadcast alignment card, which is honest about
+ * NOT a fake screenshot: it is a broadcast alignment card, which is honest about
  * being furniture while still looking authored. Being SVG it stays razor sharp at
  * any size, costs nothing to download, and recolours with the phosphor theme
  * because every stroke uses currentColor.
