@@ -17,6 +17,24 @@ change, idle time is a burn-in risk. Read
 `docs/superpowers/specs/2026-08-03-phosphor-motion-system-design.md` before adding motion —
 new effects must follow from that premise or they will look like unrelated tricks.
 
+**v5 ("Mass") extends the premise from a tube to a machine.** A real CRT has three things v4
+could not express, and each one is now a subsystem:
+
+- **Memory.** Phosphor keeps glowing after the beam has gone, and a tube that has shown the
+  same nav bar for ten minutes keeps a ghost of it. `PhosphorScreen` is now two passes with a
+  ping-pong persistence buffer (RGB = short decay, alpha = burn-in). Nothing else may write
+  light directly to the screen: emitters deposit into the sim buffer and let it decay.
+- **Mass.** The page is made of objects. `lib/physics.ts` is a real rigid-body solver and
+  `GravityStage` drops the live text into it. Collisions feed the same frame the shader and
+  the synth read, so an impact lights the phosphor and clicks at the same instant.
+- **Voice.** `lib/audio.ts` synthesises everything at runtime; there are no audio files and
+  there must not be. Off by default, and every method is inert until enabled.
+- **Body.** `eject` pulls the camera off the glass. `lib/eject.ts` is the single definition of
+  where the screen sits, because CSS scales the DOM into a rectangle that the shader draws a
+  bezel around, and they have to agree to the pixel.
+
+Spec: `docs/superpowers/specs/2026-08-04-mass-memory-voice-design.md`.
+
 ## Stack & conventions
 
 - **Next.js 15 (App Router) + React 19 + TypeScript.** Server Components by default; only
@@ -26,7 +44,10 @@ new effects must follow from that premise or they will look like unrelated trick
   `--glow`). Three phosphor themes are defined as `html[data-theme="..."]` blocks; their
   matching shader colours live in `THEME_PHOSPHOR` in `lib/system.ts` — change both together.
 - **Animation libraries (changed in v4):** `lenis` (inertial scroll), `ogl` (the WebGL
-  phosphor shader) and `motion` (springs). The previous "no libraries at all" rule is retired,
+  phosphor shader) and `motion` (springs). v5 added no dependencies: the physics solver and
+  the synth are both hand-written, because a physics engine that ships 90 kB to drop some
+  words on the floor has misjudged the trade, and every sound here has to be parameterised by
+  live state rather than triggered as a sample. The previous "no libraries at all" rule is retired,
   but the spirit stands: **reach for CSS first.** Most effects here are CSS keyframes plus an
   IntersectionObserver, because a one-shot reveal gains nothing from a runtime. `motion` is
   used only for `Magnetic`, where a spring settle is genuinely hard to hand-roll.
@@ -40,6 +61,9 @@ new effects must follow from that premise or they will look like unrelated trick
   static/instant fallback. Under `reduce`, Lenis is never mounted, the shader draws one static
   frame, and reveals apply instantly. Keep text contrast ≥ 4.5:1, alt text on images, visible
   focus.
+- **No backticks inside the GLSL.** The shaders are template literals, so a backtick in a
+  comment terminates the string and the build fails with a syntax error hundreds of lines from
+  the real cause. This has now bitten twice.
 - **Never pre-hide a scroll-revealed element with `clip-path`.** IntersectionObserver folds an
   element's own clip into its intersection rect, so the element hides itself and is then never
   told to appear. Hide with `opacity` (which IO ignores) and keep the clip inside the
@@ -63,14 +87,17 @@ Deploy: Vercel, zero config — `vercel` (preview) / `vercel --prod` (production
 ```
 app/            layout (fonts, metadata, CRT shell) + the 3 routes + globals.css + icon.svg
 components/
-  system/       SystemProvider (frame clock + settings), PhosphorScreen (WebGL tube),
-                CursorTrail, StatusBar, Screensaver, RouteTransition
+  system/       SystemProvider (frame clock + settings + synth), PhosphorScreen (WebGL tube:
+                persistence sim + present + room), CursorTrail, StatusBar, MachineControls,
+                Screensaver, RouteTransition, EjectRig
+  physics/      GravityStage (measures the page, drops it, puts it back)
   motion/       RasterReveal (the house reveal), HeroName, TiltCard, Magnetic, TimelineSpine
   *.tsx         CrtShell, Nav, BootSequence, Typewriter, Terminal, Window, ImageFrame,
                 SignalPlate, PromptLine, ProjectCard, ExperienceItem, Scramble
 content/        profile.ts, experience.ts, projects.ts, skills.ts   <-- edit content here
 lib/            commands.ts (pure terminal parser + tab completion), system.ts (bus types,
-                themes, formatters), scramble.ts   — all three have .test.ts siblings
+                themes, formatters), scramble.ts, physics.ts (rigid-body solver), audio.ts
+                (runtime synth), eject.ts (pull-back geometry)   — all have .test.ts siblings
 public/img/     user-supplied images (portrait + screenshots)
 docs/
   superpowers/specs/    design spec(s)

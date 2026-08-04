@@ -155,26 +155,31 @@ export default function BootSequence({ children }: { children: React.ReactNode }
           onClick={finish}
           onKeyDown={finish}
         >
-          {phase !== "dark" && (
-            <Typewriter lines={HEAD_LINES} speed={11} onDone={() => setPhase("memory")} />
-          )}
+          {/* Squeezed into the tube's opening band by `--boot-open`. The skip
+              button deliberately sits outside it: an escape hatch that is itself
+              a millimetre tall for the first second is not an escape hatch. */}
+          <div className="boot__inner">
+            {phase !== "dark" && (
+              <Typewriter lines={HEAD_LINES} speed={11} onDone={() => setPhase("memory")} />
+            )}
 
-          {(phase === "memory" || phase === "devices" || phase === "bar") && (
-            <div className="boot__mem">
-              Memory Test: {String(memory).padStart(6, "0")}K {phase === "memory" ? "" : "OK"}
-            </div>
-          )}
+            {(phase === "memory" || phase === "devices" || phase === "bar") && (
+              <div className="boot__mem">
+                Memory Test: {String(memory).padStart(6, "0")}K {phase === "memory" ? "" : "OK"}
+              </div>
+            )}
 
-          {(phase === "devices" || phase === "bar") && (
-            <Typewriter lines={DEVICE_LINES} speed={8} onDone={() => setPhase("bar")} />
-          )}
+            {(phase === "devices" || phase === "bar") && (
+              <Typewriter lines={DEVICE_LINES} speed={8} onDone={() => setPhase("bar")} />
+            )}
 
-          {phase === "bar" && (
-            <div className="boot__bar">
-              starting phosphor display [{"█".repeat(bars)}
-              {"·".repeat(24 - bars)}] {Math.round(progress * 100)}%
-            </div>
-          )}
+            {phase === "bar" && (
+              <div className="boot__bar">
+                starting phosphor display [{"█".repeat(bars)}
+                {"·".repeat(24 - bars)}] {Math.round(progress * 100)}%
+              </div>
+            )}
+          </div>
 
           <button type="button" className="boot__skip" onClick={finish}>
             skip &gt;

@@ -14,8 +14,22 @@
 /** How far the assembly slides against the pointer once fully ejected. */
 export const EJECT_PARALLAX = 0.018;
 
-/** Fraction of the viewport the screen shrinks to at full eject. */
-const EJECT_SCALE = 0.56;
+/** Fraction of the viewport the screen shrinks to at full eject, on a desktop. */
+export const EJECT_SCALE = 0.56;
+
+/**
+ * How far to pull back on a given viewport width.
+ *
+ * A 56% screen is a monitor on a desk when the viewport is a laptop display, and
+ * illegible when it is a phone: 14px body text becomes 8px, and stepping back to
+ * admire the machine should not cost the ability to read what is on it. Both the
+ * shader and the CSS call this with `window.innerWidth`, so they cannot disagree.
+ */
+export function ejectScaleFor(viewportWidth: number): number {
+  if (viewportWidth < 560) return 0.74;
+  if (viewportWidth < 900) return 0.66;
+  return EJECT_SCALE;
+}
 
 /** How far the monitor sits above centre, leaving desk beneath it. */
 const EJECT_LIFT = -0.055;
@@ -37,11 +51,17 @@ export type EjectGeometry = {
 };
 
 /**
- * @param t   raw eject progress, 0 (against the glass) to 1 (across the room)
- * @param px  pointer x in -1..1 from the centre of the viewport
- * @param py  pointer y in -1..1 from the centre of the viewport
+ * @param t     raw eject progress, 0 (against the glass) to 1 (across the room)
+ * @param px    pointer x in -1..1 from the centre of the viewport
+ * @param py    pointer y in -1..1 from the centre of the viewport
+ * @param scale how far back to pull; see `ejectScaleFor`
  */
-export function ejectGeometry(t: number, px: number, py: number): EjectGeometry {
+export function ejectGeometry(
+  t: number,
+  px: number,
+  py: number,
+  scale: number = EJECT_SCALE,
+): EjectGeometry {
   const e = smootherstep(t);
   // Exact identity while docked. Also avoids handing back a negative zero from
   // `-px * k * 0`, which is true-but-untidy and would print "-0" into a
@@ -51,7 +71,7 @@ export function ejectGeometry(t: number, px: number, py: number): EjectGeometry 
   // Inverted against the pointer: moving the mouse right looks past the right
   // edge of the monitor, which is what leaning does.
   return {
-    scale: 1 - (1 - EJECT_SCALE) * e,
+    scale: 1 - (1 - scale) * e,
     dx: -px * EJECT_PARALLAX * e,
     dy: EJECT_LIFT * e - py * EJECT_PARALLAX * e,
     e,

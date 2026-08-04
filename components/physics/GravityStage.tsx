@@ -32,7 +32,7 @@ const WALL = 60;
 
 /** Bodies to build at most. Beyond this the solver stops being free on a laptop. */
 const MAX_BODIES_DESKTOP = 320;
-const MAX_BODIES_MOBILE = 120;
+const MAX_BODIES_MOBILE = 90;
 
 type Piece = {
   body: Body;
@@ -242,10 +242,15 @@ export default function GravityStage() {
       }
       host.appendChild(fragment);
 
-      // Walls. The floor sits exactly on the bottom of the viewport, so the pile
-      // lands where the eye already expects the ground to be.
+      // Walls. The floor sits on top of the status strip rather than on the
+      // bottom of the viewport: the strip is opaque and holds the control that
+      // turns this off, so a pile that settles underneath it loses both the
+      // bottom of itself and its own way out.
+      const statusH =
+        parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--status-h")) || 26;
+      const floorY = vh - statusH;
       world.add(
-        createBody({ x: vw / 2, y: vh + WALL, hw: vw * 2, hh: WALL, mass: 0, friction: 0.7 }),
+        createBody({ x: vw / 2, y: floorY + WALL, hw: vw * 2, hh: WALL, mass: 0, friction: 0.7 }),
       );
       world.add(createBody({ x: -WALL, y: vh / 2, hw: WALL, hh: vh * 4, mass: 0 }));
       world.add(createBody({ x: vw + WALL, y: vh / 2, hw: WALL, hh: vh * 4, mass: 0 }));

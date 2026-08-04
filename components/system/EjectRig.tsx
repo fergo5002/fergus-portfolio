@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { ejectGeometry, ejectTransform } from "@/lib/eject";
+import { ejectGeometry, ejectScaleFor, ejectTransform } from "@/lib/eject";
 import { useSystem } from "./SystemProvider";
 
 /**
@@ -52,13 +52,21 @@ export default function EjectRig() {
 
     const unsubscribe = onFrame(() => {
       const f = frame.current;
-      if (f.eject <= 0.0005 && f.ejectTarget === 0) {
+      // 0.004 rather than 0: the last half-percent of an exponential ease is
+      // invisible but takes another second to arrive, and the fixed-position
+      // assembly should not outstay it.
+      if (f.eject <= 0.004 && f.ejectTarget === 0) {
         release();
         return;
       }
       engage();
 
-      const g = ejectGeometry(f.eject, (f.pointerX - 0.5) * 2, (f.pointerY - 0.5) * 2);
+      const g = ejectGeometry(
+        f.eject,
+        (f.pointerX - 0.5) * 2,
+        (f.pointerY - 0.5) * 2,
+        ejectScaleFor(window.innerWidth),
+      );
       assembly.style.transform = ejectTransform(g);
       // Mirror the real scroll position, so the page inside the monitor is the
       // page the document actually is.

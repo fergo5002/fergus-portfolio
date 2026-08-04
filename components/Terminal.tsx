@@ -11,11 +11,11 @@ import { useSystem } from "@/components/system/SystemProvider";
 
 type Entry = { cmd: string; lines: string[] };
 
-const HINTS = ["help", "neofetch", "theme amber", "matrix", "sudo hire-me"];
+const HINTS = ["gravity", "eject", "sound on", "neofetch", "sudo hire-me"];
 
 const WELCOME: string[] = [
-  "FergusOS 4.0 'Phosphor' · interactive shell ready.",
-  "tab completes · up/down recalls · try 'help' or 'neofetch'.",
+  "FergusOS 5.0 'Mass' · interactive shell ready.",
+  "tab completes · up/down recalls · try 'help', or 'gravity' if you are brave.",
 ];
 
 /**
@@ -46,6 +46,7 @@ export default function Terminal() {
     degauss,
     burstRain,
     audio,
+    reducedMotion,
   } = useSystem();
 
   const applyEffect = (effect: SystemEffect) => {
@@ -99,6 +100,7 @@ export default function Terminal() {
       history: commands,
       uptimeMs: frame.current.uptimeMs,
       theme: settings.theme,
+      reducedMotion,
     });
 
     if (res.type === "navigate") {

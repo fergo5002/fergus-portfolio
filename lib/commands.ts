@@ -34,6 +34,12 @@ export type CommandContext = {
   now?: Date;
   uptimeMs?: number;
   theme?: Theme;
+  /**
+   * Whether the visitor has asked for reduced motion. The commands that take
+   * over the viewport refuse in that case, and say so rather than printing a
+   * confident line about something that is not going to happen.
+   */
+  reducedMotion?: boolean;
 };
 
 /** Sections reachable from the terminal. */
@@ -70,7 +76,7 @@ export const COMMANDS = [
 ] as const;
 
 export const HELP_LINES: string[] = [
-  "FergusOS 4.0 · command reference",
+  "FergusOS 5.0 · command reference",
   "",
   "  navigate",
   "    whoami            who is this",
@@ -120,9 +126,9 @@ function neofetch(ctx: CommandContext): string[] {
   const info = [
     `${profile.user}@${profile.host}`,
     "─────────────────────────",
-    `OS       FergusOS 4.0 "Phosphor"`,
+    `OS       FergusOS 5.0 "Mass"`,
     `Host     Trinity College Dublin`,
-    `Kernel   next-15 · react-19 · webgl`,
+    `Kernel   next-15 · react-19 · webgl · webaudio`,
     `Uptime   ${formatUptime(ctx.uptimeMs ?? 0)}`,
     `Shell    fsh 4.0`,
     `Display  ${ctx.theme ?? "green"} phosphor · 4:3`,
@@ -275,6 +281,12 @@ export function runCommand(input: string, ctx: CommandContext = {}): CommandResu
 
     case "gravity": {
       const on = arg !== "off" && arg !== "0";
+      if (on && ctx.reducedMotion)
+        return ok([
+          "gravity: declined.",
+          "your system asks for reduced motion, and there is no still version of",
+          "this one. everything on the page stays where it is.",
+        ]);
       return {
         type: "effect",
         effect: { kind: "gravity", on },
@@ -292,6 +304,11 @@ export function runCommand(input: string, ctx: CommandContext = {}): CommandResu
       // `eject` with no argument pulls back, `dock` pushes in; either accepts an
       // explicit on/off so the two names stay one behaviour rather than two.
       const on = cmd === "eject" ? arg !== "off" : arg === "on";
+      if (on && ctx.reducedMotion)
+        return ok([
+          "eject: declined.",
+          "your system asks for reduced motion. the camera stays where it is.",
+        ]);
       return {
         type: "effect",
         effect: { kind: "eject", on },

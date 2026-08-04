@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { EJECT_PARALLAX, ejectGeometry, ejectScreenRect, smootherstep } from "./eject";
+import {
+  EJECT_PARALLAX,
+  ejectGeometry,
+  ejectScaleFor,
+  ejectScreenRect,
+  smootherstep,
+} from "./eject";
 
 describe("smootherstep", () => {
   it("pins both ends", () => {
@@ -94,5 +100,31 @@ describe("ejectScreenRect", () => {
     expect(r.y1 - r.y0).toBeCloseTo(g.scale, 6);
     expect((r.x0 + r.x1) / 2).toBeCloseTo(0.5 + g.dx, 6);
     expect((r.y0 + r.y1) / 2).toBeCloseTo(0.5 + g.dy, 6);
+  });
+});
+
+describe("ejectScaleFor", () => {
+  it("pulls back less on a narrow viewport, so the text stays readable", () => {
+    expect(ejectScaleFor(390)).toBeGreaterThan(ejectScaleFor(1440));
+    expect(ejectScaleFor(780)).toBeGreaterThan(ejectScaleFor(1440));
+  });
+
+  it("never inverts: a wider viewport is never pulled back less", () => {
+    let prev = 1;
+    for (let w = 320; w <= 2560; w += 40) {
+      const s = ejectScaleFor(w);
+      expect(s).toBeLessThanOrEqual(prev);
+      prev = s;
+    }
+  });
+
+  it("keeps the screen inside the bezel at every breakpoint", () => {
+    for (const w of [320, 390, 559, 560, 899, 900, 1440, 2560]) {
+      const r = ejectScreenRect(ejectGeometry(1, 1, 1, ejectScaleFor(w)));
+      expect(r.x0).toBeGreaterThan(0.02);
+      expect(r.x1).toBeLessThan(0.98);
+      expect(r.y0).toBeGreaterThan(0.02);
+      expect(r.y1).toBeLessThan(0.98);
+    }
   });
 });

@@ -261,6 +261,7 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
     let publishedProg = -1;
     /** Timestamp of the most recent impact already sent to the synth. */
     let lastSounded = 0;
+    let publishedBoot = -1;
     const velEpsilon = window.matchMedia("(pointer: coarse)").matches ? 0.06 : 0.012;
 
     const loop = (time: number) => {
@@ -318,6 +319,16 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
       if (Math.abs(f.scrollProgress - publishedProg) > 0.004) {
         publishedProg = f.scrollProgress;
         document.documentElement.style.setProperty("--scroll-p", f.scrollProgress.toFixed(3));
+      }
+
+      // The vertical-deflection curve, shared with the shader so the boot text
+      // opens with the picture rather than alongside it. Only published while it
+      // is actually moving; a settled machine writes nothing.
+      if (f.boot !== publishedBoot) {
+        publishedBoot = f.boot;
+        const x = Math.min(1, Math.max(0, (f.boot - 0.05) / 0.57));
+        const open = x * x * (3 - 2 * x);
+        document.documentElement.style.setProperty("--boot-open", open.toFixed(4));
       }
 
       if (document.hidden) return;
@@ -394,19 +405,38 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
     audio.degauss();
   }, [audio]);
 
+  // Both of these take over the whole viewport, and both are motion. Under
+  // `reduce` they are refused outright rather than degraded, because there is no
+  // meaningful still version of "the page falls on the floor".
   const setEjected = useCallback(
     (next: boolean) => {
+      if (next && reducedMotion) return;
+      // Never both at once: the pile is measured in viewport coordinates, and
+      // scaling the viewport into a bezel underneath it would leave the words
+      // falling through a floor that is no longer where they think it is.
+      if (next) {
+        frame.current.gravityTarget = 0;
+        setGravityState(false);
+      }
       frame.current.ejectTarget = next ? 1 : 0;
       setEjectedState(next);
       audio.eject(next ? 1 : -1);
     },
-    [audio],
+    [audio, reducedMotion],
   );
 
-  const setGravity = useCallback((next: boolean) => {
-    frame.current.gravityTarget = next ? 1 : 0;
-    setGravityState(next);
-  }, []);
+  const setGravity = useCallback(
+    (next: boolean) => {
+      if (next && reducedMotion) return;
+      if (next) {
+        frame.current.ejectTarget = 0;
+        setEjectedState(false);
+      }
+      frame.current.gravityTarget = next ? 1 : 0;
+      setGravityState(next);
+    },
+    [reducedMotion],
+  );
 
   const burstRain = useCallback((ms: number) => {
     frame.current.rainBoostUntil = performance.now() + ms;

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { Mesh, Program, RenderTarget, Renderer, Triangle } from "ogl";
 import { MAX_FRAME_IMPACTS, THEME_PHOSPHOR } from "@/lib/system";
-import { ejectGeometry, ejectScreenRect } from "@/lib/eject";
+import { ejectGeometry, ejectScaleFor, ejectScreenRect } from "@/lib/eject";
 import { useSystem } from "./SystemProvider";
 
 /**
@@ -421,9 +421,13 @@ vec3 room(vec2 uv, vec2 rectMin, vec2 rectMax, float screenLuma) {
 
     // Lit from above and from the screen itself: the inner edge catches the
     // phosphor, which is the single detail that makes plastic read as plastic.
+    //
+    // Note the sign. dScreen is positive everywhere on the bezel and grows with
+    // distance from the glass, so exp(+dScreen * 60) runs away to a blown-out
+    // neon frame within a few millimetres. It has to decay.
     float up = smoothstep(-0.02, 0.06, q.y - rc.y);
     plastic *= 0.72 + 0.5 * up;
-    plastic += uPhosphor * exp(dScreen * 60.0) * 0.30;
+    plastic += uPhosphor * exp(-dScreen * 90.0) * 0.22;
 
     // A chamfer highlight running around the outer edge.
     plastic += vec3(0.05) * smoothstep(0.006, 0.0, abs(dBezel + 0.004)) * (0.4 + 0.6 * up);
@@ -437,8 +441,8 @@ vec3 room(vec2 uv, vec2 rectMin, vec2 rectMax, float screenLuma) {
     // Power LED, low right on the chin, with its own small bloom.
     vec2 led = q - vec2(rc.x + rh.x * 0.80, rc.y - rh.y - 0.030);
     float dLed = length(led);
-    plastic += uPhosphor * exp(-dLed * 220.0) * 1.6;
-    plastic += uPhosphor * exp(-dLed * 34.0) * 0.14;
+    plastic += uPhosphor * exp(-dLed * 300.0) * 1.3;
+    plastic += uPhosphor * exp(-dLed * 60.0) * 0.09;
 
     col = mix(col, plastic, bezelMask);
   }
@@ -693,7 +697,12 @@ export default function PhosphorScreen() {
       // Computed unconditionally: `tubeImage` reads its height as the scanline
       // scale, so leaving a stale rect behind after returning from eject would
       // leave the docked tube with the wrong line pitch.
-      const g = ejectGeometry(f.eject, (f.pointerX - 0.5) * 2, (f.pointerY - 0.5) * 2);
+      const g = ejectGeometry(
+        f.eject,
+        (f.pointerX - 0.5) * 2,
+        (f.pointerY - 0.5) * 2,
+        ejectScaleFor(window.innerWidth),
+      );
       const r = ejectScreenRect(g);
       // GL's origin is bottom-left, so the CSS-space rect flips in y.
       pu.uScreenRect.value = [r.x0, 1 - r.y1, r.x1, 1 - r.y0];

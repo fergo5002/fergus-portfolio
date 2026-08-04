@@ -515,12 +515,26 @@ html.crt-off body {
      visibility:hidden while .booting. Without this the boot overlay would be
      hidden too and the user would see a blank screen during boot. */
   visibility: visible;
-  background: var(--bg);
+  /* Transparent, so the tube's own power-on shows through and the BIOS text sits
+     on the phosphor rather than on a flat panel in front of it. The chrome
+     underneath is still `visibility: hidden`, so nothing can flash through. */
+  background: transparent;
   color: var(--green);
-  padding: clamp(var(--sp-4), 8vw, 120px) clamp(var(--sp-4), 8vw, 140px);
   font-size: 0.95rem;
   cursor: pointer;
   overflow: hidden;
+}
+
+/* The text opens with the tube. `--boot-open` is the same curve the shader uses
+   for its vertical deflection, published once per frame by SystemProvider, so
+   the BIOS is squeezed into the expanding band instead of floating over it. */
+.boot__inner {
+  position: absolute;
+  inset: 0;
+  padding: clamp(var(--sp-4), 8vw, 120px) clamp(var(--sp-4), 8vw, 140px);
+  transform-origin: 50% 50%;
+  transform: scaleY(var(--boot-open, 1));
+  will-change: transform;
 }
 .boot__skip {
   position: absolute;
@@ -542,13 +556,17 @@ html.crt-off body {
 
 /* While the pre-paint script has flagged a boot, keep the app chrome hidden so it
    never flashes before the boot overlay appears. The .boot overlay itself lives
-   inside .screen, so it must opt back IN to visibility (see .boot below) — it is
-   fixed + opaque + z-9500 and covers the hidden chrome. Removed by BootSequence
-   on finish. */
+   inside .screen, so it must opt back IN to visibility (see .boot above).
+   Removed by BootSequence on finish.
+
+   `.phosphor` is deliberately NOT in this list any more. As of v5 the tube is
+   the boot: the shader collapses the picture to a bright horizontal line and
+   opens it vertically, which is the whole power-on. Hiding the canvas here (as
+   v4 did, when the tube had nothing to say before the desktop appeared) made
+   that animation invisible and left the sequence playing over flat black. */
 .booting .screen,
 .booting .nav,
-.booting .statusbar,
-.booting .phosphor {
+.booting .statusbar {
   visibility: hidden;
 }
 

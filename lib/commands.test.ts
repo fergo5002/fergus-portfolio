@@ -316,3 +316,21 @@ describe("physical commands", () => {
     expect(complete("gravity of")).toBe("gravity off");
   });
 });
+
+describe("reduced motion", () => {
+  it("declines gravity and says why, rather than promising it", () => {
+    const res = runCommand("gravity", { reducedMotion: true });
+    expect(res.type).toBe("output");
+    if (res.type !== "output") throw new Error("expected output");
+    expect(res.lines.join(" ")).toMatch(/declined/);
+  });
+
+  it("declines eject too", () => {
+    expect(runCommand("eject", { reducedMotion: true }).type).toBe("output");
+  });
+
+  it("still lets you turn both back off", () => {
+    expect(runCommand("gravity off", { reducedMotion: true })).toMatchObject({ type: "effect" });
+    expect(runCommand("dock", { reducedMotion: true })).toMatchObject({ type: "effect" });
+  });
+});

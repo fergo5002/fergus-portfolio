@@ -467,6 +467,8 @@ export class World {
 
   private arbiters = new Map<number, Manifold>();
   private axisOrder: Body[] = [];
+  /** Reused between sub-steps: this runs 120 times a second. */
+  private seen = new Set<number>();
 
   constructor(opts: WorldOptions = {}) {
     this.gravityX = opts.gravityX ?? 0;
@@ -595,7 +597,8 @@ export class World {
       order[j + 1] = b;
     }
 
-    const seen = new Set<number>();
+    const seen = this.seen;
+    seen.clear();
     for (let i = 0; i < order.length; i++) {
       const a = order[i];
       // Conservative radius: the box's half diagonal, valid at any rotation.
