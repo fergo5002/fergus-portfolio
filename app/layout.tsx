@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, VT323 } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import CrtShell from "@/components/CrtShell";
 import Nav from "@/components/Nav";
@@ -85,6 +86,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </main>
           </CrtShell>
         </SystemProvider>
+        {/*
+          Vercel Web Analytics. Deliberately outside CrtShell: the shell applies a
+          transform to scale the DOM into the tube's rectangle, and the only thing
+          this renders is a script tag, which has no business inheriting the glass.
+          Inert in development — the script is served from /_vercel/insights on
+          deployed origins only, so `npm run dev` sends nothing.
+        */}
+        <Analytics />
       </body>
     </html>
   );

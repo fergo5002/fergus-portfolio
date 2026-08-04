@@ -69,6 +69,12 @@ Spec: `docs/superpowers/specs/2026-08-04-mass-memory-voice-design.md`.
   told to appear. Hide with `opacity` (which IO ignores) and keep the clip inside the
   keyframes. This bit once; the rule is in `globals.css` next to `.raster`.
 - **Path alias:** `@/*` → repo root (e.g. `@/content/profile`).
+- **Analytics:** `@vercel/analytics` renders `<Analytics />` at the end of `<body>` in
+  `app/layout.tsx`, outside `CrtShell`. It only reports from deployed origins, so `npm run
+  dev` sends nothing and the numbers stay honest. `.npmrc` pins `legacy-peer-deps=true` and
+  is committed on purpose: that package declares optional peers for every framework it
+  supports, npm tries to resolve `@sveltejs/kit` anyway, and that wants vite@8 against
+  vitest's vite@5. Do not delete `.npmrc` without checking `npm ci` still runs.
 
 ## Commands
 
