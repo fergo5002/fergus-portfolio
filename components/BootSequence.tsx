@@ -6,7 +6,7 @@ import { useSystem } from "@/components/system/SystemProvider";
 
 const HEAD_LINES = [
   "FergusOS BIOS v4.0   (c) 2026 Patrick Fergus O'Reilly",
-  "CPU: Trinity CS/Business @ 1.1 GHz — 3rd year, 2 cores",
+  "CPU: Trinity CS/Business @ 1.1 GHz · 3rd year, 2 cores",
 ];
 
 const DEVICE_LINES = [

@@ -27,10 +27,10 @@ export const experience: ExperienceEntry[] = [
     summary:
       "Done-for-you retention for consumable Shopify brands, built inside the Hatch105 accelerator: predict each customer's run-out, nudge them over SMS and WhatsApp, convert with a one-tap pre-seeded checkout.",
     bullets: [
-      "Took Presterly from first commit (12 June 2026) to seven live merchant brands in six weeks, inside Hatch105, the Dublin startup accelerator.",
-      "Architected and built the multi-tenant platform end-to-end: Shopify and Klaviyo integrations, token-on-order attribution, and a per-customer, per-product run-out prediction engine backtested against real order history.",
-      "Live today: 127,000 customers under management, over €18M of order history analysed, ~240,000 predictions refreshed daily, backed by 6,211 passing tests.",
-      "Built Presterly into an approved Meta WhatsApp Business Platform Tech Provider, and shipped a hosted tier so a merchant never has to own WhatsApp infrastructure of their own.",
+      "Took Presterly from first commit (12 June 2026) to live merchant brands in six weeks, inside Hatch105, the Dublin startup accelerator.",
+      "Built the multi-tenant platform end to end: Shopify and Klaviyo integrations, token-on-order attribution, and a per-customer, per-product run-out prediction engine backtested against real order history.",
+      "Live today across 34 merchant brands: 426,000 customers under management, over €20M of order history analysed, and roughly 296,000 run-out predictions kept current.",
+      "Took Presterly through Meta's approval as a WhatsApp Business Platform Tech Provider, so a merchant onboards its own number through Embedded Signup and keeps ownership of it.",
     ],
     link: { label: "presterly.com", href: "https://presterly.com" },
   },

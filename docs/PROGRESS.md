@@ -216,11 +216,36 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
 
 ## Decision log
 
+- **2026-08-04 (content refresh: skills, voice, live numbers)** — Fergus asked for the skills to
+  match recent work and for the prose to read more relaxed, while still coming across as ambitious.
+  - **The traction numbers were badly stale, and understated him.** Checked against the Presterly
+    production database (read-only Supabase MCP) rather than trusted: the page claimed seven
+    brands / 127,000 customers / €18M, the truth was 34 brands / 426,307 customers / €20.2M. All
+    updated. The **34** is deliberately conservative: `shops` shows 105 installed, but that
+    includes dev and test installs, so the published figure is installed-and-not-uninstalled with
+    1,000+ customers. Fergus picked that framing over the raw count. See the new AGENTS.md section.
+  - **Killed a claim that had become false.** The Presterly experience entry said he "shipped a
+    hosted tier so a merchant never has to own WhatsApp infrastructure of their own". The hosted
+    tier was built, but the hosted-by-default model was **superseded on 2026-07-27** in favour of
+    merchant-owned WABAs with Presterly as Tech Provider. It now describes Embedded Signup and
+    merchant ownership, which is what actually ships.
+  - **Skills rebuilt from the manifests, not from memory.** Shopify (App Bridge, Admin GraphQL),
+    Klaviyo, WhatsApp Business Platform, Twilio, Prisma, React Router 7, Tailwind, Kysely and
+    Stripe Connect were all missing while being most of the day job. Phaser 3 was listed twice.
+    **Polaris was deliberately not added**: only `@shopify/polaris-types` is installed and nothing
+    in `app/` imports it, and a reviewer can open the repo. Loira-era tools (Fastify, FastAPI,
+    BullMQ, Redis, pgvector) stay, at Fergus's call, because he did genuinely ship with them.
+  - **Voice:** light touch, keeping the existing shape. The bio now opens on how he likes to build
+    rather than on Presterly, per his note. Written to `~/.claude/LANGUAGE.md`, so no em dashes.
+
 - **2026-08-04 (contact + links)** — Fergus asked for his personal GitHub, `fergo5002`, to be on
   the site alongside the Hatch one. Both are now listed, explicitly keyed **`github (work)`**
   (`oreillyfergus`) and **`github (personal)`** (`fergo5002`) — chosen over two bare `github` rows
-  because `app/page.tsx` keys the contact rows on `label`, so duplicate labels would silently drop
-  a row in React. A `contact` test now asserts the labels stay unique.
+  because two rows both reading `github` tell a reader nothing. (An earlier draft of this entry
+  claimed duplicate labels would "silently drop a row in React" via `key={c.label}` in
+  `app/page.tsx`. That is wrong: the list is a static Server Component that never reorders, so
+  both rows render and React only warns in dev. Do not key on something else "for safety".)
+  A `contact` test asserts the labels stay unique and stay within the CSS column.
   - **`.contact__row`'s key column moved from `110px` to `18ch`.** `"github (personal)"` is 17
     characters and the keys are set in JetBrains Mono, so `ch` is exactly one character and the
     column can never be too narrow for its longest label. `max-content` is wrong here: each row is
@@ -228,7 +253,8 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
     Measured in the parity container — all four keys resolve to 173px, values aligned at x=660.
   - **Firespark's project link now points at `https://firespark.dev`**, its own domain, not
     `firespark.vercel.app`, the platform URL it happens to be hosted on. Verified 200 before
-    shipping (the apex 301s to `www.firespark.dev`). The two mentions of the old URL further up
+    shipping (the apex 308s to `www.firespark.dev`; the href stays on the apex because that is the
+    nicer address to show, and the extra hop costs nothing). The two mentions of the old URL further up
     this file are left alone — they are historical statements about what the design was copied
     from, and rewriting them would falsify the record.
   - **New `content/links.test.ts`** guards every outbound href in `content/*.ts`: absolute,

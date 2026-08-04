@@ -12,7 +12,7 @@ describe("content links", () => {
   const outbound = [
     ...profile.contact.map((c) => ({ where: `profile.contact.${c.label}`, href: c.href })),
     ...projects.flatMap((p) =>
-      (p.links ?? []).map((l) => ({ where: `projects.${p.slug}.${l.label}`, href: l.href })),
+      p.links.map((l) => ({ where: `projects.${p.slug}.${l.label}`, href: l.href })),
     ),
   ];
 
@@ -23,8 +23,11 @@ describe("content links", () => {
   it("are absolute, parseable, and https (or mailto)", () => {
     for (const { where, href } of outbound) {
       expect(href, where).not.toMatch(/\s/);
-      const url = new URL(href); // throws on a relative or malformed href
-      expect(["https:", "mailto:"], where).toContain(url.protocol);
+      // Relative, protocol-relative, empty and malformed hrefs all throw here.
+      // Named, because a bare "TypeError: Invalid URL" does not say which one.
+      expect(() => new URL(href), where).not.toThrow();
+      // Catches what parses but should not ship: http: and javascript:.
+      expect(["https:", "mailto:"], where).toContain(new URL(href).protocol);
     }
   });
 

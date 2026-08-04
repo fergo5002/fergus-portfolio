@@ -195,10 +195,15 @@ describe("informational commands", () => {
       expect(text).toContain("github.com/oreillyfergus");
       expect(text).toContain("github.com/fergo5002");
     }
-    // The landing page keys its contact rows on the label, so duplicates would
-    // silently drop a row in React.
+    // Two rows both reading "github" would be useless to a reader and to a
+    // screen reader, and the landing page keys its rows on the label.
     const labels = profile.contact.map((c) => c.label);
     expect(new Set(labels).size).toBe(labels.length);
+
+    // .contact__row's key column is a fixed 18ch. A fixed grid track does not
+    // grow for its content, so a 19-character label would run into the value
+    // rather than widen the column. This keeps that CSS fact true.
+    for (const c of profile.contact) expect(c.label.length, c.label).toBeLessThanOrEqual(18);
   });
 
   it("echo returns its argument verbatim", () => {

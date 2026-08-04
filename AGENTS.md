@@ -101,8 +101,22 @@ See `docs/PROGRESS.md`.
 
 ## Content still needing the owner (Fergus)
 
-- **Hatch105 role + dates** — `content/experience.ts`, `hatch105` entry (`[ ROLE — TBC ]`).
-- (Nothing outstanding on images — see below.)
+- Nothing outstanding. (This section previously asked for a Hatch105 role and dates for a
+  `hatch105` entry in `content/experience.ts`. There is no such entry and has not been for some
+  time: Hatch105 is named inside the Presterly entry as the accelerator, which is what it is.)
+
+## Keeping the numbers honest
+
+`content/` carries live traction claims (customers under management, order value analysed,
+merchant count) on a page whose footer invites people to check. **They are claims, not decoration,
+and they go stale silently.** They were last verified against the Presterly production database on
+**2026-08-04** via the read-only Supabase MCP, and had drifted a long way: the page said seven
+brands / 127,000 customers / €18M when the truth was 34 brands / 426,000 / €20M.
+
+The merchant count is the one to be careful with. `shops` had 105 rows marked installed, but that
+includes dev and test installs. The published 34 is the defensible floor: installed, not
+uninstalled, and carrying 1,000+ customers. Do not publish the raw install count. Re-check before
+any application or outreach push, and do not round upward.
 
 ## Images
 

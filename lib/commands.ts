@@ -63,7 +63,7 @@ export const COMMANDS = [
 ] as const;
 
 export const HELP_LINES: string[] = [
-  "FergusOS 4.0 — command reference",
+  "FergusOS 4.0 · command reference",
   "",
   "  navigate",
   "    whoami            who is this",
@@ -116,7 +116,9 @@ function neofetch(ctx: CommandContext): string[] {
     `Display  ${ctx.theme ?? "green"} phosphor · 4:3`,
     `Role     Co-Founder & CTO, Presterly`,
     `Repos    ${projects.length} shipped · ${experience.length} posts`,
-    `Contact  ${profile.contact[0]?.value ?? ""}`,
+    // By label, not by index: `contact` has grown before and index 0 only
+    // happens to be the email.
+    `Contact  ${profile.contact.find((c) => c.label === "email")?.value ?? ""}`,
   ];
   const rows = Math.max(art.length, info.length);
   const out: string[] = [];
@@ -147,9 +149,9 @@ function top(): string[] {
 }
 
 function resume(): string[] {
-  const out: string[] = [`${profile.name} — ${profile.tagline}`, profile.education, ""];
+  const out: string[] = [`${profile.name} · ${profile.tagline}`, profile.education, ""];
   for (const item of experience) {
-    out.push(`${item.dates.padEnd(22)}${item.org} — ${item.role}`);
+    out.push(`${item.dates.padEnd(22)}${item.org} · ${item.role}`);
   }
   out.push("", "projects/");
   for (const p of projects) {
@@ -282,7 +284,7 @@ export function runCommand(input: string, ctx: CommandContext = {}): CommandResu
       if (arg === "hire-me" || arg === "hire me")
         return ok([
           "[sudo] access granted ✓",
-          "excellent choice. let's talk —",
+          "excellent choice. let's talk.",
           `  ${profile.contact.find((c) => c.label === "email")?.value ?? ""}`,
         ]);
       if (arg === "rm -rf /" || arg === "rm -rf /*")
@@ -293,7 +295,7 @@ export function runCommand(input: string, ctx: CommandContext = {}): CommandResu
             "rm: descending into /",
             "removing /dev/ambition ... failed: resource busy",
             "removing /usr/bin/discipline ... failed: resource busy",
-            "kernel panic — nothing left to delete.",
+            "kernel panic. nothing left to delete.",
           ],
         };
       return ok([`sudo: ${arg || "command"}: no permission theatrics needed here`]);

@@ -20,11 +20,11 @@ const display = VT323({
 });
 
 export const metadata: Metadata = {
-  title: `${profile.shortName} — Terminal`,
-  description: `${profile.name} — technical founder, CS @ Trinity, builder. Projects, experience, and contact.`,
+  title: `${profile.shortName} · Terminal`,
+  description: `${profile.name}: technical founder, CS @ Trinity, builds beautiful things that scale. Projects, experience, and contact.`,
   openGraph: {
-    title: `${profile.shortName} — Terminal`,
-    description: `${profile.name} — technical founder, CS @ Trinity, builder.`,
+    title: `${profile.shortName} · Terminal`,
+    description: `${profile.name}: technical founder, CS @ Trinity, builds beautiful things that scale.`,
     type: "website",
   },
 };

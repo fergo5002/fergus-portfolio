@@ -14,7 +14,7 @@ type Entry = { cmd: string; lines: string[] };
 const HINTS = ["help", "neofetch", "theme amber", "matrix", "sudo hire-me"];
 
 const WELCOME: string[] = [
-  "FergusOS 4.0 'Phosphor' — interactive shell ready.",
+  "FergusOS 4.0 'Phosphor' · interactive shell ready.",
   "tab completes · up/down recalls · try 'help' or 'neofetch'.",
 ];
 
