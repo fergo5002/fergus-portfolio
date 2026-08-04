@@ -58,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           //  3. On the landing page only, if this session hasn't booted and the user
           //     allows motion, marks <html> as .booting so CSS hides content until the
           //     boot overlay takes over. Path-gated because BootSequence (which clears
-          //     the flag) only mounts on "/" — other routes must never get stuck hidden.
+          //     the flag) only mounts on "/": other routes must never get stuck hidden.
           dangerouslySetInnerHTML={{
             __html:
               "(function(){var d=document.documentElement;d.classList.add('js');" +
@@ -87,11 +87,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </CrtShell>
         </SystemProvider>
         {/*
-          Vercel Web Analytics. Deliberately outside CrtShell: the shell applies a
-          transform to scale the DOM into the tube's rectangle, and the only thing
-          this renders is a script tag, which has no business inheriting the glass.
-          Inert in development — the script is served from /_vercel/insights on
-          deployed origins only, so `npm run dev` sends nothing.
+          Vercel Web Analytics. It returns null and appends its script to <head>,
+          so sitting outside CrtShell buys lifetime, not layout: there is no node
+          here to inherit the tube's transform in the first place.
+
+          In development it loads Vercel's debug script from va.vercel-scripts.com
+          and reports nothing, so local pottering never reaches the numbers. An ad
+          blocker will log a failed load there; that is expected and harmless.
+
+          On a deployment the loader and the beacon live on a per-deploy hashed
+          path, NOT /_vercel/insights/script.js, which is only the fallback string
+          in the package. Verify a deploy by watching the view beacon return 200 in
+          a real browser, never by curling that path: it 404s while analytics is
+          working perfectly, and that has cost a day before.
         */}
         <Analytics />
       </body>

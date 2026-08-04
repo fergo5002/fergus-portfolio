@@ -1,11 +1,11 @@
-# AGENTS.md — start here
+# AGENTS.md: start here
 
 Onboarding for any AI agent or developer picking up this project. Read this top-to-bottom
 before touching code. (Claude Code, Cursor, Copilot, and others read `AGENTS.md` by default.)
 
 ## What this is
 
-**FergusOS Terminal** — Patrick Fergus O'Reilly's personal portfolio, styled as a retro CRT
+**FergusOS Terminal**: Patrick Fergus O'Reilly's personal portfolio, styled as a retro CRT
 computer terminal (green phosphor + amber accent, scanlines, boot sequence, interactive
 command line). Three routes: landing (`/`), experience (`/experience`), projects
 (`/projects`).
@@ -14,7 +14,7 @@ As of v4 ("Phosphor") the site does not merely *depict* a CRT, it *behaves* like
 effect derives from one premise: an electron beam painting phosphor behind glass. Scroll
 velocity is beam velocity, the cursor is a magnet near the tube, a route change is a channel
 change, idle time is a burn-in risk. Read
-`docs/superpowers/specs/2026-08-03-phosphor-motion-system-design.md` before adding motion —
+`docs/superpowers/specs/2026-08-03-phosphor-motion-system-design.md` before adding motion,
 new effects must follow from that premise or they will look like unrelated tricks.
 
 **v5 ("Mass") extends the premise from a tube to a machine.** A real CRT has three things v4
@@ -42,7 +42,7 @@ Spec: `docs/superpowers/specs/2026-08-04-mass-memory-voice-design.md`.
 - **Styling: hand-written CSS in `app/globals.css`. No Tailwind, no CSS-in-JS.** The theme is
   driven by CSS variables at the top of that file (`--green`, `--amber`, `--bg`, spacing,
   `--glow`). Three phosphor themes are defined as `html[data-theme="..."]` blocks; their
-  matching shader colours live in `THEME_PHOSPHOR` in `lib/system.ts` — change both together.
+  matching shader colours live in `THEME_PHOSPHOR` in `lib/system.ts`: change both together.
 - **Animation libraries (changed in v4):** `lenis` (inertial scroll), `ogl` (the WebGL
   phosphor shader) and `motion` (springs). v5 added no dependencies: the physics solver and
   the synth are both hand-written, because a physics engine that ships 90 kB to drop some
@@ -53,9 +53,9 @@ Spec: `docs/superpowers/specs/2026-08-04-mass-memory-voice-design.md`.
   used only for `Magnetic`, where a spring settle is genuinely hard to hand-roll.
 - **One frame clock.** `SystemProvider` owns the single `requestAnimationFrame` loop; Lenis,
   the shader, the cursor trail and the status bar all subscribe via `onFrame`. Never start
-  another rAF loop, and never `setState` from inside a frame callback — per-frame values are
+  another rAF loop, and never `setState` from inside a frame callback: per-frame values are
   mutated on the `frame` ref and published as CSS variables (`--scroll-v`, `--scroll-p`).
-- **All editable content lives in `content/*.ts`** — never hard-code copy in components.
+- **All editable content lives in `content/*.ts`**: never hard-code copy in components.
 - **Accessibility is non-negotiable:** every animation must be gated behind
   `@media (prefers-reduced-motion: no-preference)` (CSS) or a `matchMedia` check (JS) with a
   static/instant fallback. Under `reduce`, Lenis is never mounted, the shader draws one static
@@ -70,11 +70,20 @@ Spec: `docs/superpowers/specs/2026-08-04-mass-memory-voice-design.md`.
   keyframes. This bit once; the rule is in `globals.css` next to `.raster`.
 - **Path alias:** `@/*` → repo root (e.g. `@/content/profile`).
 - **Analytics:** `@vercel/analytics` renders `<Analytics />` at the end of `<body>` in
-  `app/layout.tsx`, outside `CrtShell`. It only reports from deployed origins, so `npm run
-  dev` sends nothing and the numbers stay honest. `.npmrc` pins `legacy-peer-deps=true` and
-  is committed on purpose: that package declares optional peers for every framework it
-  supports, npm tries to resolve `@sveltejs/kit` anyway, and that wants vite@8 against
-  vitest's vite@5. Do not delete `.npmrc` without checking `npm ci` still runs.
+  `app/layout.tsx`. It returns null and appends its script to `<head>`, so the placement is
+  about staying mounted, not about the DOM. Development loads Vercel's debug script and
+  reports nothing, so local work never lands in the numbers.
+  **Never verify a deploy by curling `/_vercel/insights/script.js`.** That is only the
+  package's fallback string; a real deployment serves the loader and the view beacon from a
+  per-deploy hashed path, so the pretty path 404s while analytics works fine. Check the
+  beacon POST returns 200 in a browser instead, and give the landing page 15 to 20 seconds,
+  because the boot sequence delays hydration.
+  Adding a new dependency here may need a one-off `npm install --legacy-peer-deps`:
+  `@vercel/analytics` declares an optional `@sveltejs/kit` peer whose own chain wants vite@8,
+  against vitest's vite@5, so a fresh resolve dies with ERESOLVE on a framework this project
+  will never use. The committed lockfile installs clean under strict peers (`npm ci` and
+  `npm install` both), so do **not** paper over it with a repo-wide `.npmrc`: that would
+  silently disable peer checks for `next`/`react` too.
 
 ## Commands
 
@@ -86,7 +95,7 @@ npm test           # vitest unit tests (must stay green)
 npm start          # serve the production build
 ```
 
-Deploy: Vercel, zero config — `vercel` (preview) / `vercel --prod` (production).
+Deploy: Vercel, zero config: `vercel` (preview) / `vercel --prod` (production).
 
 ## Layout of the repo
 
@@ -103,11 +112,11 @@ components/
 content/        profile.ts, experience.ts, projects.ts, skills.ts   <-- edit content here
 lib/            commands.ts (pure terminal parser + tab completion), system.ts (bus types,
                 themes, formatters), scramble.ts, physics.ts (rigid-body solver), audio.ts
-                (runtime synth), eject.ts (pull-back geometry)   — all have .test.ts siblings
+                (runtime synth), eject.ts (pull-back geometry)  : all have .test.ts siblings
 public/img/     user-supplied images (portrait + screenshots)
 docs/
   superpowers/specs/    design spec(s)
-  superpowers/plans/    implementation plan(s) — execute these task-by-task
+  superpowers/plans/    implementation plan(s): execute these task-by-task
   PROGRESS.md           LIVING STATE: what's done, what's pending, decisions log
 ```
 
@@ -115,7 +124,7 @@ docs/
 
 `lib/commands.ts` stays **pure**. Commands that change the running site (`theme`, `crt`,
 `scanlines`, `matrix`, `degauss`, `sudo rm -rf /`) return an `effect` descriptor; `Terminal.tsx`
-is the only place allowed to apply one. Keep it that way — it is why the whole command surface
+is the only place allowed to apply one. Keep it that way: it is why the whole command surface
 is unit-testable without a DOM. Add new commands to `COMMANDS`, `HELP_LINES`, the `switch`, and
 `complete()`'s argument pools, and add a test.
 
@@ -125,7 +134,7 @@ is unit-testable without a DOM. Add new commands to `COMMANDS`, `HELP_LINES`, th
 2. Open the referenced plan in `docs/superpowers/plans/` and execute it task-by-task
    (use the executing-plans workflow: implement → test/build → commit per task).
 3. **Tick the checkboxes in `docs/PROGRESS.md`** as you complete tasks and append to its
-   decision log. This is the handoff contract — keep it current so the next agent isn't lost.
+   decision log. This is the handoff contract: keep it current so the next agent isn't lost.
 4. Commit per task with clear messages. Keep `npm run build` clean and `npm test` green.
 
 ## Known pending work
@@ -187,22 +196,22 @@ vendored in `assets/sources/`; the two large sources stay where they live (the p
 Trinity coursework). The script skips politely with a message when a source is missing, so a fresh
 clone still builds everything else.
 
-- `portrait.jpg` — from `IMG_1018.HEIC`. **sharp cannot decode HEIC** (its libvips has no HEVC
+- `portrait.jpg`: from `IMG_1018.HEIC`. **sharp cannot decode HEIC** (its libvips has no HEVC
   decoder; it reads the metadata then fails on the pixels), so the script shells out to `ffmpeg`
   to decode to PNG first and crops from that. ffmpeg on PATH is needed for this step only.
-- `presterly.png`, `loira.png` — brand marks composited onto 16:9 cards.
-- `firespark.png` — rebuilt as a lockup in Firespark's own design language (its ember spark
+- `presterly.png`, `loira.png`: brand marks composited onto 16:9 cards.
+- `firespark.png`: rebuilt as a lockup in Firespark's own design language (its ember spark
   `#E0501E`, near-black on white, product line beneath), not a bare logo dropped on a card.
   **Firespark is Fergus's own venture with Connell. Firecracker Saunas is a customer, a
-  different thing — do not confuse them.** See `[[firespark]]` and `[[sauna-os]]` in the vault.
-- `remand.png`, `contrabot.png` — authored SVG, rasterised. Deliberately not stock screenshots.
-  In `contrabot`, **all geometry is in screen coordinates where a smaller y is a higher price** —
+  different thing: do not confuse them.** See `[[firespark]]` and `[[sauna-os]]` in the vault.
+- `remand.png`, `contrabot.png`: authored SVG, rasterised. Deliberately not stock screenshots.
+  In `contrabot`, **all geometry is in screen coordinates where a smaller y is a higher price**,
   getting that backwards once produced a rising chart captioned as a profitable short.
-- `under-the-campanile.jpg` — real gameplay, cropped to drop the browser scrollbars. JPEG, not
+- `under-the-campanile.jpg`: real gameplay, cropped to drop the browser scrollbars. JPEG, not
   PNG: it is the one photographic card, and lossless cost ~8x the bytes for no visible gain.
 
 Alt text lives in `content/projects.ts` as `imageAlt`, per project. Do **not** reintroduce a
-blanket `"${title} screenshot"` — most of these are brand marks or authored illustrations, and
+blanket `"${title} screenshot"`: most of these are brand marks or authored illustrations, and
 mislabelling them is a false claim about the work.
 
 Any project whose `image` is `""` falls back to `SignalPlate`, a procedural CRT alignment card
