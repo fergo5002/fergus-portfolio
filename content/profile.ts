@@ -43,7 +43,16 @@ export const profile: Profile = {
   ],
   contact: [
     { label: "email", value: "oreillferg@gmail.com", href: "mailto:oreillferg@gmail.com" },
-    { label: "github", value: "github.com/oreillyfergus", href: "https://github.com/oreillyfergus" },
+    {
+      label: "github (work)",
+      value: "github.com/oreillyfergus",
+      href: "https://github.com/oreillyfergus",
+    },
+    {
+      label: "github (personal)",
+      value: "github.com/fergo5002",
+      href: "https://github.com/fergo5002",
+    },
     {
       label: "linkedin",
       value: "in/patrickfergusoreilly",

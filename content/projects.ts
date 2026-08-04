@@ -53,7 +53,7 @@ export const projects: Project[] = [
       "An embeddable booking widget for a venue's existing site, plus one operations screen for arrivals, takings and no-shows.",
     ],
     stack: ["Next.js", "TypeScript", "Supabase", "PostgreSQL", "Stripe Connect", "Vercel"],
-    links: [{ label: "live", href: "https://firespark.vercel.app" }],
+    links: [{ label: "live", href: "https://firespark.dev" }],
     image: "/img/firespark.png",
     imageAlt: "The Firespark logo: a four-pointed ember spark beside the Firespark wordmark",
   },

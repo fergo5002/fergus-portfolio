@@ -187,6 +187,20 @@ describe("informational commands", () => {
     }
   });
 
+  it("contact lists both GitHub accounts, each with a distinct label", () => {
+    const res = runCommand("contact");
+    expect(res.type).toBe("output");
+    if (res.type === "output") {
+      const text = res.lines.join("\n");
+      expect(text).toContain("github.com/oreillyfergus");
+      expect(text).toContain("github.com/fergo5002");
+    }
+    // The landing page keys its contact rows on the label, so duplicates would
+    // silently drop a row in React.
+    const labels = profile.contact.map((c) => c.label);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
   it("echo returns its argument verbatim", () => {
     const res = runCommand("echo hello  world");
     if (res.type === "output") expect(res.lines[0]).toBe("hello world");

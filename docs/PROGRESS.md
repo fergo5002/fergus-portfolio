@@ -216,6 +216,26 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
 
 ## Decision log
 
+- **2026-08-04 (contact + links)** — Fergus asked for his personal GitHub, `fergo5002`, to be on
+  the site alongside the Hatch one. Both are now listed, explicitly keyed **`github (work)`**
+  (`oreillyfergus`) and **`github (personal)`** (`fergo5002`) — chosen over two bare `github` rows
+  because `app/page.tsx` keys the contact rows on `label`, so duplicate labels would silently drop
+  a row in React. A `contact` test now asserts the labels stay unique.
+  - **`.contact__row`'s key column moved from `110px` to `18ch`.** `"github (personal)"` is 17
+    characters and the keys are set in JetBrains Mono, so `ch` is exactly one character and the
+    column can never be too narrow for its longest label. `max-content` is wrong here: each row is
+    its own grid, so the four rows would size independently and the values would not line up.
+    Measured in the parity container — all four keys resolve to 173px, values aligned at x=660.
+  - **Firespark's project link now points at `https://firespark.dev`**, its own domain, not
+    `firespark.vercel.app`, the platform URL it happens to be hosted on. Verified 200 before
+    shipping (the apex 301s to `www.firespark.dev`). The two mentions of the old URL further up
+    this file are left alone — they are historical statements about what the design was copied
+    from, and rewriting them would falsify the record.
+  - **New `content/links.test.ts`** guards every outbound href in `content/*.ts`: absolute,
+    parseable, `https:`/`mailto:` only, plus both GitHub accounts and the Firespark domain. Nothing
+    covered these before, so a typo in a public link shipped silently. Proven to fail against the
+    old URL before it was kept.
+
 - **2026-08-03 (mobile)** — Design forks settled with Fergus up front: touch becomes a real input
   ("the finger is the beam") rather than scroll-only ambient; **no gyroscope** (iOS needs a
   permission prompt behind a gesture, which is friction on a page a recruiter opens once); a

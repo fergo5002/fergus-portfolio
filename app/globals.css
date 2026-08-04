@@ -709,7 +709,11 @@ html.crt-off body {
 
 .contact__row {
   display: grid;
-  grid-template-columns: 110px 1fr;
+  /* Sized in ch, not px: the keys are set in JetBrains Mono, so one ch is one
+     character and the column always fits the longest label
+     ("github (personal)", 17) with a character to spare. Each row is its own
+     grid, so max-content would misalign them. */
+  grid-template-columns: 18ch 1fr;
   gap: var(--sp-2);
   padding: var(--sp-1) 0;
 }
