@@ -35,8 +35,11 @@ dark room, with the site still running inside it). Spec:
 
 ## Deploying this project: read this first (2026-08-07)
 
-**`vercel deploy` run from inside `C:/Dev/fergus-portfolio` fails, and it fails quietly.** The
-deployment is created, the CLI sits there polling it, and the API records:
+**Both ways of shipping this project are currently broken, and both fail quietly.** The project *is*
+git-linked (`fergo5002/fergus-portfolio`, production branch `main`), so a push to `main` triggers a
+deployment, and `vercel deploy` from the repo creates one too. Right now both are refused. A push
+looks like it worked because git succeeded; a CLI deploy looks like it is building because the CLI
+keeps polling. In both cases the API records:
 
 ```
 readyState       BLOCKED
@@ -45,10 +48,10 @@ seatBlock        { blockCode: "COMMIT_AUTHOR_REQUIRED", isVerified: false }
 attribution      commitMeta { email: "oreillferg@gmail.com", isVerified: false }
 ```
 
-The CLI reads git metadata out of the repo and attaches the commit author to the deployment.
-Vercel then tries to map that address to the account, and blocks the deployment if it cannot.
-Nothing is aliased, production keeps serving the previous build, and the only outward sign is a
-CLI that never finishes.
+Every deployment carries the commit author, whether it came from the git integration or from the
+CLI reading git metadata out of the working tree. Vercel tries to map that address to the account
+and refuses the deployment when it cannot. Nothing is aliased, production keeps serving the
+previous build, and there is no error anywhere a person would look.
 
 **The address it will accept is `oreillfe@tcd.ie`, and only that one.** That is the email on the
 Vercel account (`fergo5002`) that owns the `larry-pm` team. Git metadata is not the problem in
@@ -74,8 +77,13 @@ while production served the old bundle and the status line above claimed everyth
 first blocked deploy was actually 25 July, so anything "shipped" between then and now deserves a
 second look.
 
-**How to actually ship**, until the account side is fixed: deploy a clean tree with no `.git` in
-it, so no attribution is attached.
+Worked example, `e95870b` on 4 August: the push fired the git integration, which was BLOCKED
+(`pgp5f2qko`), and a CLI deploy was BLOCKED too (`cye01t2hj`). Two refusals, no signal, three days
+of production serving the old bundle.
+
+**How to actually ship**, until the account side is fixed: pushing is not enough, and neither is
+`vercel deploy` from the repo. Deploy a clean tree with no `.git` in it, so no attribution is
+attached.
 
 ```bash
 STAGE=/tmp/fp-deploy && rm -rf "$STAGE" && mkdir -p "$STAGE/.vercel"
@@ -99,6 +107,10 @@ That is the identity the auth vault routes `fergo5002`-owned repos to, so verify
 that matches the routing rather than fighting it. Do not "fix" this by setting the repo's commit
 email back to `oreillfe@tcd.ie`: that contradicts `~/.claude/auth/ROUTING.md`, which resolves
 commit identity from the remote owner on purpose.
+
+It is worth doing rather than living with the staging-tree workaround, because verifying that
+address repairs the **git** path too. Once it is verified, a push to `main` ships again on its own
+and none of the above is needed.
 
 ## Cursor trail and ambient whirr: shipped 2026-08-07
 
@@ -482,6 +494,10 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
   `fergus-portfolio`, live at https://fergus-portfolio.vercel.app. The personal scope had two
   existing projects (`sauna-os`, `barristersdirectrework`) but no project-count limit was hit,
   so `barristersdirectrework` was left untouched. Deploy is CLI-based, not git-linked.
+  **Wrong, corrected 2026-08-07:** the project has a GitHub link (`fergo5002/fergus-portfolio`,
+  production branch `main`) dated to its creation, so pushes have always triggered deployments too.
+  This line is why later sessions, including the one that shipped the cursor-trail fix, assumed a
+  push could not deploy and did not check whether one had.
 - **2026-06-02**: Stack chosen: Next.js 15 + React 19 + TS, hand-written CSS (no Tailwind),
   no animation libs. Content in `content/*.ts`. Reduced-motion gating mandatory.
 - **2026-06-02**: Style direction: CRT terminal (green primary `#33ff66`, amber accent

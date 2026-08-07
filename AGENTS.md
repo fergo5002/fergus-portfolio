@@ -98,12 +98,14 @@ npm test           # vitest unit tests (must stay green)
 npm start          # serve the production build
 ```
 
-Deploy: Vercel, zero config. **But `vercel --prod` from inside this repo is currently blocked and
-fails silently.** The CLI attaches the commit author, Vercel cannot verify that address against the
-account that owns `larry-pm`, and the deployment lands in `BLOCKED` while the CLI polls it forever.
-Deploy from a `git archive` staging tree instead, and confirm `readyState` and `aliasAssigned` over
-the API afterwards. Full procedure and the permanent account-side fix: the deploy section at the
-top of `docs/PROGRESS.md`. Live host is `https://fergusoreilly.dev`.
+Deploy: Vercel. The project is git-linked (`fergo5002/fergus-portfolio`, production branch `main`),
+so a push normally ships. **Right now both a push and `vercel --prod` are refused, and both fail
+silently.** Every deployment carries the commit author, Vercel cannot verify that address against
+the account that owns `larry-pm`, and the deployment lands in `BLOCKED`: no alias, production
+untouched, git exits 0 and the CLI polls forever. Until that is fixed, ship from a `git archive`
+staging tree with no `.git` in it, and confirm `readyState` and `aliasAssigned` over the API
+afterwards. Full procedure and the permanent account-side fix: the deploy section at the top of
+`docs/PROGRESS.md`. Live host is `https://fergusoreilly.dev`.
 
 ## Layout of the repo
 
