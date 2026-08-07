@@ -98,7 +98,12 @@ npm test           # vitest unit tests (must stay green)
 npm start          # serve the production build
 ```
 
-Deploy: Vercel, zero config: `vercel` (preview) / `vercel --prod` (production).
+Deploy: Vercel, zero config. **But `vercel --prod` from inside this repo is currently blocked and
+fails silently.** The CLI attaches the commit author, Vercel cannot verify that address against the
+account that owns `larry-pm`, and the deployment lands in `BLOCKED` while the CLI polls it forever.
+Deploy from a `git archive` staging tree instead, and confirm `readyState` and `aliasAssigned` over
+the API afterwards. Full procedure and the permanent account-side fix: the deploy section at the
+top of `docs/PROGRESS.md`. Live host is `https://fergusoreilly.dev`.
 
 ## Layout of the repo
 

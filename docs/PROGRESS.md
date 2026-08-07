@@ -5,13 +5,24 @@
 
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
-**Status (2026-08-04):** **v5 "Mass" is LIVE.** Verified on
-`https://fergus-portfolio.vercel.app`: FergusOS 5.0 serving, all three routes 200, 59.9 fps with
-both shader passes and WebGL up, zero console errors, and every feature exercised against
-production, not a local build. Gravity dropped 120 pieces with none landing behind the status
-strip and restored the page cleanly; eject pulled back to the room and docked again with the
-spacer released; sound went live and persisted. The deploy took longer than the first 13 minutes
-of polling suggested, which is why an earlier commit here claimed it had not shipped.
+**Status (2026-08-07):** **v5 "Mass" is LIVE, and the cursor trail and the ambient whirr are now
+gone from production too.** The live host is `https://fergusoreilly.dev` (`fergus-portfolio.vercel.app`
+is an alias of the same deployment; both were checked). All three routes 200, 60 fps, one canvas
+on the page, and an idle tube that is silent.
+
+Read the deploy section below before shipping anything: `vercel deploy` from inside the repo has
+been silently producing BLOCKED deployments since **25 July**, which is how the 4 August fix sat
+on `main` for three days without reaching anyone. Production is in step with `main` again as of
+today (the live CSS hash matches this tree's production build exactly), but treat any *older*
+"shipped" claim in this file as needing a look at the live site before you believe it.
+
+**Status (2026-08-04):** v5 "Mass" verified on `https://fergus-portfolio.vercel.app`: FergusOS 5.0
+serving, all three routes 200, 59.9 fps with both shader passes and WebGL up, zero console errors,
+and every feature exercised against production, not a local build. Gravity dropped 120 pieces with
+none landing behind the status strip and restored the page cleanly; eject pulled back to the room
+and docked again with the spacer released; sound went live and persisted. The deploy took longer
+than the first 13 minutes of polling suggested, which is why an earlier commit here claimed it had
+not shipped.
 
 **What v5 is.** The tube became a machine: it has memory
 (a GPU persistence buffer with real burn-in), mass (a rigid-body solver that drops the live
@@ -19,6 +30,95 @@ page on the floor and lets you throw it), a voice (everything synthesised at run
 files), and a body (an `eject` that pulls the camera back to reveal the monitor on a desk in a
 dark room, with the site still running inside it). Spec:
 `docs/superpowers/specs/2026-08-04-mass-memory-voice-design.md`.
+
+---
+
+## Deploying this project: read this first (2026-08-07)
+
+**`vercel deploy` run from inside `C:/Dev/fergus-portfolio` fails, and it fails quietly.** The
+deployment is created, the CLI sits there polling it, and the API records:
+
+```
+readyState       BLOCKED
+readyStateReason The Deployment was blocked because there was no git user associated with the commit.
+seatBlock        { blockCode: "COMMIT_AUTHOR_REQUIRED", isVerified: false }
+attribution      commitMeta { email: "oreillferg@gmail.com", isVerified: false }
+```
+
+The CLI reads git metadata out of the repo and attaches the commit author to the deployment.
+Vercel then tries to map that address to the account, and blocks the deployment if it cannot.
+Nothing is aliased, production keeps serving the previous build, and the only outward sign is a
+CLI that never finishes.
+
+**The address it will accept is `oreillfe@tcd.ie`, and only that one.** That is the email on the
+Vercel account (`fergo5002`) that owns the `larry-pm` team. Git metadata is not the problem in
+itself: plenty of READY deployments carry it. An *unverifiable* author is the problem. All 31
+deployments in this project's history line up on exactly that:
+
+| Commit author on the deployment | Result |
+|---|---|
+| `oreillfe@tcd.ie` | READY (7 of 7) |
+| none at all | READY (5 of 6) |
+| `fergus.oreilly@hatch105.com` | BLOCKED (13 of 13) |
+| `oreillferg@gmail.com` | BLOCKED (4 of 4) |
+
+So this is not a Vercel change, it is **identity drift in this repo**. The commit author has moved
+twice, and each move is visible in `git log`: 18 commits as `oreillfe@tcd.ie` (deploys worked),
+then 21 as `fergus.oreilly@hatch105.com` from 25 July (deploys started failing), then 10 as
+`oreillferg@gmail.com` from 4 August when the auth vault's identity routing was corrected (still
+failing, for the same reason). The middle stretch is also a domain-boundary slip worth noting: a
+personal repo was being committed to under the Presterly identity.
+
+This is why the cursor-trail / ambient-audio fix (`e95870b`, 4 August) sat on `main` for three days
+while production served the old bundle and the status line above claimed everything was live. The
+first blocked deploy was actually 25 July, so anything "shipped" between then and now deserves a
+second look.
+
+**How to actually ship**, until the account side is fixed: deploy a clean tree with no `.git` in
+it, so no attribution is attached.
+
+```bash
+STAGE=/tmp/fp-deploy && rm -rf "$STAGE" && mkdir -p "$STAGE/.vercel"
+git archive HEAD | tar -x -C "$STAGE"          # tracked files only, no .git
+cp .vercel/project.json "$STAGE/.vercel/"
+cd "$STAGE" && vercel deploy --prod --yes --scope larry-pm --token "$VERCEL_TOKEN_PERSONAL"
+```
+
+Then confirm `readyState` is `READY` **and** `aliasAssigned` is `true` via
+`https://api.vercel.com/v13/deployments/<id>?teamId=<team>`. Do not trust the CLI's exit, and do
+not trust `vercel ls` either: it renders BLOCKED as `UNKNOWN`, which reads like "still building".
+
+Notes on the things that do not work:
+- `--no-git-metadata` is not an option in CLI 58.4.4.
+- `vercel build --prod` cannot run on this machine: it needs symlink permission and dies with
+  `EPERM: operation not permitted, symlink '_not-found.rsc.func'`. So `--prebuilt` is out.
+
+**The permanent fix is Fergus's to make**, since it is an account change: add and verify
+`oreillferg@gmail.com` as an email on the Vercel account `fergo5002` (Settings → Account → Email).
+That is the identity the auth vault routes `fergo5002`-owned repos to, so verifying it is the fix
+that matches the routing rather than fighting it. Do not "fix" this by setting the repo's commit
+email back to `oreillfe@tcd.ie`: that contradicts `~/.claude/auth/ROUTING.md`, which resolves
+commit identity from the remote owner on purpose.
+
+## Cursor trail and ambient whirr: shipped 2026-08-07
+
+The removals landed in `e95870b` on 4 August. Getting them in front of a visitor took until the
+7th, for the deploy reason above. Verified against the live site, not a local build:
+
+- **Trail.** `https://fergusoreilly.dev` serves `_next/static/css/7c90e669ee3ca4f4.css` (the hash
+  the local production build produces), with zero rules matching `cursortrail`, zero elements
+  matching `.cursortrail`, and exactly one `<canvas>` on the page: `phosphor__canvas`. The second
+  screen-blended full-viewport canvas is gone.
+- **Whirr.** With an `AnalyserNode` spliced in front of `ctx.destination` on the live page and
+  sound switched on: `degauss` peaked at **-11.7 dBFS**, so the meter is genuinely on the master
+  bus and would catch a drone. The ten seconds of doing nothing straight afterwards measured
+  **exactly 0.0** RMS. A separate run counted node construction: 17 nodes on enable (power-on
+  voices plus the silent beam bus) and **0** over six seconds of idle.
+- The live JS bundles contain none of the removed bed's constants (`5200` hiss highpass, `0.27`
+  wobble, `0.008`/`0.024` hum harmonics) and do still contain `1700`, the beam bandpass that
+  stays. `15625` survives once, correctly: `FLYBACK_HZ` still drives the power-on ramp.
+- Prod-parity container (`Dockerfile.parity`, clean `npm ci` on Node 24) built, tested 133/133,
+  served all three routes 200, and its CSS matched. 
 
 ---
 
