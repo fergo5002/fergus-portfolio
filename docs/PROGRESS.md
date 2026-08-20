@@ -5,6 +5,23 @@
 
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
+**Status (2026-08-20, later): the boot sequence regression is fixed.** The SEO commit added an
+inline failsafe that removed `booting` after 4000ms. The sequence has a 6418ms floor, so on every
+first visit the landing page was revealed 2.4 seconds early and sat underneath a BIOS screen that
+was still typing. Reported by Fergus, confirmed live (`booting` went false at 5333ms with the
+overlay still mounted).
+
+The fix is ownership, not a bigger number: the animation is ~430 chained `setTimeout` ticks and a
+hidden tab clamps each to about a second, so no fixed delay can win that race. `BootSequence`
+disarms the failsafe on mount and re-arms it on unmount. Timings and the four-row ownership table
+live in `lib/boot.ts`; `lib/boot.test.ts` executes the real inline script against a stub DOM.
+
+Review caught that the first version of the fix opened an equally bad hole: with the failsafe
+disarmed and no re-arm, clicking a nav link during the boot unmounted `BootSequence` and left the
+whole site `visibility: hidden` until a hard reload. Two smaller regressions from the same SEO
+commit went with it: `finish()` now reveals the page and drops the overlay on adjacent lines, and
+the pre-hydration hero name no longer glows green on the amber and ice themes.
+
 **Status (2026-08-20): SEO + GEO surface and a writing surface shipped.** The site went from
 three routes and ~1,340 words with no `robots.txt`, no sitemap, no canonicals and no structured
 data, to five routes with a full crawl surface and eight long-form articles. Read

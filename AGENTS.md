@@ -29,10 +29,28 @@ Any new per-character, scrambled, typewriter or canvas-rendered text effect must
 copy of its words in the server HTML, or it is quietly costing the site the words it decorates.
 
 **And never disallow `/_next/` in `robots.txt`.** The inline pre-paint script adds `booting` to
-`<html>` on the landing page, `.booting` hides the content, and only `BootSequence` clears it.
-Block the chunk it ships in and a rendering crawler sees an empty homepage while every status
-code stays 200. There is a 4s failsafe in the inline script now, and it is the second line of
-defence, not a licence to block scripts.
+`<html>` on the landing page, `.booting` hides the content, and `BootSequence` is what clears it
+properly. Block the chunk it ships in and a rendering crawler sees an empty homepage while every
+status code stays 200. There is a 4s failsafe in the inline script, and it bounds that exposure
+rather than removing it. It is not a licence to block scripts.
+
+**`booting` hides the whole site, so exactly one thing may own clearing it at any moment.** The
+ownership table is in `lib/boot.ts` and it is four rows, not two. Read it before touching the boot
+path. Two rules came out of getting it wrong, both of which shipped:
+
+- **Never tune a delay to outlast the animation.** The sequence is ~430 chained `setTimeout` ticks
+  and a hidden tab clamps each to about a second, so its wall-clock length is unbounded. A 4000ms
+  failsafe against a 6418ms floor revealed the landing page underneath a still-typing BIOS screen
+  on every first visit. The failsafe answers "did the JavaScript arrive", nothing else, and
+  `BOOT_FLOOR_MS` is deliberately not an input to it.
+- **Disarming a safety net means inheriting every path it covered.** `BootSequence` disarms the
+  failsafe on mount and must re-arm it on unmount. Without that, clicking any nav link while the
+  BIOS is typing unmounts `BootSequence` (it lives in `app/page.tsx`) and leaves the entire site
+  `visibility: hidden` until a hard reload.
+
+`lib/boot.test.ts` executes the real inline script against a stub DOM. Its `BootSequence` greps are
+a coupling check only: vitest runs in a `node` environment here, so nothing can mount the component.
+If you change the boot path, delete your fix and confirm the suite goes red before trusting it.
 
 As of v4 ("Phosphor") the site does not merely *depict* a CRT, it *behaves* like one. Every
 effect derives from one premise: an electron beam painting phosphor behind glass. Scroll
