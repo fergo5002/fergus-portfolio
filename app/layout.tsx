@@ -6,6 +6,15 @@ import CrtShell from "@/components/CrtShell";
 import Nav from "@/components/Nav";
 import SystemProvider from "@/components/system/SystemProvider";
 import { profile } from "@/content/profile";
+import JsonLd from "@/components/JsonLd";
+import {
+  SITE_URL,
+  SITE_NAME,
+  SITE_LOCALE,
+  canonical,
+  personSchema,
+  websiteSchema,
+} from "@/lib/seo";
 
 const mono = JetBrains_Mono({
   subsets: ["latin"],
@@ -20,19 +29,61 @@ const display = VT323({
   display: "swap",
 });
 
+const DESCRIPTION = `${profile.name}: ${profile.tagline}. Co-founder of Tigh Sauna, previously Presterly. CS & Business @ Trinity College Dublin.`;
+
 export const metadata: Metadata = {
+  // `metadataBase` is what makes every relative URL below resolve to an
+  // absolute one. Without it Next cannot build an absolute OG image URL, and a
+  // relative OG image is ignored by every platform that unfurls a link, so the
+  // card silently falls back to nothing.
+  metadataBase: new URL(SITE_URL),
   // Derived from content/profile.ts, never retyped. AGENTS.md keeps copy in the
   // content layer, and a hand-written duplicate here would quietly go on
   // advertising the old tagline in search results after the hero was updated.
-  title: `${profile.shortName} · Terminal`,
+  title: {
+    default: `${profile.shortName} · ${profile.jobTitle}`,
+    // Child routes set a bare title and get the name appended, so every tab and
+    // every search result carries the entity this site is about.
+    template: `%s · ${profile.shortName}`,
+  },
   // Trinity is appended rather than left to the tagline: the tagline was
   // shortened to fit one line in the hero, which is a pixel decision that should
   // not quietly cost the page its strongest search keyword.
-  description: `${profile.name}: ${profile.tagline}. CS & Business @ Trinity College Dublin. Projects, experience, and contact.`,
+  description: DESCRIPTION,
+  applicationName: SITE_NAME,
+  authors: [{ name: profile.name, url: SITE_URL }],
+  creator: profile.name,
+  // The landing page's own canonical. Child routes override this with theirs.
+  alternates: {
+    ...canonical("/"),
+    types: { "application/rss+xml": "/feed.xml" },
+  },
   openGraph: {
-    title: `${profile.shortName} · Terminal`,
-    description: `${profile.name}: ${profile.tagline}. CS & Business @ Trinity College Dublin.`,
+    title: `${profile.shortName} · ${profile.jobTitle}`,
+    description: DESCRIPTION,
     type: "website",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    locale: SITE_LOCALE,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${profile.shortName} · ${profile.jobTitle}`,
+    description: DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      // Without these three, Google is free to truncate the snippet, refuse to
+      // show a preview image, and cap video previews. They are the difference
+      // between a rich result and a bare blue link.
+      "max-snippet": -1,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+    },
   },
 };
 
@@ -75,6 +126,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
+        {/*
+          The Person and WebSite nodes sit in the layout so every route carries
+          them, which is what lets each page's own schema reference the same
+          entity by `@id` instead of describing a fresh, thinner one. Routes add
+          their page-specific nodes in their own JsonLd block.
+        */}
+        <JsonLd nodes={[personSchema(), websiteSchema()]} />
         <a href="#main" className="skiplink">
           skip to content
         </a>

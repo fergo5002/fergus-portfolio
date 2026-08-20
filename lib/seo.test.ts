@@ -1,0 +1,228 @@
+import { describe, it, expect } from "vitest";
+import {
+  SITE_URL,
+  PERSON_ID,
+  WEBSITE_ID,
+  absolute,
+  canonical,
+  sameAs,
+  jsonLd,
+  graph,
+  personSchema,
+  websiteSchema,
+  profilePageSchema,
+  projectsPageSchema,
+  experiencePageSchema,
+  blogSchema,
+  blogPostingSchema,
+  breadcrumbSchema,
+  articlePath,
+  type JsonLdObject,
+} from "./seo";
+import { articles } from "@/content/articles";
+import { profile } from "@/content/profile";
+
+describe("absolute", () => {
+  it("prefixes a site-relative path", () => {
+    expect(absolute("/projects")).toBe(`${SITE_URL}/projects`);
+  });
+
+  it("tolerates a missing leading slash", () => {
+    expect(absolute("projects")).toBe(`${SITE_URL}/projects`);
+  });
+
+  it("returns the bare origin for the root, with no trailing slash", () => {
+    // Two spellings of the same page is precisely what a canonical exists to
+    // prevent, so the root must have exactly one.
+    expect(absolute("/")).toBe(SITE_URL);
+    expect(absolute("/")).not.toMatch(/\/$/);
+  });
+
+  it("passes an already-absolute URL straight through", () => {
+    expect(absolute("https://tighsauna.com")).toBe("https://tighsauna.com");
+  });
+
+  it("never produces a double slash", () => {
+    for (const p of ["/", "/projects", "projects", "/writing/a-slug"]) {
+      expect(absolute(p).replace(/^https:\/\//, "")).not.toContain("//");
+    }
+  });
+});
+
+describe("canonical", () => {
+  it("returns an absolute canonical for the metadata block", () => {
+    expect(canonical("/writing")).toEqual({ canonical: `${SITE_URL}/writing` });
+  });
+
+  it("always points at production, never at a preview host", () => {
+    expect(canonical("/").canonical.startsWith("https://fergusoreilly.dev")).toBe(true);
+  });
+});
+
+describe("sameAs", () => {
+  it("lists only absolute profile URLs", () => {
+    const links = sameAs();
+    expect(links.length).toBeGreaterThan(0);
+    expect(links.every((l) => /^https:\/\//.test(l))).toBe(true);
+  });
+
+  it("excludes the mailto contact", () => {
+    expect(sameAs().some((l) => l.startsWith("mailto:"))).toBe(false);
+  });
+});
+
+describe("jsonLd", () => {
+  it("produces parseable JSON", () => {
+    expect(JSON.parse(jsonLd({ "@type": "Thing", name: "x" }))).toEqual({
+      "@type": "Thing",
+      name: "x",
+    });
+  });
+
+  it("escapes < so a payload cannot close the script element", () => {
+    // Without this, the first </script> inside any string spills the rest of
+    // the graph into the document as markup.
+    const out = jsonLd({ "@type": "Thing", name: "</script><img src=x>" });
+    expect(out).not.toContain("</script>");
+    expect(out).toContain("\\u003c");
+    expect(JSON.parse(out).name).toBe("</script><img src=x>");
+  });
+
+  it("round-trips an array of nodes", () => {
+    expect(JSON.parse(jsonLd([{ "@type": "A" }, { "@type": "B" }]))).toHaveLength(2);
+  });
+});
+
+/** Every value in the graph must be defined: undefined is never valid JSON-LD. */
+function assertNoUndefined(node: unknown, path = "root"): void {
+  if (node === undefined) throw new Error(`undefined at ${path}`);
+  if (Array.isArray(node)) {
+    node.forEach((v, i) => assertNoUndefined(v, `${path}[${i}]`));
+    return;
+  }
+  if (node && typeof node === "object") {
+    for (const [k, v] of Object.entries(node)) assertNoUndefined(v, `${path}.${k}`);
+  }
+}
+
+describe("personSchema", () => {
+  const person = personSchema();
+
+  it("is a Person with a stable id", () => {
+    expect(person["@type"]).toBe("Person");
+    expect(person["@id"]).toBe(PERSON_ID);
+  });
+
+  it("carries both the display name and the legal name", () => {
+    expect(person.name).toBe(profile.shortName);
+    expect(person.alternateName).toBe(profile.name);
+  });
+
+  it("has an absolute image and url", () => {
+    expect(String(person.url)).toMatch(/^https:\/\//);
+    expect(String(person.image)).toMatch(/^https:\/\//);
+  });
+
+  it("corroborates the entity with sameAs links", () => {
+    expect(Array.isArray(person.sameAs)).toBe(true);
+    expect((person.sameAs as string[]).length).toBeGreaterThan(0);
+  });
+
+  it("names the current employer, not a wound-down one", () => {
+    const worksFor = person.worksFor as JsonLdObject;
+    expect(worksFor.name).toBe("Tigh Sauna");
+  });
+
+  it("declares subjects it can evidence", () => {
+    expect((person.knowsAbout as string[]).length).toBeGreaterThan(3);
+  });
+
+  it("emits no undefined values", () => {
+    assertNoUndefined(person, "person");
+  });
+});
+
+describe("websiteSchema and profilePageSchema", () => {
+  it("attributes the site to the person node", () => {
+    expect((websiteSchema().publisher as JsonLdObject)["@id"]).toBe(PERSON_ID);
+  });
+
+  it("points the profile page at the same person entity", () => {
+    const page = profilePageSchema();
+    expect((page.mainEntity as JsonLdObject)["@id"]).toBe(PERSON_ID);
+    expect((page.isPartOf as JsonLdObject)["@id"]).toBe(WEBSITE_ID);
+  });
+});
+
+describe("collection pages", () => {
+  it("lists every project with an absolute url", () => {
+    const list = projectsPageSchema().mainEntity as JsonLdObject;
+    const items = list.itemListElement as JsonLdObject[];
+    expect(items.length).toBeGreaterThan(0);
+    expect(items[0].position).toBe(1);
+    expect(String(items[0].url)).toMatch(/^https:\/\//);
+    assertNoUndefined(items, "projects");
+  });
+
+  it("lists every role and survives an entry with no summary", () => {
+    const list = experiencePageSchema().mainEntity as JsonLdObject;
+    assertNoUndefined(list, "experience");
+  });
+});
+
+describe("blog schemas", () => {
+  it("lists every article on the blog node", () => {
+    const blog = blogSchema(articles);
+    expect((blog.blogPost as JsonLdObject[]).length).toBe(articles.length);
+    assertNoUndefined(blog, "blog");
+  });
+
+  it("builds a BlogPosting attributed to the person", () => {
+    const post = blogPostingSchema(articles[0], 900);
+    expect(post["@type"]).toBe("BlogPosting");
+    expect((post.author as JsonLdObject)["@id"]).toBe(PERSON_ID);
+    expect(post.headline).toBe(articles[0].title);
+    expect(post.wordCount).toBe(900);
+    assertNoUndefined(post, "post");
+  });
+
+  it("falls back to the publish date when there is no revision", () => {
+    const post = blogPostingSchema({ ...articles[0], updated: undefined }, 100);
+    expect(post.dateModified).toBe(articles[0].date);
+  });
+
+  it("uses the revision date when there is one", () => {
+    const post = blogPostingSchema({ ...articles[0], updated: "2026-09-01" }, 100);
+    expect(post.dateModified).toBe("2026-09-01");
+  });
+
+  it("builds article paths from slugs", () => {
+    expect(articlePath("a-slug")).toBe("/writing/a-slug");
+  });
+});
+
+describe("breadcrumbSchema", () => {
+  it("numbers the trail from one and absolutises each step", () => {
+    const crumbs = breadcrumbSchema([
+      { name: "Home", path: "/" },
+      { name: "Writing", path: "/writing" },
+    ]);
+    const items = crumbs.itemListElement as JsonLdObject[];
+    expect(items.map((i) => i.position)).toEqual([1, 2]);
+    expect(items[0].item).toBe(SITE_URL);
+  });
+});
+
+describe("graph", () => {
+  it("wraps nodes in one context so @id references resolve", () => {
+    const g = graph([personSchema(), websiteSchema()]);
+    expect(g["@context"]).toBe("https://schema.org");
+    expect((g["@graph"] as JsonLdObject[]).length).toBe(2);
+  });
+
+  it("serialises the real landing page graph without undefined", () => {
+    const g = graph([personSchema(), websiteSchema(), profilePageSchema()]);
+    assertNoUndefined(g, "landing");
+    expect(() => JSON.parse(jsonLd(g))).not.toThrow();
+  });
+});

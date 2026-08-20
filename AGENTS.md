@@ -7,8 +7,21 @@ before touching code. (Claude Code, Cursor, Copilot, and others read `AGENTS.md`
 
 **FergusOS Terminal**: Patrick Fergus O'Reilly's personal portfolio, styled as a retro CRT
 computer terminal (green phosphor + amber accent, scanlines, boot sequence, interactive
-command line). Three routes: landing (`/`), experience (`/experience`), projects
-(`/projects`).
+command line). Five routes: landing (`/`), experience (`/experience`), projects
+(`/projects`), writing index (`/writing`) and articles (`/writing/[slug]`).
+
+**The site is also a search and answer-engine surface**, which is a second set of constraints on
+top of the CRT premise and does not bend to it. Every route carries a canonical URL and JSON-LD;
+`/robots.txt`, `/sitemap.xml`, `/llms.txt` and `/feed.xml` are generated from `content/`, never
+hand-maintained. `lib/seo.ts` is the only place a URL or a schema.org object is built. Read
+`docs/superpowers/specs/2026-08-20-seo-geo-growth-design.md` before touching any of it.
+
+**The rule that keeps biting:** a visual effect that fragments text also fragments it for
+crawlers. The hero name is animated one character per element, and for a while that meant the
+most important string on the domain extracted as `P a t r i c k F e r g u s O ' R e i l l y`.
+`HeroName` now renders a contiguous, crawlable copy of the name alongside the animated one. Any
+new per-character or scrambled effect must do the same, or it is quietly costing the site the
+words it decorates.
 
 As of v4 ("Phosphor") the site does not merely *depict* a CRT, it *behaves* like one. Every
 effect derives from one premise: an electron beam painting phosphor behind glass. Scroll
@@ -159,10 +172,22 @@ See `docs/PROGRESS.md`.
 
 ## Keeping the numbers honest
 
-`content/` carries live traction claims (customers under management, order value analysed, store
+> [!important] These are now **historical** figures, and they must stay in the past tense
+> Presterly was wound down in **August 2026**. Its numbers are a snapshot of a company that no
+> longer trades, so every sentence carrying one reads "reached", not "installed on", and no
+> figure gets a present-tense verb. **Do not re-verify them against the Presterly database**: it
+> is frozen, it is a different business's infrastructure, and a fresh query would only produce a
+> more precise number for something that stopped. The 2026-08-04 snapshot below is the last word.
+>
+> Tigh Sauna carries **no** traction numbers on this site on purpose. It has two merchants and it
+> has not been through a season, so there is nothing measured to publish. If that changes, the
+> same discipline applies: scope every figure to one query, say what the query proves, and round
+> down.
+
+`content/` carries traction claims (customers under management, order value analysed, store
 count) on a page whose footer invites people to check. **They are claims, not decoration, and they
 go stale silently.** Last verified against the Presterly production database on **2026-08-04** via
-the read-only Supabase MCP.
+the read-only Supabase MCP, and never to be re-verified: see the note above.
 
 **The scoped query is the only one to publish from.** The trap, hit twice on 2026-08-04, is pairing
 a filtered store count with unfiltered platform totals. Scope every figure to the same set:

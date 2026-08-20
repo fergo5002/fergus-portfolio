@@ -172,6 +172,70 @@ async function firespark() {
   done("firespark.png", `${info.width}x${info.height} ${(info.size / 1024).toFixed(0)}KB`);
 }
 
+// ── 3b. Tigh Sauna ──────────────────────────────────────────────────────────
+// Typographic lockup in Tigh Sauna's own colours: `steam #0f6472` on the warm
+// `birch #faf6f0` secondary surface. No vendored mark, so unlike every other
+// builder here this one can never skip.
+//
+// Steam is the brand's text colour precisely because it is legible (6.8:1 on
+// white). Do not restyle this card in the old ember orange: ember only reached
+// 3.94:1, which is why it stopped being used for text in the first place.
+//
+// The three bars are the product in one glance: a diary with sessions in it.
+// They are deliberately not a logo, because there isn't one to copy here yet
+// and inventing a mark on a portfolio card would be a claim about the brand.
+async function tighSauna() {
+  const STEAM = "#0f6472";
+  const BIRCH = "#faf6f0";
+  const midY = 244;
+
+  const word = await measuredText("Tigh Sauna", {
+    size: 86,
+    weight: 700,
+    fill: STEAM,
+    tracking: -2.5,
+  });
+  const tag = await measuredText("Booking and operations for saunas", {
+    size: 26,
+    fill: "#5b636e",
+  });
+
+  if (word.width > CARD_W) {
+    throw new Error(
+      `tigh-sauna: wordmark is ${word.width}px, wider than the ${CARD_W}px card. Reduce the font size.`,
+    );
+  }
+
+  // Three session slots on a rule, drawn at the card's own scale so the bars
+  // line up with the wordmark's optical centre rather than floating.
+  const barsY = midY + 150;
+  const barW = 108;
+  const barGap = 18;
+  const barsTotal = barW * 3 + barGap * 2;
+  const barsX = Math.round((CARD_W - barsTotal) / 2);
+  const bars = svg(`<svg xmlns="http://www.w3.org/2000/svg" width="${CARD_W}" height="24">
+  <rect x="${barsX}" y="8" width="${barW}" height="8" rx="4" fill="${STEAM}" opacity="0.9"/>
+  <rect x="${barsX + barW + barGap}" y="8" width="${barW}" height="8" rx="4" fill="${STEAM}" opacity="0.55"/>
+  <rect x="${barsX + (barW + barGap) * 2}" y="8" width="${barW}" height="8" rx="4" fill="${STEAM}" opacity="0.25"/>
+</svg>`);
+
+  const info = await sharp({
+    create: { width: CARD_W, height: CARD_H, channels: 4, background: BIRCH },
+  })
+    .composite([
+      {
+        input: word.buffer,
+        left: Math.round((CARD_W - word.width) / 2),
+        top: midY - Math.round(word.height / 2),
+      },
+      { input: tag.buffer, left: Math.round((CARD_W - tag.width) / 2), top: midY + 84 },
+      { input: bars, left: 0, top: barsY },
+    ])
+    .png({ compressionLevel: 9 })
+    .toFile(join(OUT, "tigh-sauna.png"));
+  done("tigh-sauna.png", `${info.width}x${info.height} ${(info.size / 1024).toFixed(0)}KB`);
+}
+
 // ── 4. Presterly ────────────────────────────────────────────────────────────
 // The Presterly "P" from the app favicon, on the brand's own near-black.
 async function presterly() {
@@ -322,6 +386,7 @@ console.log("building public/img ...");
 await portrait();
 await campanile();
 await firespark();
+await tighSauna();
 await presterly();
 await loira();
 await remand();

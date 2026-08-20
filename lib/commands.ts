@@ -1,6 +1,7 @@
 import { profile } from "@/content/profile";
 import { projects } from "@/content/projects";
 import { experience } from "@/content/experience";
+import { articles } from "@/content/articles";
 import { formatUptime, isTheme } from "@/lib/system";
 import type { Theme } from "@/lib/system";
 
@@ -43,7 +44,14 @@ export type CommandContext = {
 };
 
 /** Sections reachable from the terminal. */
-export const SECTIONS = ["about", "skills", "experience", "projects", "contact"] as const;
+export const SECTIONS = [
+  "about",
+  "skills",
+  "experience",
+  "projects",
+  "writing",
+  "contact",
+] as const;
 
 /** Every command name, for `help` and for tab completion. */
 export const COMMANDS = [
@@ -175,6 +183,10 @@ function resume(): string[] {
   for (const p of projects) {
     out.push(`  ${p.slug.padEnd(22)}${p.tagline}`);
   }
+  out.push("", "writing/");
+  for (const a of articles) {
+    out.push(`  ${a.date.padEnd(22)}${a.title}`);
+  }
   out.push("", `contact: ${profile.contact.map((c) => c.value).join("  ·  ")}`);
   return out;
 }
@@ -209,6 +221,8 @@ export function runCommand(input: string, ctx: CommandContext = {}): CommandResu
       if (dest === "" || dest === "~" || dest === "home") return { type: "navigate", href: "/" };
       if (dest === "projects") return { type: "navigate", href: "/projects" };
       if (dest === "experience") return { type: "navigate", href: "/experience" };
+      if (dest === "writing" || dest === "blog" || dest === "posts")
+        return { type: "navigate", href: "/writing" };
       if (dest === "about" || dest === "skills" || dest === "contact")
         return { type: "navigate", href: `/#${dest}` };
       return ok([`cd: no such section: ${dest}`]);

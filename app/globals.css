@@ -113,6 +113,32 @@ html.lenis body {
   pointer-events: none;
 }
 
+/*
+  Present but not painted.
+
+  Used wherever a visual effect fragments text (per-character animation,
+  scramble, canvas) and a whole, contiguous copy still has to exist in the
+  document for screen readers AND for anything that extracts text by stripping
+  tags. See the comment in `components/motion/HeroName.tsx`.
+
+  The clip-rect pattern rather than `display:none` or `visibility:hidden` on
+  purpose: those two remove the element from the accessibility tree and are
+  fairly read as hiding content from users. This keeps it rendered and readable,
+  just not visible.
+*/
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* Keyboard users get a way past the chrome before anything else. */
 .skiplink {
   position: fixed;
@@ -2017,4 +2043,363 @@ html.is-gravity .statusbar {
 }
 .machine__motion {
   display: contents;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   WRITING SURFACE
+   ════════════════════════════════════════════════════════════════════════════
+
+   Long-form prose inside a CRT is a real legibility problem, and the fix is to
+   stop doing the two things the rest of the site does for effect.
+
+   1. NO GLOW ON BODY COPY. `--glow` is a text-shadow applied to `body`, so
+      every character on this site is haloed. That is correct for a terminal
+      readout of ten words and it is genuinely tiring across a two thousand word
+      article. `.prose` cancels it and gives the glow back to headings only,
+      where it still reads as phosphor and there is not enough of it to hurt.
+   2. A CONSTRAINED MEASURE. The rest of the site runs to `--maxw` (1040px),
+      which at this font size is roughly 120 characters a line. Prose gets ~68.
+
+   Both are deliberate departures from the house style rather than oversights.
+   The tube is the frame; the article inside it has to be readable. */
+
+.page__lede {
+  color: var(--green-faint);
+  max-width: 62ch;
+  margin-bottom: var(--sp-5);
+}
+
+/* ── index ─────────────────────────────────────────────────────────────── */
+
+.writing__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.writing__item {
+  border-left: 2px solid var(--green-line);
+  padding-left: var(--sp-4);
+}
+
+.writing__link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.writing__title {
+  font-family: var(--font-screen);
+  font-size: clamp(1.35rem, 3vw, 1.9rem);
+  line-height: 1.15;
+  color: var(--green-bright);
+  margin: 0 0 var(--sp-2);
+}
+
+.writing__link:hover .writing__title,
+.writing__link:focus-visible .writing__title {
+  color: var(--amber-bright);
+}
+
+.writing__meta {
+  color: var(--green-dim);
+  font-size: 0.8rem;
+  margin: 0 0 var(--sp-2);
+  text-transform: lowercase;
+}
+
+.writing__desc {
+  color: var(--green-faint);
+  max-width: 68ch;
+  margin: 0 0 var(--sp-3);
+  text-shadow: none;
+}
+
+.writing__tags {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: 0;
+}
+
+.writing__tags li {
+  font-size: 0.72rem;
+  color: var(--green-dim);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  padding: 2px var(--sp-2);
+  text-shadow: none;
+}
+
+.writing__feed {
+  margin-top: var(--sp-5);
+  font-size: 0.85rem;
+  color: var(--green-dim);
+}
+
+/* ── article ───────────────────────────────────────────────────────────── */
+
+.post__head {
+  border-bottom: 1px solid var(--green-line);
+  padding-bottom: var(--sp-4);
+  margin-bottom: var(--sp-5);
+}
+
+.post__title {
+  font-family: var(--font-screen);
+  font-size: clamp(1.9rem, 6vw, 3.2rem);
+  line-height: 1.05;
+  color: var(--green-bright);
+  margin: 0 0 var(--sp-3);
+  max-width: 22ch;
+}
+
+.post__meta {
+  color: var(--green-dim);
+  font-size: 0.82rem;
+  margin: 0 0 var(--sp-3);
+}
+
+.post__toc {
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  padding: var(--sp-3) var(--sp-4);
+  margin-bottom: var(--sp-5);
+  max-width: 68ch;
+  background: var(--bg-panel);
+}
+
+.post__toc-title {
+  color: var(--green-dim);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 var(--sp-2);
+}
+
+.post__toc ol {
+  margin: 0;
+  padding-left: var(--sp-4);
+  color: var(--green-faint);
+}
+
+.post__toc li {
+  margin: var(--sp-1) 0;
+}
+
+.post__toc a {
+  color: var(--green-faint);
+  text-decoration: none;
+  text-shadow: none;
+}
+
+.post__toc a:hover,
+.post__toc a:focus-visible {
+  color: var(--amber);
+  text-decoration: underline;
+}
+
+.post__foot {
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--green-line);
+  font-size: 0.9rem;
+}
+
+.post__next,
+.post__back {
+  margin: var(--sp-2) 0;
+  color: var(--green-dim);
+}
+
+.post__foot a {
+  color: var(--green);
+}
+
+/* ── prose ─────────────────────────────────────────────────────────────── */
+
+.prose {
+  max-width: 68ch;
+  /* The glow goes. See the note at the top of this section. */
+  text-shadow: none;
+  color: var(--green-faint);
+  font-size: 1.0rem;
+  line-height: 1.75;
+}
+
+.prose__p {
+  margin: 0 0 var(--sp-4);
+}
+
+.prose__h {
+  font-family: var(--font-screen);
+  color: var(--green-bright);
+  text-shadow: var(--glow);
+  line-height: 1.2;
+  margin: var(--sp-6) 0 var(--sp-3);
+  position: relative;
+}
+
+h2.prose__h {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+}
+h3.prose__h {
+  font-size: clamp(1.15rem, 3vw, 1.45rem);
+}
+h4.prose__h {
+  font-size: 1.05rem;
+}
+
+/* The heading anchor sits in the gutter on wide screens and is only revealed on
+   hover or keyboard focus, so it never competes with the heading itself. */
+.prose__anchor {
+  position: absolute;
+  left: -1.4ch;
+  color: var(--green-dim);
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.prose__h:hover .prose__anchor,
+.prose__anchor:focus-visible {
+  opacity: 1;
+}
+
+@media (max-width: 760px) {
+  /* No gutter to sit in, so it would overlap the text. */
+  .prose__anchor {
+    display: none;
+  }
+}
+
+.prose__list {
+  margin: 0 0 var(--sp-4);
+  padding-left: var(--sp-4);
+}
+
+.prose__list li {
+  margin: var(--sp-2) 0;
+}
+
+.prose strong {
+  color: var(--green-bright);
+  font-weight: 700;
+}
+
+.prose em {
+  color: var(--green);
+  font-style: italic;
+}
+
+.prose__link {
+  color: var(--amber);
+  text-underline-offset: 3px;
+}
+
+.prose__link:hover,
+.prose__link:focus-visible {
+  color: var(--amber-bright);
+}
+
+.prose__code {
+  background: var(--bg-panel-2);
+  border: 1px solid var(--green-line);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.88em;
+  color: var(--green-bright);
+}
+
+.prose__pre {
+  background: var(--bg-panel-2);
+  border: 1px solid var(--green-line);
+  border-left: 2px solid var(--green-dim);
+  border-radius: var(--radius);
+  padding: var(--sp-3) var(--sp-4);
+  margin: 0 0 var(--sp-4);
+  /* A code block is the one thing here allowed to scroll sideways. Wrapping
+     code silently changes what it says. */
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--green);
+}
+
+.prose__pre code {
+  white-space: pre;
+}
+
+.prose__quote {
+  border-left: 2px solid var(--amber);
+  padding: var(--sp-2) 0 var(--sp-2) var(--sp-4);
+  margin: 0 0 var(--sp-4);
+  color: var(--green);
+  font-style: italic;
+}
+
+.prose__rule {
+  border: 0;
+  border-top: 1px solid var(--green-line);
+  margin: var(--sp-6) 0;
+}
+
+/* ── the call to action ────────────────────────────────────────────────── */
+
+.talk {
+  border: 1px solid var(--green-line);
+  border-top: 2px solid var(--amber);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  padding: var(--sp-4) var(--sp-5);
+  margin-top: var(--sp-6);
+  max-width: 68ch;
+}
+
+.talk__prompt {
+  color: var(--green-dim);
+  font-size: 0.78rem;
+  margin: 0 0 var(--sp-2);
+}
+
+.talk__title {
+  font-family: var(--font-screen);
+  font-size: clamp(1.3rem, 4vw, 1.8rem);
+  color: var(--amber);
+  margin: 0 0 var(--sp-2);
+}
+
+.talk__line {
+  color: var(--green-faint);
+  text-shadow: none;
+  margin: 0 0 var(--sp-4);
+}
+
+.talk__cta {
+  display: inline-block;
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  color: var(--amber);
+  padding: var(--sp-2) var(--sp-4);
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.talk__cta:hover,
+.talk__cta:focus-visible {
+  background: var(--amber);
+  color: var(--bg);
+  text-shadow: none;
+}
+
+.talk__alt {
+  margin: var(--sp-3) 0 0;
+  font-size: 0.8rem;
+  color: var(--green-dim);
 }

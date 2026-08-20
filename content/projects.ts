@@ -28,34 +28,34 @@ export type Project = {
 
 export const projects: Project[] = [
   {
+    slug: "tigh-sauna",
+    title: "Tigh Sauna",
+    tagline: "Running a sauna shouldn't be admin. Bookings, payments and customers in one place.",
+    role: "Co-Founder, Engineering",
+    year: "2026 – Present",
+    bullets: [
+      "One system a venue actually runs on: take a booking, take the money, know who turned up, and get them back again. Quick to set up, and nothing to wire together.",
+      "Each venue's storefront is on Shopify, so they sell from day one, and the booking, the diary and the customer record all follow from the order without anyone retyping it.",
+    ],
+    stack: ["Next.js", "TypeScript", "Fastify", "PostgreSQL", "Supabase", "Shopify", "Railway", "Vercel"],
+    links: [{ label: "live", href: "https://tighsauna.com" }],
+    image: "/img/tigh-sauna.png",
+    imageAlt: "The Tigh Sauna wordmark in steam teal, above the line 'booking and operations for saunas'",
+  },
+  {
     slug: "presterly",
     title: "Presterly",
     tagline: "Never miss a reorder: predictive retention for consumable Shopify brands.",
     role: "Co-Founder & CTO",
-    year: "2026 – Present",
+    year: "2026",
     bullets: [
-      "Predicts when each customer will run out of each product, then reaches them over SMS or WhatsApp at that moment with a one-tap pre-seeded checkout.",
-      "Multi-tenant engine installed on 34 Shopify stores holding 423,000 customers. Nearly €19M of order history analysed, roughly 292,000 run-out predictions.",
+      "Predicted when each customer would run out of each product, then reached them over SMS or WhatsApp at that moment with a one-tap pre-seeded checkout.",
+      "Multi-tenant engine that reached 34 Shopify stores holding 423,000 customers, with nearly €19M of order history analysed. Wound down in August 2026.",
     ],
     stack: ["TypeScript", "React Router 7", "Prisma", "PostgreSQL", "Shopify", "Klaviyo", "Twilio", "Railway"],
     links: [{ label: "live", href: "https://presterly.com" }],
     image: "/img/presterly.png",
     imageAlt: "The Presterly logo mark",
-  },
-  {
-    slug: "firespark",
-    title: "Firespark",
-    tagline: "Booking, payments and operations for saunas. It drops into the website you already have.",
-    role: "Co-Founder & CTO",
-    year: "2026 – Present",
-    bullets: [
-      "Multi-tenant booking and payments: sessions, memberships and native upsells, with Stripe Connect so each venue is paid directly.",
-      "An embeddable booking widget for a venue's existing site, plus one operations screen for arrivals, takings and no-shows.",
-    ],
-    stack: ["Next.js", "TypeScript", "Supabase", "PostgreSQL", "Stripe Connect", "Vercel"],
-    links: [{ label: "live", href: "https://firespark.dev" }],
-    image: "/img/firespark.png",
-    imageAlt: "The Firespark logo: a four-pointed ember spark beside the Firespark wordmark",
   },
   {
     slug: "loira",

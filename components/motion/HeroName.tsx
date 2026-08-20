@@ -123,7 +123,34 @@ export default function HeroName({ text, className }: { text: string; className?
   }, [frame, onFrame, reducedMotion]);
 
   return (
-    <span ref={hostRef} className={`heroname ${className ?? ""}`.trim()} aria-label={text}>
+    <span ref={hostRef} className={`heroname ${className ?? ""}`.trim()}>
+      {/*
+        The name as one contiguous, real text node.
+
+        This is not a duplicate for accessibility: `aria-label` on the wrapper
+        already handled that correctly, and it was what used to be here. It is
+        for the readers that are not a browser and not a screen reader.
+
+        The decorative layer below renders one element per character so each
+        glyph can be magnetised, and those elements are `inline-block` because
+        `transform` does nothing otherwise. Anything that extracts text by
+        stripping tags and normalising whitespace, which is most link
+        unfurlers, aggregators and AI crawlers, then reads the most important
+        string on this domain as `P a t r i c k  F e r g u s  O ' R e i l l y`.
+        Verified against the live site before this was added.
+
+        `aria-label` could not fix that. It is an accessibility property rather
+        than content, so a text extractor has no reason to look at it. Real text
+        in the document is the only thing that works for both audiences, which
+        is why the label is gone and this is here instead: the accessible name
+        is now the content, announced once, and the character layer is hidden
+        from assistive technology so it is not announced a second time.
+
+        Do NOT swap this for `display:none` or `visibility:hidden`. Both drop it
+        from the accessibility tree, and both are reasonably read as content
+        being deliberately withheld from users.
+      */}
+      <span className="vh">{text}</span>
       <span aria-hidden="true">
         {splitWordsWithOffsets(display).map(({ word, start }, w) => (
           <span key={w} className="heroname__word">

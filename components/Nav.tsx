@@ -9,6 +9,7 @@ const items = [
   { href: "/", label: "~" },
   { href: "/experience", label: "experience" },
   { href: "/projects", label: "projects" },
+  { href: "/writing", label: "writing" },
 ];
 
 export default function Nav() {

@@ -24,6 +24,27 @@ export type Profile = {
    * Leave as "" to show a placeholder box until you add the file.
    */
   portrait: string;
+  /**
+   * Job title as a search engine and an answer engine should read it. Kept
+   * separate from `tagline`, which is written to sound like a person rather
+   * than to be parsed: schema.org wants the plain noun.
+   */
+  jobTitle: string;
+  /**
+   * Subjects this person is a credible source on, for the `knowsAbout` edge of
+   * the Person graph. This is the field that decides which questions an answer
+   * engine considers him relevant to, so keep it to things actually evidenced
+   * on the site and do not pad it with keywords.
+   */
+  knowsAbout: string[];
+  /**
+   * Booking URL for the "talk" call to action. Empty ships a `mailto:` with a
+   * pre-filled subject instead, which is a real call to action rather than a
+   * placeholder. Set this and it takes over with no other change needed.
+   */
+  booking: string;
+  /** Subject line pre-filled on the mailto fallback. */
+  bookingSubject: string;
 };
 
 export const profile: Profile = {
@@ -40,9 +61,9 @@ export const profile: Profile = {
     "BA Computer Science (Major) & Business (Minor) @ Trinity College Dublin, First Class Honours (1.1)",
   bio: [
     "I'm a builder. I like making things that are genuinely nice to look at, and I like making them hold up once real traffic turns up. Those two pull against each other most days, and getting both is the part I actually enjoy.",
-    "Right now that mostly means Presterly, where I'm co-founder and CTO. We work out when a Shopify brand's customers are about to run out of what they bought, then reach them over SMS and WhatsApp at that moment. It's installed on 34 Shopify stores holding 423,000 customers between them, and we've analysed nearly €19M of order history.",
-    "I'm in third year of Computer Science and Business at Trinity College Dublin, on a 1.1 across first and second year.",
-    "Before Presterly I was a founding engineer at Loira AI in Stockholm, building an AI execution layer for project management. I've also written a game engine's lighting system, a contrarian trading bot, and a booking and payments platform for saunas. I like starting things, and I like shipping them end to end.",
+    "Right now I'm building Tigh Sauna with Connell Kennelly. Running a sauna shouldn't be admin. So we took the admin off it: bookings, payments and customers in one place, quick to set up, and built so people come back instead of visiting once and drifting off. We're building it with two Irish sauna businesses.",
+    "I'm starting third year of Computer Science and Business at Trinity College Dublin, on a 1.1 so far, and building full time alongside it.",
+    "Before this I was co-founder and CTO of Presterly, which predicted when a Shopify brand's customers would run out and reached them over SMS and WhatsApp at that moment. We wound it down in August 2026. Before that I was a founding engineer at Loira AI in Stockholm. I've also written a game engine's lighting system and a contrarian trading bot. I like starting things, and I like shipping them end to end.",
     "Outside the terminal you'll find me at a tennis court, in the mountains, or at the sea.",
   ],
   contact: [
@@ -64,4 +85,22 @@ export const profile: Profile = {
     },
   ],
   portrait: "/img/portrait.jpg",
+  jobTitle: "Technical Founder",
+  // Every entry here is evidenced somewhere on the site: a venture, a project,
+  // or an article. An answer engine that follows this edge and finds nothing
+  // behind it learns the opposite of what the field is for.
+  knowsAbout: [
+    "Software engineering",
+    "Startups",
+    "Shopify app development",
+    "Multi-tenant SaaS architecture",
+    "TypeScript",
+    "Next.js",
+    "PostgreSQL",
+    "AI coding agents",
+    "Booking and payments systems",
+    "WebGL and motion design",
+  ],
+  booking: "",
+  bookingSubject: "Hello from fergusoreilly.dev",
 };

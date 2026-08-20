@@ -8,10 +8,13 @@ import PromptLine from "@/components/PromptLine";
 import Scramble from "@/components/Scramble";
 import { profile } from "@/content/profile";
 import { skills } from "@/content/skills";
+import JsonLd from "@/components/JsonLd";
+import Talk from "@/components/Talk";
+import { profilePageSchema } from "@/lib/seo";
 
 const highlights = [
-  { k: "startup", v: "Co-Founder & CTO @ Presterly" },
-  { k: "accelerator", v: "Hatch105" },
+  { k: "startup", v: "Co-Founder @ Tigh Sauna" },
+  { k: "previously", v: "CTO @ Presterly · Hatch105" },
   { k: "academic", v: "1.1 / 4.0 GPA" },
 ];
 
@@ -19,6 +22,7 @@ export default function Home() {
   return (
     <BootSequence>
       <div className="stack">
+        <JsonLd nodes={[profilePageSchema()]} />
         <Window title="~/whoami" className="hero">
           <div className="hero__grid">
             <div className="hero__text">
@@ -97,6 +101,10 @@ export default function Home() {
               ))}
             </ul>
           </Window>
+        </RasterReveal>
+
+        <RasterReveal>
+          <Talk />
         </RasterReveal>
       </div>
     </BootSequence>

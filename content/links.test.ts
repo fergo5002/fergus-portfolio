@@ -31,9 +31,26 @@ describe("content links", () => {
     }
   });
 
-  it("point at Firespark's own domain, not the platform URL it is hosted on", () => {
-    const live = projects.find((p) => p.slug === "firespark")?.links?.find((l) => l.label === "live");
-    expect(live?.href).toBe("https://firespark.dev");
+  it("point at Tigh Sauna's own domain, not the platform URL it is hosted on", () => {
+    // Was the same guard on `firespark`, which is what this product used to be
+    // called. The Vercel project is still named `firespark` and still serves
+    // `firespark.dev`, so the wrong URL remains live and reachable, which is
+    // precisely why the test has to keep existing rather than being deleted
+    // with the old slug. A visitor sent to the retired brand is a worse outcome
+    // than a dead link, because it looks deliberate.
+    const live = projects
+      .find((p) => p.slug === "tigh-sauna")
+      ?.links?.find((l) => l.label === "live");
+    expect(live?.href).toBe("https://tighsauna.com");
+  });
+
+  it("never send a visitor to a retired brand name", () => {
+    // Sauna OS, Hearth and Firespark all survive in package names and deploy
+    // paths on purpose. None of them may appear in anything a person reads.
+    const retired = /firespark|hearth|sauna-?os/i;
+    for (const { where, href } of outbound) {
+      expect(href, `${where} points at a retired brand`).not.toMatch(retired);
+    }
   });
 
   it("cover both of Fergus's GitHub accounts", () => {

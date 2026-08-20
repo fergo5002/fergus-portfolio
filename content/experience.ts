@@ -18,19 +18,36 @@ export type ExperienceEntry = {
 
 export const experience: ExperienceEntry[] = [
   {
-    id: "presterly",
-    org: "Presterly",
-    role: "Co-Founder & CTO",
-    dates: "May 2026 – Present",
+    id: "tigh-sauna",
+    org: "Tigh Sauna",
+    role: "Co-Founder, Engineering",
+    dates: "Aug 2026 – Present",
     location: "Dublin, Ireland",
     isNew: true,
     summary:
-      "Done-for-you retention for consumable Shopify brands, built inside the Hatch105 accelerator: predict each customer's run-out, nudge them over SMS and WhatsApp, convert with a one-tap pre-seeded checkout.",
+      "Running a sauna shouldn't be admin. Tigh Sauna takes it off them: bookings, payments and customers in one place, quick to set up, and built so people come back.",
+    bullets: [
+      "Co-founded with Connell Kennelly. He owns design and the business side, I own the backend and the platform.",
+      "Built the whole thing: one booking and operations system every venue runs on, with each venue's storefront on Shopify so they take money the day they open.",
+      "Merged three separate codebases into one product, one database and one login, so a venue signs in once and the software stops behaving like three tools stapled together.",
+      "Being built with two Irish sauna businesses rather than in a vacuum, which is why the awkward parts got found early.",
+    ],
+    link: { label: "tighsauna.com", href: "https://tighsauna.com" },
+  },
+  {
+    id: "presterly",
+    org: "Presterly",
+    role: "Co-Founder & CTO",
+    dates: "May 2026 – Aug 2026",
+    location: "Dublin, Ireland",
+    summary:
+      "Done-for-you retention for consumable Shopify brands, built inside the Hatch105 accelerator: predict each customer's run-out, nudge them over SMS and WhatsApp, convert with a one-tap pre-seeded checkout. Wound down in August 2026.",
     bullets: [
       "Took Presterly from first commit (12 June 2026) to its first live merchant brands in six weeks, inside Hatch105, the Dublin startup accelerator.",
       "Built the multi-tenant platform end to end: Shopify and Klaviyo integrations, token-on-order attribution, and a per-customer, per-product run-out prediction engine backtested against real order history.",
-      "Installed today on 34 Shopify stores, holding 423,000 customers between them. Nearly €19M of order history analysed, and roughly 292,000 run-out predictions live.",
-      "Took Presterly through Meta's approval as a WhatsApp Business Platform Tech Provider, so a merchant onboards its own number through Embedded Signup and keeps ownership of it.",
+      "Reached 34 Shopify stores holding 423,000 customers between them, with nearly €19M of order history analysed.",
+      "Took Presterly through Meta's approval as a WhatsApp Business Platform Tech Provider, so a merchant onboarded its own number through Embedded Signup and kept ownership of it.",
+      "We wound it down in August 2026. The honest reason is founder-product fit rather than the technology, and I've written about it.",
     ],
     link: { label: "presterly.com", href: "https://presterly.com" },
   },
