@@ -62,6 +62,22 @@ request to Resend with a deliberately invalid key returned 401 and produced the 
 an error boundary. In a browser, the client-side stamp was proved to reach the action by pinning
 `Date.now` so it computed a negative elapsed and watching the outcome flip.
 
+**Verified live on production**, deployment `dpl_Aeg6B8UWwHub2dpwTvhxFGjgJ1Ft` (`d059851`, READY,
+aliased). All nine routes 200. Every "Email me" on the site resolves to `/contact` with no `mailto:`
+CTA left anywhere. `/sitemap.xml` lists `/contact` and `/llms.txt` carries the URL. The six no-JS
+paths behave exactly as they do locally, which is the check that matters most here, because
+`/contact` prerenders as a static route and server actions on a static route were the one thing
+that could have behaved differently on Vercel than under `next start`. In a browser: clicking the
+CTA on `/writing` lands on `/contact` with the form present, submitting renders the failure panel
+with the fields kept, a pre-filled `mailto:` and a copy button, and the console is completely empty.
+A live POST returns `x-vercel-cache: BYPASS` with a two-region `x-vercel-id`, so it genuinely
+reaches a serverless function rather than a cached response.
+
+One thing seen and understood rather than fixed: a POST to `/contact` **without** the `$ACTION*`
+hidden fields returns 500. That is Next.js refusing a server-action request it cannot resolve, it is
+not reachable from any browser interaction, and it is what a hand-rolled inline probe was
+accidentally doing when it briefly appeared to show a live failure (logged in `[[coding-mistakes]]`).
+
 **Mutation coverage: `node scripts/mutation-check.mjs`, 19 of 19 caught.** The script is committed
 rather than thrown away, because an earlier version of this note claimed a mutation count that
 nothing in the repo could reproduce, which is trust dressed up as evidence. It breaks each guard on
