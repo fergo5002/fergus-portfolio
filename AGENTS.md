@@ -91,10 +91,15 @@ starts coming back 403.
 
 **Before shipping anything that touches this feature, or any of the brightness constants, run
 `node scripts/mutation-check.mjs`.** It breaks each guard on purpose and expects the suite to
-notice. Thirty mutations, thirty red at the time of writing. A guard that survives its own mutation
-is decoration, and this repo has shipped one of those before. It caught one again on 2026-08-20: an
+notice. Forty mutations, forty red at the time of writing. A guard that survives its own mutation is
+decoration, and this repo has shipped one of those before. It caught one again on 2026-08-20: an
 assertion for `audio.key()` matched the docblock that mentions `audio.key()`, so deleting the actual
 call left 438 tests green.
+
+**Mutate the constants you deliberately left alone, too.** Ten of the forty exist because a review
+pointed out that seven asserted-unchanged numbers (the deflection offsets, the ripple, the power-on
+strike) had never been shown to bite, so a full-red run was reading as complete coverage while those
+guards were decoration.
 
 **A shader constant is not a brightness. Never tune one without measuring the pixels.** The
 persistence buffer in `PhosphorScreen.tsx` is 8-bit and clamped to 1.0 on every frame, and it

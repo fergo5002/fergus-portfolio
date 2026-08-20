@@ -191,14 +191,14 @@ const MUTATIONS = [
   {
     name: "the pointer halo brightens in the persistence buffer only",
     file: "components/system/PhosphorScreen.tsx",
-    pattern: /add \+= exp\(-length\(toP\) \* 9\.0\) \* 0\.05 \* uPointerActive;/,
-    replace: "add += exp(-length(toP) * 9.0) * 0.10 * uPointerActive;",
+    pattern: /add \+= exp\(-length\(toP\) \* 9\.0\) \* 0\.05 \* uEmit \* uPointerActive;/,
+    replace: "add += exp(-length(toP) * 9.0) * 0.10 * uEmit * uPointerActive;",
   },
   {
     name: "the degauss deposit goes back to blinding",
     file: "components/system/PhosphorScreen.tsx",
-    pattern: /add \+= dgDrag \* 0\.06;/,
-    replace: "add += dgDrag * 0.85;",
+    pattern: /add \+= dgDrag \* 0\.06 \* uEmit;/,
+    replace: "add += dgDrag * 0.85 * uEmit;",
   },
   {
     name: "the degauss present-pass glow goes back up",
@@ -240,6 +240,75 @@ const MUTATIONS = [
     file: "components/ContactForm.tsx",
     pattern: /e\.key === "Backspace" \|\| e\.key === "Tab"/,
     replace: 'e.key === "Backspace"',
+  },
+  {
+    // The absence test that used to pass by slicing three characters. Moving the
+    // handler onto the form is the change it exists to stop.
+    name: "the key handler is hoisted onto the form, so the submit button clicks",
+    file: "components/ContactForm.tsx",
+    pattern: /(<form\r?\n        className="cform__form")/,
+    replace: "$1\n        onKeyDown={onKey}",
+  },
+
+  // ── the frame-rate normalisation a second review had to catch ──
+  {
+    name: "deposits go back to per frame, so brightness follows the refresh rate",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /su\.uEmit\.value = \(1 - su\.uDecay\.value\) \/ \(1 - Math\.pow\(0\.045, 1 \/ 60\)\);/,
+    replace: "su.uEmit.value = 1;",
+  },
+  {
+    name: "the pointer halo drops out of the normalisation",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /\* 0\.05 \* uEmit \* uPointerActive;/,
+    replace: "* 0.05 * uPointerActive;",
+  },
+
+  // ── the constants this change deliberately did NOT touch ──
+  // The test file calls these "just as important", so they have to bite too.
+  // Without them, 30/30 RED read as full coverage while seven asserted numbers
+  // had never been shown to matter.
+  {
+    name: "the channel-change static creeps back up",
+    file: "app/globals.css",
+    pattern: /(?<lead>@keyframes channel-static \{\r?\n    from \{\r?\n      opacity: )0\.425(?<tail>;)/,
+    replace: "$<lead>0.85$<tail>",
+  },
+  {
+    name: "a tap's deposit is raised on its own",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /2\.2\) \* 0\.11 \* uEmit;/,
+    replace: "2.2) * 0.55 * uEmit;",
+  },
+  {
+    name: "the pointer's deflection ripple is dimmed along with its light",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /\* ripple \* 0\.0045 \* uPointerActive;/,
+    replace: "* ripple * 0.00225 * uPointerActive;",
+  },
+  {
+    name: "the degauss stops dragging the persistence buffer",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /src \+= normalize\(toC \+ 1e-5\) \* dgDrag \* 0\.045;/,
+    replace: "src += normalize(toC + 1e-5) * dgDrag * 0.0225;",
+  },
+  {
+    name: "a tap stops warping the picture",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /uv \+= normalize\(toT \+ 1e-5\) \* band \* 0\.04;/,
+    replace: "uv += normalize(toT + 1e-5) * band * 0.02;",
+  },
+  {
+    name: "a degauss stops warping the picture",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /uv \+= normalize\(toC \+ 1e-5\) \* band \* 0\.055;/,
+    replace: "uv += normalize(toC + 1e-5) * band * 0.0275;",
+  },
+  {
+    name: "the power-on strike is dimmed too, which nobody asked for",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /\* strike \* 1\.4;/,
+    replace: "* strike * 0.7;",
   },
 ];
 

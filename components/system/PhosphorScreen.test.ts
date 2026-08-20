@@ -86,7 +86,7 @@ describe("the passes were actually located", () => {
  */
 describe("the light around the pointer is half strength", () => {
   it("deposits half as much into the persistence buffer", () => {
-    expect(SIM).toContain("add += exp(-length(toP) * 9.0) * 0.05 * uPointerActive;");
+    expect(SIM).toContain("add += exp(-length(toP) * 9.0) * 0.05 * uEmit * uPointerActive;");
   });
 
   it("adds half as much immediate glow in the present pass", () => {
@@ -110,17 +110,16 @@ describe("the light around the pointer is half strength", () => {
  * whole file would happily accept the two values swapped over.
  */
 describe("the tap and degauss shockwaves flash at about half the light", () => {
-  it("puts a tap's peak near 0.48 on the 30fps path it ships on", () => {
-    // Touch-only, and small screens are capped at 30fps by minFrameMs, so 30 is
-    // the frame rate to solve for. Was 0.55 / 0.5, which clipped at both rates.
-    expect(SIM).toContain("add += shockBand(uTap, length(toT), 0.72, 9.0, 2.2) * 0.11;");
+  it("cuts a tap to roughly a tenth of its old deposit", () => {
+    // Was 0.55 / 0.5, which clipped at every frame rate.
+    expect(SIM).toContain("add += shockBand(uTap, length(toT), 0.72, 9.0, 2.2) * 0.11 * uEmit;");
     expect(block(PRESENT, "if (uTap < 1.6)")).toContain("glow += band * 0.10;");
   });
 
-  it("puts a degauss's peak near 0.50 at 60fps", () => {
+  it("cuts a degauss to roughly a fourteenth of its old deposit", () => {
     // Was 0.85 / 0.7. This is the flash a visitor meets most often, because
     // RouteTransition fires it on every navigation.
-    expect(SIM).toContain("add += dgDrag * 0.06;");
+    expect(SIM).toContain("add += dgDrag * 0.06 * uEmit;");
     expect(block(PRESENT, "if (uDegauss < 2.4)")).toContain("glow += band * 0.05;");
   });
 
@@ -139,6 +138,66 @@ describe("the tap and degauss shockwaves flash at about half the light", () => {
     // Clearing burn-in is the entire reason that button existed on a real
     // monitor. Dimming the flash must not quietly stop the degauss working.
     expect(SIM).toContain("burn *= 1.0 - clamp(dgDrag * 3.5, 0.0, 1.0);");
+  });
+});
+
+/**
+ * The bug a second review caught, and the only part of this file that is a real
+ * test rather than a grep.
+ *
+ * The decay was per second and the deposits were per frame, so a steady emitter
+ * settled at `K / (1 - uDecay)`: about 19.9K at 60fps and about 39.2K at 120.
+ * Brightness was therefore a function of the visitor's refresh rate. The ring
+ * and halo constants had been solved at 60fps, which meant they landed at half
+ * strength on a 60Hz laptop, full strength on a 120Hz monitor, and clipped white
+ * again at 165Hz. On a fast display the change Fergus asked for would not have
+ * existed. `uEmit` normalises the three tuned emitters back to that reference.
+ *
+ * The arithmetic below is ported from the shader, so it can genuinely fail.
+ */
+describe("brightness does not depend on the visitor's refresh rate", () => {
+  const decay = (dt: number) => Math.pow(0.045, dt / 1000);
+  const emit = (fps: number) => (1 - decay(1000 / fps)) / (1 - decay(1000 / 60));
+  /** Where a sustained deposit settles: a resting cursor, the worst case. */
+  const settled = (k: number, fps: number) => (k * emit(fps)) / (1 - decay(1000 / fps));
+
+  const RATES = [30, 60, 90, 120, 144, 165];
+
+  it("wires uEmit through the three tuned emitters and nothing else", () => {
+    expect(SIM).toContain("uniform float uEmit;");
+    // Comments stripped first: the long note above the emitters names uEmit
+    // several times, and counting prose would make this assertion meaningless.
+    const code = SIM.replace(/\/\/[^\n]*/g, "");
+    expect(code.length, "comment stripper ate the shader").toBeGreaterThan(1200);
+    // One declaration plus exactly three uses: pointer, tap, degauss.
+    expect([...code.matchAll(/uEmit/g)]).toHaveLength(4);
+    // The beam and the impacts stay frame-rate dependent on purpose. They were
+    // never part of what was asked for and have never been tuned to a reference.
+    expect(code).toContain("(0.02 + absVel * 0.10);");
+    expect(code).toContain("add += exp(-d * 42.0) * im.z * 1.6;");
+  });
+
+  it("derives the factor from uDecay on the CPU, once a frame", () => {
+    expect(src).toContain(
+      "su.uEmit.value = (1 - su.uDecay.value) / (1 - Math.pow(0.045, 1 / 60));",
+    );
+  });
+
+  it("holds a resting cursor's halo flat from 30fps to 165fps", () => {
+    const reference = settled(0.05, 60);
+    for (const fps of RATES) {
+      const drift = Math.abs(settled(0.05, fps) / reference - 1);
+      expect(drift, `${fps}fps drifts ${(drift * 100).toFixed(1)}%`).toBeLessThan(0.01);
+    }
+  });
+
+  it("fails without the factor, which is what made this worth fixing", () => {
+    // Guards the guard: if `emit` ever returned a constant 1, the test above
+    // would pass on a broken shader. Unnormalised, 120Hz really does get twice
+    // the light of 60Hz, so "half as bright" was no change at all up there.
+    const unnormalised = (k: number, fps: number) => k / (1 - decay(1000 / fps));
+    expect(unnormalised(0.05, 120) / unnormalised(0.05, 60)).toBeGreaterThan(1.9);
+    expect(unnormalised(0.05, 165)).toBeGreaterThan(1);
   });
 });
 

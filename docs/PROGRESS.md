@@ -12,22 +12,35 @@ Three things Fergus asked for. The shell's membrane click now fires on all three
 full-screen flicker and the channel-change burst are halved in `app/globals.css`. The pointer halo
 and the tap and degauss shockwaves are dimmed in the shader.
 
-> [!warning] The shader half was nearly a no-op, and every check said otherwise
-> The first attempt halved the ring constants: 0.85 to 0.425 for the degauss, 0.55 to 0.275 for a
-> tap. The persistence buffer is 8-bit, clamped to 1.0 every frame, and integrates ~20 frames of
+> [!warning] The shader half took two reviews to actually land
+> **Round one: halving the constants did nothing.** 0.85 to 0.425 for the degauss, 0.55 to 0.275 for
+> a tap. The persistence buffer is 8-bit, clamped to 1.0 every frame, and integrates ~20 frames of
 > deposit at 60fps, so both the old and the new values saturated and the degauss carried on flashing
-> pure white. A code review caught it *after* tests, mutations, build, Docker parity and a live
-> bundle check had all gone green. Measured with `gl.readPixels` over a route change, same browser,
-> same 30fps: **original constants peak green 1.000 (clipped white), new constants 0.624 against a
-> 0.580 resting floor.** The values are now solved backwards from the composite peak, so they are
-> not round halves: degauss 0.06 sim / 0.05 present, tap 0.11 / 0.10. The pointer stayed a true
-> halving because it never ran as far over the clamp; its saturated white core shrank from about
-> 115px of radius to about 15px.
+> pure white, a change of about 2%. Caught *after* tests, mutations, build, Docker parity and a live
+> bundle check had all gone green. The values were re-solved backwards from the composite peak,
+> which is why they are not round halves: degauss 0.06 sim / 0.05 present, tap 0.11 / 0.10, pointer
+> 0.05 / 0.025.
 >
-> Known and accepted: the deposit is per frame rather than per second, so the degauss lands nearer
-> 0.30 on a 30fps phone rather than the 0.50 it hits on desktop. Further down than asked for, in the
-> direction asked for. Making it frame-rate independent needs a dt uniform and would retune the beam
-> and impacts too, so it was left alone.
+> **Round two: they were only correct at 60fps.** The decay was per second, the deposits were per
+> frame, so a steady emitter settled at `K / (1 - uDecay)`: ~19.9K at 60fps and ~39.2K at 120. The
+> same constants ran at half strength on a 60Hz laptop and full strength on a 120Hz monitor, and at
+> 165Hz the degauss clipped white again. On a fast display the change would simply not have existed.
+> Fixed with a `uEmit` uniform, `(1 - uDecay) / (1 - 0.045^(1/60))`, applied to the three tuned
+> emitters only. Flat within 1% from 30fps to 165fps, asserted arithmetically in
+> `PhosphorScreen.test.ts` rather than grepped. The beam and the impacts are deliberately left
+> unnormalised: they were not part of the ask and have never been tuned to a reference rate.
+>
+> **The numbers, each with its base, because two of them were cited without one and looked like a
+> contradiction.**
+> - *Peak green in the buffer before the clamp, at 60fps*: degauss 5.93 → 0.42, tap 3.86 → 0.38,
+>   resting pointer 1.99 → 0.99. These are the figures the shader comment quotes.
+> - *Peak green on screen over a lit page*, measured with `gl.readPixels` across a real route change,
+>   same browser, same ~30fps: **1.000 (clipped white) → 0.624, against a 0.580 resting floor.** This
+>   is the only end-to-end measurement and it predates the `uEmit` fix, so it understates the result
+>   at 30fps, where normalisation now brings the ring back up to its 60fps reference.
+>
+> The pointer was always a true halving, because it never ran as far over the clamp: its saturated
+> white core goes from roughly 115px of radius to roughly 15px.
 
 **Status (2026-08-20): the "Email me" button goes to a real page.** It was an
 `<a href="mailto:...">` with a pre-filled subject, and on a machine with no mail client registered

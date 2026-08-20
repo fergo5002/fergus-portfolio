@@ -91,6 +91,7 @@ const SIM_FRAG =
   /* glsl */ `
 uniform sampler2D tPrev;
 uniform float uDecay;
+uniform float uEmit;
 uniform float uBurnRate;
 uniform vec2  uNavBand;
 uniform vec2  uStatusBand;
@@ -140,21 +141,25 @@ void main() {
   // and proved shipped, which is the whole lesson.
   //
   // So these are solved backwards from what lands on screen rather than divided
-  // by two. Composite peak green, where 1.0 is clipped white:
-  //   degauss   1.000 -> 0.495 at 60fps
-  //   tap       1.000 -> 0.484 at 30fps, which is the only path a tap ships on:
-  //             it is touch-only and small screens are capped at 30 by
-  //             minFrameMs.
-  // Each keeps its old sim-to-present ratio, so only the level moved.
+  // by two, and each keeps its old sim-to-present ratio so only the level moved.
+  // Peak green in the buffer before the clamp, at the 60fps reference:
+  //   degauss   5.93 -> 0.42
+  //   tap       3.86 -> 0.38
+  //   pointer   1.99 -> 0.99   (a resting cursor, which is its worst case)
   //
-  // The pointer is the exception and is a true halving, because it never ran as
-  // far over the ceiling. Its saturated white core shrinks from roughly 115px to
-  // roughly 15px and everything outside that is linear.
+  // uEmit is what makes those numbers mean anything on a real machine. See the
+  // note where it is computed: the deposits used to be per frame while the decay
+  // was per second, so brightness scaled with the visitor's refresh rate. The
+  // same constants ran at half strength on a 60Hz laptop and full strength on a
+  // 120Hz monitor, and at 165Hz the degauss clipped white again, which would
+  // have made this whole change invisible to anyone on a fast display. A second
+  // review caught that. Normalised, all three are now flat within one percent
+  // from 30fps to 165fps.
   //
-  // Frame rate changes all of this, because the deposit is per frame rather than
-  // per second. That is pre-existing and out of scope, and it is why the degauss
-  // lands nearer 0.30 on a 30fps phone: further down than asked for, and in the
-  // direction asked for.
+  // The beam above and the impacts below are deliberately NOT normalised. They
+  // were not part of what was asked for, they have never been tuned against a
+  // reference rate, and quietly rescaling them here would change two effects
+  // nobody complained about.
   //
   // The advection above and the burn-in scrub below read the same dgDrag and are
   // deliberately untouched, so the wave still drags the picture and a degauss
@@ -162,16 +167,16 @@ void main() {
   if (uPointerActive > 0.01) {
     vec2 toP = uv - uPointer;
     toP.x *= uAspect;
-    add += exp(-length(toP) * 9.0) * 0.05 * uPointerActive;
+    add += exp(-length(toP) * 9.0) * 0.05 * uEmit * uPointerActive;
   }
 
   if (uTap < 1.6) {
     vec2 toT = uv - uTapPos;
     toT.x *= uAspect;
-    add += shockBand(uTap, length(toT), 0.72, 9.0, 2.2) * 0.11;
+    add += shockBand(uTap, length(toT), 0.72, 9.0, 2.2) * 0.11 * uEmit;
   }
 
-  add += dgDrag * 0.06;
+  add += dgDrag * 0.06 * uEmit;
 
   // ── impacts ──────────────────────────────────────────────────────────────
   // A word hitting the floor is a physical event on the other side of the
@@ -631,6 +636,7 @@ export default function PhosphorScreen() {
         ...shared,
         tPrev: { value: null },
         uDecay: { value: 0.9 },
+        uEmit: { value: 1 },
         uBurnRate: { value: 0.00035 },
         uNavBand: { value: [0.94, 1.0] },
         uStatusBand: { value: [0.0, 0.04] },
@@ -782,6 +788,16 @@ export default function PhosphorScreen() {
       // Decay is expressed per second and resolved per frame, so persistence
       // lasts the same wall-clock time at 30fps as at 120.
       su.uDecay.value = Math.pow(0.045, dt / 1000);
+
+      // Decay was already per second. The deposits were not, and that made the
+      // brightness of every emitter a function of the visitor's refresh rate: a
+      // steady deposit settles at K / (1 - uDecay), which is ~19.9K at 60fps and
+      // ~39.2K at 120. So the ring and halo constants tuned on 2026-08-20 landed
+      // at half strength on a 60Hz laptop and full strength on a 120Hz monitor,
+      // where "half as bright" would have been no change at all. This scales the
+      // three tuned emitters back to their 60fps reference. Flat within one
+      // percent from 30fps to 165fps, verified by simulation.
+      su.uEmit.value = (1 - su.uDecay.value) / (1 - Math.pow(0.045, 1 / 60));
 
       if (!degraded) {
         if (f.uptimeMs > 1000 && f.fps < 40) lowFrames += 1;

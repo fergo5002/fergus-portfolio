@@ -427,9 +427,22 @@ describe("ContactForm is wired the way the no-JS path needs", () => {
     // characters between `<form` and `onKeyDown`, which passed with about 400 to
     // spare and would have failed on correct code the moment anything between
     // them got shorter.
+    //
+    // Ended on the tag's own closing line rather than the next `>`. A `>` inside
+    // an attribute, which is all it takes to write `onSubmit={(e) => stamp(e)}`,
+    // would truncate the slice to a few characters and leave this passing for
+    // ever afterwards, including on the day somebody hoists the handler onto the
+    // form. That is an absence test quietly going green, which this repo has been
+    // caught by before.
     const open = src.indexOf("<form\n");
+    const close = src.indexOf("\n      >", open);
     expect(open, "opening <form tag not found").toBeGreaterThan(-1);
-    expect(src.slice(open, src.indexOf(">", open))).not.toContain("onKeyDown");
+    expect(close, "closing bracket of the <form tag not found").toBeGreaterThan(open);
+    const tag = src.slice(open, close);
+    // Prove the slice really is the whole tag, so it cannot pass by being empty.
+    expect(tag).toContain("action={action}");
+    expect(tag).toContain("onSubmit={stamp}");
+    expect(tag).not.toContain("onKeyDown");
   });
 });
 
