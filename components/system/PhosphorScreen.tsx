@@ -127,19 +127,51 @@ void main() {
   float beamY = fract(uTime * 0.11 + uScrollVel * 0.35);
   add += exp(-pow((uv.y - beamY) * 30.0, 2.0)) * (0.02 + absVel * 0.10);
 
+  // Dialled back on 2026-08-20. Read these numbers with the clamp in mind, or
+  // they look wrong.
+  //
+  // This buffer is 8-bit and clamped to 1.0 on every frame, and it integrates
+  // roughly twenty frames of deposit at 60fps (uDecay is 0.045^(dt/1000), about
+  // 0.9496, so a sustained deposit multiplies by ~19.9). The old ring constants
+  // sat about fourteen times over that ceiling, which means they had stopped
+  // describing a brightness at all: halving 0.85 to 0.425 left the degauss
+  // saturating exactly as before and moved the picture by about two percent. A
+  // code review caught that after the "half" had already been written, tested
+  // and proved shipped, which is the whole lesson.
+  //
+  // So these are solved backwards from what lands on screen rather than divided
+  // by two. Composite peak green, where 1.0 is clipped white:
+  //   degauss   1.000 -> 0.495 at 60fps
+  //   tap       1.000 -> 0.484 at 30fps, which is the only path a tap ships on:
+  //             it is touch-only and small screens are capped at 30 by
+  //             minFrameMs.
+  // Each keeps its old sim-to-present ratio, so only the level moved.
+  //
+  // The pointer is the exception and is a true halving, because it never ran as
+  // far over the ceiling. Its saturated white core shrinks from roughly 115px to
+  // roughly 15px and everything outside that is linear.
+  //
+  // Frame rate changes all of this, because the deposit is per frame rather than
+  // per second. That is pre-existing and out of scope, and it is why the degauss
+  // lands nearer 0.30 on a 30fps phone: further down than asked for, and in the
+  // direction asked for.
+  //
+  // The advection above and the burn-in scrub below read the same dgDrag and are
+  // deliberately untouched, so the wave still drags the picture and a degauss
+  // still clears burn-in, which is the entire reason that button ever existed.
   if (uPointerActive > 0.01) {
     vec2 toP = uv - uPointer;
     toP.x *= uAspect;
-    add += exp(-length(toP) * 9.0) * 0.10 * uPointerActive;
+    add += exp(-length(toP) * 9.0) * 0.05 * uPointerActive;
   }
 
   if (uTap < 1.6) {
     vec2 toT = uv - uTapPos;
     toT.x *= uAspect;
-    add += shockBand(uTap, length(toT), 0.72, 9.0, 2.2) * 0.55;
+    add += shockBand(uTap, length(toT), 0.72, 9.0, 2.2) * 0.11;
   }
 
-  add += dgDrag * 0.85;
+  add += dgDrag * 0.06;
 
   // ── impacts ──────────────────────────────────────────────────────────────
   // A word hitting the floor is a physical event on the other side of the
@@ -254,13 +286,20 @@ vec3 tubeImage(vec2 suv, float lineScale) {
   float t = uTime;
   float glow = 0.0;
 
+  // Moved alongside the deposits in the sim pass, and it has to be both: the
+  // persistence buffer is what smears behind the pointer, so dimming one and
+  // not the other would leave the lagging trail brighter than the thing casting
+  // it. See the long note in SIM_FRAG for why the ring numbers are not simply
+  // halves. Every uv offset below is deflection rather than light and is
+  // untouched, which is what keeps the glass feeling pressed on rather than
+  // merely dimmer.
   if (uPointerActive > 0.01) {
     vec2 toP = uv - uPointer;
     toP.x *= uAspect;
     float d = length(toP);
     float ripple = sin(d * 34.0 - t * 2.6) * exp(-d * 7.0);
     uv += normalize(toP + 1e-5) * ripple * 0.0045 * uPointerActive;
-    glow += exp(-d * 5.0) * 0.05 * uPointerActive;
+    glow += exp(-d * 5.0) * 0.025 * uPointerActive;
   }
 
   if (uTap < 1.6) {
@@ -269,7 +308,7 @@ vec3 tubeImage(vec2 suv, float lineScale) {
     float d = length(toT);
     float band = shockBand(uTap, d, 0.72, 9.0, 2.2);
     uv += normalize(toT + 1e-5) * band * 0.04;
-    glow += band * 0.5;
+    glow += band * 0.10;
   }
 
   if (uDegauss < 2.4) {
@@ -278,7 +317,7 @@ vec3 tubeImage(vec2 suv, float lineScale) {
     float d = length(toC);
     float band = shockBand(uDegauss, d, 0.95, 7.5, 1.5);
     uv += normalize(toC + 1e-5) * band * 0.055;
-    glow += band * 0.7;
+    glow += band * 0.05;
   }
 
   uv = curve(uv);

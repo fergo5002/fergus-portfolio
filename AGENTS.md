@@ -89,10 +89,23 @@ the form sends to, which is the only reason the zero-config setup works. Point `
 anywhere else without first verifying a domain and setting `CONTACT_FROM_EMAIL`, and every send
 starts coming back 403.
 
-**Before shipping anything that touches this feature, run `node scripts/mutation-check.mjs`.** It
-breaks each guard on purpose and expects the suite to notice. Nineteen mutations, nineteen red at
-the time of writing. A guard that survives its own mutation is decoration, and this repo has shipped
-one of those before.
+**Before shipping anything that touches this feature, or any of the brightness constants, run
+`node scripts/mutation-check.mjs`.** It breaks each guard on purpose and expects the suite to
+notice. Thirty mutations, thirty red at the time of writing. A guard that survives its own mutation
+is decoration, and this repo has shipped one of those before. It caught one again on 2026-08-20: an
+assertion for `audio.key()` matched the docblock that mentions `audio.key()`, so deleting the actual
+call left 438 tests green.
+
+**A shader constant is not a brightness. Never tune one without measuring the pixels.** The
+persistence buffer in `PhosphorScreen.tsx` is 8-bit and clamped to 1.0 on every frame, and it
+integrates about twenty frames of deposit at 60fps. The ring constants used to sit roughly fourteen
+times over that ceiling, so on 2026-08-20 halving the degauss from 0.85 to 0.425 changed the picture
+by about two percent while every test passed, the mutation run went fully red, and the new values
+were confirmed live in the served bundle. Every signal said shipped and the flash was identical. The
+numbers in that file are now solved backwards from the composite peak that lands on screen and are
+deliberately not round. The way to check one is `gl.readPixels` on a strip of the canvas across the
+event, comparing old against new in the same browser at the same frame rate: a grep only tells you
+where a constant is, never what it looks like.
 
 As of v4 ("Phosphor") the site does not merely *depict* a CRT, it *behaves* like one. Every
 effect derives from one premise: an electron beam painting phosphor behind glass. Scroll

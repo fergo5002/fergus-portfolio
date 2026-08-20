@@ -6,7 +6,30 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
 
-**Status (2026-08-20, latest): the "Email me" button goes to a real page.** It was an
+**Status (2026-08-20, latest): the tube is calmer, and the contact form clicks when you type.**
+Three things Fergus asked for. The shell's membrane click now fires on all three contact fields
+(same key filter as `Terminal.tsx`, asserted against it rather than restated). The periodic
+full-screen flicker and the channel-change burst are halved in `app/globals.css`. The pointer halo
+and the tap and degauss shockwaves are dimmed in the shader.
+
+> [!warning] The shader half was nearly a no-op, and every check said otherwise
+> The first attempt halved the ring constants: 0.85 to 0.425 for the degauss, 0.55 to 0.275 for a
+> tap. The persistence buffer is 8-bit, clamped to 1.0 every frame, and integrates ~20 frames of
+> deposit at 60fps, so both the old and the new values saturated and the degauss carried on flashing
+> pure white. A code review caught it *after* tests, mutations, build, Docker parity and a live
+> bundle check had all gone green. Measured with `gl.readPixels` over a route change, same browser,
+> same 30fps: **original constants peak green 1.000 (clipped white), new constants 0.624 against a
+> 0.580 resting floor.** The values are now solved backwards from the composite peak, so they are
+> not round halves: degauss 0.06 sim / 0.05 present, tap 0.11 / 0.10. The pointer stayed a true
+> halving because it never ran as far over the clamp; its saturated white core shrank from about
+> 115px of radius to about 15px.
+>
+> Known and accepted: the deposit is per frame rather than per second, so the degauss lands nearer
+> 0.30 on a 30fps phone rather than the 0.50 it hits on desktop. Further down than asked for, in the
+> direction asked for. Making it frame-rate independent needs a dt uniform and would retune the beam
+> and impacts too, so it was left alone.
+
+**Status (2026-08-20): the "Email me" button goes to a real page.** It was an
 `<a href="mailto:...">` with a pre-filled subject, and on a machine with no mail client registered
 it did nothing whatsoever. Fergus reported it as a dead button. There is now a `/contact` route with
 a working form.

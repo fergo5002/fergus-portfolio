@@ -189,3 +189,53 @@ describe("the prose rules use the token that passes", () => {
     expect(rule(".hero__name")).toMatch(glow);
   });
 });
+
+/**
+ * How hard the tube is allowed to flash.
+ *
+ * Three separate effects strobe the whole viewport, and on 2026-08-20 all three
+ * were halved on Fergus's call: the periodic flicker, the channel-change burst
+ * that fires on every route change, and the tap and degauss shockwaves. The
+ * first two are here; the third lives in the shader and is guarded in
+ * `components/system/PhosphorScreen.test.ts`.
+ *
+ * Each was individually defensible and collectively a strobe on a site people
+ * read two-thousand-word articles on. The numbers are asserted rather than
+ * eyeballed because "less aggressive" is exactly the kind of change that creeps
+ * back up one commit at a time, with every commit looking reasonable.
+ *
+ * The power-on strike is deliberately NOT in scope. It happens once per session,
+ * it is the shape of a tube coming to life, and dimming it would flatten the one
+ * moment the whole conceit is built around.
+ */
+describe("the full-screen flashes are half what they were", () => {
+  /** One @keyframes block, brace-matched: the rule contains nested blocks. */
+  const keyframes = (name: string) => {
+    const at = css.indexOf(`@keyframes ${name}`);
+    if (at < 0) throw new Error(`no @keyframes ${name}`);
+    const open = css.indexOf("{", at);
+    let depth = 0;
+    for (let i = open; i < css.length; i++) {
+      if (css[i] === "{") depth++;
+      else if (css[i] === "}" && --depth === 0) return css.slice(open + 1, i);
+    }
+    throw new Error(`unterminated @keyframes ${name}`);
+  };
+
+  /** Every `opacity: n` in a block, in source order. */
+  const opacities = (block: string) =>
+    [...block.matchAll(/opacity:\s*([\d.]+)/g)].map((m) => Number(m[1]));
+
+  it("peaks the periodic flicker at a quarter rather than a half", () => {
+    // Was [0, 0.5, 0.15]: a green sheet over the entire viewport, every 3.2
+    // seconds, on every page, forever. It is the one flash nobody opted into.
+    expect(opacities(keyframes("flicker"))).toEqual([0, 0.25, 0.075]);
+  });
+
+  it("halves the channel-change static and the band that sweeps with it", () => {
+    // Both are envelopes on top of fixed gradients, so halving the envelope is
+    // exactly a halving of peak brightness and leaves the timing untouched.
+    expect(opacities(keyframes("channel-static"))).toEqual([0.425, 0]);
+    expect(opacities(keyframes("channel-band"))).toEqual([0.5, 0]);
+  });
+});

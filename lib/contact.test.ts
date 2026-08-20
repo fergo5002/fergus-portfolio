@@ -377,6 +377,60 @@ describe("ContactForm is wired the way the no-JS path needs", () => {
     expect(src).toMatch(/elapsed\.current\.value = String\(Date\.now\(\) - startedAt\.current\)/);
     expect(src).toMatch(/onSubmit=\{stamp\}/);
   });
+
+  /**
+   * The membrane click.
+   *
+   * Every other text surface on this site clicks when you type in it, and the
+   * contact form was the one that did not, which made the newest page the only
+   * place the machine goes quiet. `audio.key()` is inert until sound has been
+   * turned on and a gesture has started the AudioContext, so this cannot make a
+   * page make noise unasked.
+   *
+   * The filter is asserted against `Terminal.tsx` rather than restated, because
+   * two copies of a rule that agree today is how the shell and the form end up
+   * sounding different. Modifiers on their own stay silent: a real keyboard's
+   * shift key does not click either.
+   */
+  it("clicks on exactly the keys the shell clicks on", () => {
+    const filter =
+      /e\.key\.length === 1 \|\| e\.key === "Enter" \|\| e\.key === "Backspace" \|\| e\.key === "Tab"/;
+    const terminal = readFileSync(join(process.cwd(), "components", "Terminal.tsx"), "utf8");
+
+    expect(src).toMatch(filter);
+    expect(terminal).toMatch(filter);
+  });
+
+  /**
+   * Anchored to the handler's body, not to the file.
+   *
+   * The first version of this asserted a bare `audio.key()` against the whole
+   * source, and `audio.key()` also appears in the docblock above the handler
+   * explaining what it does. Deleting the actual call left the suite fully
+   * green: the one line this change exists for had a test that could never
+   * fail. A review caught it. `scripts/mutation-check.mjs` now empties the
+   * handler as a mutation, so the guard has been shown to bite.
+   */
+  it("actually calls the synth from inside the handler", () => {
+    const body = /const onKey = \([^)]*\) => \{([\s\S]*?)\n  \};/.exec(src)?.[1];
+    expect(body, "onKey handler not found").toBeTruthy();
+    expect(body).toContain("audio.key();");
+  });
+
+  it("puts the click on the fields themselves, not on the form", () => {
+    // On the form it would also fire for Enter on the submit button, which is a
+    // click for a keystroke that is not typing. `shared` is spread into both the
+    // input and the textarea, so one line covers all three fields.
+    expect(src).toMatch(/onKeyDown: onKey,/);
+
+    // Sliced rather than measured by distance. The first version allowed 400
+    // characters between `<form` and `onKeyDown`, which passed with about 400 to
+    // spare and would have failed on correct code the moment anything between
+    // them got shorter.
+    const open = src.indexOf("<form\n");
+    expect(open, "opening <form tag not found").toBeGreaterThan(-1);
+    expect(src.slice(open, src.indexOf(">", open))).not.toContain("onKeyDown");
+  });
 });
 
 /**

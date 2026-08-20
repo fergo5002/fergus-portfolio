@@ -973,6 +973,13 @@ html.crt-off body {
       transform: translate3d(0, 3px, 0);
     }
   }
+  /* Halved on 2026-08-20. This was 0.5 then 0.15, which put a green sheet over
+     the whole viewport every 3.2 seconds on every page, forever: the one flash
+     nobody chose and the one that lands while you are reading. The envelope is
+     the only thing dialled back; the layer's own colour and the timing are
+     untouched, so it still reads as an unsteady tube rather than a strobe.
+     app/globals.test.ts holds these numbers, because "less aggressive" creeps
+     back one reasonable-looking commit at a time. */
   @keyframes flicker {
     0%,
     97%,
@@ -980,10 +987,10 @@ html.crt-off body {
       opacity: 0;
     }
     98% {
-      opacity: 0.5;
+      opacity: 0.25;
     }
     99% {
-      opacity: 0.15;
+      opacity: 0.075;
     }
   }
   @keyframes blink {
@@ -1467,9 +1474,13 @@ html.js .exp__spine {
   .channel::after {
     animation: channel-band 520ms ease-out both;
   }
+  /* Also halved on 2026-08-20 (was 0.85 and 1). Both are envelopes riding on
+     fixed gradients, so cutting the envelope is exactly a cut in peak
+     brightness and leaves the geometry and the 520ms alone: the tube still
+     loses lock on a route change, it just does not blind you for doing it. */
   @keyframes channel-static {
     from {
-      opacity: 0.85;
+      opacity: 0.425;
     }
     to {
       opacity: 0;
@@ -1478,7 +1489,7 @@ html.js .exp__spine {
   @keyframes channel-band {
     from {
       top: -26vh;
-      opacity: 1;
+      opacity: 0.5;
     }
     to {
       top: 106vh;

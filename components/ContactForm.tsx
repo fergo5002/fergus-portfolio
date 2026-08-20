@@ -1,8 +1,10 @@
 "use client";
 
 import { useActionState, useEffect, useId, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import { contactAction } from "@/app/contact/actions";
 import { contactCopy } from "@/content/contact";
+import { useSystem } from "@/components/system/SystemProvider";
 import {
   CONTACT_LIMITS,
   ELAPSED_FIELD,
@@ -43,6 +45,7 @@ import {
 export default function ContactForm() {
   const [state, action, pending] = useActionState(contactAction, INITIAL_CONTACT_STATE);
   const uid = useId();
+  const { audio } = useSystem();
 
   const startedAt = useRef(0);
   const elapsed = useRef<HTMLInputElement>(null);
@@ -148,6 +151,32 @@ export default function ContactForm() {
     if (elapsed.current) elapsed.current.value = String(Date.now() - startedAt.current);
   };
 
+  /**
+   * The membrane click, the same one the shell makes.
+   *
+   * Every other text surface on this site clicks when you type in it, and this
+   * page shipped without it, which left the newest thing here as the one place
+   * the machine goes quiet.
+   *
+   * Two things make it safe to add. `audio.key()` is silent until sound has
+   * been switched on *and* a gesture has started the AudioContext, so a visitor
+   * who never asked for noise never gets any. Silent, note, rather than free:
+   * once the graph exists, turning sound off only ramps the master gain to zero,
+   * so this still builds its voices and throws them away. The shell has always
+   * worked that way and it is not worth two code paths for five nodes a
+   * keystroke. It is attached to the fields
+   * rather than to the form, so Enter on the submit button does not click for a
+   * keystroke that is not typing. The filter is deliberately the shell's, down
+   * to the character: modifiers on their own stay silent, because a real
+   * keyboard's shift key does not click either. `lib/contact.test.ts` asserts
+   * the two are still identical rather than merely similar.
+   */
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key.length === 1 || e.key === "Enter" || e.key === "Backspace" || e.key === "Tab") {
+      audio.key();
+    }
+  };
+
   const onCopy = async () => {
     if (state.status !== "failed") return;
     try {
@@ -210,6 +239,9 @@ export default function ContactForm() {
             autoComplete: field.autoComplete,
             maxLength: CONTACT_LIMITS[field.name],
             required: true,
+            // Spread into both the input and the textarea, so one line covers
+            // all three fields and none of them can drift silent.
+            onKeyDown: onKey,
             "aria-invalid": error ? true : undefined,
             "aria-describedby": error ? errorId : undefined,
           };

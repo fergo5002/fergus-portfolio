@@ -1,5 +1,9 @@
 /**
- * Mutation check for the contact form.
+ * Mutation check.
+ *
+ * Started as a contact-form guard and now also covers the brightness numbers,
+ * because those are the ones most likely to drift back: a shader constant is
+ * the least reviewable line in the repo.
  *
  * Not part of the build and not run by `npm test`. Like `Dockerfile.parity`,
  * it exists to be run deliberately before shipping a change to this feature.
@@ -159,6 +163,83 @@ const MUTATIONS = [
     file: "components/Talk.tsx",
     pattern: /<Link className="talk__cta" href="\/contact">/,
     replace: '<a className="talk__cta" href={`mailto:x@example.com`}>',
+  },
+
+  // ── how hard the tube flashes, and how much light follows the cursor ──
+  // Halved on 2026-08-20. Each of these creeps the brightness back the way a
+  // plausible-looking commit would, one number at a time.
+  // Named groups, not $1/$2. `"$10.5$2"` reads as group 10 before it falls back
+  // to group 1, which is fine with two groups and silently wrong with ten.
+  {
+    name: "the periodic flicker creeps back to full strength",
+    file: "app/globals.css",
+    pattern: /(?<lead>98% \{\r?\n      opacity: )0\.25(?<tail>;)/,
+    replace: "$<lead>0.5$<tail>",
+  },
+  {
+    name: "the channel-change band creeps back to full strength",
+    file: "app/globals.css",
+    pattern: /(?<lead>top: -26vh;\r?\n      opacity: )0\.5(?<tail>;)/,
+    replace: "$<lead>1$<tail>",
+  },
+  {
+    name: "the pointer halo brightens in the present pass only",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /glow \+= exp\(-d \* 5\.0\) \* 0\.025 \* uPointerActive;/,
+    replace: "glow += exp(-d * 5.0) * 0.05 * uPointerActive;",
+  },
+  {
+    name: "the pointer halo brightens in the persistence buffer only",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /add \+= exp\(-length\(toP\) \* 9\.0\) \* 0\.05 \* uPointerActive;/,
+    replace: "add += exp(-length(toP) * 9.0) * 0.10 * uPointerActive;",
+  },
+  {
+    name: "the degauss deposit goes back to blinding",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /add \+= dgDrag \* 0\.06;/,
+    replace: "add += dgDrag * 0.85;",
+  },
+  {
+    name: "the degauss present-pass glow goes back up",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /glow \+= band \* 0\.05;/,
+    replace: "glow += band * 0.7;",
+  },
+  {
+    name: "the tap and degauss glows are swapped over",
+    file: "components/system/PhosphorScreen.tsx",
+    // The reason those two are asserted inside their own brace-matched blocks:
+    // against the whole pass, a straight swap satisfies both assertions.
+    pattern: /glow \+= band \* 0\.10;([\s\S]*?)glow \+= band \* 0\.05;/,
+    replace: "glow += band * 0.05;$1glow += band * 0.10;",
+  },
+  {
+    name: "dimming the degauss also stops it scrubbing burn-in",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /burn \*= 1\.0 - clamp\(dgDrag \* 3\.5, 0\.0, 1\.0\);/,
+    replace: "burn *= 1.0 - clamp(dgDrag * 1.75, 0.0, 1.0);",
+  },
+  {
+    name: "the contact form goes silent again",
+    file: "components/ContactForm.tsx",
+    pattern: /            onKeyDown: onKey,\r?\n/,
+    replace: "",
+  },
+  {
+    // The one a review had to catch by hand: the original assertion was a bare
+    // `audio.key()` against the whole file, and the docblock above the handler
+    // says `audio.key()` too, so emptying the handler stayed green.
+    name: "the key handler is emptied but its docblock stays",
+    file: "components/ContactForm.tsx",
+    pattern: /      audio\.key\(\);\r?\n/,
+    replace: "",
+  },
+  {
+    name: "the form's key filter drifts away from the shell's",
+    file: "components/ContactForm.tsx",
+    pattern: /e\.key === "Backspace" \|\| e\.key === "Tab"/,
+    replace: 'e.key === "Backspace"',
   },
 ];
 
