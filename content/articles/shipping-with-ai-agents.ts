@@ -4,7 +4,7 @@ export const agentsShipping: Article = {
   slug: "shipping-with-ai-agents",
   title: "What I actually changed to ship with AI agents",
   description:
-    "Nine months of building products with coding agents. The four habits that stopped things breaking in production, and the one that mattered more than the rest combined.",
+    "Nine months of building products with coding agents. The four habits that stopped things breaking in production, and the one that mattered most.",
   date: "2026-08-18",
   tags: ["AI agents", "Engineering", "Claude Code", "Process"],
   summary:
@@ -25,7 +25,7 @@ I stopped accepting that. The rule now is simple and it is absolute: **no claim 
 
 Not "the endpoint should return the booking". Instead: here is the request I sent, here is the response body, here is the row that appeared in the database. If there's no output pasted, the task isn't done. It's in progress.
 
-This one change caught more bugs than every other practice combined, and most of them were the boring kind that cost you a day in production and nothing at all in development.
+This one change caught more bugs than every other practice combined, and most of them were the boring kind that cost you a day in production and nothing at all in development. The full protocol is in [agents will tell you it works](/writing/agents-will-tell-you-it-works).
 
 ## Local success means less than you think
 

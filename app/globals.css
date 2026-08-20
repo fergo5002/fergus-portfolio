@@ -2063,8 +2063,15 @@ html.is-gravity .statusbar {
    Both are deliberate departures from the house style rather than oversights.
    The tube is the frame; the article inside it has to be readable. */
 
+/* Body copy on these surfaces uses --green at full strength, NOT --green-faint.
+   --green-faint is the base colour at 0.55 alpha, which measures 4.88:1 on the
+   green theme but only 3.95:1 on amber and 4.47:1 on ice. AGENTS.md calls 4.5:1
+   non-negotiable, and a theme is one terminal command away (`theme amber`), so
+   the faint token can never carry two thousand words of an article. Checked
+   with a contrast test in app/globals.test.ts: do not quietly dim these back. */
+
 .page__lede {
-  color: var(--green-faint);
+  color: var(--green);
   max-width: 62ch;
   margin-bottom: var(--sp-5);
 }
@@ -2111,7 +2118,7 @@ html.is-gravity .statusbar {
 }
 
 .writing__desc {
-  color: var(--green-faint);
+  color: var(--green);
   max-width: 68ch;
   margin: 0 0 var(--sp-3);
   text-shadow: none;
@@ -2184,7 +2191,7 @@ html.is-gravity .statusbar {
 .post__toc ol {
   margin: 0;
   padding-left: var(--sp-4);
-  color: var(--green-faint);
+  color: var(--green);
 }
 
 .post__toc li {
@@ -2192,7 +2199,7 @@ html.is-gravity .statusbar {
 }
 
 .post__toc a {
-  color: var(--green-faint);
+  color: var(--green);
   text-decoration: none;
   text-shadow: none;
 }
@@ -2226,7 +2233,7 @@ html.is-gravity .statusbar {
   max-width: 68ch;
   /* The glow goes. See the note at the top of this section. */
   text-shadow: none;
-  color: var(--green-faint);
+  color: var(--green);
   font-size: 1.0rem;
   line-height: 1.75;
 }
@@ -2374,7 +2381,7 @@ h4.prose__h {
 }
 
 .talk__line {
-  color: var(--green-faint);
+  color: var(--green);
   text-shadow: none;
   margin: 0 0 var(--sp-4);
 }
@@ -2402,4 +2409,12 @@ h4.prose__h {
   margin: var(--sp-3) 0 0;
   font-size: 0.8rem;
   color: var(--green-dim);
+}
+
+/* The server-rendered hero name, before the per-character layer mounts.
+   Matches the character layer's type exactly so the swap on hydration is
+   invisible. See components/motion/HeroName.tsx for why the swap exists. */
+.heroname__plain {
+  display: inline-block;
+  white-space: pre-wrap;
 }

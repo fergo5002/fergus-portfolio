@@ -56,17 +56,17 @@ export function canonical(path: string) {
 /**
  * The share card for a route that does not generate its own.
  *
- * This has to be stated explicitly and cannot be left to inheritance. Next's
- * `opengraph-image` file convention only reaches a child route while that child
- * says nothing about `openGraph` itself. The moment a route exports its own
- * `openGraph` block, which every route here does because they all want their own
- * title and description, the whole object is replaced and the inherited image
- * goes with it.
+ * Stated explicitly because, measured against a real build, `/projects`,
+ * `/experience` and `/writing` emitted no `og:image` at all without it, while
+ * `/` and `/writing/[slug]` did. The difference is that those two have an
+ * `opengraph-image` file in their own segment; the others were relying on
+ * inheriting the root one and did not get it.
  *
- * The failure is silent and it is invisible locally: the tags simply are not
- * emitted, and you only discover it when a link unfurls as a bare title
- * somewhere you cannot edit. Verified by checking for `og:image` on every route
- * rather than by reading the docs.
+ * That is the observation, not a claim about the mechanism. An earlier version
+ * of this comment asserted that exporting an `openGraph` block replaces the
+ * file-convention image, which does not hold: `/writing/[slug]` exports one
+ * without `images` and still gets its card. Whatever the precise rule, the
+ * failure is silent, so state the image rather than infer it.
  */
 export const OG_IMAGE = "/opengraph-image";
 

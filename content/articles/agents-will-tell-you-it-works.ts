@@ -4,7 +4,7 @@ export const verificationGap: Article = {
   slug: "agents-will-tell-you-it-works",
   title: "Agents will tell you it works. Make them prove it.",
   description:
-    "The single most expensive habit in AI-assisted development is accepting a confident summary as evidence. A short protocol for closing the gap between done and proven.",
+    "The most expensive habit in AI-assisted development is taking a confident summary as evidence. A short protocol for closing the gap between done and proven.",
   date: "2026-08-08",
   tags: ["AI agents", "Testing", "Process", "Engineering"],
   summary:
@@ -35,7 +35,7 @@ The check that separates them takes thirty seconds. Revert the fix. Run the test
 
 If it stays green, the test never exercised the bug. You have a passing suite and an open defect, which is worse than a failing suite because it comes with a false sense of coverage.
 
-I do this on anything that matters and always on anything security-related. When we moved from a shared webhook secret to per-install secrets, the reason I believed the fix was not that the new tests passed. It was that putting the vulnerability back turned the cross-tenant test red, on cue.
+I do this on anything that matters and always on anything security-related. When we moved from [a shared webhook secret to per-install secrets](/writing/one-webhook-secret-two-tenants), the reason I believed the fix was not that the new tests passed. It was that putting the vulnerability back turned the cross-tenant test red, on cue.
 
 ## Rule three: local success is a hypothesis
 
@@ -76,7 +76,7 @@ Before trusting any verification, ask what it would look like if the feature wer
 
 ## Why this is worth the friction
 
-None of this is clever. It's the discipline any careful engineer applies without naming it, written down because the thing doing the work now has no instinct for doubt.
+None of this is clever. It's the discipline any careful engineer applies without naming it, written down because the thing doing the work now has no instinct for doubt. The wider set of habits is in [what I actually changed to ship with AI agents](/writing/shipping-with-ai-agents).
 
 Agents are fast and getting faster. Speed multiplies whatever process you have. With this protocol you find defects in minutes. Without it you find them in production, in a fortnight, in a flow you'd forgotten you touched.
 

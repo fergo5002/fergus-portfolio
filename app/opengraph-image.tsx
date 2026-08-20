@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 import { profile } from "@/content/profile";
+import { experience } from "@/content/experience";
 
 /**
  * The default share card for the site, in the phosphor language: near-black
@@ -90,7 +91,9 @@ export default async function Image() {
           />
           <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
             <div style={{ display: "flex", color: AMBER, fontSize: 28 }}>
-              Co-Founder @ Tigh Sauna
+              {/* Derived, not typed. A hardcoded role here would go on
+                  advertising a stale one from every shared link. */}
+              {experience[0] ? `${experience[0].role} @ ${experience[0].org}` : profile.jobTitle}
             </div>
             <div style={{ display: "flex", color: GREEN_DIM, fontSize: 28 }}>
               fergusoreilly.dev

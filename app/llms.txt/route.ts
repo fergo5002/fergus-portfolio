@@ -61,8 +61,6 @@ ${
     : "No current role listed."
 }
 
-Also in the third year of a BA in Computer Science and Business at Trinity College Dublin.
-
 ## Experience
 
 ${experience

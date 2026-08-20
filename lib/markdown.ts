@@ -98,6 +98,13 @@ export function parseMarkdown(source: string): Block[] {
   while (i < lines.length) {
     const line = lines[i];
 
+    // Every branch below must consume at least one line. If one ever does not,
+    // the loop spins forever and takes the build with it, silently, with no
+    // error to read. That has happened once (see the fence comment below), so
+    // the invariant is enforced rather than assumed: fail loudly on the line
+    // that caused it instead of hanging.
+    const startedAt = i;
+
     if (line.trim() === "") {
       i++;
       continue;
@@ -105,7 +112,19 @@ export function parseMarkdown(source: string): Block[] {
 
     // Fenced code. The closing fence is optional so an unterminated block at
     // the end of a document renders as code rather than swallowing the parse.
-    const fence = /^```(\w*)\s*$/.exec(line);
+    //
+    // This pattern MUST stay in step with the `^```` test in `startsBlock`.
+    // It briefly did not: the detector was `/^```(\w*)\s*$/` while
+    // `startsBlock` matched any line beginning with three backticks. A fence
+    // carrying anything else in its info string, ```` ```js {1,3} ````,
+    // ```` ```objective-c ````, or a bare ```` ```` ````, then matched neither
+    // the fence branch nor any other branch, fell through to the paragraph
+    // loop, whose condition was immediately false, and `i` never advanced. The
+    // parser span forever. Because every helper here routes through
+    // `parseMarkdown`, that meant `next build` and `npm test` both hanging with
+    // no error to read. Take the language as the first token and accept the
+    // rest of the line.
+    const fence = /^```\s*(\S*)/.exec(line);
     if (fence) {
       const lang = fence[1] ?? "";
       const body: string[] = [];
@@ -181,7 +200,14 @@ export function parseMarkdown(source: string): Block[] {
       body.push(lines[i].trim());
       i++;
     }
-    blocks.push({ type: "paragraph", inline: parseInline(body.join(" ")) });
+    if (body.length > 0) blocks.push({ type: "paragraph", inline: parseInline(body.join(" ")) });
+
+    if (i === startedAt) {
+      throw new Error(
+        `parseMarkdown: no rule consumed line ${startedAt + 1}: ${JSON.stringify(line)}. ` +
+          `A block detector and startsBlock() have gone out of step.`,
+      );
+    }
   }
 
   return blocks;

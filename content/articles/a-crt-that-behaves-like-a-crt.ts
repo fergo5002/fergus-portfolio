@@ -4,7 +4,7 @@ export const crtThatBehaves: Article = {
   slug: "a-crt-that-behaves-like-a-crt",
   title: "Building a CRT that behaves like a CRT",
   description:
-    "Most CRT effects on the web are a scanline overlay and a bit of glow. Deriving everything from one premise, an electron beam painting phosphor, gets you somewhere better.",
+    "Most CRT effects are a scanline overlay and some glow. Deriving everything from one premise, a beam painting phosphor, gets you somewhere better.",
   date: "2026-08-10",
   tags: ["WebGL", "Motion", "Frontend", "Craft"],
   summary:
@@ -88,6 +88,8 @@ Under \`reduce\`: the smooth-scroll library is never mounted at all, the shader 
 The last one caught me out. The boot animation hides page content until it finishes, via a class set before first paint. Skip the animation but keep the class and you've built a page that is permanently invisible to the people who most needed the accommodation. Any pre-paint script that hides content needs a guaranteed path that reveals it again, and that path has to be the *first* thing you test, not the last.
 
 ## What I'd tell someone doing this
+
+One warning if you build anything like this: an effect that fragments text fragments it for machines too, which cost me my own headline in search. That is [its own article](/writing/split-text-is-costing-you-search).
 
 **Pick a premise and refuse things that don't follow from it.** The refusals are what make it look designed. I cut a cursor trail and an ambient audio bed late on, both of which I liked, because neither followed from anything and both read as noise.
 

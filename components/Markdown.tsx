@@ -11,6 +11,11 @@ import { parseMarkdown, type Block, type Inline } from "@/lib/markdown";
  * it, which is the whole reason for hand-writing the parser.
  */
 
+/** Absolute http(s), a site-relative path, or an in-page anchor. Nothing else. */
+function isSafeHref(href: string): boolean {
+  return /^https?:\/\//i.test(href) || href.startsWith("/") || href.startsWith("#");
+}
+
 function renderInline(nodes: Inline[]) {
   return nodes.map((node, i) => {
     switch (node.type) {
@@ -25,6 +30,11 @@ function renderInline(nodes: Inline[]) {
           </code>
         );
       case "link": {
+        // `javascript:`, `data:` and friends never become an anchor. The
+        // article bodies are first-party TypeScript so nothing hostile can
+        // reach here today, but the renderer should not be the thing standing
+        // between a future content source and an executable href.
+        if (!isSafeHref(node.href)) return <Fragment key={i}>{node.value}</Fragment>;
         // Anything leaving the site opens in a new tab and carries
         // `noopener`, without which the opened page can reach back through
         // `window.opener`.
@@ -55,7 +65,16 @@ function renderBlock(block: Block, i: number) {
       const Tag = (`h${block.level}` as const) satisfies "h2" | "h3" | "h4";
       return (
         <Tag key={i} id={block.id} className="prose__h">
-          <a href={`#${block.id}`} className="prose__anchor" aria-label={`Link to this section`}>
+          {/*
+            The heading text goes in the label. Every anchor carrying the same
+            name means a screen reader user pulling up a links list gets "Link
+            to this section" six to eight times with nothing to choose between.
+          */}
+          <a
+            href={`#${block.id}`}
+            className="prose__anchor"
+            aria-label={`Link to the section: ${block.inline.map((n) => n.value).join("")}`}
+          >
             #
           </a>
           {renderInline(block.inline)}

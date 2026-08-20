@@ -57,7 +57,7 @@ Worth saying, because a post-mortem that's all self-criticism is its own kind of
 
 **The WhatsApp work was hard and it landed.** Getting through Meta's Tech Provider approval so each merchant onboards their own number through Embedded Signup and keeps ownership of it is not a weekend job. It's a real asset and I'd do it again.
 
-**We stopped in ten weeks.** This is the bit I'm most comfortable with. The failure mode I've watched other people fall into is a company that stays technically alive for two years because nobody wants to be the one to say it. Ten weeks of clear evidence is enough evidence.
+**We stopped in ten weeks.** I've written separately about [what the accelerator was actually for](/writing/what-an-accelerator-is-for). This is the bit I'm most comfortable with. The failure mode I've watched other people fall into is a company that stays technically alive for two years because nobody wants to be the one to say it. Ten weeks of clear evidence is enough evidence.
 
 ## What I changed
 

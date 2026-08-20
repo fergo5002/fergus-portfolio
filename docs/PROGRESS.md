@@ -5,6 +5,45 @@
 
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
+**Status (2026-08-20): SEO + GEO surface and a writing surface shipped.** The site went from
+three routes and ~1,340 words with no `robots.txt`, no sitemap, no canonicals and no structured
+data, to five routes with a full crawl surface and eight long-form articles. Read
+`docs/superpowers/specs/2026-08-20-seo-geo-growth-design.md` first, then the SEO paragraphs in
+`AGENTS.md`.
+
+What is new:
+- `lib/seo.ts` owns every URL and every schema.org node. One `@graph` per page so `@id`
+  references resolve to a single `Person` rather than several thin duplicates. Canonicals are
+  built from a constant so a preview deploy can never canonicalise to its own hostname.
+- `app/robots.ts`, `app/sitemap.ts`, `app/llms.txt/route.ts`, `app/feed.xml/route.ts`, all
+  generated from `content/`.
+- `/writing` and `/writing/[slug]`, rendered by `lib/markdown.ts` (a hand-written subset parser
+  returning typed blocks, never HTML strings, so there is no injection path to sanitise).
+- `next/og` share cards for the site and every article. There was no OG image at all before.
+- `content/` is true again: Tigh Sauna is present tense, Presterly is past tense with its figures
+  moved to the past, and the `firespark` project became `tigh-sauna`. The holding company is named
+  nowhere public and the Firespark image builder was deleted.
+
+**Three things a reviewer caught that are worth carrying:**
+1. `robots.txt` briefly disallowed `/_next/static/chunks/`. The inline pre-paint script hides the
+   landing page and only `BootSequence` un-hides it, so that one line would have rendered a blank
+   homepage to Google while every status code stayed 200. There is now a 4s failsafe in the inline
+   script as a second line of defence. **Never block JS or CSS in robots.txt.**
+2. The markdown fence detector and its lookahead disagreed, so a fence like ```` ```js {1,3} ````
+   would have hung `next build` and `npm test` with no error. Fixed, plus a structural guard that
+   throws if the parse cursor fails to advance.
+3. Article body copy was on a token measuring 3.95:1 on the amber theme. `app/globals.test.ts` now
+   computes contrast from the CSS tokens per theme.
+
+Full detail in `[[coding-mistakes]]` and `[[coding-playbook]]`, dated 2026-08-20.
+
+**Verification.** 322 tests green, `npm run build` clean at 29 static pages, and a route-walking
+HTTP check (canonical, description length, JSON-LD parsing and carrying the Person entity,
+absolute `og:image`, indexable word count, the h1 extracting as contiguous text) passing against
+localhost, the `Dockerfile.parity` container, and production.
+
+---
+
 **Status (2026-08-07):** **v5 "Mass" is LIVE, and the cursor trail and the ambient whirr are now
 gone from production too.** The live host is `https://fergusoreilly.dev` (`fergus-portfolio.vercel.app`
 is an alias of the same deployment; both were checked). All three routes 200, 60 fps, one canvas

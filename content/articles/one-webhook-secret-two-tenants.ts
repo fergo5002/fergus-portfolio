@@ -105,5 +105,7 @@ Once you have the shape you start finding it in other places. A single signing k
 
 The test question is always the same, and it takes ten seconds to ask: *if one of my customers had this secret and wanted to act as another of my customers, what would stop them?* If the answer is a value they control, there's your bug.
 
-Worth asking before the second customer signs up rather than after.`,
+Worth asking before the second customer signs up rather than after.
+
+The rest of what I would get right first is in [multi-tenant Shopify apps](/writing/multi-tenant-shopify-apps).`,
 };

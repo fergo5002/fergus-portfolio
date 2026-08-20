@@ -48,9 +48,27 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        // Next's own build output. Nothing here is a page, and letting a
-        // crawler spend its budget on chunk files costs the real routes.
-        disallow: ["/_next/static/chunks/"],
+        // NOTHING IS DISALLOWED, AND `/_next/` IN PARTICULAR MUST STAY CRAWLABLE.
+        //
+        // This briefly carried `disallow: ["/_next/static/chunks/"]` on a crawl
+        // budget argument, which was wrong twice over. There is no crawl budget
+        // problem on a five-route site, and blocking the JavaScript would have
+        // taken the landing page down in Google specifically:
+        //
+        //   1. The inline pre-paint script in `app/layout.tsx` is inline, so it
+        //      always runs, and on "/" it adds `booting` to <html>.
+        //   2. `.booting .screen/.nav/.statusbar` are `visibility: hidden`.
+        //   3. The only code that clears `booting` is `BootSequence`, which
+        //      ships in a chunk under `/_next/static/chunks/`.
+        //
+        // A crawler that renders but honours the disallow therefore sets the
+        // class, never loads the code that clears it, and sees an empty page.
+        // The named AI crawlers below would have been fine, because each gets
+        // its own group and ignores this one, so the page carrying the Person
+        // graph would have gone blank for Google and nobody else. Every status
+        // code stays 200 throughout, which is why nothing would have caught it.
+        //
+        // Google's own guidance is not to block JS or CSS. Follow it.
       },
       ...AI_CRAWLERS.map((userAgent) => ({ userAgent, allow: "/" })),
     ],

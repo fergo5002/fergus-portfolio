@@ -19,9 +19,20 @@ hand-maintained. `lib/seo.ts` is the only place a URL or a schema.org object is 
 **The rule that keeps biting:** a visual effect that fragments text also fragments it for
 crawlers. The hero name is animated one character per element, and for a while that meant the
 most important string on the domain extracted as `P a t r i c k F e r g u s O ' R e i l l y`.
-`HeroName` now renders a contiguous, crawlable copy of the name alongside the animated one. Any
-new per-character or scrambled effect must do the same, or it is quietly costing the site the
-words it decorates.
+`HeroName` now renders **only** the plain contiguous name on the server, and swaps in the
+per-character layer after mount. Rendering both at once was the first attempt and it left the
+h1 saying the name twice with nothing between them (`O'ReillyPatrick`), so the swap is the
+fix, not an optimisation. `aria-label` does not solve this: it is an accessibility property
+rather than content, and a text extractor has no reason to read it.
+
+Any new per-character, scrambled, typewriter or canvas-rendered text effect must leave a whole
+copy of its words in the server HTML, or it is quietly costing the site the words it decorates.
+
+**And never disallow `/_next/` in `robots.txt`.** The inline pre-paint script adds `booting` to
+`<html>` on the landing page, `.booting` hides the content, and only `BootSequence` clears it.
+Block the chunk it ships in and a rendering crawler sees an empty homepage while every status
+code stays 200. There is a 4s failsafe in the inline script now, and it is the second line of
+defence, not a licence to block scripts.
 
 As of v4 ("Phosphor") the site does not merely *depict* a CRT, it *behaves* like one. Every
 effect derives from one premise: an electron beam painting phosphor behind glass. Scroll
@@ -235,10 +246,15 @@ clone still builds everything else.
   decoder; it reads the metadata then fails on the pixels), so the script shells out to `ffmpeg`
   to decode to PNG first and crops from that. ffmpeg on PATH is needed for this step only.
 - `presterly.png`, `loira.png`: brand marks composited onto 16:9 cards.
-- `firespark.png`: rebuilt as a lockup in Firespark's own design language (its ember spark
-  `#E0501E`, near-black on white, product line beneath), not a bare logo dropped on a card.
-  **Firespark is Fergus's own venture with Connell. Firecracker Saunas is a customer, a
-  different thing: do not confuse them.** See `[[firespark]]` and `[[sauna-os]]` in the vault.
+- `tigh-sauna.png`: a typographic lockup in Tigh Sauna's colours, `steam #0f6472` on
+  `birch #faf6f0`, with three session bars standing in for a diary. No vendored mark, so this
+  is the one builder that can never skip. **Do not restyle it in the old ember orange**: ember
+  only reached 3.94:1 on white, which is why it stopped being used for text.
+  This replaced `firespark.png`, and the Firespark builder and its vendored spark were deleted
+  with it. **Firespark, Hearth and Sauna OS are retired names for what is now Tigh Sauna.** They
+  survive in package names and deploy paths and must never appear in anything a person reads;
+  `content/links.test.ts` fails the build if one reaches an outbound link. Firecracker Saunas is
+  a *customer*, a different thing, and is not the same as Firespark.
 - `remand.png`, `contrabot.png`: authored SVG, rasterised. Deliberately not stock screenshots.
   In `contrabot`, **all geometry is in screen coordinates where a smaller y is a higher price**,
   getting that backwards once produced a rising chart captioned as a profitable short.

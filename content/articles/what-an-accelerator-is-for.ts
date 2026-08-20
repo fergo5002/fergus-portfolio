@@ -4,7 +4,7 @@ export const acceleratorWorth: Article = {
   slug: "what-an-accelerator-is-for",
   title: "What an accelerator is actually for",
   description:
-    "One of nine picked from about 1,700 applicants, ten weeks in, company wound down. Here is what the accelerator was genuinely worth and what it could never have fixed.",
+    "One of nine from about 1,700 applicants, ten weeks in, company wound down. What the accelerator was genuinely worth, and what it could never have fixed.",
   date: "2026-08-04",
   tags: ["Startups", "Accelerators", "Founders"],
   summary:
@@ -29,7 +29,7 @@ Left alone, founders extend. There's always a reason the demo should be next wee
 
 ## What it could not do
 
-**It could not fix founder-product fit.** Three of us, pulling in different directions, for ten weeks. That's why the company ended.
+**It could not fix founder-product fit.** Three of us, pulling in different directions, for ten weeks. That's [why the company ended](/writing/why-presterly-wound-down).
 
 No programme can solve that. Nobody in the building knows your co-founders well enough to see it, and by the time it's visible from outside it's visible because the company has already stopped working. The people running it were sharp and available. It wasn't their job and they couldn't have done it.
 

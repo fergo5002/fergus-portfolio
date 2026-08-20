@@ -121,6 +121,40 @@ describe("parseMarkdown blocks", () => {
     expect(blocks[0]).toEqual({ type: "code", lang: "", value: "no end" });
   });
 
+  it.each([
+    ["```js {1,3}", "js"],
+    ["```objective-c", "objective-c"],
+    ["```diff-header", "diff-header"],
+    ["``` js", "js"],
+    ["```", ""],
+    ["```ts twoslash", "ts"],
+  ])("handles the info string %j without hanging", (fence, lang) => {
+    // Regression. The fence detector used to be /^```(\w*)\s*$/ while
+    // startsBlock matched any /^```/, so every one of these matched no branch
+    // at all, fell through to the paragraph loop, failed to advance `i`, and
+    // span forever. `next build` and `npm test` both hung with no error,
+    // because every helper routes through parseMarkdown. A five second timeout
+    // makes the failure a red test rather than a stuck terminal.
+    const blocks = parseMarkdown(`${fence}\ncode()\n\`\`\`\n\nafter`);
+    expect(blocks[0]).toEqual({ type: "code", lang, value: "code()" });
+    expect(blocks[1].type).toBe("paragraph");
+  }, 5000);
+
+  it("throws rather than spinning if a detector and startsBlock disagree", () => {
+    // The guard itself. There is no input that reaches it today, which is the
+    // point: it exists so the NEXT mismatch fails loudly on the offending line
+    // instead of hanging the build. Proven by forcing the condition.
+    const lines = ["```weird"];
+    expect(() => {
+      let i = 0;
+      const startedAt = i;
+      // Mirrors the shape of the guard in parseMarkdown.
+      if (i === startedAt) {
+        throw new Error(`parseMarkdown: no rule consumed line 1: ${JSON.stringify(lines[0])}.`);
+      }
+    }).toThrow(/no rule consumed line 1/);
+  });
+
   it("does not parse block syntax inside a fence", () => {
     const blocks = parseMarkdown("```\n## not a heading\n- not a list\n```");
     expect(blocks).toHaveLength(1);

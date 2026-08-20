@@ -29,6 +29,26 @@ export default function HeroName({ text, className }: { text: string; className?
   const charsRef = useRef<(HTMLSpanElement | null)[]>([]);
   const { frame, onFrame, reducedMotion } = useSystem();
 
+  /**
+   * The server renders the name once, as plain contiguous text. The decorative
+   * per-character layer only appears after mount.
+   *
+   * This is about what the h1 says to something that is not a browser. The
+   * character layer exists so each glyph can be magnetised, which means one
+   * inline-block element per letter, which means a naive text extraction reads
+   * the most important string on the domain as `P a t r i c k  F e r g u s...`.
+   * Rendering both on the server fixed the extraction but left the h1 saying the
+   * name twice with no separator between them, `O'ReillyPatrick`, which is a junk
+   * token in the worst possible place.
+   *
+   * Swapping on mount gives one clean copy to every crawler and to the initial
+   * paint, and the animation to everyone who runs the JavaScript. It costs
+   * nothing extra: this component already replaces its own text on mount for the
+   * scramble reveal, so there was already a change at exactly this moment.
+   */
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   // ── scramble reveal on mount, then a periodic re-glitch ───────────────────
   useEffect(() => {
     if (reducedMotion) {
@@ -59,6 +79,11 @@ export default function HeroName({ text, className }: { text: string; className?
   // ── magnetic field ────────────────────────────────────────────────────────
   useEffect(() => {
     if (reducedMotion) return;
+    // `mounted` is in the dependency list because the character elements this
+    // effect measures do not exist until it flips. Without it the effect runs
+    // once against an empty charsRef, measures nothing, and the magnetism is
+    // silently dead while everything still renders correctly.
+    if (!mounted) return;
     const host = hostRef.current;
     if (!host) return;
 
@@ -120,38 +145,24 @@ export default function HeroName({ text, className }: { text: string; className?
       unsubscribe();
       ro.disconnect();
     };
-  }, [frame, onFrame, reducedMotion]);
+  }, [frame, onFrame, reducedMotion, mounted]);
 
   return (
     <span ref={hostRef} className={`heroname ${className ?? ""}`.trim()}>
-      {/*
-        The name as one contiguous, real text node.
+      {mounted ? (
+        <>
+          {/*
+            The contiguous copy stays in the document after mount, hidden. It is
+            the accessible name (the character layer below is aria-hidden, so
+            this is announced exactly once), and it means a client-rendered
+            snapshot still carries the name as real text.
 
-        This is not a duplicate for accessibility: `aria-label` on the wrapper
-        already handled that correctly, and it was what used to be here. It is
-        for the readers that are not a browser and not a screen reader.
-
-        The decorative layer below renders one element per character so each
-        glyph can be magnetised, and those elements are `inline-block` because
-        `transform` does nothing otherwise. Anything that extracts text by
-        stripping tags and normalising whitespace, which is most link
-        unfurlers, aggregators and AI crawlers, then reads the most important
-        string on this domain as `P a t r i c k  F e r g u s  O ' R e i l l y`.
-        Verified against the live site before this was added.
-
-        `aria-label` could not fix that. It is an accessibility property rather
-        than content, so a text extractor has no reason to look at it. Real text
-        in the document is the only thing that works for both audiences, which
-        is why the label is gone and this is here instead: the accessible name
-        is now the content, announced once, and the character layer is hidden
-        from assistive technology so it is not announced a second time.
-
-        Do NOT swap this for `display:none` or `visibility:hidden`. Both drop it
-        from the accessibility tree, and both are reasonably read as content
-        being deliberately withheld from users.
-      */}
-      <span className="vh">{text}</span>
-      <span aria-hidden="true">
+            Do NOT swap this for `display:none` or `visibility:hidden`. Both drop
+            it from the accessibility tree, and both are reasonably read as
+            content being deliberately withheld from users.
+          */}
+          <span className="vh">{text}</span>
+          <span aria-hidden="true">
         {splitWordsWithOffsets(display).map(({ word, start }, w) => (
           <span key={w} className="heroname__word">
             {word.split("").map((ch, j) => {
@@ -170,7 +181,12 @@ export default function HeroName({ text, className }: { text: string; className?
             })}
           </span>
         ))}
-      </span>
+          </span>
+        </>
+      ) : (
+        // Server and first paint: the name, once, as plain text.
+        <span className="heroname__plain">{text}</span>
+      )}
     </span>
   );
 }

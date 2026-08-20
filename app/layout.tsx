@@ -121,7 +121,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "try{if(location.pathname!=='/')return;" +
               "var b=sessionStorage.getItem('fergusos_booted');" +
               "var r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;" +
-              "if(!b&&!r){d.classList.add('booting');}}catch(e){}})();",
+              "if(!b&&!r){d.classList.add('booting');" +
+              // Failsafe. `booting` hides the page, and the only code that
+              // clears it lives in a JS chunk. If that chunk never arrives, for
+              // any reason (a blocked subresource, a network failure, a crawler
+              // that renders but fetches selectively), the visitor is left
+              // staring at a page that is permanently invisible. This script is
+              // inline and therefore always runs, so it is the one place a
+              // guarantee can live. Four seconds is longer than the boot
+              // animation, so nobody who gets the JS ever sees this fire.
+              "setTimeout(function(){d.classList.remove('booting');},4000);" +
+              "}}catch(e){}})();",
           }}
         />
       </head>

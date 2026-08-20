@@ -27,6 +27,17 @@ describe("article catalogue", () => {
     expect([...dates].sort((a, b) => b.localeCompare(a))).toEqual(dates);
   });
 
+  it("links to each other", () => {
+    // Eight related articles with no links between them is a missed SEO basic
+    // and a worse read. This asserts across the corpus rather than per article,
+    // because not every piece needs an outbound link, but a corpus with none at
+    // all is a mistake. The per-article test below already proves any link that
+    // does exist points somewhere real; without this one, that test passes
+    // vacuously on zero links, which is exactly how it shipped.
+    const all = articles.flatMap((a) => [...a.body.matchAll(/\]\((\/writing\/[^)\s]+)\)/g)]);
+    expect(all.length).toBeGreaterThanOrEqual(articles.length);
+  });
+
   it("resolves every slug through articleBySlug", () => {
     for (const a of articles) expect(articleBySlug(a.slug)?.title).toBe(a.title);
     expect(articleBySlug("no-such-article")).toBeUndefined();
@@ -44,8 +55,12 @@ describe.each(articles.map((a) => [a.slug, a] as const))("article: %s", (_slug, 
   });
 
   it("has a description inside the window a search engine displays", () => {
+    // 160, not 180. The design spec says 70 to 160 and this test briefly said
+    // 180, which is how five of the eight shipped at 166 to 170 and would have
+    // been truncated in every search result. A test that is looser than the
+    // spec it is guarding does not guard anything.
     expect(article.description.length).toBeGreaterThanOrEqual(70);
-    expect(article.description.length).toBeLessThanOrEqual(180);
+    expect(article.description.length).toBeLessThanOrEqual(160);
   });
 
   it("has a one-line summary for llms.txt", () => {
@@ -56,6 +71,12 @@ describe.each(articles.map((a) => [a.slug, a] as const))("article: %s", (_slug, 
   it("has a real ISO date that is not in the future", () => {
     expect(article.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(Number.isNaN(Date.parse(article.date))).toBe(false);
+    // The name promised this and the test did not check it. A future
+    // `datePublished` in the BlogPosting graph is the kind of thing that gets a
+    // page held back from an index, and a typo in the year is easy to make.
+    // One day of slack for whoever is writing in a different timezone.
+    const tomorrow = Date.now() + 24 * 60 * 60 * 1000;
+    expect(Date.parse(article.date)).toBeLessThan(tomorrow);
   });
 
   it("carries at least one tag", () => {

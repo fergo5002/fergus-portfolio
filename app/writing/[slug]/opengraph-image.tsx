@@ -9,6 +9,12 @@ import { profile } from "@/content/profile";
  * Pre-rendered for every article at build time via `generateStaticParams`, so a
  * social platform's unfurler gets a file rather than waiting on a cold render.
  * Unfurlers time out aggressively and a slow card is the same as no card.
+ *
+ * `fontFamily: "monospace"` is aspirational: Satori loads no monospace face, so
+ * it falls back to its sans default. The cards are legible and on-palette, they
+ * just are not in the site's typeface. Fixing it properly means fetching and
+ * passing a font buffer, which is a real cost for a share card. Left as is
+ * deliberately, and written down so nobody re-discovers it as a bug.
  */
 
 export const alt = "Article";
@@ -17,6 +23,20 @@ export const contentType = "image/png";
 
 export function generateStaticParams() {
   return articles.map((a) => ({ slug: a.slug }));
+}
+
+/**
+ * Cuts at the last word boundary before `max` and marks the cut.
+ *
+ * A bare `slice` broke four of the eight cards mid-word: the Presterly card
+ * ended "not the product and not the mark", which is "market" sawn in half on
+ * the artefact that represents the post everywhere it gets shared.
+ */
+function clamp(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).replace(/[,.;:]$/, "")}...`;
 }
 
 const BG = "#0a0e0a";
@@ -87,7 +107,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
                 lineHeight: 1.4,
               }}
             >
-              {article.description.slice(0, 130)}
+              {clamp(article.description, 170)}
             </div>
           ) : null}
           <div

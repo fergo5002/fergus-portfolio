@@ -88,12 +88,11 @@ async function campanile() {
   done("under-the-campanile.jpg", `${info.width}x${info.height} ${(info.size / 1024).toFixed(0)}KB`);
 }
 
-// ── 3. Firespark ────────────────────────────────────────────────────────────
-// Rebuilt in Firespark's own design language rather than just dropping the logo
-// on a blank card: the ember spark and wordmark lockup from its header, its
-// near-black on white, and its own product line underneath.
-const FIRESPARK_INK = "#0A0C10";
-const FIRESPARK_FONT = "Inter, 'Segoe UI', Helvetica, Arial, sans-serif";
+// ── 3. Shared text measuring ────────────────────────────────────────────────
+// The card font stack. Named generically: it used to be FIRESPARK_FONT, from
+// the Firespark card that lived here before that brand was retired in favour of
+// Tigh Sauna. Every card builder below shares it.
+const CARD_FONT = "Inter, 'Segoe UI', Helvetica, Arial, sans-serif";
 
 /**
  * Render a line of text and trim it to its real ink, returning the buffer and
@@ -111,7 +110,7 @@ async function measuredText(text, { size, weight = 400, fill, tracking = 0 }) {
   const box = Math.ceil(size * text.length * 1.2) + pad * 2;
   const markup = svg(`
 <svg xmlns="http://www.w3.org/2000/svg" width="${box}" height="${Math.ceil(size * 2)}">
-  <text x="${pad}" y="${Math.round(size * 1.2)}" font-family="${FIRESPARK_FONT}"
+  <text x="${pad}" y="${Math.round(size * 1.2)}" font-family="${CARD_FONT}"
         font-size="${size}" font-weight="${weight}" letter-spacing="${tracking}"
         fill="${fill}">${text}</text>
 </svg>`);
@@ -120,56 +119,6 @@ async function measuredText(text, { size, weight = 400, fill, tracking = 0 }) {
     .trim({ threshold: 1 })
     .toBuffer({ resolveWithObject: true });
   return { buffer: data, width: info.width, height: info.height };
-}
-
-async function firespark() {
-  const src = join(SOURCES, "firespark-spark.svg");
-  if (!existsSync(src)) return skip("firespark.png", "vendored spark mark missing");
-
-  const SPARK = 112; // the mark is square (24x24 viewBox), so width === height
-  const GAP = 24;
-  const midY = 250;
-
-  const spark = await sharp(src, { density: 700 }).resize({ height: SPARK }).toBuffer();
-  const word = await measuredText("Firespark", {
-    size: 82,
-    weight: 700,
-    fill: FIRESPARK_INK,
-    tracking: -2.5,
-  });
-  const tag = await measuredText("Booking and operations software for saunas", {
-    size: 26,
-    fill: "#5b636e",
-  });
-
-  const lockup = SPARK + GAP + word.width;
-  const startX = Math.round((CARD_W - lockup) / 2);
-
-  if (startX < 0) {
-    throw new Error(
-      `firespark: lockup is ${lockup}px, wider than the ${CARD_W}px card. Reduce the font size.`,
-    );
-  }
-
-  const info = await sharp({
-    create: { width: CARD_W, height: CARD_H, channels: 4, background: "#ffffff" },
-  })
-    .composite([
-      { input: spark, left: startX, top: midY - Math.round(SPARK / 2) },
-      {
-        input: word.buffer,
-        left: startX + SPARK + GAP,
-        top: midY - Math.round(word.height / 2),
-      },
-      {
-        input: tag.buffer,
-        left: Math.round((CARD_W - tag.width) / 2),
-        top: midY + 96,
-      },
-    ])
-    .png({ compressionLevel: 9 })
-    .toFile(join(OUT, "firespark.png"));
-  done("firespark.png", `${info.width}x${info.height} ${(info.size / 1024).toFixed(0)}KB`);
 }
 
 // ── 3b. Tigh Sauna ──────────────────────────────────────────────────────────
@@ -385,7 +334,6 @@ async function contrabot() {
 console.log("building public/img ...");
 await portrait();
 await campanile();
-await firespark();
 await tighSauna();
 await presterly();
 await loira();
