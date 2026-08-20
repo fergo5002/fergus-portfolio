@@ -60,10 +60,15 @@ Every path was driven with JavaScript entirely absent by POSTing the multipart f
 `$ACTION*` fields: valid, invalid address, short message, honeypot, too-fast, and no-timing. A real
 request to Resend with a deliberately invalid key returned 401 and produced the fallback rather than
 an error boundary. In a browser, the client-side stamp was proved to reach the action by pinning
-`Date.now` so it computed a negative elapsed and watching the outcome flip. **Eighteen mutations
-were applied to the new guards and all eighteen turned the suite red**, including reinstating the
-dropped-on-timing regression and pointing the call to action back at a `mailto:`. The CTA mutation
-survived the first pass, which is how that guard came to exist.
+`Date.now` so it computed a negative elapsed and watching the outcome flip.
+
+**Mutation coverage: `node scripts/mutation-check.mjs`, 19 of 19 caught.** The script is committed
+rather than thrown away, because an earlier version of this note claimed a mutation count that
+nothing in the repo could reproduce, which is trust dressed up as evidence. It breaks each guard on
+purpose and restores it, including reinstating the dropped-on-timing regression and pointing the
+call to action back at a `mailto:`. The CTA mutation survived the first pass, which is how that
+guard came to exist at all. Run it before shipping anything that touches this feature; a guard that
+survives its own mutation is decoration.
 **Status (2026-08-20, later): the boot sequence regression is fixed.** The SEO commit added an
 inline failsafe that removed `booting` after 4000ms. The sequence has a 6418ms floor, so on every
 first visit the landing page was revealed 2.4 seconds early and sat underneath a BIOS screen that

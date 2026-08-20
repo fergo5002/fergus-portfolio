@@ -2554,9 +2554,12 @@ h4.prose__h {
   gap: var(--sp-1);
 }
 
-/* `--green`, not `--green-dim`. The dim token measures 4.37:1 on the amber
-   theme, and a form label is the accessible name of the field: it is the last
-   thing on the page that may be borderline. */
+/* `--green`, not `--green-dim`. A form label is the accessible name of its
+   field, so it is the last thing on the page that may be borderline, and the
+   dim token is borderline: 4.67 on green, 4.45 on amber, 4.46 on ice. It passes
+   on the one theme a developer is looking at and fails on the two a visitor can
+   reach by typing four characters at the terminal. Computed per theme in
+   app/globals.test.ts; do not quietly dim this back. */
 .cform__label {
   color: var(--green);
   font-size: 0.82rem;

@@ -82,6 +82,11 @@ variable; `CONTACT_TO_EMAIL` and `CONTACT_FROM_EMAIL` are optional overrides. Re
 `DEFAULT_FROM` docblock in `lib/contact.ts` before assuming the no-DNS default sender will deliver:
 it only reaches the address the Resend account itself is registered under.
 
+**Before shipping anything that touches this feature, run `node scripts/mutation-check.mjs`.** It
+breaks each guard on purpose and expects the suite to notice. Nineteen mutations, nineteen red at
+the time of writing. A guard that survives its own mutation is decoration, and this repo has shipped
+one of those before.
+
 As of v4 ("Phosphor") the site does not merely *depict* a CRT, it *behaves* like one. Every
 effect derives from one premise: an electron beam painting phosphor behind glass. Scroll
 velocity is beam velocity, the cursor is a magnet near the tube, a route change is a channel
