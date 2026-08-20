@@ -78,9 +78,16 @@ of building that page:
   Never give a soft signal the power to delete.
 
 Sending goes through Resend over plain `fetch`, no SDK. `RESEND_API_KEY` is the only required
-variable; `CONTACT_TO_EMAIL` and `CONTACT_FROM_EMAIL` are optional overrides. Read the
-`DEFAULT_FROM` docblock in `lib/contact.ts` before assuming the no-DNS default sender will deliver:
-it only reaches the address the Resend account itself is registered under.
+variable and it **is set** on the Vercel project (production, preview and development), with a copy
+in the DPAPI vault. `CONTACT_TO_EMAIL` and `CONTACT_FROM_EMAIL` are optional overrides and neither
+is set.
+
+**Do not move the destination without reading the `DEFAULT_FROM` docblock in `lib/contact.ts`
+first.** The sender is Resend's shared `onboarding@resend.dev`, which needs no DNS but may only
+deliver to the address the Resend account is registered under. That happens to be the same address
+the form sends to, which is the only reason the zero-config setup works. Point `CONTACT_TO_EMAIL`
+anywhere else without first verifying a domain and setting `CONTACT_FROM_EMAIL`, and every send
+starts coming back 403.
 
 **Before shipping anything that touches this feature, run `node scripts/mutation-check.mjs`.** It
 breaks each guard on purpose and expects the suite to notice. Nineteen mutations, nineteen red at

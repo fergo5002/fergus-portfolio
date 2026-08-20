@@ -11,12 +11,18 @@
 it did nothing whatsoever. Fergus reported it as a dead button. There is now a `/contact` route with
 a working form.
 
-> [!important] It needs one thing from Fergus before it can actually send
-> The Vercel project `fergus-portfolio` has **no environment variables at all** (checked over the
-> API on 2026-08-20). Until `RESEND_API_KEY` is set, every submission takes the `failed` path: the
-> visitor gets their message handed back as a pre-filled `mailto:` plus a copy button, and the
-> address is printed on the page regardless. That is a working page, not a dead button, but it is
-> not yet a working form. Setting the key is the whole switch-on.
+> [!tip] Sending is live as of 2026-08-20
+> `RESEND_API_KEY` is set on the Vercel project for production, preview and development, and a copy
+> lives in the DPAPI vault (`Get-AuthSecret -Name RESEND_API_KEY`) so no future session needs to ask
+> for it again. Proved end to end against production, not asserted: two submissions through the live
+> form arrived in `oreillferg@gmail.com`, **in the inbox rather than spam**, with SPF, DKIM (both
+> `resend.dev` and `amazonses.com`) and DMARC all passing, `Reply-To` set to the visitor's address
+> rather than ours, and the fast one correctly subject-tagged `[fast]` **and still delivered**.
+>
+> Sender is still the shared `onboarding@resend.dev`, which needs no DNS but may only deliver to the
+> address the Resend account is registered under. That is `oreillferg@gmail.com`, which is also
+> where the form sends, so it works. Moving the destination anywhere else means verifying a domain
+> and setting `CONTACT_FROM_EMAIL` first, or every send starts returning 403.
 
 How it is built, and why each piece:
 - `lib/contact.ts` is the client-safe half (limits, `validateContact`, `looksAutomated`,
