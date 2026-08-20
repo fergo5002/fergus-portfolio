@@ -396,11 +396,15 @@ describe("BootSequence is wired to the failsafe", () => {
   });
 
   it("hands ownership back if it unmounts before finishing", () => {
-    expect(src).toMatch(/!finishedRef\.current[^\n]*armBootFailsafe/);
+    // `\b` matters: `armBootFailsafe` is a substring of `disarmBootFailsafe`, so
+    // without the boundary this would happily accept a cleanup that disarmed a
+    // second time and left nothing to reveal the page. `s` and `a` are both word
+    // characters, so the boundary cannot match inside the longer name.
+    expect(src).toMatch(/!finishedRef\.current[\s\S]{0,120}\barmBootFailsafe\(/);
   });
 
   it("arms a watchdog against stalling", () => {
-    expect(src).toMatch(/setTimeout\([^\n]*finishRef\.current\(\)[^\n]*BOOT_WATCHDOG_MS/);
+    expect(src).toMatch(/setTimeout\([\s\S]{0,120}finishRef\.current\(\)[\s\S]{0,120}BOOT_WATCHDOG_MS/);
   });
 
   it("clears both of its own timers on unmount", () => {
@@ -412,5 +416,13 @@ describe("BootSequence is wired to the failsafe", () => {
     // Separated by the power-on flourish, a throw between them stranded the
     // overlay on top of a visible site.
     expect(src).toMatch(/classList\.remove\(BOOTING_CLASS\);\s*\n\s*setBooting\(false\);/);
+  });
+
+  it("keeps the flourish from being able to strand the overlay", () => {
+    // The adjacency above is the belt. This is the braces: whatever runs after
+    // the reveal is wrapped, so a failure in decoration cannot take the page
+    // with it, and cannot escape when the watchdog is the caller (a throw inside
+    // a setTimeout callback reaches no error boundary at all).
+    expect(src).toMatch(/setBooting\(false\);[\s\S]{0,400}\btry\s*\{[\s\S]{0,400}degauss\(\)/);
   });
 });

@@ -129,5 +129,11 @@ describe("the prose rules use the token that passes", () => {
     const glow = /text-shadow:[^;]*var\(--glow\)/;
     expect(rule(".heroname__plain")).toMatch(glow);
     expect(rule(".heroname__ch")).toMatch(glow);
+    // The h1 itself is what the plain copy used to inherit from, and it had the
+    // green literal hardcoded, which is what made the flash a hue shift on amber
+    // and ice rather than a change of radius. Nothing visible inherits it today,
+    // so without this line the literal could come back and every test would stay
+    // green on the one rule whose comment warns against exactly that.
+    expect(rule(".hero__name")).toMatch(glow);
   });
 });

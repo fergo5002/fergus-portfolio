@@ -95,8 +95,9 @@ export default function BootSequence({ children }: { children: React.ReactNode }
       // the watchdog is cleared on the line above, and the visitor is looking at
       // a blank tube with no way out but a reload. That is the same class of
       // fault as the one this file was just fixed for, and it is one that
-      // removing a safety net always creates. A render error in any sibling on
-      // the landing page reaches it, and so does Fast Refresh.
+      // removing a safety net always creates. Clicking any nav link while the
+      // BIOS is typing reaches it, since this component lives in app/page.tsx.
+      // So does a render error in anything it wraps, and Fast Refresh.
       if (!finishedRef.current) armBootFailsafe(BOOT_REARM_MS);
     };
   }, [frame, audio]);

@@ -30,10 +30,12 @@
  *  - ...and then unmounted ..... the failsafe again, re-armed at `BOOT_REARM_MS`
  *
  * That last row is the one that is easy to miss. Disarming a safety net means
- * inheriting every case it was quietly covering, and an unmount mid-boot (a
- * render error in a sibling, an `error.tsx` boundary, Fast Refresh) would
+ * inheriting every case it was quietly covering, and an unmount mid-boot would
  * otherwise leave `booting` set with no timer anywhere to clear it, which is a
- * blank page with no recovery short of a reload.
+ * blank page with no recovery short of a reload. It is reached by a plain click:
+ * `BootSequence` lives in `app/page.tsx`, so navigating off the landing page
+ * while the BIOS is typing unmounts it. A render error in any of the components
+ * it wraps does the same, as does an `error.tsx` boundary or Fast Refresh.
  */
 
 export const HEAD_LINES = [
@@ -89,9 +91,10 @@ export function typewriterMs(
  * term is a timer or a rAF-driven ramp that the browser may run late and can
  * never run early.
  *
- * Documentation, and the input to nothing. It is recorded because getting it
- * wrong by 2.4 seconds is what caused the bug at the top of this file, not
- * because any delay here is derived from it.
+ * No delay in this file is derived from it. It is recorded because getting it
+ * wrong by 2.4 seconds is what caused the bug at the top of this file, and it is
+ * asserted against `BOOT_WATCHDOG_MS` in the tests, since the watchdog is the
+ * one remaining timer that can cut a live sequence short.
  */
 export const BOOT_FLOOR_MS =
   STRIKE_MS +
@@ -203,8 +206,9 @@ export function disarmBootFailsafe(): void {
 
 /**
  * Hands ownership of the reveal back to the failsafe, for when `BootSequence`
- * goes away before it finished: a render error in a sibling component, an
- * `error.tsx` boundary taking over, Fast Refresh in development.
+ * goes away before it finished: a navigation off the landing page mid-boot, a
+ * render error in one of the components it wraps, an `error.tsx` boundary taking
+ * over, Fast Refresh in development.
  *
  * A no-op when the page is not hidden, so returning ownership after a normal
  * finish cannot resurrect a timer that would do nothing.
