@@ -58,11 +58,15 @@ export default function robots(): MetadataRoute.Robots {
         //   1. The inline pre-paint script in `app/layout.tsx` is inline, so it
         //      always runs, and on "/" it adds `booting` to <html>.
         //   2. `.booting .screen/.nav/.statusbar` are `visibility: hidden`.
-        //   3. The only code that clears `booting` is `BootSequence`, which
+        //   3. The code that clears `booting` properly is `BootSequence`, which
         //      ships in a chunk under `/_next/static/chunks/`.
         //
         // A crawler that renders but honours the disallow therefore sets the
-        // class, never loads the code that clears it, and sees an empty page.
+        // class, never loads the code that clears it, and sees an empty page
+        // for `BOOT_FAILSAFE_MS` (lib/boot.ts). The inline script does clear the
+        // class itself after that, so the exposure is bounded rather than
+        // permanent, but it is bounded by a delay chosen for humans on a bad
+        // connection, not by anything a renderer is guaranteed to wait out.
         // The named AI crawlers below would have been fine, because each gets
         // its own group and ignores this one, so the page carrying the Person
         // graph would have gone blank for Google and nobody else. Every status

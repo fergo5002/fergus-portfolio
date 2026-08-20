@@ -5,6 +5,8 @@ import Typewriter from "./Typewriter";
 import { useSystem } from "@/components/system/SystemProvider";
 import {
   BAR_MS,
+  BOOTING_CLASS,
+  BOOT_REARM_MS,
   BOOT_WATCHDOG_MS,
   DEVICE_LINES,
   DEVICE_SPEED_MS,
@@ -15,6 +17,7 @@ import {
   MEMORY_MS,
   SESSION_KEY,
   STRIKE_MS,
+  armBootFailsafe,
   disarmBootFailsafe,
 } from "@/lib/boot";
 
@@ -42,24 +45,19 @@ export default function BootSequence({ children }: { children: React.ReactNode }
   const [progress, setProgress] = useState(0);
   const { frame, degauss, burstRain, audio } = useSystem();
   const finishedRef = useRef(false);
-  // Read by the watchdog below. Held in a ref rather than listed as an effect
-  // dependency: `finish` is rebuilt whenever the system context identity moves,
-  // and re-running the mount effect would restrike the tube mid-sequence.
+  // Read by the watchdog below. Held in a ref rather than named as an effect
+  // dependency so that the mount effect keeps a stable identity: re-running it
+  // would restrike the tube mid-sequence.
   const finishRef = useRef<() => void>(() => {});
 
   useEffect(() => {
-    // Disarm the inline failsafe in <head>. Its entire purpose is to reveal the
-    // page if this component never runs, and this component is now running, so
-    // the timer has no job left. Unconditional and first: if it were left armed
-    // it would strip `booting` on a fixed timer while the sequence was still
-    // typing, which is exactly the bug that put the landing page on screen
-    // underneath a live BIOS screen. See lib/boot.ts.
-    disarmBootFailsafe();
-
     // The pre-paint script in <head> already decided whether to boot (session +
     // reduced-motion check) and flagged <html> as .booting. Derive from that so we
     // never flip false->true after first paint (which caused the content flash).
-    if (!document.documentElement.classList.contains("booting")) return;
+    //
+    // Nothing to disarm on the paths that fall out here: the inline script only
+    // arms its failsafe on the same branch that adds the class.
+    if (!document.documentElement.classList.contains(BOOTING_CLASS)) return;
 
     setBooting(true);
     const f = frame.current;
@@ -77,16 +75,29 @@ export default function BootSequence({ children }: { children: React.ReactNode }
       setPhase("head");
     }, STRIKE_MS);
 
-    // Covers the one case disarming the inline failsafe opens up: this component
+    // Covers the case disarming the inline failsafe opens up: this component
     // mounted, took ownership of the reveal, and then stalled part-way (a
     // typewriter whose onDone never fires, a rAF loop that never gets a frame).
     // Goes through finish() rather than stripping the class, so the tube still
     // powers on properly instead of the overlay simply vanishing.
     const watchdog = window.setTimeout(() => finishRef.current(), BOOT_WATCHDOG_MS);
 
+    // Take ownership only once the replacement is actually in place. Disarming
+    // first would leave a window, however narrow, in which a throw above has cut
+    // the safety net before this component armed its own.
+    disarmBootFailsafe();
+
     return () => {
       window.clearTimeout(strike);
       window.clearTimeout(watchdog);
+      // Hand ownership back. Without this, unmounting before finish() leaves
+      // `booting` set with no timer anywhere: the inline failsafe is cancelled,
+      // the watchdog is cleared on the line above, and the visitor is looking at
+      // a blank tube with no way out but a reload. That is the same class of
+      // fault as the one this file was just fixed for, and it is one that
+      // removing a safety net always creates. A render error in any sibling on
+      // the landing page reaches it, and so does Fast Refresh.
+      if (!finishedRef.current) armBootFailsafe(BOOT_REARM_MS);
     };
   }, [frame, audio]);
 
@@ -99,31 +110,47 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     } catch {
       /* ignore storage errors (private mode) */
     }
-    document.documentElement.classList.remove("booting"); // reveal content
-
-    // Whatever the sequence had reached, the tube is fully up from here.
+    // Reveal the page and drop the overlay together, before anything that could
+    // throw. These two used to be separated by the power-on flourish, so a
+    // failure in the middle of it left the BIOS screen stranded on top of a
+    // visible site: the exact symptom this file was just fixed for, reached by a
+    // different route. Plain property writes on `frame` sit here too, since they
+    // cannot throw and the tube should be up whatever else happens.
     const f = frame.current;
     f.bootTarget = 1;
     if (f.boot < 0.6) f.boot = 0.6;
-
-    // Degauss thump, then the CRT power-on so the revealed site "switches on"
-    // rather than popping in, with the beam briefly at full for the flourish.
-    degauss();
-    burstRain(1400);
     f.targetLive = 1;
 
-    const el = document.querySelector(".screen");
-    const nav = document.querySelector(".nav");
-    el?.classList.add("power-on");
-    nav?.classList.add("power-on");
-    window.setTimeout(() => {
-      el?.classList.remove("power-on");
-      nav?.classList.remove("power-on");
-    }, 680);
-
+    document.documentElement.classList.remove(BOOTING_CLASS);
     setBooting(false);
+
+    // Decoration from here down: the degauss thump and the CRT power-on that
+    // make the revealed site "switch on" rather than pop in. Wrapped because
+    // nothing below is worth stranding an overlay for, and when the watchdog is
+    // the caller this runs inside a setTimeout where no error boundary can catch
+    // it anyway.
+    try {
+      degauss();
+      burstRain(1400);
+
+      const el = document.querySelector(".screen");
+      const nav = document.querySelector(".nav");
+      el?.classList.add("power-on");
+      nav?.classList.add("power-on");
+      window.setTimeout(() => {
+        el?.classList.remove("power-on");
+        nav?.classList.remove("power-on");
+      }, 680);
+    } catch {
+      /* the site is already up; the flourish is not worth a broken page */
+    }
   }, [degauss, burstRain, frame]);
-  finishRef.current = finish;
+
+  // Written in an effect rather than during render: React may discard a render
+  // under concurrent features, and writing a ref in the body is not safe there.
+  useEffect(() => {
+    finishRef.current = finish;
+  });
 
   // ── memory test ───────────────────────────────────────────────────────────
   useEffect(() => {
