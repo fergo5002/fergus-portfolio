@@ -5,6 +5,65 @@
 
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
+
+**Status (2026-08-20, latest): the "Email me" button goes to a real page.** It was an
+`<a href="mailto:...">` with a pre-filled subject, and on a machine with no mail client registered
+it did nothing whatsoever. Fergus reported it as a dead button. There is now a `/contact` route with
+a working form.
+
+> [!important] It needs one thing from Fergus before it can actually send
+> The Vercel project `fergus-portfolio` has **no environment variables at all** (checked over the
+> API on 2026-08-20). Until `RESEND_API_KEY` is set, every submission takes the `failed` path: the
+> visitor gets their message handed back as a pre-filled `mailto:` plus a copy button, and the
+> address is printed on the page regardless. That is a working page, not a dead button, but it is
+> not yet a working form. Setting the key is the whole switch-on.
+
+How it is built, and why each piece:
+- `lib/contact.ts` is the client-safe half (limits, `validateContact`, `looksAutomated`,
+  `messageBody`, `mailtoFallback`). `lib/contact-server.ts` is the half that holds the key.
+  `app/contact/actions.ts` is a five-line wrapper, so every failure path is drivable by a test
+  rather than only by a stranger who has already typed a message.
+- Four outcomes: `sent`, `invalid`, `failed`, `idle`. `failed` collapses three faults of ours
+  (no key, Resend refused, request never landed) into one thing the page can act on, and all three
+  return the fields plus a `mailto:` that already contains them.
+- Sending is plain `fetch` to `https://api.resend.com/emails`. No SDK, no new dependency. The REST
+  API takes `reply_to`; only the SDKs take `replyTo`, and the camelCase spelling is accepted and
+  silently ignored, so there is a test pinning it.
+- The form works with JavaScript off, via `useActionState` and React's progressive enhancement.
+- Spam: two signals that are deliberately **not** equals. The honeypot (named `hp`, never `website`,
+  which autofill recognises and would fill) is the only thing allowed to discard a message. The
+  two-second fill floor only *marks* one, with `[fast]` in the subject, and it fails open when no
+  timing is present at all.
+
+**The review caught a genuine blocker, and it was the same bug rebuilt inside the fix.** The first
+version treated both spam signals as one predicate and silently discarded anything that tripped
+either, reporting "Sent." either way. The reasoning attached to it, "two seconds is far below any
+real typist", was true about typing and irrelevant in practice: the name and email fields carry
+`autocomplete` on purpose, so a browser profile fills both in one click, and people arrive at a
+contact form with the message already written and paste it. Autofill plus a paste plus a deliberate
+click is comfortably under two seconds. A real visitor would have been told their message sent while
+it went in the bin, which is exactly the failure this page was built to remove. The timing signal
+can no longer drop anything.
+
+Four smaller findings from the same review went with it: `lib/contact-server.ts` gained a runtime
+browser fence plus a test that no `"use client"` file imports it (chosen over adding the
+`server-only` package, since the repo has a standing rule about dependencies); the deliberate
+check-order in the action is now tested with a bot that *also* has invalid fields, which is the only
+shape that would notice a swap; the `--green-dim` contrast assertion now names each theme with its
+real ratio (4.67 on green, 4.45 on amber, 4.46 on ice) instead of one loose bound that proved
+nothing; and `components/ContactForm.tsx` and `components/Talk.tsx` gained `lib/boot.test.ts`-style
+coupling checks.
+
+**Verification.** 425 tests green; `npx tsc --noEmit` clean; `npm run build` clean at 30 static
+pages; the `Dockerfile.parity` container built from the lockfile on Node 24 and behaved identically.
+Every path was driven with JavaScript entirely absent by POSTing the multipart form with its
+`$ACTION*` fields: valid, invalid address, short message, honeypot, too-fast, and no-timing. A real
+request to Resend with a deliberately invalid key returned 401 and produced the fallback rather than
+an error boundary. In a browser, the client-side stamp was proved to reach the action by pinning
+`Date.now` so it computed a negative elapsed and watching the outcome flip. **Eighteen mutations
+were applied to the new guards and all eighteen turned the suite red**, including reinstating the
+dropped-on-timing regression and pointing the call to action back at a `mailto:`. The CTA mutation
+survived the first pass, which is how that guard came to exist.
 **Status (2026-08-20, later): the boot sequence regression is fixed.** The SEO commit added an
 inline failsafe that removed `booting` after 4000ms. The sequence has a 6418ms floor, so on every
 first visit the landing page was revealed 2.4 seconds early and sat underneath a BIOS screen that

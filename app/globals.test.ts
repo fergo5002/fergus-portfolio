@@ -102,12 +102,64 @@ describe("the prose rules use the token that passes", () => {
     return m[1];
   };
 
-  it.each([".prose", ".writing__desc", ".talk__line", ".page__lede"])(
-    "%s does not use --green-faint for body text",
-    (selector) => {
-      expect(rule(selector)).not.toMatch(/color:\s*var\(--green-faint\)/);
-    },
-  );
+  it.each([
+    ".prose",
+    ".writing__desc",
+    ".talk__line",
+    ".page__lede",
+    ".cform__panel-body",
+    ".cform__input",
+  ])("%s does not use --green-faint for body text", (selector) => {
+    expect(rule(selector)).not.toMatch(/color:\s*var\(--green-faint\)/);
+  });
+
+  /**
+   * A form label is the accessible name of its field, so it is the last thing
+   * on the site that may be borderline. The terminal chrome uses `--green-dim`
+   * freely, and it must not spread to a label.
+   *
+   * Measured from the tokens rather than eyeballed, because the numbers are the
+   * whole trap. `--green-dim` on `--bg` is **4.67 on green, 4.45 on amber and
+   * 4.46 on ice**: it passes on the one theme a developer is looking at and
+   * fails on the two a visitor can reach with four characters at the terminal.
+   * The assertions below name each theme separately for exactly that reason. A
+   * loop asserting one loose bound across all three would have been green
+   * whether or not the claim above it was true.
+   */
+  it("labels the contact fields with the token that passes on every theme", () => {
+    expect(rule(".cform__label")).toMatch(/color:\s*var\(--green\)/);
+    expect(rule(".cform__label")).not.toMatch(/color:\s*var\(--green-dim\)/);
+  });
+
+  it("records why --green-dim cannot be a label, theme by theme", () => {
+    const dim = (name: string) => {
+      const vars = THEMES.find((t) => t[0] === name)?.[1];
+      if (!vars) throw new Error(`no theme ${name}`);
+      return ratio(hex(vars["--green-dim"]), hex(vars["--bg"]));
+    };
+
+    // Passes here, which is how it would have shipped.
+    expect(dim(":root")).toBeGreaterThanOrEqual(4.5);
+    // And fails on both of the others, which is why it cannot be used.
+    expect(dim('html[data-theme="amber"]')).toBeLessThan(4.5);
+    expect(dim('html[data-theme="ice"]')).toBeLessThan(4.5);
+  });
+
+  /**
+   * The error messages under a rejected field. Red on near-black is not close
+   * to the floor on any theme, but it is the one colour on the form a visitor
+   * is required to read in order to fix something, so it gets checked rather
+   * than assumed.
+   */
+  it("keeps the field error text readable on every theme", () => {
+    expect(rule(".cform__error")).toMatch(/color:\s*var\(--red\)/);
+    for (const [name, vars] of THEMES) {
+      // `--red` is defined once on :root and deliberately not re-themed, so
+      // every theme reads the same literal against its own background.
+      const red = vars["--red"] ?? tokens(":root")["--red"];
+      expect(ratio(hex(red), hex(vars["--bg"])), name).toBeGreaterThanOrEqual(4.5);
+    }
+  });
 
   it("keeps the glow off long-form prose", () => {
     // A text-shadow halo on every character is correct for a ten word terminal

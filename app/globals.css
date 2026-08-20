@@ -1783,6 +1783,12 @@ html.js .exp__spine {
   .term__input {
     font-size: 16px;
   }
+  /* Same reason, and it matters more here: the contact form is the one place on
+     the site a visitor types something long, so having iOS yank the layout
+     sideways on the first tap would be worse than on the toy terminal. */
+  .cform__input {
+    font-size: 16px;
+  }
   .term__scroll {
     max-height: 190px;
     font-size: 0.84rem;
@@ -1815,6 +1821,16 @@ html.js .exp__spine {
   }
   a:active {
     color: var(--amber-bright);
+  }
+  /* Keyed on the input rather than the width, like the rest of this block. The
+     contact buttons are ~34px tall from their padding alone, and a thumb needs
+     44. The failure panel's two escape hatches are the last thing that should
+     be fiddly to hit. */
+  .cform__submit,
+  .cform__alt {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
   }
 }
 
@@ -2433,4 +2449,213 @@ h4.prose__h {
   display: inline-block;
   white-space: pre-wrap;
   text-shadow: var(--glow);
+}
+
+/* ── contact form (/contact) ───────────────────────────────────────────────
+   The page that replaced the dead `mailto:` button.
+
+   Deliberately plainer than the rest of the site. Everywhere else the terminal
+   premise wins; this is the one surface a visitor has to type into, so the
+   inputs get a real border, a real focus ring and no glow, rather than the
+   invisible prompt treatment `.term__input` uses. An affordance you have to
+   guess at is fine on a toy shell and not fine on a form. */
+
+.cform {
+  max-width: 62ch;
+}
+
+/* Left in the DOM even when empty, because it is the `aria-live` region: a
+   region inserted at the same moment as its content is not reliably announced.
+   It has no height when empty, so only the gap needs suppressing. */
+.cform__result:not(:empty) {
+  margin-bottom: var(--sp-4);
+}
+
+.cform__panel {
+  border: 1px solid var(--green-line);
+  border-left: 3px solid var(--amber);
+  background: var(--bg-panel-2);
+  padding: var(--sp-3) var(--sp-4);
+}
+
+.cform__panel.is-sent {
+  border-left-color: var(--green);
+}
+
+.cform__panel.is-failed {
+  border-left-color: var(--red);
+}
+
+.cform__panel-title {
+  font-family: var(--font-screen);
+  font-size: 1.05rem;
+  color: var(--amber);
+  margin: 0 0 var(--sp-2);
+}
+
+.cform__panel.is-sent .cform__panel-title {
+  color: var(--green-bright);
+}
+
+.cform__panel.is-failed .cform__panel-title {
+  color: var(--red);
+}
+
+.cform__panel-body {
+  color: var(--green);
+  text-shadow: none;
+  margin: 0 0 var(--sp-3);
+}
+
+.cform__panel-body:last-child {
+  margin-bottom: 0;
+}
+
+.cform__panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin: 0;
+}
+
+/* The escape hatches on a failed send. A link and a button that have to read as
+   equals, because either one of them may be the one that works. */
+.cform__alt {
+  display: inline-block;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--green-bright);
+  font: inherit;
+  padding: var(--sp-2) var(--sp-3);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.cform__alt:hover,
+.cform__alt:focus-visible {
+  background: var(--green-bright);
+  border-color: var(--green-bright);
+  color: var(--bg);
+  text-shadow: none;
+}
+
+.cform__form {
+  display: grid;
+  gap: var(--sp-3);
+}
+
+.cform__row {
+  display: grid;
+  gap: var(--sp-1);
+}
+
+/* `--green`, not `--green-dim`. The dim token measures 4.37:1 on the amber
+   theme, and a form label is the accessible name of the field: it is the last
+   thing on the page that may be borderline. */
+.cform__label {
+  color: var(--green);
+  font-size: 0.82rem;
+}
+
+.cform__input {
+  width: 100%;
+  min-width: 0;
+  background: var(--bg-panel);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  color: var(--green-bright);
+  caret-color: var(--green-bright);
+  font: inherit;
+  padding: var(--sp-2) var(--sp-3);
+  text-shadow: none;
+}
+
+.cform__input::placeholder {
+  color: var(--green-dim);
+}
+
+.cform__input:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+  border-color: var(--amber);
+}
+
+.cform__input[aria-invalid="true"] {
+  border-color: var(--red);
+}
+
+textarea.cform__input {
+  resize: vertical;
+  min-height: 9rem;
+  line-height: 1.6;
+}
+
+.cform__error {
+  color: var(--red);
+  font-size: 0.82rem;
+  text-shadow: none;
+  margin: 0;
+}
+
+/* The honeypot. Off-screen rather than `display: none`, because a field that is
+   not rendered at all is one a bot can see is not worth filling.
+
+   Positioned rather than clipped on purpose: `clip-path` is banned elsewhere in
+   this file for hiding things, since IntersectionObserver folds an element's
+   own clip into its intersection rect. Nothing observes this element, but a
+   second exception is a second thing to remember. */
+.cform__hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.cform__submit {
+  justify-self: start;
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--amber);
+  font: inherit;
+  padding: var(--sp-2) var(--sp-4);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.cform__submit:hover:not(:disabled),
+.cform__submit:focus-visible {
+  background: var(--amber);
+  color: var(--bg);
+  text-shadow: none;
+}
+
+.cform__submit:disabled {
+  opacity: 0.65;
+  cursor: progress;
+}
+
+/* The address, printed under the form rather than hidden behind it. Somebody
+   who would rather not type into a stranger's form should not have to, and if
+   the send fails the thing they need is already on screen. */
+.cdirect {
+  margin-top: var(--sp-6);
+  border-top: 1px solid var(--green-line);
+  padding-top: var(--sp-4);
+  max-width: 62ch;
+}
+
+.cdirect__title {
+  font-family: var(--font-screen);
+  font-size: 1rem;
+  color: var(--amber);
+  margin: 0 0 var(--sp-3);
 }

@@ -7,8 +7,9 @@ before touching code. (Claude Code, Cursor, Copilot, and others read `AGENTS.md`
 
 **FergusOS Terminal**: Patrick Fergus O'Reilly's personal portfolio, styled as a retro CRT
 computer terminal (green phosphor + amber accent, scanlines, boot sequence, interactive
-command line). Five routes: landing (`/`), experience (`/experience`), projects
-(`/projects`), writing index (`/writing`) and articles (`/writing/[slug]`).
+command line). Six routes: landing (`/`), experience (`/experience`), projects
+(`/projects`), writing index (`/writing`), articles (`/writing/[slug]`) and contact
+(`/contact`).
 
 **The site is also a search and answer-engine surface**, which is a second set of constraints on
 top of the CRT premise and does not bend to it. Every route carries a canonical URL and JSON-LD;
@@ -51,6 +52,35 @@ path. Two rules came out of getting it wrong, both of which shipped:
 `lib/boot.test.ts` executes the real inline script against a stub DOM. Its `BootSequence` greps are
 a coupling check only: vitest runs in a `node` environment here, so nothing can mount the component.
 If you change the boot path, delete your fix and confirm the suite goes red before trusting it.
+
+**Nothing on this site may fail silently, and `/contact` is where that rule was written down.** The
+call to action was an `<a href="mailto:...">` labelled "Email me", and on a machine with no mail
+client registered, which is most of them, clicking it does nothing at all: no error, no tab, no
+feedback. Fergus reported it as a dead button. It now goes to `/contact`, and three rules came out
+of building that page:
+
+- **A control that can do nothing must not be rendered.** The copy button on the failure panel is
+  rendered only once `navigator.clipboard.writeText` is known to exist, and the `mailto:` escape
+  hatch is offered beside it rather than instead of it, precisely because a `mailto:` is the thing
+  that cannot be relied on.
+- **The form works with JavaScript off.** It is a real `<form>` posting to a server action,
+  enhanced by `useActionState` rather than dependent on it. `key={state.seq}` on each input is what
+  survives React's post-action form reset with the visitor's words still in it. Prove it the way it
+  was proved the first time: POST the multipart form with its `$ACTION*` hidden fields against a
+  production build and read the outcome off the HTML that comes back.
+- **A spam filter that can misfire on a human is worse than the spam.** A caught submission is
+  reported as "sent" without sending, so anything that can trip it on a real person silently eats
+  their message. Two consequences, and the second one shipped as a bug before review caught it:
+  the honeypot is named `hp` and not `website`, because a name a browser's autofill recognises is
+  a name it will fill; and **only the honeypot may discard anything.** The timing floor merely
+  marks a message with `[fast]` in the subject. It used to drop them, which meant a visitor who
+  autofilled two fields and pasted a prepared message was told "Sent." while it went nowhere.
+  Never give a soft signal the power to delete.
+
+Sending goes through Resend over plain `fetch`, no SDK. `RESEND_API_KEY` is the only required
+variable; `CONTACT_TO_EMAIL` and `CONTACT_FROM_EMAIL` are optional overrides. Read the
+`DEFAULT_FROM` docblock in `lib/contact.ts` before assuming the no-DNS default sender will deliver:
+it only reaches the address the Resend account itself is registered under.
 
 As of v4 ("Phosphor") the site does not merely *depict* a CRT, it *behaves* like one. Every
 effect derives from one premise: an electron beam painting phosphor behind glass. Scroll

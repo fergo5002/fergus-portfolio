@@ -171,6 +171,27 @@ export function profilePageSchema(): JsonLdObject {
   });
 }
 
+/**
+ * `/contact`, declared as what it is.
+ *
+ * `ContactPage` is the type an answer engine looks for when somebody asks how
+ * to get in touch with a person, and pointing `mainEntity` at the same
+ * `PERSON_ID` every other page uses is what makes it an answer about Fergus
+ * rather than about a form.
+ */
+export function contactPageSchema(): JsonLdObject {
+  return prune({
+    "@type": "ContactPage",
+    "@id": `${absolute("/contact")}#page`,
+    url: absolute("/contact"),
+    name: `Contact ${profile.shortName}`,
+    description: `How to reach ${profile.shortName}.`,
+    isPartOf: { "@id": WEBSITE_ID },
+    about: { "@id": PERSON_ID },
+    mainEntity: { "@id": PERSON_ID },
+  });
+}
+
 export function breadcrumbSchema(trail: { name: string; path: string }[]): JsonLdObject {
   return {
     "@type": "BreadcrumbList",

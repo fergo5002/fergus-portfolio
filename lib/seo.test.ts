@@ -11,6 +11,7 @@ import {
   personSchema,
   websiteSchema,
   profilePageSchema,
+  contactPageSchema,
   projectsPageSchema,
   experiencePageSchema,
   blogSchema,
@@ -151,6 +152,20 @@ describe("websiteSchema and profilePageSchema", () => {
     const page = profilePageSchema();
     expect((page.mainEntity as JsonLdObject)["@id"]).toBe(PERSON_ID);
     expect((page.isPartOf as JsonLdObject)["@id"]).toBe(WEBSITE_ID);
+  });
+
+  /**
+   * `ContactPage` is the type an answer engine looks for when somebody asks how
+   * to get in touch with a person. Pointing `mainEntity` at the shared
+   * `PERSON_ID` rather than describing a new entity is what makes it an answer
+   * about Fergus instead of an answer about a form.
+   */
+  it("declares the contact page as a ContactPage about the same person", () => {
+    const page = contactPageSchema();
+    expect(page["@type"]).toBe("ContactPage");
+    expect((page.mainEntity as JsonLdObject)["@id"]).toBe(PERSON_ID);
+    expect((page.isPartOf as JsonLdObject)["@id"]).toBe(WEBSITE_ID);
+    expect(page.url).toBe(`${SITE_URL}/contact`);
   });
 });
 

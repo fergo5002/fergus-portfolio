@@ -21,6 +21,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: absolute("/"), changeFrequency: "monthly", priority: 1 },
     { url: absolute("/projects"), changeFrequency: "monthly", priority: 0.8 },
     { url: absolute("/experience"), changeFrequency: "monthly", priority: 0.8 },
+    // Listed despite having no nav entry. It is the destination of the call to
+    // action on every other page, so a crawler that only follows the nav would
+    // never reach it.
+    { url: absolute("/contact"), changeFrequency: "yearly", priority: 0.6 },
     {
       url: absolute("/writing"),
       changeFrequency: "weekly",

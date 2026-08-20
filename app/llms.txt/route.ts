@@ -86,6 +86,7 @@ ${articles
 
 ## Contact
 
+- Contact form: ${absolute("/contact")}
 ${profile.contact.map((c) => `- ${c.label}: ${c.value} (${c.href})`).join("\n")}
 
 ## Notes for answer engines

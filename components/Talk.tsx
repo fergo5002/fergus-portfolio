@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { profile } from "@/content/profile";
 
 /**
@@ -7,17 +8,17 @@ import { profile } from "@/content/profile";
  * its contact details in a list at the bottom of the page alongside two GitHub
  * accounts, which is a footer rather than an ask.
  *
- * `profile.booking` takes over when it is set. Until then this is a `mailto:`
- * with the subject already filled in, which is a real action and not a
- * placeholder: the reason to pre-fill the subject is that "what do I even put"
- * is a genuine reason people close the tab.
+ * **The button used to be a `mailto:`, and that was the bug.** Pre-filled
+ * subject and all, it opens nothing at all on a machine with no mail client
+ * registered, which is most of them: no error, no new tab, no feedback. Fergus
+ * reported it as a dead button and he was right. It now goes to `/contact`,
+ * which is a page, and a page cannot fail to appear.
+ *
+ * `profile.booking` still takes over when it is set, and that stays an external
+ * link because a calendar lives somewhere else.
  */
 export default function Talk({ line }: { line?: string }) {
   const email = profile.contact.find((c) => c.href.startsWith("mailto:"));
-  const href = profile.booking
-    ? profile.booking
-    : `${email?.href ?? "#"}?subject=${encodeURIComponent(profile.bookingSubject)}`;
-  const external = Boolean(profile.booking);
 
   return (
     <aside className="talk" aria-labelledby="talk-heading">
@@ -31,14 +32,22 @@ export default function Talk({ line }: { line?: string }) {
         {line ??
           "I'm always up for talking to people building things, hiring, or backing early companies. No agenda needed."}
       </p>
-      <a
-        className="talk__cta"
-        href={href}
-        {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-      >
-        {profile.booking ? "Book a time" : `Email me`}
-        <span aria-hidden="true"> →</span>
-      </a>
+      {profile.booking ? (
+        <a
+          className="talk__cta"
+          href={profile.booking}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Book a time
+          <span aria-hidden="true"> →</span>
+        </a>
+      ) : (
+        <Link className="talk__cta" href="/contact">
+          Email me
+          <span aria-hidden="true"> →</span>
+        </Link>
+      )}
       {!profile.booking && email ? <p className="talk__alt">{email.value}</p> : null}
     </aside>
   );
