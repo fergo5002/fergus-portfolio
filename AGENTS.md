@@ -234,6 +234,28 @@ Three rules that came out of getting it wrong:
 
 Re-check before any application or outreach push, and never round upward.
 
+## Two files in `public/` are ownership proofs. Do not delete them.
+
+Nothing in the code imports either, which is exactly the shape a later cleanup deletes.
+
+- **`google9622a76d3e2fd7ba.html`** verifies the `https://fergusoreilly.dev/` URL-prefix property
+  in Google Search Console, owned by **`fergus@tighsauna.com`**. Google re-checks it periodically,
+  so removing it un-verifies the property and the search performance data stops arriving. Its
+  contents are the single line `google-site-verification: google9622a76d3e2fd7ba.html`.
+- **`1e1c07d6835b43b5ae97096bb927a1ee.txt`** is the IndexNow key, used by `scripts/indexnow.mjs`.
+  The file's contents ARE the key, and that is the whole ownership proof, so it is deliberately
+  not a secret and is committed on purpose. Rotating it means adding a new file and changing the
+  constant in that script.
+
+**Anything in `public/` is served from the site root and is indexable**, so do not put notes,
+READMEs or working files there. This section exists because the obvious place for the note above
+was `public/README.md`, which would have been live at `fergusoreilly.dev/README.md`.
+
+Run `node scripts/indexnow.mjs --dry-run` to see what would be submitted, and without the flag to
+submit every sitemap URL to Bing. Worth running after publishing an article. Google has no
+equivalent: its sitemap ping endpoint was retired in 2023, so new pages go through Search Console
+or wait for a natural recrawl.
+
 ## Images
 
 Everything in `public/img/` is a **derived artefact built by `scripts/build-images.mjs`**. Do not
