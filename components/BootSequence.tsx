@@ -3,27 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Typewriter from "./Typewriter";
 import { useSystem } from "@/components/system/SystemProvider";
-
-const HEAD_LINES = [
-  "FergusOS BIOS v5.0   (c) 2026 Patrick Fergus O'Reilly",
-  "CPU: Trinity CS/Business @ 1.1 GHz · 3rd year, 2 cores",
-  "VIDEO: 15.625 kHz phosphor tube · aperture grille · 8 MB",
-];
-
-const DEVICE_LINES = [
-  "detecting  /dev/ambition .............. OK",
-  "mounting   /usr/presterly ............. OK",
-  "loading    personality.dll ............ OK",
-  "calibrating magnetic deflection ....... OK",
-  "arming     gravity well ............... OK",
-  "checking   caffeine reserves .......... LOW",
-];
-
-const SESSION_KEY = "fergusos_booted";
-const MEMORY_K = 65536;
-
-/** How long the tube sits dark, striking its line, before any text appears. */
-const STRIKE_MS = 420;
+import {
+  BAR_MS,
+  BOOT_WATCHDOG_MS,
+  DEVICE_LINES,
+  DEVICE_SPEED_MS,
+  HANDOFF_MS,
+  HEAD_LINES,
+  HEAD_SPEED_MS,
+  MEMORY_K,
+  MEMORY_MS,
+  SESSION_KEY,
+  STRIKE_MS,
+  disarmBootFailsafe,
+} from "@/lib/boot";
 
 type Phase = "dark" | "head" | "memory" | "devices" | "bar";
 
@@ -49,8 +42,20 @@ export default function BootSequence({ children }: { children: React.ReactNode }
   const [progress, setProgress] = useState(0);
   const { frame, degauss, burstRain, audio } = useSystem();
   const finishedRef = useRef(false);
+  // Read by the watchdog below. Held in a ref rather than listed as an effect
+  // dependency: `finish` is rebuilt whenever the system context identity moves,
+  // and re-running the mount effect would restrike the tube mid-sequence.
+  const finishRef = useRef<() => void>(() => {});
 
   useEffect(() => {
+    // Disarm the inline failsafe in <head>. Its entire purpose is to reveal the
+    // page if this component never runs, and this component is now running, so
+    // the timer has no job left. Unconditional and first: if it were left armed
+    // it would strip `booting` on a fixed timer while the sequence was still
+    // typing, which is exactly the bug that put the landing page on screen
+    // underneath a live BIOS screen. See lib/boot.ts.
+    disarmBootFailsafe();
+
     // The pre-paint script in <head> already decided whether to boot (session +
     // reduced-motion check) and flagged <html> as .booting. Derive from that so we
     // never flip false->true after first paint (which caused the content flash).
@@ -72,7 +77,17 @@ export default function BootSequence({ children }: { children: React.ReactNode }
       setPhase("head");
     }, STRIKE_MS);
 
-    return () => window.clearTimeout(strike);
+    // Covers the one case disarming the inline failsafe opens up: this component
+    // mounted, took ownership of the reveal, and then stalled part-way (a
+    // typewriter whose onDone never fires, a rAF loop that never gets a frame).
+    // Goes through finish() rather than stripping the class, so the tube still
+    // powers on properly instead of the overlay simply vanishing.
+    const watchdog = window.setTimeout(() => finishRef.current(), BOOT_WATCHDOG_MS);
+
+    return () => {
+      window.clearTimeout(strike);
+      window.clearTimeout(watchdog);
+    };
   }, [frame, audio]);
 
   const finish = useCallback(() => {
@@ -108,6 +123,7 @@ export default function BootSequence({ children }: { children: React.ReactNode }
 
     setBooting(false);
   }, [degauss, burstRain, frame]);
+  finishRef.current = finish;
 
   // ── memory test ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -115,7 +131,7 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     const started = performance.now();
     let raf = 0;
     const step = (t: number) => {
-      const p = Math.min(1, (t - started) / 900);
+      const p = Math.min(1, (t - started) / MEMORY_MS);
       setMemory(Math.floor(p * MEMORY_K));
       if (p < 1) raf = requestAnimationFrame(step);
       else setPhase("devices");
@@ -131,10 +147,10 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     let handoff = 0;
     const started = performance.now();
     const step = (t: number) => {
-      const p = Math.min(1, (t - started) / 780);
+      const p = Math.min(1, (t - started) / BAR_MS);
       setProgress(p);
       if (p < 1) raf = requestAnimationFrame(step);
-      else handoff = window.setTimeout(finish, 420);
+      else handoff = window.setTimeout(finish, HANDOFF_MS);
     };
     raf = requestAnimationFrame(step);
     return () => {
@@ -160,7 +176,11 @@ export default function BootSequence({ children }: { children: React.ReactNode }
               a millimetre tall for the first second is not an escape hatch. */}
           <div className="boot__inner">
             {phase !== "dark" && (
-              <Typewriter lines={HEAD_LINES} speed={11} onDone={() => setPhase("memory")} />
+              <Typewriter
+                lines={[...HEAD_LINES]}
+                speed={HEAD_SPEED_MS}
+                onDone={() => setPhase("memory")}
+              />
             )}
 
             {(phase === "memory" || phase === "devices" || phase === "bar") && (
@@ -170,7 +190,11 @@ export default function BootSequence({ children }: { children: React.ReactNode }
             )}
 
             {(phase === "devices" || phase === "bar") && (
-              <Typewriter lines={DEVICE_LINES} speed={8} onDone={() => setPhase("bar")} />
+              <Typewriter
+                lines={[...DEVICE_LINES]}
+                speed={DEVICE_SPEED_MS}
+                onDone={() => setPhase("bar")}
+              />
             )}
 
             {phase === "bar" && (

@@ -7,6 +7,7 @@ import Nav from "@/components/Nav";
 import SystemProvider from "@/components/system/SystemProvider";
 import { profile } from "@/content/profile";
 import JsonLd from "@/components/JsonLd";
+import { bootInlineScript } from "@/lib/boot";
 import {
   SITE_URL,
   SITE_NAME,
@@ -99,40 +100,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <head>
         <script
-          // Runs before first paint and does three things:
-          //
-          //  1. Flags `.js` on <html>. Scroll reveals hide their content behind this
-          //     class only, so a visitor without JavaScript is never left staring at
-          //     a permanently clipped block.
-          //  2. Restores the saved phosphor theme before paint, so a returning
-          //     visitor on amber never sees a flash of green.
-          //  3. On the landing page only, if this session hasn't booted and the user
-          //     allows motion, marks <html> as .booting so CSS hides content until the
-          //     boot overlay takes over. Path-gated because BootSequence (which clears
-          //     the flag) only mounts on "/": other routes must never get stuck hidden.
-          dangerouslySetInnerHTML={{
-            __html:
-              "(function(){var d=document.documentElement;d.classList.add('js');" +
-              "try{var s=JSON.parse(localStorage.getItem('fergusos_settings')||'{}');" +
-              "if(s.theme)d.dataset.theme=s.theme;" +
-              "if(s.crtEnabled===false)d.classList.add('crt-off');" +
-              "if(typeof s.scanlines==='number')d.style.setProperty('--scanline-intensity',String(s.scanlines));" +
-              "}catch(e){}" +
-              "try{if(location.pathname!=='/')return;" +
-              "var b=sessionStorage.getItem('fergusos_booted');" +
-              "var r=window.matchMedia('(prefers-reduced-motion: reduce)').matches;" +
-              "if(!b&&!r){d.classList.add('booting');" +
-              // Failsafe. `booting` hides the page, and the only code that
-              // clears it lives in a JS chunk. If that chunk never arrives, for
-              // any reason (a blocked subresource, a network failure, a crawler
-              // that renders but fetches selectively), the visitor is left
-              // staring at a page that is permanently invisible. This script is
-              // inline and therefore always runs, so it is the one place a
-              // guarantee can live. Four seconds is longer than the boot
-              // animation, so nobody who gets the JS ever sees this fire.
-              "setTimeout(function(){d.classList.remove('booting');},4000);" +
-              "}}catch(e){}})();",
-          }}
+          // Built and documented in lib/boot.ts, where it can be executed by a
+          // test. It was a string literal here, and that is precisely how a two
+          // and a half second error in it reached production unnoticed: an
+          // inline string is the one part of this file nothing can assert on.
+          dangerouslySetInnerHTML={{ __html: bootInlineScript() }}
         />
       </head>
       <body>

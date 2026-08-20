@@ -114,4 +114,20 @@ describe("the prose rules use the token that passes", () => {
     // readout and genuinely tiring across two thousand words.
     expect(rule(".prose")).toMatch(/text-shadow:\s*none/);
   });
+
+  /**
+   * HeroName renders the name as plain text on the server and swaps it for the
+   * per-character magnetic layer on mount. Anything that differs between the two
+   * shows up as a flash at hydration, on every load the boot sequence does not
+   * happen to be covering.
+   *
+   * One thing did. `.heroname__plain` inherited the h1's own text-shadow
+   * (0 0 4px / 0 0 16px) while `.heroname__ch` overrides it with `--glow`
+   * (0 0 2px / 0 0 7px), so the name dimmed the moment React took over.
+   */
+  it("renders the hero name with the same glow before and after hydration", () => {
+    const glow = /text-shadow:[^;]*var\(--glow\)/;
+    expect(rule(".heroname__plain")).toMatch(glow);
+    expect(rule(".heroname__ch")).toMatch(glow);
+  });
 });

@@ -2414,7 +2414,17 @@ h4.prose__h {
 /* The server-rendered hero name, before the per-character layer mounts.
    Matches the character layer's type exactly so the swap on hydration is
    invisible. See components/motion/HeroName.tsx for why the swap exists. */
+/* The pre-hydration copy of the hero name. HeroName renders this on the server
+   and swaps it for the per-character layer on mount, so the two must be
+   pixel-identical or the swap reads as a flash.
+
+   They were not. This inherited the h1's own text-shadow (4px/16px) while
+   .heroname__ch overrides it with --glow (2px/7px), so the name visibly dimmed
+   at hydration on every load the boot sequence did not cover. Geometry was
+   already fine: measured on production, splitting the string into inline-blocks
+   moves the box 0px on both axes in this font. Only the glow was out. */
 .heroname__plain {
   display: inline-block;
   white-space: pre-wrap;
+  text-shadow: var(--glow);
 }
