@@ -6,6 +6,8 @@ export const verificationGap: Article = {
   description:
     "The most expensive habit in AI-assisted development is taking a confident summary as evidence. A short protocol for closing the gap between done and proven.",
   date: "2026-08-08",
+
+  updated: "2026-08-21",
   tags: ["AI agents", "Testing", "Process", "Engineering"],
   summary:
     "A verification protocol for AI-assisted development: require pasted evidence rather than assertions, delete the fix to confirm the test actually fails, and check the live deployment rather than trusting a successful build. Covers the specific failure modes that produce false 'done' claims.",

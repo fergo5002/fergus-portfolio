@@ -6,6 +6,8 @@ export const webhookSecret: Article = {
   description:
     "A shared Shopify webhook secret is correct with one store and a cross-tenant vulnerability with two. The bug is invisible until the second customer arrives.",
   date: "2026-08-16",
+
+  updated: "2026-08-21",
   tags: ["Shopify", "Security", "Multi-tenant", "Webhooks"],
   summary:
     "In a multi-tenant Shopify app, verifying webhook HMAC against one platform-wide secret only proves the request came from one of your merchants, not the merchant it claims to be. Per-install secrets are the fix. The general rule: any secret scoped per-platform rather than per-tenant is a latent cross-tenant hole.",

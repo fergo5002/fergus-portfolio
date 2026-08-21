@@ -102,6 +102,16 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <h1 className="post__title">{article.title}</h1>
         <p className="post__meta">
           <time dateTime={article.date}>{formatDate(article.date)}</time>
+          {/* Shown only when it says something the publish date does not. A
+              visible revision date is one of the few freshness signals a
+              reader and a crawler read off the same element, and `dateModified`
+              in the BlogPosting graph is already built from this field. */}
+          {article.updated && article.updated !== article.date ? (
+            <>
+              <span aria-hidden="true"> · </span>
+              updated <time dateTime={article.updated}>{formatDate(article.updated)}</time>
+            </>
+          ) : null}
           <span aria-hidden="true"> · </span>
           {readingMinutes(article.body)} min read
           <span aria-hidden="true"> · </span>

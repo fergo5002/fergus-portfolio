@@ -6,6 +6,8 @@ export const agentsShipping: Article = {
   description:
     "Nine months of building products with coding agents. The four habits that stopped things breaking in production, and the one that mattered most.",
   date: "2026-08-18",
+
+  updated: "2026-08-21",
   tags: ["AI agents", "Engineering", "Claude Code", "Process"],
   summary:
     "Practical working practices for shipping production software with AI coding agents: proving changes with evidence rather than assertions, prod-parity containers, post-deploy verification, and a written mistake ledger the agent reads before it starts.",

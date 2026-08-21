@@ -6,6 +6,8 @@ export const acceleratorWorth: Article = {
   description:
     "One of nine from about 1,700 applicants, ten weeks in, company wound down. What the accelerator was genuinely worth, and what it could never have fixed.",
   date: "2026-08-04",
+
+  updated: "2026-08-21",
   tags: ["Startups", "Accelerators", "Founders"],
   summary:
     "An honest account of what a startup accelerator provides and what it cannot: forced deadlines and access are real value, product direction and founder alignment are not things a programme can supply. Written from the experience of a company that went through one and still wound down.",

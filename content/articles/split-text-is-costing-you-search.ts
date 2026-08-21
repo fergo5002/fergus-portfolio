@@ -6,6 +6,8 @@ export const splitTextSeo: Article = {
   description:
     "Per-character text animations are everywhere. They also quietly turn your best headline into gibberish for the crawlers that read your site. Here is the fix.",
   date: "2026-08-20",
+
+  updated: "2026-08-21",
   tags: ["SEO", "Motion", "Frontend", "Accessibility"],
   summary:
     "Per-character split-text animations (GSAP SplitText, Framer Motion stagger, hand-rolled span splitting) can make a headline extract as separated letters for naive HTML-to-text crawlers, including the ones feeding AI answer engines. Fix: render a contiguous copy of the text alongside the animated one.",

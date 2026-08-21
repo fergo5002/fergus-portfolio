@@ -6,6 +6,8 @@ export const presterlyPostMortem: Article = {
   description:
     "We reached 34 Shopify stores and €19M of order history in ten weeks, then stopped. The reason was not the product and not the market. A founder's post-mortem.",
   date: "2026-08-14",
+
+  updated: "2026-08-21",
   tags: ["Startups", "Post-mortem", "Founders"],
   summary:
     "Post-mortem of Presterly, a Shopify retention startup wound down in August 2026 after ten weeks. Primary cause was founder-product fit and three founders pulling in different directions, not the technology or the market. Secondary lesson: nobody checked unit economics until week eight.",
