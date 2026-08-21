@@ -51,7 +51,23 @@ import { detectAiEngine, posthogClientOptions, webVitalRating } from "@/lib/anal
  * the choice, not an oversight.
  */
 
-const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
+/**
+ * The project token, and only in a production build.
+ *
+ * The `NODE_ENV` half was added after review pointed out that
+ * `docs/measurement.md` claimed "development does not report" while nothing in
+ * the code made that true. It was false: `.env.local` carries the key so that
+ * `scripts/share-of-model/publish.mjs` can find it, which meant every
+ * `npm run dev` session posted real pageviews, web vitals and referral events
+ * into project 569350 next to genuine visitor data.
+ *
+ * Gated here rather than by removing the key, because the key still has to be
+ * on disk for the scripts. This also matches what `@vercel/analytics` already
+ * does on this site, so the two instruments now agree about what development
+ * means, which matters when the whole point of running both is that a
+ * disagreement between them is a signal.
+ */
+const KEY = process.env.NODE_ENV === "production" ? process.env.NEXT_PUBLIC_POSTHOG_KEY : undefined;
 
 type Capturable = { capture: (event: string, properties?: Record<string, unknown>) => void };
 

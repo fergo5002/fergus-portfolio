@@ -62,8 +62,12 @@ that, but nothing else is. Do not build a "returning visitors" insight; it canno
 **`ai_referral` is a floor, not a count.** Engines that strip the referrer and do not tag the URL
 are invisible. A rise is real, an absence is not evidence.
 
-**Development does not report.** `.env.local` sets the key, so `npm run dev` does reach the real
-project. Comment it out if that is unwanted; every call site treats an absent key as "do nothing".
+**Development does not report, and it is the code that makes that true.**
+`components/analytics/PostHogAnalytics.tsx` reads the key only when `NODE_ENV === "production"`.
+The key still sits in `.env.local` because `scripts/share-of-model/publish.mjs` needs it on disk,
+and an earlier draft of this file claimed development was silent while nothing enforced it. It was
+not: every `npm run dev` was posting real pageviews and web vitals into project 569350 beside
+genuine visitor data. Review caught the contradiction between these two sentences.
 
 ## Insights worth building
 

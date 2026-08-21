@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { NextRequest } from "next/server";
+import { CRAWLER_CAPTURE_CAP, resetCrawlerCaptureWindow } from "./lib/edge";
 import { config, middleware } from "./middleware";
 
 /**
@@ -190,5 +191,48 @@ describe("the middleware's response", () => {
       capturingEvent,
     );
     expect(scheduled, "an ordinary visitor must cost no network call").toHaveLength(0);
+  });
+
+  /**
+   * That the cap is actually wired in, not merely written.
+   *
+   * `lib/edge.test.ts` proves `shouldCaptureCrawlerVisit` counts correctly. That
+   * is a fact about a function. Deleting the call from `middleware.ts` would
+   * leave every one of those assertions green while the site went back to
+   * firing one billed write per forged request, which is the same
+   * inputs-tested-outputs-not shape that produced the redirect loop.
+   */
+  it("stops scheduling once the instance's hourly budget is spent", () => {
+    resetCrawlerCaptureWindow();
+
+    const scheduled: unknown[] = [];
+    const capturingEvent = {
+      waitUntil: (p: unknown) => scheduled.push(p),
+    } as unknown as Parameters<typeof middleware>[1];
+
+    const attempts = CRAWLER_CAPTURE_CAP + 50;
+    for (let i = 0; i < attempts; i += 1) {
+      middleware(
+        new NextRequest(
+          new Request(`https://fergusoreilly.dev/writing?i=${i}`, {
+            headers: { "user-agent": "compatible; GPTBot/1.2" },
+          }),
+        ),
+        capturingEvent,
+      );
+    }
+
+    expect(scheduled.length).toBe(CRAWLER_CAPTURE_CAP);
+    expect(scheduled.length).toBeLessThan(attempts);
+  });
+
+  it("still serves the page after the budget is spent", () => {
+    // The cap must throttle the measuring, never the site. A crawler that has
+    // exhausted the budget still gets its page.
+    resetCrawlerCaptureWindow();
+    for (let i = 0; i < CRAWLER_CAPTURE_CAP + 5; i += 1) {
+      run("https://fergusoreilly.dev/writing", "compatible; GPTBot/1.2");
+    }
+    expect(run("https://fergusoreilly.dev/writing", "compatible; GPTBot/1.2").status).toBe(200);
   });
 });

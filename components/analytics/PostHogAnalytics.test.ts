@@ -85,6 +85,27 @@ describe("PostHogAnalytics keeps the SDK out of the critical path", () => {
     expect(source).toMatch(/posthog\.init\(KEY, posthogClientOptions\(\)\)/);
   });
 
+  /**
+   * Development must not report.
+   *
+   * Review caught this as a documentation contradiction and it was worse than
+   * that: the doc said development does not report and nothing in the code made
+   * it so. The key lives in `.env.local` because the share-of-model publisher
+   * needs it on disk, so without this gate every `npm run dev` posted real
+   * pageviews and web vitals into the live project beside genuine visitors.
+   *
+   * The gate has to be on `KEY` itself rather than inside the effect, because
+   * `useReportWebVitals` reads `KEY` too and would otherwise keep queueing.
+   */
+  it("reports only from a production build", () => {
+    expect(source).toMatch(/process\.env\.NODE_ENV === "production"/);
+    // And the guard must be what defines KEY, not a second check further down
+    // that a later edit could drift away from.
+    expect(source).toMatch(
+      /const KEY =\s*process\.env\.NODE_ENV === "production" \? process\.env\.NEXT_PUBLIC_POSTHOG_KEY : undefined;/,
+    );
+  });
+
   it("reads the referrer and campaign tag at mount, not after the import resolves", () => {
     // `location.search` is mutable across a client-side navigation, so reading
     // it inside the `.then` would attribute an arrival to the wrong page.

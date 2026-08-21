@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest, type NextFetchEvent } from "next/server";
 import { identifyCrawler } from "@/lib/crawlers";
-import { crawlerDistinctId, crawlerVisitProperties, trailingSlashTarget } from "@/lib/edge";
+import {
+  crawlerDistinctId,
+  crawlerVisitProperties,
+  shouldCaptureCrawlerVisit,
+  trailingSlashTarget,
+} from "@/lib/edge";
 import { captureServerEvent } from "@/lib/posthog-server";
 
 /**
@@ -42,7 +47,11 @@ export function middleware(request: NextRequest, event: NextFetchEvent): NextRes
   const userAgent = request.headers.get("user-agent") ?? "";
   const crawler = identifyCrawler(userAgent);
 
-  if (crawler) {
+  // The cap is per runtime instance and it is not a defence against a flood.
+  // `lib/edge.ts` says what it is for: a `User-Agent` is a string the caller
+  // chooses, so without it anybody can run this site's PostHog bill up, and
+  // worse, inflate the one number the whole exercise exists to produce.
+  if (crawler && shouldCaptureCrawlerVisit(Date.now())) {
     // Fired for the URL as requested, before any redirect below rewrites it, so
     // the record says what the crawler actually asked for.
     event.waitUntil(

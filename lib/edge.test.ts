@@ -1,5 +1,13 @@
-import { describe, it, expect } from "vitest";
-import { isIngestPath, trailingSlashTarget, crawlerVisitProperties } from "./edge";
+import { describe, it, expect, beforeEach } from "vitest";
+import {
+  isIngestPath,
+  trailingSlashTarget,
+  crawlerVisitProperties,
+  shouldCaptureCrawlerVisit,
+  resetCrawlerCaptureWindow,
+  CRAWLER_CAPTURE_CAP,
+  CRAWLER_CAPTURE_WINDOW_MS,
+} from "./edge";
 
 /**
  * The rules `middleware.ts` runs on, kept here because a middleware cannot be
@@ -72,6 +80,59 @@ describe("trailingSlashTarget", () => {
     // `"//"` stripped naively is `""`, which is not a legal Location and would
     // be interpreted by a browser as "the current page", i.e. a redirect loop.
     expect(trailingSlashTarget("//")).toBe("/");
+  });
+});
+
+/**
+ * The cost bound on crawler telemetry.
+ *
+ * Added after review pointed out that a `User-Agent` is a string the caller
+ * chooses, so a `curl` loop carrying `GPTBot` would fire one billed PostHog
+ * write per request with nothing stopping it. The bill is the lesser problem.
+ * `user-fetch` is the headline number this whole feature produces, and a number
+ * a stranger can inflate from their own machine is not a number.
+ */
+describe("shouldCaptureCrawlerVisit", () => {
+  beforeEach(() => resetCrawlerCaptureWindow());
+
+  it("allows a full window's worth and then stops", () => {
+    const now = 1_000_000;
+    for (let i = 0; i < CRAWLER_CAPTURE_CAP; i += 1) {
+      expect(shouldCaptureCrawlerVisit(now), `visit ${i + 1}`).toBe(true);
+    }
+    expect(shouldCaptureCrawlerVisit(now)).toBe(false);
+  });
+
+  it("stays shut for the rest of the window", () => {
+    const now = 2_000_000;
+    for (let i = 0; i <= CRAWLER_CAPTURE_CAP; i += 1) shouldCaptureCrawlerVisit(now);
+    expect(shouldCaptureCrawlerVisit(now + CRAWLER_CAPTURE_WINDOW_MS - 1)).toBe(false);
+  });
+
+  it("opens again on the next window", () => {
+    const now = 3_000_000;
+    for (let i = 0; i <= CRAWLER_CAPTURE_CAP; i += 1) shouldCaptureCrawlerVisit(now);
+    expect(shouldCaptureCrawlerVisit(now + CRAWLER_CAPTURE_WINDOW_MS)).toBe(true);
+  });
+
+  it("gives the new window a full budget rather than a token", () => {
+    // The bug this guards: resetting the clock without resetting the counter
+    // leaves the instance permanently capped after its first busy hour, which
+    // would read as "the crawlers stopped coming".
+    const now = 4_000_000;
+    for (let i = 0; i <= CRAWLER_CAPTURE_CAP; i += 1) shouldCaptureCrawlerVisit(now);
+
+    const later = now + CRAWLER_CAPTURE_WINDOW_MS;
+    for (let i = 0; i < CRAWLER_CAPTURE_CAP; i += 1) {
+      expect(shouldCaptureCrawlerVisit(later), `visit ${i + 1} of the new window`).toBe(true);
+    }
+  });
+
+  it("caps high enough that real crawl traffic is never touched", () => {
+    // 35 routes and roughly 20 named agents. A cap that a genuine crawl could
+    // reach would be silently discarding the data this exists to collect, which
+    // is a worse failure than the one it prevents.
+    expect(CRAWLER_CAPTURE_CAP).toBeGreaterThan(200);
   });
 });
 

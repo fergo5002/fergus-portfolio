@@ -50,6 +50,40 @@ blind to what the others see (`docs/measurement.md` is the standing reference).
 > bounded queue so LCP and FCP (which land inside the first second, before the SDK arrives) are
 > still recorded. `components/analytics/PostHogAnalytics.test.ts` fails if anybody tidies it back.
 
+> [!danger] The site-breaker, caught by the parity container and by nothing else
+> The new middleware's trailing-slash redirect answered `/writing/` with
+> `308 location: /writing/`. A permanent redirect to itself. curl followed it fifty times and gave
+> up. **Every trailing-slash URL on the site was unreachable**, while `next build` was clean, `tsc`
+> was clean and all 903 tests were green.
+>
+> `NextURL` records path information when constructed, trailing slash included, and re-applies it
+> when formatted, which is exactly what `skipTrailingSlashRedirect` asks it to do. Assigning
+> `.pathname` does not clear that. Fixed by building the redirect from a plain `new URL(request.url)`.
+>
+> **The lesson is not about `NextURL`.** Every test written for this asserted the *inputs* to the
+> decision: `lib/edge.test.ts` proves `trailingSlashTarget("/writing/")` returns `"/writing"`, and
+> it does. Nothing asserted the *response*. The unit was right and the thing it was wired into was
+> not, so the whole suite agreed with a broken site. `middleware.test.ts` now runs the real
+> middleware against real `NextRequest`s and asserts the `Location` header that ships. Confirmed
+> both ways: red with `clone()`, green with `new URL`.
+>
+> Not the build, not the type checker, not 903 tests. The Docker parity policy earned its keep.
+
+Review then found four more, all fixed before shipping: development was reporting into the live
+project because a doc claimed a gate that did not exist; the MCP telemetry wiring had no test at
+all; crawler capture had no cost bound, so a forged `User-Agent` on a loop could both run up the
+bill and inflate the one number the exercise exists to produce; and a **52/52 mutation figure was
+quoted after three more mutations had been added**, which is logged in [[coding-mistakes]] as its
+own lesson about scores having timestamps.
+
+The corrected figure, from a full run after all of the above: **61/61 mutations caught, 924 tests,
+31 files.** The first re-run came back 59/61, and both survivors were guards of mine that did
+nothing: one mutated only a module initialiser that every test overwrote in `beforeEach` (and which
+is an equivalent mutant in production anyway, since `Date.now()` dwarfs the window), and one
+asserted a status equality that a hard-coded `200` satisfied because every case exercised happened
+to return 200. Fixed by mutating both occurrences of the sentinel, and by adding a JSON-RPC
+notification case that really does return 202.
+
 **Status (2026-08-21, earlier): the site is citable, it has original data, a tool and an MCP server,
 and its own costume is out of the text.** Live on `656478c`, verified in production.
 

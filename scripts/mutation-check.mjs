@@ -384,6 +384,49 @@ const MUTATIONS = [
     replace: 'import posthog from "posthog-js";\n      void Promise.resolve().then(() => {',
   },
   {
+    name: "PRIVACY: development starts reporting into the live project again",
+    file: "components/analytics/PostHogAnalytics.tsx",
+    pattern: /const KEY = process\.env\.NODE_ENV === "production" \? process\.env\.NEXT_PUBLIC_POSTHOG_KEY : undefined;/,
+    replace: "const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;",
+  },
+  {
+    name: "the crawler cap is written but not wired, so a forged UA bills per request",
+    file: "middleware.ts",
+    pattern: /if \(crawler && shouldCaptureCrawlerVisit\(Date\.now\(\)\)\) \{/,
+    replace: "if (crawler) {",
+  },
+  {
+    name: "the cap stops counting, so the budget is never spent",
+    file: "lib/edge.ts",
+    pattern: /  if \(capturedInWindow >= CRAWLER_CAPTURE_CAP\) return false;/,
+    replace: "  if (false) return false;",
+  },
+  {
+    // Both occurrences, and that is the point. Mutating only the `let`
+    // initialiser survived the suite, because every test calls
+    // `resetCrawlerCaptureWindow()` first and that function still wrote the
+    // correct sentinel. It was also an equivalent mutant in production, where
+    // `Date.now()` dwarfs the window so `0` and `-Infinity` behave identically.
+    // Changing both is the careless edit a person would actually make, and it
+    // is observable.
+    name: "the capture window anchors at the epoch again instead of at first use",
+    file: "lib/edge.ts",
+    pattern: /-Infinity/g,
+    replace: "0",
+  },
+  {
+    name: "the MCP route stops observing the message, so no tool call is ever recorded",
+    file: "app/api/mcp/route.ts",
+    pattern: /^  observe\(message\);$/m,
+    replace: "  // observation removed",
+  },
+  {
+    name: "MCP telemetry reports a made-up 200 instead of the status it returned",
+    file: "app/api/mcp/route.ts",
+    pattern: /const telemetry = mcpCallProperties\(observed, reply\.status\);/,
+    replace: "const telemetry = mcpCallProperties(observed, 200);",
+  },
+  {
     name: "THE SITE-BREAKER: the redirect goes back to nextUrl.clone() and points at itself",
     file: "middleware.ts",
     pattern: /const url = new URL\(request\.url\);/,
