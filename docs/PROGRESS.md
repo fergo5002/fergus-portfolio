@@ -6,7 +6,51 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
 
-**Status (2026-08-21, latest): the site is citable, it has original data, a tool and an MCP server,
+**Status (2026-08-21, latest): the site can now see itself.** PostHog is in, cookieless, and the
+GEO work has instruments rather than opinions.
+
+Everything before this was building things and arguing they would help. This is the part that
+finds out. Four instruments, and the honest read is the overlap between them, because each is
+blind to what the others see (`docs/measurement.md` is the standing reference).
+
+- **PostHog, cookieless.** `cookieless_mode: "always"`: no cookies, no local storage, no banner,
+  nothing to consent to. PostHog counts people with a server-side hash instead. Session replay is
+  off as a **consequence** of that rather than as a preference, because replay needs somewhere to
+  keep a session id. Fergus asked for both and they are mutually exclusive; PostHog's own docs say
+  so, and he chose cookieless when told.
+- **Events go through `/ingest`** on this site's own origin, because a developer audience runs
+  blockers and unproxied numbers here would not be slightly low, they would be biased in the one
+  direction that makes them useless. That needed `skipTrailingSlashRedirect: true`, which is a
+  global switch, which is why `middleware.ts` now exists to put the trailing-slash redirect back
+  for every path except the proxy.
+- **AI crawler logging.** `middleware.ts` is the only thing on this site that can see a crawler:
+  the pages an engine cites are static, so a crawl runs no server code at all. `lib/crawlers.ts`
+  splits 21 agents into training, search-index and **user-fetch**, and the last of those is the
+  number worth watching: it means a person asked a question seconds ago and the model came here to
+  answer it.
+- **AI referral attribution.** Read from the referrer and the campaign tag, matched on the parsed
+  host rather than as a substring, because `referrer.includes("perplexity.ai")` counts
+  `notperplexity.ai` and lets any stranger inflate the headline number from their own page.
+- **Web Vitals and MCP tool calls.** The first is a ranking input and the only non-lab performance
+  number this site has. The second is the only instrument that will ever see `/api/mcp`, which
+  shipped on the argument that agents would use it.
+- **Share of Model into PostHog.** `scripts/share-of-model/publish.mjs`, and it inherits the
+  harness's absence rule: a surface marked `missing` is never published, because sending it as a
+  zero would put a fabricated point on a trend line.
+
+> [!warning] The thing that was nearly shipped, caught by measuring
+> A static `import posthog from "posthog-js"` put a **248 KB** chunk into the *layout* bundle, so
+> every route downloaded the entire SDK before it could hydrate. It was the largest chunk in the
+> repo, bigger than the React framework chunk, measured off `app-build-manifest.json` rather than
+> guessed.
+>
+> The irony is the point: one of the things this component reports is Core Web Vitals, so shipping
+> it that way would have measurably worsened the number it exists to measure and then reported the
+> worse number as if it were news. The import is now dynamic and fires on idle after mount, with a
+> bounded queue so LCP and FCP (which land inside the first second, before the SDK arrives) are
+> still recorded. `components/analytics/PostHogAnalytics.test.ts` fails if anybody tidies it back.
+
+**Status (2026-08-21, earlier): the site is citable, it has original data, a tool and an MCP server,
 and its own costume is out of the text.** Live on `656478c`, verified in production.
 
 Yesterday's work made the site crawlable. This made it quotable, and then turned its own

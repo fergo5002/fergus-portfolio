@@ -233,6 +233,31 @@ Spec: `docs/superpowers/specs/2026-08-04-mass-memory-voice-design.md`.
   will never use. The committed lockfile installs clean under strict peers (`npm ci` and
   `npm install` both), so do **not** paper over it with a repo-wide `.npmrc`: that would
   silently disable peer checks for `next`/`react` too.
+- **PostHog (added 2026-08-21) is the GEO instrument, and it is cookieless.**
+  `lib/analytics.ts` holds every constant and every decision, as values, so they can be
+  asserted. Four things about it are easy to break by accident:
+  - **`cookieless_mode: "always"`.** No cookies, no local storage, no banner. Fergus chose it
+    on 2026-08-21. Get it wrong and the site starts setting tracking cookies on EU visitors
+    with nothing in front of them, everything keeps working, and no test would notice, which
+    is why there is one that does.
+  - **Session replay is therefore off, and that is an entailment rather than a preference.**
+    Replay needs somewhere to keep a session id and cookieless removes it, so PostHog would
+    disable it anyway. It is set explicitly so it reads as a consequence, not a bug to fix.
+  - **Events go through `/ingest`,** rewritten to PostHog in `next.config.ts`. That is what
+    `skipTrailingSlashRedirect: true` is for, and **that switch is why `middleware.ts`
+    exists**: it turns off Next's trailing-slash normalisation for the whole site, so the
+    middleware puts it back for everything except the proxy. Remove one and you must remove
+    the other, or `/writing/` starts serving a duplicate of `/writing`.
+  - **`middleware.ts` is the only thing that sees an AI crawler.** The pages an engine cites
+    are static, so a crawler fetching one runs no server code at all. `lib/crawlers.ts` splits
+    them into training, search-index and user-fetch, and `user-fetch` (`ChatGPT-User`,
+    `Claude-User`, `Perplexity-User`) is the number worth watching: it means a person asked a
+    question seconds ago and the model came here to answer it. Note that `Google-Extended` and
+    `Applebot-Extended` are robots.txt tokens that never appear as user agents, so they are in
+    `robots.ts` and deliberately not in the detection table.
+
+  `next.config.mjs` became `next.config.ts` in the same change, so the proxy rules could be
+  imported rather than retyped. Nothing else about the config moved.
 
 ## Commands
 

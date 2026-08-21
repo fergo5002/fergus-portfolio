@@ -4,3 +4,9 @@ node_modules
 .vercel
 .playwright-mcp
 npm-debug.log
+
+# Local environment files. Vercel builds from git and injects its own variables,
+# so a parity image that picked these up would be testing this laptop, not a
+# deploy. The one variable the build genuinely needs is passed as a build arg.
+.env
+.env.*

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, VT323 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import PostHogAnalytics from "@/components/analytics/PostHogAnalytics";
 import "./globals.css";
 import CrtShell from "@/components/CrtShell";
 import Nav from "@/components/Nav";
@@ -86,6 +87,27 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+  /**
+   * Ownership proof for Search Console and Bing Webmaster Tools.
+   *
+   * Both are read from the environment rather than hard-coded, for one reason
+   * that matters: a verification token is the answer to a challenge, so if
+   * either property is ever removed and re-added the token changes, and a stale
+   * literal in this file would keep asserting an ownership claim that no longer
+   * verifies. An unset variable emits no tag at all, which is the correct
+   * behaviour for a preview deployment: only the production hostname should be
+   * claiming to be this site.
+   *
+   * `metadataBase` does not apply to these. They are opaque strings.
+   */
+  verification: {
+    ...(process.env.GOOGLE_SITE_VERIFICATION
+      ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+      : {}),
+    ...(process.env.BING_SITE_VERIFICATION
+      ? { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } }
+      : {}),
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -142,6 +164,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           working perfectly, and that has cost a day before.
         */}
         <Analytics />
+        {/*
+          PostHog, cookieless. Kept alongside Vercel Analytics rather than
+          replacing it: two independent instruments measuring the same thing is
+          the only way to tell "nobody visited" apart from "the new one is
+          broken". `components/analytics/PostHogAnalytics.tsx` has the rest.
+        */}
+        <PostHogAnalytics />
       </body>
     </html>
   );

@@ -310,6 +310,97 @@ const MUTATIONS = [
     pattern: /\* strike \* 1\.4;/,
     replace: "* strike * 0.7;",
   },
+
+  // ── the measurement layer, added 2026-08-21 with PostHog ──
+  //
+  // Every one of these breaks something that would still *work*. That is the
+  // whole reason they are here: an analytics regression does not throw, does
+  // not warn and does not change a pixel. It just makes a number quietly mean
+  // something other than what the chart says it means.
+  {
+    name: "PRIVACY: cookieless is downgraded, so EU visitors get cookies with no banner",
+    file: "lib/analytics.ts",
+    pattern: /cookieless_mode: "always",/,
+    replace: 'cookieless_mode: "on_reject",',
+  },
+  {
+    name: "person profiles come back on, one per cookieless page load",
+    file: "lib/analytics.ts",
+    pattern: /person_profiles: "never",/,
+    replace: 'person_profiles: "identified_only",',
+  },
+  {
+    name: "events go straight to PostHog again, so blockers eat a third of them",
+    file: "lib/analytics.ts",
+    pattern: /api_host: INGEST_PREFIX,/,
+    replace: "api_host: POSTHOG_API_HOST,",
+  },
+  {
+    name: "SPA pageviews stop being captured, so a whole visit reads as one page",
+    file: "lib/analytics.ts",
+    pattern: /capture_pageview: "history_change",/,
+    replace: "capture_pageview: true,",
+  },
+  {
+    name: "referrer matching becomes a substring test anybody can forge",
+    file: "lib/analytics.ts",
+    pattern: /return host === domain \|\| host\.endsWith\(`\.\$\{domain\}`\);/,
+    replace: "return host.includes(domain);",
+  },
+  {
+    name: "the crawler table stops being sorted, so every Claude user-fetch reads as a training crawl",
+    file: "lib/crawlers.ts",
+    pattern: /export const CRAWLERS: readonly Crawler\[\] = \[\.\.\.TABLE\]\.sort\(\r?\n\s*\(a, b\) => b\.token\.length - a\.token\.length,\r?\n\);/,
+    replace: "export const CRAWLERS: readonly Crawler[] = [...TABLE];",
+  },
+  {
+    name: "the ingest exemption goes, so every analytics beacon is redirected into nothing",
+    file: "lib/edge.ts",
+    pattern: /  if \(isIngestPath\(pathname\)\) return null;/,
+    replace: "  // exemption removed",
+  },
+  {
+    name: "`//` strips to an empty Location, which a browser reads as a redirect loop",
+    file: "lib/edge.ts",
+    pattern: /return stripped === "" \? "\/" : stripped;/,
+    replace: "return stripped;",
+  },
+  {
+    name: "server events start creating person profiles named after crawlers",
+    file: "lib/posthog-server.ts",
+    pattern: /      \$process_person_profile: false,\r?\n      \$lib: "fergusoreilly\.dev-server",/,
+    replace: '      $lib: "fergusoreilly.dev-server",',
+  },
+  {
+    name: "a caller can now switch person creation back on by spreading one property",
+    file: "lib/posthog-server.ts",
+    pattern: /      \.\.\.event\.properties,/,
+    replace: "",
+  },
+  {
+    name: "THE EXPENSIVE ONE: posthog-js goes back into the layout bundle, 248 KB on every route",
+    file: "components/analytics/PostHogAnalytics.tsx",
+    pattern: /void import\("posthog-js"\)\.then\(\(\{ default: posthog \}\) => \{/,
+    replace: 'import posthog from "posthog-js";\n      void Promise.resolve().then(() => {',
+  },
+  {
+    name: "the matcher's comment and its regex disagree again, this time about _vercel",
+    file: "middleware.ts",
+    pattern: /\|_vercel\|ingest\//,
+    replace: "|ingest/",
+  },
+  {
+    name: "robots.txt and the sitemap are excluded for looking like static files",
+    file: "middleware.ts",
+    pattern: /\(\?:png\|jpg/,
+    replace: "(?:txt|xml|json|png|jpg",
+  },
+  {
+    name: "the pre-init queue is dropped, so LCP and FCP are never recorded",
+    file: "components/analytics/PostHogAnalytics.tsx",
+    pattern: /  if \(pending\.length < PENDING_LIMIT\) pending\.push\(\{ event, properties \}\);/,
+    replace: "  // dropped",
+  },
 ];
 
 let caught = 0;

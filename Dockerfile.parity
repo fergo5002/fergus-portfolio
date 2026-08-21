@@ -4,7 +4,8 @@
 # build succeeds from a clean lockfile install on the Node version Vercel runs,
 # rather than only on a laptop with a warm node_modules. Run it before shipping:
 #
-#   docker build -f Dockerfile.parity -t fergus-portfolio-parity .
+#   docker build -f Dockerfile.parity -t fergus-portfolio-parity \
+#     --build-arg NEXT_PUBLIC_POSTHOG_KEY=phc_... .
 #   docker run --rm -p 3200:3000 fergus-portfolio-parity
 #
 FROM node:24-bookworm-slim
@@ -17,6 +18,19 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 COPY . .
+
+# `NEXT_PUBLIC_*` variables are inlined into the bundle at build time, so a build
+# without this one produces genuinely different output from production: the
+# analytics component compiles to a no-op and the deferred `posthog-js` chunk is
+# never emitted. Passing it here is what makes the parity build exercise the same
+# code path Vercel will.
+#
+# It is PostHog's write-only project token, which ships inside the client bundle
+# by design. It is not a secret and it being visible in image history is not a
+# finding. `.dockerignore` excludes `.env*` so nothing else from a laptop can
+# arrive by accident.
+ARG NEXT_PUBLIC_POSTHOG_KEY=""
+ENV NEXT_PUBLIC_POSTHOG_KEY=$NEXT_PUBLIC_POSTHOG_KEY
 
 RUN npm run build
 RUN npm test

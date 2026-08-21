@@ -7,6 +7,9 @@ import {
   MODERN_PROTOCOL_VERSION,
   type McpReply,
 } from "@/lib/mcp";
+import { after } from "next/server";
+import { mcpCallProperties, withMcpClient } from "@/lib/analytics";
+import { captureServerEvent } from "@/lib/posthog-server";
 
 /**
  * `/api/mcp`: the Model Context Protocol endpoint.
@@ -73,8 +76,67 @@ const RPC_HEADERS: Record<string, string> = {
   "mcp-protocol-version": MODERN_PROTOCOL_VERSION,
 };
 
+/**
+ * Schedule work for after the response, and shrug if that is not possible.
+ *
+ * `after` needs a request scope. It has one on every real request, because this
+ * route is `force-dynamic`, and it does **not** have one when the handler is
+ * called directly, which is exactly what `lib/mcp.test.ts` does: it exercises
+ * `POST` against a plain `Request` to prove the protocol without standing up a
+ * server. Six of those tests went red the moment `after` was introduced.
+ *
+ * Catching is the right answer rather than a workaround, and it is this file's
+ * own rule applied consistently: telemetry may not change what the protocol
+ * answers, and a throw from the recording path would do precisely that. The
+ * cost of the fallback is one unrecorded call in a context where there was
+ * nothing worth recording anyway.
+ *
+ * There is deliberately no second guard on the presence of a PostHog key. It
+ * would make the tests pass without ever running the branch below, and a guard
+ * that is never exercised is decoration. `captureServerEvent` already returns
+ * `false` without a key.
+ */
+function afterResponse(work: () => void): void {
+  try {
+    after(work);
+  } catch {
+    // No request scope. Nothing to do, and nothing to say about it.
+  }
+}
+
 export async function POST(request: Request): Promise<Response> {
-  const reply = await handle(request);
+  // Captured by the callback below rather than returned, so `handle`'s contract
+  // stays "a request in, a reply out" and the telemetry cannot change what the
+  // protocol answers.
+  let observed: unknown;
+  const reply = await handle(request, (message) => {
+    observed = message;
+  });
+
+  /**
+   * Record the call, after the reply has been decided and without waiting for
+   * it to land.
+   *
+   * This is the only instrument that will ever see this endpoint: no browser
+   * runs here so PostHog's SDK never loads, and the caller is not a crawler so
+   * `middleware.ts` files it as nothing. Six tools shipped on the argument that
+   * agents would use them, and this is the thing that finds out.
+   *
+   * `after` runs the work once the response has been sent, and
+   * `captureServerEvent` has no throwing path, so a PostHog outage cannot turn
+   * into an MCP outage.
+   */
+  const telemetry = mcpCallProperties(observed, reply.status);
+  if (telemetry) {
+    const withClient = withMcpClient(telemetry, request.headers.get("mcp-name"));
+    afterResponse(() =>
+      captureServerEvent({
+        event: withClient.event,
+        distinctId: withClient.distinctId,
+        properties: withClient.properties,
+      }),
+    );
+  }
 
   // A notification gets 202 and no body, which is what the transport requires.
   if (reply.body === null) {
@@ -84,7 +146,7 @@ export async function POST(request: Request): Promise<Response> {
   return Response.json(reply.body, { status: reply.status, headers: RPC_HEADERS });
 }
 
-async function handle(request: Request): Promise<McpReply> {
+async function handle(request: Request, observe: (message: unknown) => void): Promise<McpReply> {
   // Refuse on the declared length **before** reading the body. Checking only
   // after `request.text()` still stops the parse, but the whole string has
   // already been pulled into memory by then, which is not the protection this
@@ -105,6 +167,8 @@ async function handle(request: Request): Promise<McpReply> {
     // body is a parse error rather than a request with nothing in it.
     return parseErrorReply(cause instanceof Error ? cause.message : "invalid JSON");
   }
+
+  observe(message);
 
   // Header field names are case-insensitive per RFC 9110 and `Headers.get`
   // already folds them, so these lower-case spellings match whatever the
