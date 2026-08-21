@@ -187,13 +187,17 @@ describe("informational commands", () => {
     }
   });
 
-  it("contact lists both GitHub accounts, each with a distinct label", () => {
+  it("contact lists every profile, each with a distinct label", () => {
+    // This asserted both GitHub accounts until 2026-08-21. `oreillyfergus` was
+    // removed from the contact list because it had nothing behind it, and the
+    // reasoning lives in `content/profile.ts`. The terminal reads the same
+    // list as the page and the graph, which is why one content change moved
+    // all three at once.
     const res = runCommand("contact");
     expect(res.type).toBe("output");
     if (res.type === "output") {
       const text = res.lines.join("\n");
-      expect(text).toContain("github.com/oreillyfergus");
-      expect(text).toContain("github.com/fergo5002");
+      for (const c of profile.contact) expect(text).toContain(c.value);
     }
     // Two rows both reading "github" would be useless to a reader and to a
     // screen reader, and the landing page keys its rows on the label.
