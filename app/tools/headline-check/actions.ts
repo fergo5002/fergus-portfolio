@@ -33,9 +33,25 @@ export async function headlineCheckAction(
   }
 
   // Read before the fetch, so a refused visitor costs nothing outbound.
+  //
+  // `x-real-ip` first, and the LAST entry of `x-forwarded-for` after it. This
+  // read the first entry of `x-forwarded-for` until 2026-08-21, and review was
+  // right that it is the wrong end of the chain: `x-forwarded-for` accumulates
+  // left to right, so the leftmost value is whatever the client sent and the
+  // rightmost is what the nearest proxy appended. Keying a limiter on the
+  // leftmost hands every caller a fresh bucket for the price of one header.
+  //
+  // Vercel does overwrite the header rather than append to it, so on this host
+  // both ends are the same value. That is a fact about today's platform, not a
+  // property of the code, and it is exactly the sort of assumption that stops
+  // being true somewhere else.
   const header = await headers();
   const forwarded = header.get("x-forwarded-for") ?? "";
-  const ip = forwarded.split(",")[0].trim() || header.get("x-real-ip") || "unknown";
+  const chain = forwarded
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const ip = header.get("x-real-ip")?.trim() || chain[chain.length - 1] || "unknown";
   if (!takeToken(ip)) {
     return { status: "limited", seq, url: raw, message: headlineCopy.limited };
   }

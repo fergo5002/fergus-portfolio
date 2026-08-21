@@ -31,9 +31,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
       lastModified: newestArticle ? new Date(newestArticle) : undefined,
     },
-    // The tools and the MCP server. Neither is in the nav, for the same reason
-    // `/contact` is not: they are reached from the pages that use them, and a
-    // crawler that only walks the nav would never find either.
+    // The tools and the MCP server. Both are also in `components/Nav.tsx`, which
+    // is the stronger signal: a page reachable only from a sitemap is reachable,
+    // but nothing on the site is saying it matters. `/contact` stays the
+    // deliberate exception, because every `Talk` block links to it.
+    //
+    // This comment said the opposite for one commit, describing a state of the
+    // world that the nav change in the same push had already made false. See the
+    // entry in [[coding-mistakes]].
     { url: absolute("/tools"), changeFrequency: "monthly", priority: 0.6 },
     { url: absolute("/tools/headline-check"), changeFrequency: "monthly", priority: 0.7 },
     { url: absolute("/mcp"), changeFrequency: "monthly", priority: 0.6 },

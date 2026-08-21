@@ -239,3 +239,39 @@ describe("the full-screen flashes are half what they were", () => {
     expect(opacities(keyframes("channel-band"))).toEqual([0.5, 0]);
   });
 });
+
+/**
+ * The table added on 2026-08-21 is a reading surface, and review was right that
+ * the guard was not grown to cover it. A table is one of the few blocks a
+ * retrieval step lifts whole, so it is also one of the few worth reading, which
+ * makes borderline contrast in it a worse fault than in the chrome.
+ *
+ * `--bg-panel-2` rather than `--bg`, because `.prose__tablewrap` sets it.
+ */
+describe("prose tables clear 4.5:1 on every theme", () => {
+  const panel = (vars: Record<string, string>) => hex(vars["--bg-panel-2"] ?? vars["--bg"]);
+
+  it.each(THEMES.map((t) => [t[0], t[1]] as const))(
+    "%s: header cells against the panel",
+    (_name, vars) => {
+      expect(ratio(hex(vars["--green-bright"]), panel(vars))).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it.each(THEMES.map((t) => [t[0], t[1]] as const))(
+    "%s: body cells against the panel",
+    (_name, vars) => {
+      // `.prose__td` inherits `.prose`'s colour rather than setting one, so this
+      // is the token that actually paints them.
+      expect(ratio(hex(vars["--green"]), panel(vars))).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it("does not dim the table's own text with --green-faint or --green-dim", () => {
+    // Anchored to the start of a declaration. Unanchored, this matched
+    // `border-bottom-color: var(--green-dim)`, which is a rule about a line
+    // rather than about text and is exactly what a border should be.
+    const block = /\.prose__th\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(block).not.toMatch(/(?:^|[\s;])color:\s*var\(--green-(faint|dim)\)/);
+  });
+});

@@ -26,8 +26,19 @@
  * time and a private one the second (DNS rebinding) beats this check, and
  * nothing in this file could stop it. Closing that properly means pinning the
  * resolved address for the connection itself, through a custom agent with a
- * `lookup` hook, and that is more machinery than a personal site's toy needs.
- * The check above is worth having and it is not a complete defence.
+ * `lookup` hook. That is the right fix and it is not done here.
+ *
+ * The "it is only a personal site" argument for leaving it is wrong and was
+ * removed on 2026-08-21 after review pushed back. The thing worth reaching over
+ * an SSRF is not anything of Fergus's, it is the host's own instance metadata,
+ * and that is the same target whoever owns the domain.
+ *
+ * What does bound it, and it is worth knowing the actual blast radius rather
+ * than only the hole: **the content type is checked before a single byte of the
+ * body is read.** A rebind that lands on a metadata endpoint gets `text/plain`
+ * back, fails that gate, and the response is discarded unread, so there is no
+ * path from a successful rebind to the caller seeing what was there. That is a
+ * second layer, not a fix, and it protects the data rather than the request.
  *
  * Every dependency is injectable for the same reason `lib/contact-server.ts`
  * does it: the paths worth testing here are the ones a real request would have
