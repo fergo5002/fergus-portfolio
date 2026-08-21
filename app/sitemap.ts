@@ -31,6 +31,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
       lastModified: newestArticle ? new Date(newestArticle) : undefined,
     },
+    // The tools and the MCP server. Neither is in the nav, for the same reason
+    // `/contact` is not: they are reached from the pages that use them, and a
+    // crawler that only walks the nav would never find either.
+    { url: absolute("/tools"), changeFrequency: "monthly", priority: 0.6 },
+    { url: absolute("/tools/headline-check"), changeFrequency: "monthly", priority: 0.7 },
+    { url: absolute("/mcp"), changeFrequency: "monthly", priority: 0.6 },
   ];
 
   const articleRoutes: MetadataRoute.Sitemap = articles.map((a) => ({

@@ -80,7 +80,7 @@ Two things people get wrong here.
 
 ## How do I check my own site?
 
-Don't inspect the DOM in dev tools, because the browser will render it correctly and tell you everything is fine. Fetch the HTML the way a dumb crawler would.
+Paste your URL into [the headline checker](/tools/headline-check) and it will show you both views side by side. Or do it yourself, which is two lines. Either way the rule is the same: don't inspect the DOM in dev tools, because the browser will render it correctly and tell you everything is fine. Fetch the HTML the way a dumb crawler would.
 
 \`\`\`bash
 curl -s https://yoursite.com | python -c "

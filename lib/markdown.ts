@@ -14,11 +14,11 @@
  * path at all, not even a sanitised one.
  *
  * The supported subset is: ATX headings `##` to `####`, paragraphs, unordered
- * and ordered lists, fenced code blocks, blockquotes, thematic breaks, and the
- * inline forms `**strong**`, `*emphasis*`, `` `code` `` and `[text](href)`.
- * Anything else is deliberately passed through as literal text rather than
- * throwing: an article with a stray underscore should render slightly wrong,
- * not take down the route.
+ * and ordered lists, fenced code blocks, blockquotes, thematic breaks,
+ * GitHub-style pipe tables, and the inline forms `**strong**`, `*emphasis*`,
+ * `` `code` `` and `[text](href)`. Anything else is deliberately passed through
+ * as literal text rather than throwing: an article with a stray underscore
+ * should render slightly wrong, not take down the route.
  */
 
 export type Inline =
@@ -34,6 +34,7 @@ export type Block =
   | { type: "list"; ordered: boolean; items: Inline[][] }
   | { type: "code"; lang: string; value: string }
   | { type: "quote"; inline: Inline[] }
+  | { type: "table"; head: Inline[][]; rows: Inline[][][] }
   | { type: "rule" };
 
 /**
@@ -88,6 +89,77 @@ function plain(source: string): string {
   return parseInline(source)
     .map((node) => node.value)
     .join("");
+}
+
+/**
+ * Splits one table row into trimmed cells.
+ *
+ * `\|` is content, not a boundary, so a cell can carry a pipe. The empty cell a
+ * leading or trailing pipe produces is dropped, and only that one: an empty
+ * cell in the middle of a row is a real, deliberately empty cell. Whether the
+ * row ended on a separator is tracked as the loop runs rather than by testing
+ * the last character, because `| a | b \|` ends in a pipe that is content.
+ *
+ * A line with no pipe at all returns no cells, which is what stops a bare `---`
+ * thematic break from ever reading as a delimiter row.
+ */
+function splitRow(line: string): string[] {
+  const text = line.trim();
+  const cells: string[] = [];
+  let current = "";
+  let sawPipe = false;
+  let leading = false;
+  let trailing = false;
+
+  for (let k = 0; k < text.length; k++) {
+    if (text[k] === "\\" && text[k + 1] === "|") {
+      current += "|";
+      k++;
+      trailing = false;
+      continue;
+    }
+    if (text[k] === "|") {
+      if (k === 0) leading = true;
+      sawPipe = true;
+      cells.push(current);
+      current = "";
+      trailing = k === text.length - 1;
+      continue;
+    }
+    current += text[k];
+    trailing = false;
+  }
+
+  if (!sawPipe) return [];
+  cells.push(current);
+  if (leading) cells.shift();
+  if (trailing) cells.pop();
+  return cells.map((cell) => cell.trim());
+}
+
+/** A delimiter cell: hyphens, with the alignment colons GitHub allows. */
+const DELIMITER_CELL = /^:?-+:?$/;
+
+/**
+ * Whether these two lines open a table.
+ *
+ * **This is the only place that decides**, and both `parseMarkdown`'s table
+ * branch and `startsBlock` call it. That is not tidiness, it is the invariant
+ * the fence comment below is about: a detector and `startsBlock` that disagree
+ * leave a line no branch consumes, `i` never advances, and the parser spins
+ * with no error to read. One predicate cannot disagree with itself.
+ *
+ * A table needs a header row and a delimiter row with the same number of cells.
+ * Requiring the counts to match is what keeps prose containing a pipe from
+ * becoming a table by accident.
+ */
+function isTableStart(line: string, next: string | undefined): boolean {
+  if (next === undefined) return false;
+  const head = splitRow(line);
+  if (head.length === 0 || head.every((cell) => cell === "")) return false;
+  const delimiter = splitRow(next);
+  if (delimiter.length !== head.length) return false;
+  return delimiter.every((cell) => DELIMITER_CELL.test(cell));
 }
 
 export function parseMarkdown(source: string): Block[] {
@@ -167,6 +239,33 @@ export function parseMarkdown(source: string): Block[] {
       continue;
     }
 
+    // Tables are checked before lists so a genuine table wins over a row that
+    // happens to open with a hyphen. It can only win when the line after it is
+    // a matching delimiter row, which prose does not do by accident.
+    if (isTableStart(line, lines[i + 1])) {
+      const head = splitRow(line).map(parseInline);
+      const columns = head.length;
+      const rows: Inline[][][] = [];
+      i += 2; // the header and the delimiter
+
+      while (
+        i < lines.length &&
+        lines[i].trim() !== "" &&
+        splitRow(lines[i]).length > 0 &&
+        !startsBlock(lines[i], lines[i + 1])
+      ) {
+        // Short rows are padded and extra cells are dropped. A miscounted row
+        // should render as itself rather than shunt every row after it into the
+        // wrong column, and neither case is worth throwing over.
+        const cells = splitRow(lines[i]);
+        rows.push(Array.from({ length: columns }, (_, c) => parseInline(cells[c] ?? "")));
+        i++;
+      }
+
+      blocks.push({ type: "table", head, rows });
+      continue;
+    }
+
     const bullet = /^[-*]\s+(.*)$/.exec(line);
     const numbered = /^\d+\.\s+(.*)$/.exec(line);
     if (bullet || numbered) {
@@ -196,7 +295,7 @@ export function parseMarkdown(source: string): Block[] {
 
     // Paragraph: everything up to a blank line or the start of another block.
     const body: string[] = [];
-    while (i < lines.length && lines[i].trim() !== "" && !startsBlock(lines[i])) {
+    while (i < lines.length && lines[i].trim() !== "" && !startsBlock(lines[i], lines[i + 1])) {
       body.push(lines[i].trim());
       i++;
     }
@@ -213,14 +312,20 @@ export function parseMarkdown(source: string): Block[] {
   return blocks;
 }
 
-function startsBlock(line: string): boolean {
+/**
+ * `next` is here for tables alone: they are the one block whose opening cannot
+ * be recognised from a single line, because a header row is only a header row
+ * when a delimiter row follows it.
+ */
+function startsBlock(line: string, next: string | undefined): boolean {
   return (
     /^```/.test(line) ||
     /^---+\s*$/.test(line) ||
     /^#{2,4}\s+/.test(line) ||
     /^>\s?/.test(line) ||
     /^[-*]\s+/.test(line) ||
-    /^\d+\.\s+/.test(line)
+    /^\d+\.\s+/.test(line) ||
+    isTableStart(line, next)
   );
 }
 
@@ -233,6 +338,13 @@ export function toPlainText(source: string): string {
     .flatMap((block) => {
       if (block.type === "code" || block.type === "rule") return [];
       if (block.type === "list") return block.items.map((it) => it.map((n) => n.value).join(""));
+      // Header cells first, then the body in row order. A table in an article
+      // carries the numbers, so an excerpt built from the body must not lose
+      // them the way it deliberately loses a code listing.
+      if (block.type === "table")
+        return [...block.head, ...block.rows.flat()].map((cell) =>
+          cell.map((n) => n.value).join(""),
+        );
       return [block.inline.map((n) => n.value).join("")];
     })
     .join(" ")

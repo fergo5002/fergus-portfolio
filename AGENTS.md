@@ -29,6 +29,33 @@ rather than content, and a text extractor has no reason to read it.
 Any new per-character, scrambled, typewriter or canvas-rendered text effect must leave a whole
 copy of its words in the server HTML, or it is quietly costing the site the words it decorates.
 
+**And the converse, which cost more than the first one did: decorative text belongs in CSS.**
+The same rule read the other way. If a string is on the page to set a mood rather than to be
+read, it must not be in the document competing with the prose. Measured against the live site
+on 2026-08-21, a plain HTML-to-text extraction of any article opened like this:
+
+```
+fergus @ portfolio : /writing/why-presterly-wound-down $ cd ~ cd experience cd projects
+cd writing fergus @ portfolio : ~/writing $ cat ./writing/why-presterly-wound-down.md
+Why we wound Presterly down
+```
+
+Roughly 150 characters of terminal costume in front of the first real word, in the part of the
+page a retrieval step reads first. On the landing page about 190 of 548 extractable words were
+chrome. Separately, all 46 article headings extracted as `#The actual reason`, because the
+anchor-link glyph was a real `#` text node.
+
+`aria-hidden` does **not** fix this, for exactly the reason `aria-label` did not fix the hero
+name: it is an accessibility property and a text extractor has no reason to read it. The only
+thing that removes text from extraction is not putting the text in the document. `PromptLine`
+now passes its parts as CSS custom properties and `app/globals.css` draws them with `content`;
+the spans stay so the per-part colours stay with them. The heading anchor is drawn the same way.
+`components/chrome.test.ts` is the guard.
+
+The nav is the deliberate exception. Its links read `cd experience` rather than `Experience`,
+which is weak anchor text, but they are real navigation and a crawler needs to follow them.
+That is a design call, not a bug, and it is Fergus's to change if he ever wants to.
+
 **And never disallow `/_next/` in `robots.txt`.** The inline pre-paint script adds `booting` to
 `<html>` on the landing page, `.booting` hides the content, and `BootSequence` is what clears it
 properly. Block the chunk it ships in and a rendering crawler sees an empty homepage while every
@@ -201,13 +228,22 @@ npm start          # serve the production build
 ```
 
 Deploy: Vercel. The project is git-linked (`fergo5002/fergus-portfolio`, production branch `main`),
-so a push normally ships. **Right now both a push and `vercel --prod` are refused, and both fail
-silently.** Every deployment carries the commit author, Vercel cannot verify that address against
-the account that owns `larry-pm`, and the deployment lands in `BLOCKED`: no alias, production
-untouched, git exits 0 and the CLI polls forever. Until that is fixed, ship from a `git archive`
-staging tree with no `.git` in it, and confirm `readyState` and `aliasAssigned` over the API
-afterwards. Full procedure and the permanent account-side fix: the deploy section at the top of
-`docs/PROGRESS.md`. Live host is `https://fergusoreilly.dev`.
+so **a push ships**, and as of 2026-08-21 that is true again rather than aspirational.
+
+This file said the opposite until then, and the correction is worth stating precisely because the
+old warning was expensive. Every deployment carries the commit author; for a long stretch Vercel
+could not verify that address against the account owning `larry-pm`, so deployments landed in
+`BLOCKED` with no alias, production untouched, git exiting 0 and the CLI polling forever. Checked
+on 2026-08-21 over the API: the six most recent deployments are all `readyState: READY` with
+`source: git`, the oldest of them from 2026-08-20. The account-side fix landed.
+
+That is six runs, not a guarantee. **Confirm every deploy the same way regardless**: read
+`readyState` and `aliasAssigned` from
+`https://api.vercel.com/v13/deployments/<id>?teamId=<team>`. Do not trust the CLI's exit code, and
+do not trust `vercel ls`, which renders `BLOCKED` as `UNKNOWN` and reads like "still building".
+If a deployment is ever `BLOCKED` again, the `git archive` staging-tree workaround is still
+documented in the deploy section at the top of `docs/PROGRESS.md`. Live host is
+`https://fergusoreilly.dev`.
 
 ## Layout of the repo
 

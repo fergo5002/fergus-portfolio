@@ -43,9 +43,11 @@ import { presterlyPostMortem } from "./articles/why-presterly-wound-down";
 import { acceleratorWorth } from "./articles/what-an-accelerator-is-for";
 import { crtThatBehaves } from "./articles/a-crt-that-behaves-like-a-crt";
 import { splitTextSeo } from "./articles/split-text-is-costing-you-search";
+import { splitTextAudit } from "./articles/split-text-audit-2026";
 
 /** Newest first. This order is the published order everywhere. */
 export const articles: Article[] = [
+  splitTextAudit,
   splitTextSeo,
   agentsShipping,
   webhookSecret,

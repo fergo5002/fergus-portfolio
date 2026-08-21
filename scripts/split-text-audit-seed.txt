@@ -1,0 +1,174 @@
+# Sample: Awwwards Sites of the Day.
+#
+# Collected on 2026-08-21 by `node scripts/split-text-audit.mjs --collect`, from pages 1 to
+# 5 of https://www.awwwards.com/websites/sites_of_the_day/ (31 entries per page).
+#
+# Awwwards gives one Site of the Day every day and the listing is a rolling window, so
+# re-running --collect on a later date returns a different, overlapping set. That is why
+# this file is checked in: it is the snapshot the published numbers were measured against.
+# Each row keeps its Awwwards slug, which is stable, so every site in the sample can still
+# be found at https://www.awwwards.com/sites/<slug>.
+#
+# The URL is the one Awwwards links out to, taken verbatim from the listing markup.
+#
+# Exclusions, applied at collection time and nowhere else:
+#   - a second entry resolving to a hostname already in the list (a studio winning twice)
+#   - an entry whose outbound URL will not parse
+# Entries excluded on this run: 1
+#   - lacoste-polo-factory: duplicate host members-play.lacoste.com
+#
+# Format: <url> <awwwards-slug> <award-date>
+https://www.oimachi.co oimachi 2026-08-21
+https://cipher.tv/ cipher 2026-08-20
+https://likova.space likova 2026-08-19
+https://michaelgatt.com/ michael-gatt 2026-08-18
+https://thewatch.60fps.fr/ the-watch 2026-08-17
+https://sstr.tech/en/ sstr-friction-reduction 2026-08-16
+https://pxpush.com/ px-push 2026-08-15
+https://haoqi.design haoqi-design 2026-08-14
+https://www.mosbyfiles.com/ mosbys-files 2026-08-13
+https://revelatio.studio/ revelatio-studio 2026-08-12
+https://k95.it studio-k95-3 2026-08-11
+https://www.noth.in nothin 2026-08-10
+https://www.produx.design produx-design 2026-08-09
+https://verostudio.com/ vero-new-york 2026-08-08
+https://inspiring.nk.studio/es 20-years-inspired-by-people 2026-08-07
+https://www.noartmusic.com/ no-art 2026-08-06
+https://www.alethia.earth/ alethia 2026-08-05
+https://serotoninn.com/ serotoninn 2026-08-04
+https://members-play.lacoste.com/ace-breaker-rg lacoste-ace-breaker 2026-08-03
+https://www.hollywoodexhibit2026.com hearst-exhibit-2026 2026-08-02
+https://showcase.noomoagency.com noomo-showcase 2026-08-01
+https://2xa.studio/ 2xa-studio 2026-07-31
+https://www.ciaoenergy.com/ ciao-energy-launch-website 2026-07-30
+https://madewithgsap.com/ made-with-gsap-1 2026-07-29
+https://experiment.obys.agency/ obys-r-experiment-space 2026-07-28
+https://trionn.com trionn-2 2026-07-27
+https://partizan.com/ partizan 2026-07-26
+https://artemartemartem.com/ artem-shcherbakov 2026-07-25
+https://wrapped-party.activetheory.dev spotify-wrapped-party 2026-07-24
+https://normalisboring.es/ normal-is-boring 2026-07-23
+https://www.dragonfly.xyz/ dragonfly-redux 2026-07-22
+https://lamalama.com/ lama-lama-2 2026-07-20
+https://glitchandgrit.com/ glitch-grit 2026-07-19
+https://izanami-official.com/ izanami 2026-07-18
+https://www.hirotos.com hiroto-sato 2026-07-17
+https://coffee-tech.com/ coffeetech-r 2026-07-16
+https://www.risk.film risk 2026-07-15
+https://www.houseofhoney.com/ house-of-honey-1 2026-07-14
+https://neuemontreal.com/ pp-neue-montreal 2026-07-13
+https://db-longbow.webflow.io/ longbow 2026-07-12
+https://vectrfl.com/ vectr 2026-07-11
+https://www.21hrs.space/ 21-hrs-on-the-moon 2026-07-10
+https://shop.brunellocucinelli.com/en-gb/ai brunello-cucinelli-ai-e-com 2026-07-09
+https://www.juliencalot.com julien-calot 2026-07-08
+https://depoluxe.xyz/ depo-luxe 2026-07-07
+https://bymonolog.com/ monolog 2026-07-06
+https://www.hildenkaira.fi/ hilden-kaira 2026-07-05
+https://www.rideradian.com/ radian 2026-07-04
+https://buckssauce.com/ bucks-sauce 2026-07-03
+https://units.gr/en/homepage/ units 2026-07-02
+https://www.wembi.ai/ wembi 2026-07-01
+https://business.nrg.com/campaigns/build-your-data-center/ nrg-build-your-data-center 2026-06-30
+https://www.meech213.com/ meech213 2026-06-29
+https://brand.ivress.co.jp/ ivress-spin-a-tale 2026-06-28
+https://podium.global/ podium 2026-06-27
+https://ten.375.studio/en ten-years-away 2026-06-26
+https://www.ilcapoproduction.com/ il-capo-production 2026-06-25
+https://www.wolverineworldwide.com/ wolverine-worldwide 2026-06-24
+https://www.sui.io/ sui 2026-06-23
+https://everswap.com/ everswap 2026-06-22
+https://digitalists.at/ digitalists-1 2026-06-21
+https://rpacomunicacion.com/ rpa-comunicacion 2026-06-20
+https://www.balmoralrunning.com balmoral 2026-06-19
+https://indigo-laboratory.it/ indigo-laboratory 2026-06-18
+https://lafamigliamysteryunfolds.gucci.com/ gucci-mystery-unfolds 2026-06-17
+https://faunarobotics.com fauna-robotics 2026-06-16
+https://elva-labs.com/ elva 2026-06-15
+https://sakazuki.io/ sakazuki 2026-06-14
+https://www.cravburgers.shop/ crav-burgers 2026-06-13
+https://www.tresmarescapital.com/ tresmares-capital 2026-06-12
+https://www.serverobotics.com/ serve-robotics 2026-06-11
+https://hubtown.co.in/ hubtown 2026-06-10
+https://pacomepertant.com/ pacome-pertant-portfolio 2026-06-09
+https://storytelling.noomoagency.com the-power-of-storytelling 2026-06-08
+https://sohub.digital sohub 2026-06-07
+https://apechain.com/ apechain 2026-06-06
+https://sondaven.com/en son-daven 2026-06-05
+https://steven.com steven-com 2026-06-04
+https://trucknroll.com/ truckn-roll-r 2026-06-03
+https://ref.digital/ ref-digital 2026-06-02
+https://hashgraphvc.com/ hashgraph-ventures 2026-06-01
+https://vaulk.com/ vaulk 2026-05-31
+https://zetta-joule.com/ zettajoule 2026-05-30
+https://sowieso.wero-wallet.eu/nl-en/merchant sowieso-wero 2026-05-29
+https://jumpingmax.cdiscount.com/ cdiscount-jumping-max 2026-05-28
+https://aircenter.space/ air-1 2026-05-27
+https://razorpay.com/sprint/26 razorpay-sprint-26 2026-05-26
+https://www.cartier.com/en-fr/watchesandwonders cartier-watches-wonders-2026 2026-05-25
+https://aimees-papercraft-world.com/ aimees-papercraft-world 2026-05-24
+https://web.meetcleo.com/ cleo-ai 2026-05-23
+https://sidewave.it/ sidewave 2026-05-22
+https://larevoltosa.es/ la-revoltosa 2026-05-21
+https://aino.agency aino-agency 2026-05-20
+http://thorgal.com thorgal 2026-05-19
+https://www.collabcapitolium.fr capitolium 2026-05-18
+https://www.kvs.services/ kvs-studio 2026-05-17
+https://enerblock.net/en/ enerblock 2026-05-16
+https://juanmora.co/ juan-mora-1 2026-05-15
+https://www.fromanother.love/ fromanother-love 2026-05-14
+https://www.floema.com/en floema 2026-05-13
+https://gethapply.com happly 2026-05-12
+https://outfit.hellohello.is/ outfit 2026-05-11
+https://xox.makemepulse.com/ xox 2026-05-10
+https://www.simonholm.studio simonholm-studio 2026-05-09
+https://studionamma.com studio-namma 2026-05-08
+https://www.marvellco.com.au/ marvell-tile-stone 2026-05-07
+https://astrodither.robertborghesi.is/ astrodither 2026-05-05
+https://obys.agency/ obys-2 2026-05-04
+https://paodao.fr/ where-worlds-take-shape 2026-05-03
+https://fourmula.ai fourmula-ai 2026-05-02
+https://adcker.com/ adcker 2026-05-01
+https://375.studio/en studio375-2 2026-04-30
+https://pieterkoopt.nl/ pieterkoopt-r 2026-04-29
+https://silent-house.com/ silent-house 2026-04-28
+https://www.detroit.paris/ detroit-paris 2026-04-27
+https://week.wild.plus/athens-26 wild-week-athens 2026-04-26
+https://www.donmolinico.es/ don-molinico 2026-04-25
+https://ashleybrookecs.com/ ashley-brooke 2026-04-24
+http://offmenu.design off-menu 2026-04-23
+https://jasminegunarto.com/ jasmine-gunarto 2026-04-22
+https://fresque.ruinart.com ruinart-digital-fresco 2026-04-21
+https://www.shader.se/ shader-development-studio 2026-04-20
+https://loloagency.com/ the-agency-of-love-logic 2026-04-19
+https://madeinevolve.com/ evolve-2 2026-04-18
+https://www.thisisstudiox.com studio-x 2026-04-17
+https://thejacketcirclegame.maxmara.com/ max-mara-jacket-circle 2026-04-16
+https://www.raviklaassens.com/ ravi-klaassens 2026-04-15
+https://obsidianassembly.com/ the-obsidian-assembly 2026-04-14
+https://oryzo.ai oryzo-ai 2026-04-13
+https://naughtyduk.com naughtyduk-c-1 2026-04-12
+https://oddritualgolf.com/ odd-ritual 2026-04-11
+https://www.mersi-architecture.com mersi 2026-04-10
+https://www.icomat.co.uk/ icomat 2026-04-09
+https://www.9to5studio.it/ nine-to-five 2026-04-08
+https://maximatherapy.com/ maxima-therapy 2026-04-07
+https://www.champions4good.club/ champions-for-good 2026-04-06
+https://artemshcherban.com artem-shcherban-portfolio 2026-04-05
+https://www.drinksom.eu/ som 2026-04-04
+https://artefakt.mov/ artefakt 2026-04-03
+https://www.iyo.ai/ iyo 2026-04-02
+https://vastspace.com vast 2026-04-01
+https://sanrita.ca/ san-rita 2026-03-31
+https://fluid.glass/ fluid-glass 2026-03-30
+https://www.utopiatokyo.com/ utopia-tokyo 2026-03-29
+https://www.sutera.ch/ sutera 2026-03-28
+https://tlb.betteroff.studio/ the-lookback 2026-03-27
+https://www.gq.com/sponsored/story/the-extraordinary-lab gq-ap-the-extraordinary-lab 2026-03-26
+https://corentinbernadou.com/ corentin-bernadou-portfolio 2026-03-25
+https://2025.unseen.co/ unseen-studio-2025-wrapped 2026-03-24
+https://shed.design/ shed 2026-03-23
+https://memorial.fcporto.pt/ fc-porto-memorial 2026-03-22
+https://www.darknode.army/en darknode 2026-03-21
+https://neuroproductions.be stuff-by-kris-temmerman 2026-03-20
+https://aventuradentalarts.com/ aventura-dental-arts 2026-03-19

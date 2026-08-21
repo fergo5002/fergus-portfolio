@@ -70,13 +70,21 @@ function renderBlock(block: Block, i: number) {
             name means a screen reader user pulling up a links list gets "Link
             to this section" six to eight times with nothing to choose between.
           */}
+          {/*
+            The `#` is drawn by `.prose__anchor::before`, not written here. It
+            used to be a real text node, and measured against the live site on
+            2026-08-21 that meant all 46 article headings extracted as
+            `#The actual reason` for anything reading the HTML as text. The
+            glyph is decoration, the label is the content, and `aria-hidden`
+            would not have helped: a text extractor has no reason to read
+            accessibility properties, which is the same lesson the hero name
+            taught. `components/chrome.test.ts` guards it.
+          */}
           <a
             href={`#${block.id}`}
             className="prose__anchor"
             aria-label={`Link to the section: ${block.inline.map((n) => n.value).join("")}`}
-          >
-            #
-          </a>
+          />
           {renderInline(block.inline)}
         </Tag>
       );
@@ -112,6 +120,42 @@ function renderBlock(block: Block, i: number) {
         <blockquote key={i} className="prose__quote">
           {renderInline(block.inline)}
         </blockquote>
+      );
+    case "table":
+      // A real table, not a grid of divs. The header cells carry `scope="col"`
+      // so a screen reader announces the column a value belongs to instead of
+      // reading a wall of loose numbers, which is the whole reason to use the
+      // element rather than draw one.
+      //
+      // The wrapper exists so a table wider than the measure scrolls inside
+      // itself rather than pushing the article body sideways. It needs an
+      // `overflow-x` rule in `app/globals.css` to do that, alongside rules for
+      // `prose__table`, `prose__th` and `prose__td`.
+      return (
+        <div key={i} className="prose__tablewrap">
+          <table className="prose__table">
+            <thead>
+              <tr>
+                {block.head.map((cell, j) => (
+                  <th key={j} scope="col" className="prose__th">
+                    {renderInline(cell)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((row, j) => (
+                <tr key={j}>
+                  {row.map((cell, k) => (
+                    <td key={k} className="prose__td">
+                      {renderInline(cell)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       );
     case "rule":
       return <hr key={i} className="prose__rule" />;

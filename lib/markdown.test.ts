@@ -186,6 +186,132 @@ describe("parseMarkdown blocks", () => {
   });
 });
 
+describe("pipe tables", () => {
+  const table = (b: Block[]) => b.find((x) => x.type === "table");
+  const cells = (row: { value: string }[][]) => row.map((cell) => cell.map((n) => n.value).join(""));
+
+  it("parses a header, a delimiter and body rows", () => {
+    const blocks = parseMarkdown("| Class | Sites |\n| --- | --- |\n| clean | 96 |\n| fragmented | 1 |");
+    const t = table(blocks);
+    expect(t?.type).toBe("table");
+    if (t?.type !== "table") return;
+    expect(cells(t.head)).toEqual(["Class", "Sites"]);
+    expect(t.rows).toHaveLength(2);
+    expect(cells(t.rows[0])).toEqual(["clean", "96"]);
+    expect(cells(t.rows[1])).toEqual(["fragmented", "1"]);
+  });
+
+  it("accepts a table with no leading or trailing pipes", () => {
+    const t = table(parseMarkdown("Class | Sites\n--- | ---\nclean | 96"));
+    if (t?.type !== "table") throw new Error("not a table");
+    expect(cells(t.head)).toEqual(["Class", "Sites"]);
+    expect(cells(t.rows[0])).toEqual(["clean", "96"]);
+  });
+
+  it("accepts alignment colons in the delimiter and ignores them", () => {
+    // Parsed so a table written the normal way still renders. Not acted on:
+    // alignment would need a class, `app/globals.css` is where classes live,
+    // and a class no stylesheet defines is decoration.
+    const t = table(parseMarkdown("| a | b | c |\n| :--- | :---: | ---: |\n| 1 | 2 | 3 |"));
+    if (t?.type !== "table") throw new Error("not a table");
+    expect(cells(t.head)).toEqual(["a", "b", "c"]);
+    expect(cells(t.rows[0])).toEqual(["1", "2", "3"]);
+    expect(Object.keys(t)).toEqual(["type", "head", "rows"]);
+  });
+
+  it("parses inline markers inside cells", () => {
+    const t = table(parseMarkdown("| a |\n| --- |\n| **bold** and `code` |"));
+    if (t?.type !== "table") throw new Error("not a table");
+    expect(t.rows[0][0]).toEqual([
+      { type: "strong", value: "bold" },
+      { type: "text", value: " and " },
+      { type: "code", value: "code" },
+    ]);
+  });
+
+  it("keeps an escaped pipe as content rather than a cell boundary", () => {
+    const t = table(parseMarkdown("| a | b |\n| --- | --- |\n| one \\| two | three |"));
+    if (t?.type !== "table") throw new Error("not a table");
+    expect(cells(t.rows[0])).toEqual(["one | two", "three"]);
+  });
+
+  it("pads a short row and drops cells past the header count", () => {
+    // A miscounted row should render as itself, not knock every later row out
+    // of its column.
+    const t = table(parseMarkdown("| a | b | c |\n| --- | --- | --- |\n| 1 |\n| 1 | 2 | 3 | 4 |"));
+    if (t?.type !== "table") throw new Error("not a table");
+    expect(cells(t.rows[0])).toEqual(["1", "", ""]);
+    expect(cells(t.rows[1])).toEqual(["1", "2", "3"]);
+  });
+
+  it("parses a header-only table as a table with no rows", () => {
+    const t = table(parseMarkdown("| a | b |\n| --- | --- |"));
+    if (t?.type !== "table") throw new Error("not a table");
+    expect(t.rows).toEqual([]);
+  });
+
+  it("ends at a blank line and resumes prose after it", () => {
+    const blocks = parseMarkdown("| a |\n| --- |\n| 1 |\n\nafter the table");
+    expect(blocks.map((b) => b.type)).toEqual(["table", "paragraph"]);
+  });
+
+  it("ends a paragraph when a table starts without a blank line", () => {
+    const blocks = parseMarkdown("some prose\n| a |\n| --- |\n| 1 |");
+    expect(blocks.map((b) => b.type)).toEqual(["paragraph", "table"]);
+  });
+
+  it("ends when another block starts without a blank line", () => {
+    const blocks = parseMarkdown("| a |\n| --- |\n| 1 |\n## after");
+    expect(blocks.map((b) => b.type)).toEqual(["table", "heading"]);
+  });
+
+  it("does not read a table inside a fence", () => {
+    const blocks = parseMarkdown("```\n| a |\n| --- |\n| 1 |\n```");
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe("code");
+  });
+
+  it.each([
+    ["pipes with no delimiter row", "| a | b |\njust prose"],
+    ["a delimiter row with the wrong column count", "| a | b |\n| --- |\n| 1 | 2 |"],
+    ["a delimiter row that is not all hyphens", "| a | b |\n| --- | xx |"],
+    ["a lone delimiter row", "| --- | --- |"],
+    ["a bare rule, which is a thematic break", "a | b\n---"],
+    ["pipes with nothing else", "|"],
+    ["an empty header row", "| |\n| --- |"],
+  ])("degrades to plain text rather than a table: %s", (_name, source) => {
+    const blocks = parseMarkdown(source);
+    expect(blocks.some((b) => b.type === "table")).toBe(false);
+    expect(blocks.length).toBeGreaterThan(0);
+  });
+
+  it.each([
+    "|||\n|---|---|---|",
+    "| a |\n| --- |\n|",
+    "| \\| |\n| --- |\n| \\| |",
+    "| a |\n| -: |\n| 1 |",
+    "|a|b|\n|-|-|\n|1|2|",
+    "| a |\n| --- |\n| `**x` |",
+  ])("does not throw on %j", (source) => {
+    expect(() => parseMarkdown(source)).not.toThrow();
+  }, 5000);
+
+  it("never spins on a line the table detector claims and the branch refuses", () => {
+    // The invariant this file has already been burnt by once. `startsBlock` and
+    // the table branch must agree, or the paragraph loop fails to advance and
+    // the build hangs with no error. Both route through the same predicate;
+    // this proves the pair on the shapes that sit closest to the boundary.
+    for (const source of [
+      "prose\n| a | b |\n| --- | --- |",
+      "prose\n| a | b |\n| --- |",
+      "prose\na | b\n--- | ---",
+      "prose\n| a |\n| :-: |",
+    ]) {
+      expect(() => parseMarkdown(source)).not.toThrow();
+    }
+  }, 5000);
+});
+
 describe("slugify", () => {
   it("lowercases and hyphenates", () => {
     expect(slugify("The Big Idea")).toBe("the-big-idea");
@@ -199,6 +325,14 @@ describe("toPlainText", () => {
   it("flattens prose and drops code", () => {
     const text = toPlainText("## Title\n\nSome **bold** prose.\n\n```\ncode()\n```\n\n- item");
     expect(text).toBe("Title Some bold prose. item");
+  });
+
+  it("includes table cells, header first", () => {
+    // A table in an article carries real numbers, and an excerpt or a
+    // description built from the body should not silently lose them.
+    expect(toPlainText("| Class | Sites |\n| --- | --- |\n| clean | 96 |")).toBe(
+      "Class Sites clean 96",
+    );
   });
 });
 

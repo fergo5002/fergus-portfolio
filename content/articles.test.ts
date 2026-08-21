@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { articles, articleBySlug, wordCount, readingMinutes } from "./articles";
 import { parseMarkdown, toPlainText } from "@/lib/markdown";
 import { sections, questionPairs, leadParagraph } from "@/lib/faq";
+import { SITE_URL } from "@/lib/seo";
+import sitemap from "@/app/sitemap";
 
 /**
  * The publishing guard.
@@ -135,11 +137,15 @@ describe.each(articles.map((a) => [a.slug, a] as const))("article: %s", (_slug, 
   });
 
   it("only links internally to routes that exist", () => {
-    const internal = [...article.body.matchAll(/\]\((\/[^)\s]*)\)/g)].map((m) => m[1]);
-    const known = new Set(["/", "/projects", "/experience", "/writing"]);
+    // Checked against the sitemap rather than a hand-written list. The list
+    // version went stale the first time a route was added, which is the whole
+    // failure mode a guard like this is supposed to prevent rather than
+    // demonstrate. The sitemap is already the canonical set of published URLs,
+    // so adding a route there is now the only step.
+    const internal = [...article.body.matchAll(/\]\((\/[^)\s#]*)/g)].map((m) => m[1]);
+    const published = new Set(sitemap().map((entry) => entry.url.replace(SITE_URL, "") || "/"));
     for (const href of internal) {
-      const ok = known.has(href) || articles.some((a) => href === `/writing/${a.slug}`);
-      expect(ok, `dead internal link: ${href}`).toBe(true);
+      expect(published.has(href), `dead internal link: ${href}`).toBe(true);
     }
   });
 
