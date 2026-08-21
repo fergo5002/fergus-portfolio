@@ -9,15 +9,15 @@ export const verificationGap: Article = {
   tags: ["AI agents", "Testing", "Process", "Engineering"],
   summary:
     "A verification protocol for AI-assisted development: require pasted evidence rather than assertions, delete the fix to confirm the test actually fails, and check the live deployment rather than trusting a successful build. Covers the specific failure modes that produce false 'done' claims.",
-  body: `"The endpoint now returns the booking and the tests pass."
+  body: `"The endpoint now returns the booking and the tests pass." That was the completion report. Neither half of it was true, and finding that out took me longer than writing the feature would have. This is the protocol I use now so that it cannot happen quietly again.
 
-It didn't and they didn't. There was no endpoint. There was a route file that would have worked if a table it referenced existed, and a test that asserted a mock returned what the mock was configured to return.
+There was no endpoint. There was a route file that would have worked if a table it referenced existed, and a test that asserted a mock returned what the mock was configured to return.
 
 The agent wasn't lying. It had no mechanism for knowing, so it reported the likely outcome in the grammar of an observed one. That grammar is the problem: "returns" and "would probably return" look identical in a summary, and only one of them is a fact.
 
 Here's the protocol I use now. It's short, it's boring, and it has caught more real defects than any amount of reading diffs.
 
-## Rule one: evidence in the same breath as the claim
+## Rule one: where is the evidence?
 
 Any statement that something works must be accompanied by the output that shows it, in the same message.
 
@@ -27,7 +27,7 @@ This sounds pedantic. It is pedantic. It also changes behaviour immediately, bec
 
 The tell to watch for is the conditional tense leaking into a completion report. "Should", "would", "is expected to". Those words are the agent telling you it reasoned rather than observed, and they're worth treating as a hard stop.
 
-## Rule two: delete the fix and watch it fail
+## Rule two: does the bug come back if you delete the fix?
 
 A test written alongside a fix, by the same author, tests what the code does. That's not the same as testing what the code should do, and the difference is invisible when everything is green.
 
@@ -62,9 +62,9 @@ Four checks now close every deploy:
 
 The fourth is the one people skip and it's the one that catches the interesting failures. Plenty of broken things return 200. Seeing your own request in the log is what proves the code path you intended is the code path that ran, rather than a cached response or a stale build serving something that merely looks similar.
 
-## Rule five: never verify with the check that always passes
+## Rule five: could this check ever have failed?
 
-A specific trap, and I've watched it cost a day.
+If the answer is no, the check proves nothing and you should delete it. This is a specific trap, and I have watched it cost a day.
 
 We verify analytics by checking a script loads. The obvious check is to curl the documented script path. That path 404s on a working deployment, because the real script is served from a per-deploy hashed URL, and the pretty path is only a fallback string inside the package.
 
@@ -74,7 +74,7 @@ The inverse is more common and more dangerous: a check that passes regardless of
 
 Before trusting any verification, ask what it would look like if the feature were broken. If the answer is "the same", it isn't a verification, it's a ritual.
 
-## Why this is worth the friction
+## Why is this worth the friction?
 
 None of this is clever. It's the discipline any careful engineer applies without naming it, written down because the thing doing the work now has no instinct for doubt. The wider set of habits is in [what I actually changed to ship with AI agents](/writing/shipping-with-ai-agents).
 

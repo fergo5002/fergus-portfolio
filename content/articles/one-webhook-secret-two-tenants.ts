@@ -37,7 +37,7 @@ await recordOrder(tenant, body);
 
 Read those two blocks together and the problem is right there.
 
-## What the signature actually proves
+## What does a webhook signature actually prove?
 
 The HMAC check proves the request was signed by **the holder of that one secret**. That's it.
 
@@ -51,9 +51,9 @@ So merchant A, who has your app installed and therefore legitimately possesses t
 
 No signature check fails. Nothing looks wrong in any log. It's an authenticated request from a real customer, doing exactly what the code was told to allow.
 
-## Why nobody notices
+## Why does nobody notice?
 
-Because with one tenant the code is right.
+Because with one tenant the code is right. The bug needs a second tenant to exist before it can be a bug at all, and by then the same code has been correct in production for months.
 
 There is no test you would plausibly have written that catches this. Your webhook tests assert a valid signature is accepted and an invalid one is rejected, and both of those pass, correctly, forever. The failing case requires two tenants to exist and one of them to lie about being the other, and until your second customer signs up there is no second tenant to write that test with.
 
@@ -89,7 +89,7 @@ The shape change is the point. The tenant header is now a **lookup key**, and th
 
 Note that \`recordOrder\` takes \`install.id\`, from the row we looked up, rather than the header. Never carry the caller's string past the point where you resolved it to a record.
 
-## Proving it, rather than believing it
+## How do you prove the fix rather than believe it?
 
 The check I trust on a security fix is not that the new tests pass. It's reverting the fix and watching them fail.
 
@@ -97,7 +97,7 @@ So: put the old shared-secret verification back, run the suite, confirm the cros
 
 The test itself is short. Sign a payload with tenant A's secret, send it with tenant B's shop domain, and assert a 401 and that nothing was written to B.
 
-## The general rule, which is the bit worth keeping
+## What is the general rule worth keeping?
 
 **Any secret that is scoped per-platform rather than per-tenant is a latent cross-tenant hole, and it stays invisible until the second tenant arrives.**
 

@@ -17,11 +17,9 @@ We wound it down in August 2026.
 
 People assume the technology fell over or the market said no. Neither happened, and pretending otherwise would make this a less useful thing to read.
 
-## The actual reason
+## Why did Presterly actually wind down?
 
-Three founders, moving in different directions, for ten weeks.
-
-That's it. That's the headline cause and I've stopped dressing it up.
+Three founders, moving in different directions, for ten weeks. That is the headline cause, and I have stopped dressing it up as a market problem or a technical one.
 
 Not a falling-out. Nobody behaved badly. We just each had a different idea of what we were building and who it was for, and we never forced the disagreement into the open because there was always something more urgent to ship. Building is a wonderful way to avoid a conversation. You feel productive the entire time you're avoiding it.
 
@@ -41,17 +39,17 @@ I want to be precise about how much weight this carries, because it's tempting t
 
 But it's the part I could have personally fixed in an afternoon, so it's the part I keep.
 
-## What I'd want asked
+## What would I want asked earlier?
 
-If I were interviewing me, I'd push on this.
+Why I keep saying the venture was wrong instead of saying what I got wrong. If I were interviewing me, that is the question I would push on, and it is a fair one.
 
 I say the venture was wrong rather than saying what I got wrong. That's a real dodge and I've been called on it. The honest version is that I chose to own the technical half, and the thing that killed this company was commercial. I did that at Loira too. I've now done it twice.
 
 The pattern I'm still walking around with is that I keep taking the half I'm comfortable in and hoping someone else has the other half covered. Nobody has ever made me answer when I stop doing that. I don't have a clean answer yet. I'm just no longer pretending it's a coincidence.
 
-## What was genuinely good
+## What was genuinely good about it?
 
-Worth saying, because a post-mortem that's all self-criticism is its own kind of performance.
+Quite a lot of it, and that is worth saying, because a post-mortem made entirely of self-criticism is its own kind of performance.
 
 **Building fast against real merchants worked.** First commit to live merchant brands in six weeks, inside an accelerator, with a real Shopify install and real order data. The prediction engine was backtested against actual purchase history rather than a synthetic set, which is why we found out early that consumable reorder intervals are much noisier than the pitch deck version.
 
@@ -71,9 +69,9 @@ Three concrete changes.
 
 **We're building it with real venues rather than for an imagined one.** Two sauna businesses, in the product, finding the awkward parts early. It's slower and much less comfortable than building in a vacuum, and it's the only version that produces a product anyone wants.
 
-## The thing I'd tell someone about to start
+## What would I tell someone about to start?
 
-Have the argument early.
+Have the argument early. Write down what you each think you are building and who it is for, separately, then compare the answers before you have written a line of code.
 
 Whatever the disagreement is that you can feel and are not naming, the one that keeps not being urgent enough to interrupt shipping, that's the one that ends the company. It will not resolve itself while you build. Building makes it easier to ignore, which is precisely why it's dangerous.
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { articles, articleBySlug, wordCount, readingMinutes } from "./articles";
 import { parseMarkdown, toPlainText } from "@/lib/markdown";
+import { sections, questionPairs, leadParagraph } from "@/lib/faq";
 
 /**
  * The publishing guard.
@@ -128,5 +129,85 @@ describe.each(articles.map((a) => [a.slug, a] as const))("article: %s", (_slug, 
     const text = toPlainText(article.body);
     expect(text.length).toBeGreaterThan(500);
     expect(text).not.toContain("```");
+  });
+});
+
+/**
+ * The citability guard.
+ *
+ * The tests above ask whether a post is worth publishing. These ask a different
+ * question: if something reads this page looking for an answer to quote, does it
+ * find one. That is the step that decides whether the site gets cited by an
+ * answer engine, and on 2026-08-20 the shipped corpus scored zero on it: 46
+ * headings across eight articles and not one of them framed as a question.
+ *
+ * Every threshold below is a rule about extractability, not about style. None of
+ * them dictates what a paragraph may say. They exist because the alternative is
+ * a note in a document that nobody rereads, and this repo has already learnt
+ * that a rule which is not a test is a rule that comes back.
+ *
+ * The numbers, and where they come from:
+ *
+ *  - **Question-framed headings.** A heading that reads as a question is the
+ *    cheapest citability signal there is, because it matches the shape of what
+ *    somebody typed. Three is a floor, not a target, and statement headings are
+ *    still fine for the rest.
+ *  - **Sections open with prose.** A section that opens on a code fence or a
+ *    list has no quotable answer under its heading, so `lib/faq.ts` drops it and
+ *    the reader has to assemble the answer themselves.
+ *  - **400 word ceiling.** A section longer than that stops being a passage and
+ *    becomes a page, and a passage is the unit that gets lifted.
+ *  - **A short lead.** Roughly 44% of AI citations come from the first 30% of a
+ *    page, which makes the opening paragraph the most valuable sentence on the
+ *    article. The window forces it to answer rather than warm up.
+ */
+describe.each(articles.map((a) => [a.slug, a] as const))("citability: %s", (_slug, article) => {
+  it("asks at least three questions in its headings", () => {
+    const questions = sections(article.body).filter((s) => s.isQuestion);
+    expect(
+      questions.length,
+      `question-framed headings: ${questions.map((q) => q.heading).join(" | ") || "none"}`,
+    ).toBeGreaterThanOrEqual(3);
+  });
+
+  it("opens every section with a paragraph rather than a fence or a list", () => {
+    for (const section of sections(article.body)) {
+      if (!section.heading) continue;
+      expect(section.opensWithProse, `no prose under: ${section.heading}`).toBe(true);
+    }
+  });
+
+  it("keeps every section short enough to be quoted whole", () => {
+    for (const section of sections(article.body)) {
+      expect(section.words, `section too long: ${section.heading ?? "(lead)"}`).toBeLessThanOrEqual(
+        400,
+      );
+    }
+  });
+
+  it("has no stub sections", () => {
+    for (const section of sections(article.body)) {
+      if (!section.heading) continue;
+      expect(section.words, `section too thin: ${section.heading}`).toBeGreaterThanOrEqual(40);
+    }
+  });
+
+  it("answers before it warms up", () => {
+    const lead = leadParagraph(article.body);
+    const words = lead.split(/\s+/).filter(Boolean).length;
+    expect(lead.length, "the body must open on a paragraph, not a heading").toBeGreaterThan(0);
+    expect(words, `lead is ${words} words: "${lead}"`).toBeGreaterThanOrEqual(20);
+    expect(words, `lead is ${words} words: "${lead}"`).toBeLessThanOrEqual(85);
+  });
+
+  it("yields a usable FAQPage", () => {
+    const pairs = questionPairs(article.body);
+    expect(pairs.length).toBeGreaterThanOrEqual(2);
+    for (const pair of pairs) {
+      const words = pair.answer.split(/\s+/).filter(Boolean).length;
+      expect(words, `thin answer under "${pair.question}": ${pair.answer}`).toBeGreaterThanOrEqual(
+        15,
+      );
+    }
   });
 });

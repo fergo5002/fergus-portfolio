@@ -15,7 +15,7 @@ That makes me a reasonable person to ask whether it was worth it, because I have
 
 Short answer: yes, and not for any of the reasons in the brochure.
 
-## What it genuinely gave us
+## What did it genuinely give us?
 
 **A deadline that wasn't ours.** This is most of the value and it's the least discussed.
 
@@ -27,7 +27,7 @@ Left alone, founders extend. There's always a reason the demo should be next wee
 
 **Credibility.** Being one of nine from 1,700 opens doors, and I'd be pretending if I said otherwise. It's a real asset, it's still useful to me now, and it costs you nothing to carry.
 
-## What it could not do
+## What could it not do?
 
 **It could not fix founder-product fit.** Three of us, pulling in different directions, for ten weeks. That's [why the company ended](/writing/why-presterly-wound-down).
 
@@ -37,7 +37,7 @@ No programme can solve that. Nobody in the building knows your co-founders well 
 
 **It could not make us talk to enough customers.** There's an assumption that a programme forces customer development. It creates the expectation. It cannot make you spend Tuesday on the phone instead of in the codebase, and given a choice between selling and building, I will build. That's a thing about me, not about the programme, and I've stopped expecting external structure to fix it.
 
-## The thing people get wrong about applying
+## What do people get wrong about applying?
 
 The application isn't a test of your idea. Everyone's idea is roughly equally unproven at that stage and the people reading know it.
 
@@ -45,7 +45,7 @@ It's a test of whether you can explain something clearly and whether you seem li
 
 Practical version: be specific and be honest about what you haven't done. Padding a thin traction slide reads instantly to anyone who's seen a hundred of them, and it costs you more credibility than the empty slide would have. "We have no revenue and here's exactly what we'd need to learn to get some" is a stronger answer than a chart with a made-up curve.
 
-## Would I do another one
+## Would I do another one?
 
 Not right now, and the reasoning is what I'd want someone else to think about.
 

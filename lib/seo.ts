@@ -24,6 +24,7 @@ import { profile } from "@/content/profile";
 import { experience } from "@/content/experience";
 import { projects } from "@/content/projects";
 import type { Article } from "@/content/articles";
+import type { QuestionPair } from "@/lib/faq";
 
 export const SITE_URL = "https://fergusoreilly.dev";
 export const SITE_NAME = `${profile.shortName} · Terminal`;
@@ -123,6 +124,22 @@ export function personSchema(): JsonLdObject {
     image: absolute(profile.portrait),
     jobTitle: profile.jobTitle,
     description: profile.bio[0],
+    /**
+     * The property that exists purely to tell two people with the same name
+     * apart, and it is here because the baseline run on 2026-08-21 found that
+     * the name is contested: there is another Fergus O'Reilly working in
+     * software who is also a Trinity College Dublin computer science graduate.
+     * Every field this graph was relying on to identify its subject is a field
+     * they share.
+     *
+     * So this one is built from what is not shared: the full legal name, the
+     * current venture, and the fact that the degree is in progress rather than
+     * finished. Derived from `content/profile.ts` like everything else here, so
+     * it cannot quietly stop being true.
+     */
+    disambiguatingDescription: `${profile.name}, a technical founder in ${profile.location} building ${
+      experience[0]?.org ?? "software"
+    }, currently studying ${profile.education}.`,
     address: {
       "@type": "PostalAddress",
       addressLocality: "Dublin",
@@ -133,11 +150,22 @@ export function personSchema(): JsonLdObject {
       name: "Trinity College Dublin",
       url: "https://www.tcd.ie",
     },
+    // This domain is the page this person is primarily about. Without it, a
+    // graph can describe a person while leaving open which URL is authoritative
+    // for them, which is the question an answer engine is actually trying to
+    // settle when it decides whose site to cite.
+    mainEntityOfPage: { "@id": `${SITE_URL}/#profilepage` },
+    // The employer gets its own stable `@id` and its own corroborating link
+    // rather than being a bare string. A named organisation with no identity
+    // behind it is a label; one with an `@id` and a `sameAs` is an entity that
+    // other statements, here and elsewhere, can attach themselves to.
     worksFor: current
       ? prune({
           "@type": "Organization",
+          "@id": current.link ? `${current.link.href}/#organization` : undefined,
           name: current.org,
           url: current.link?.href,
+          sameAs: current.link ? [current.link.href] : undefined,
         })
       : undefined,
     knowsAbout: profile.knowsAbout,
@@ -307,6 +335,39 @@ export function blogPostingSchema(article: Article, wordCount: number): JsonLdOb
     wordCount,
     inLanguage: "en",
     image: absolute(`${articlePath(article.slug)}/opengraph-image`),
+  });
+}
+
+/**
+ * The questions an article visibly answers, published as `FAQPage`.
+ *
+ * This is the one node on the site that is generated from the prose rather than
+ * from a content field, and that is the point: the questions are the article's
+ * own `##` headings, and the answers are the paragraphs underneath them. There
+ * is no second copy to fall out of date, and nobody can write an answer into the
+ * graph that a reader would not find on the page.
+ *
+ * Returns `undefined` below two pairs. One question is not a FAQ, and emitting a
+ * near-empty `FAQPage` on every post would be a machine-readable claim that the
+ * site is more structured than it is. `lib/faq.ts` has already dropped any
+ * question with nothing under it.
+ */
+export function faqPageSchema(article: Article, pairs: QuestionPair[]): JsonLdObject | undefined {
+  if (pairs.length < 2) return undefined;
+  const url = absolute(articlePath(article.slug));
+  return prune({
+    "@type": "FAQPage",
+    "@id": `${url}#faq`,
+    url,
+    name: article.title,
+    inLanguage: "en",
+    isPartOf: { "@id": `${url}#article` },
+    about: { "@id": PERSON_ID },
+    mainEntity: pairs.map((pair) => ({
+      "@type": "Question",
+      name: pair.question,
+      acceptedAnswer: { "@type": "Answer", text: pair.answer },
+    })),
   });
 }
 

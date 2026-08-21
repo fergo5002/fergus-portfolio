@@ -9,7 +9,7 @@ export const splitTextSeo: Article = {
   tags: ["SEO", "Motion", "Frontend", "Accessibility"],
   summary:
     "Per-character split-text animations (GSAP SplitText, Framer Motion stagger, hand-rolled span splitting) can make a headline extract as separated letters for naive HTML-to-text crawlers, including the ones feeding AI answer engines. Fix: render a contiguous copy of the text alongside the animated one.",
-  body: `I found this on my own site, which is the only reason I'm confident it's worth writing down.
+  body: `Per-character text animations can turn your best headline into separated letters for anything doing naive HTML-to-text extraction, which is most of what feeds an AI answer engine. I found it on my own site, which is the only reason I'm confident it's worth writing down.
 
 The homepage headline is my name. It animates in one character at a time, because that looks good and because [the whole site is pretending to be a CRT terminal](/writing/a-crt-that-behaves-like-a-crt). To do that, the name is split into one element per letter. Standard stuff. GSAP's SplitText does it, Framer Motion's stagger examples do it, and every "animated hero text" tutorial you have ever read does it.
 
@@ -21,9 +21,9 @@ P a t r i c k  F e r g u s  O ' R e i l l y
 
 The single most important string on the entire domain, rendered as loose letters.
 
-## Why it happens
+## Why does split text break extraction?
 
-Split text produces markup like this:
+Because each character becomes its own element, and any extractor that treats those elements as boxes rather than as text runs puts a word boundary between every letter. The markup looks like this:
 
 \`\`\`html
 <h1>
@@ -41,7 +41,7 @@ The trouble starts with two things that are both extremely common.
 
 **The second is whitespace in your markup.** If your framework or your formatter puts a newline between those spans, a naive extractor that strips tags and normalises whitespace hands you \`P a t r i c k\`. Mine did exactly that.
 
-## Who actually reads it this way
+## Who actually reads a page this way?
 
 This is where I want to be careful, because there's a lot of confident nonsense written about SEO and I don't want to add to it.
 
@@ -55,7 +55,7 @@ So the risk isn't that you drop three places on a search results page. The risk 
 
 That's a worse outcome and it's a harder one to detect, because nobody sends you a report about it.
 
-## The fix, which is about four lines
+## How do you fix it in about four lines?
 
 Render the text twice. Once fragmented for the animation, once whole for everything that reads text.
 
@@ -76,7 +76,7 @@ Two things people get wrong here.
 
 **Don't put \`aria-label\` on the wrapper and call it done.** That was my original setup and it is genuinely correct for accessibility. A screen reader announces the name properly. But \`aria-label\` is an accessibility property, not content, and a text extractor has no reason to read it. Accessible and crawlable are overlapping problems, not the same problem, and this is exactly where they come apart.
 
-## How to check your own site
+## How do I check my own site?
 
 Don't inspect the DOM in dev tools, because the browser will render it correctly and tell you everything is fine. Fetch the HTML the way a dumb crawler would.
 

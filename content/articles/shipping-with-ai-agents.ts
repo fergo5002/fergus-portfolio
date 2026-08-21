@@ -27,7 +27,7 @@ Not "the endpoint should return the booking". Instead: here is the request I sen
 
 This one change caught more bugs than every other practice combined, and most of them were the boring kind that cost you a day in production and nothing at all in development. The full protocol is in [agents will tell you it works](/writing/agents-will-tell-you-it-works).
 
-## Local success means less than you think
+## Why does local success mean less than you think?
 
 "Works on my machine" was already a joke before agents. It's worse now, because an agent iterates fast enough to accidentally fit the shape of your local environment rather than the shape of the problem.
 
@@ -47,7 +47,7 @@ CMD ["npm", "start"]
 
 If it builds and serves there, the thing that reaches production is the thing you tested. If it doesn't, you found out in ninety seconds rather than after a deploy.
 
-## Deploying is not shipping
+## Is deploying the same as shipping?
 
 The gap between "the deploy succeeded" and "a person can use this" is where I've lost the most time, by a distance.
 
@@ -78,7 +78,7 @@ Neither of those is clever. Both cost real hours. Neither has happened twice.
 
 The reason this works with agents specifically is that an agent has no memory of last Tuesday, but it reads files very well. A ledger it consults before starting is institutional memory it can actually use. Repeat offenders get promoted from a note into a test or a lint rule, so the machine enforces it instead of the document asking nicely.
 
-## What I stopped doing
+## What did I stop doing?
 
 **I stopped reviewing diffs line by line.** I read the interfaces, the data model and the error paths. Reading every line is slower than the agent produces them and it lulls you into thinking review is coverage. Tests are coverage.
 
@@ -86,9 +86,9 @@ The reason this works with agents specifically is that an agent has no memory of
 
 **I stopped trusting a green test suite on its own.** A suite an agent wrote alongside the code tests what the code does, which is not the same as what it should do. The check I trust is deleting the fix and watching the test go red. If it stays green, the test was decoration.
 
-## The honest summary
+## So are coding agents worth it?
 
-The agents are good. Genuinely, surprisingly good, and better every few months.
+Yes, and it is not close. The agents are good, genuinely and surprisingly good, and better every few months. The catch is narrow, and it is always the same one.
 
 What they lack is the thing an experienced engineer supplies without noticing: a nagging sense that something might not be true. The whole discipline above is scaffolding around that one absence. Make it prove things, give it a real environment to prove them in, check production afterwards, and write down what went wrong so it can't quietly go wrong again.
 

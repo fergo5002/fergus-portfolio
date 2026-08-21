@@ -8,7 +8,14 @@ import Talk from "@/components/Talk";
 import { articles, articleBySlug, readingMinutes, wordCount } from "@/content/articles";
 import { profile } from "@/content/profile";
 import { tableOfContents } from "@/lib/markdown";
-import { canonical, blogPostingSchema, breadcrumbSchema, articlePath } from "@/lib/seo";
+import { questionPairs } from "@/lib/faq";
+import {
+  canonical,
+  blogPostingSchema,
+  breadcrumbSchema,
+  faqPageSchema,
+  articlePath,
+} from "@/lib/seo";
 
 /**
  * Every article is statically generated at build time. `dynamicParams = false`
@@ -70,6 +77,11 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const index = articles.findIndex((a) => a.slug === article.slug);
   const next = articles[index + 1];
 
+  // Built from the article's own question headings, so the graph cannot claim an
+  // answer a reader would not find on the page. `faqPageSchema` returns
+  // undefined below two pairs rather than publishing a thin one.
+  const faq = faqPageSchema(article, questionPairs(article.body));
+
   return (
     <article className="stack">
       <JsonLd
@@ -80,6 +92,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             { name: "Writing", path: "/writing" },
             { name: article.title, path: articlePath(article.slug) },
           ]),
+          ...(faq ? [faq] : []),
         ]}
       />
 

@@ -94,7 +94,13 @@ export default function Home() {
               {profile.contact.map((c) => (
                 <li key={c.label} className="contact__row">
                   <span className="contact__k">{c.label}</span>
-                  <a href={c.href} target="_blank" rel="noreferrer">
+                  {/* `me` is the identity half of this link, and it is not
+                      decoration: it is the HTML claim that the profile on the
+                      other end is the same person as the one this page is
+                      about, which is the same edge `sameAs` publishes in the
+                      Person graph. Saying it in both places costs nothing and
+                      is what lets something that only reads markup follow it. */}
+                  <a href={c.href} target="_blank" rel="me noreferrer">
                     {c.value}
                   </a>
                 </li>

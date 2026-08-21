@@ -69,7 +69,7 @@ export default function ContactPage() {
               <a
                 href={c.href}
                 {...(c.href.startsWith("http")
-                  ? { target: "_blank", rel: "noreferrer" }
+                  ? { target: "_blank", rel: "me noreferrer" }
                   : {})}
               >
                 {c.value}

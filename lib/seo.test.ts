@@ -17,11 +17,13 @@ import {
   blogSchema,
   blogPostingSchema,
   breadcrumbSchema,
+  faqPageSchema,
   articlePath,
   type JsonLdObject,
 } from "./seo";
 import { articles } from "@/content/articles";
 import { profile } from "@/content/profile";
+import { questionPairs } from "@/lib/faq";
 
 describe("absolute", () => {
   it("prefixes a site-relative path", () => {
@@ -225,6 +227,63 @@ describe("breadcrumbSchema", () => {
     const items = crumbs.itemListElement as JsonLdObject[];
     expect(items.map((i) => i.position)).toEqual([1, 2]);
     expect(items[0].item).toBe(SITE_URL);
+  });
+});
+
+describe("faqPageSchema", () => {
+  const article = articles[0];
+
+  it("returns undefined below two pairs rather than publishing a thin FAQ", () => {
+    expect(faqPageSchema(article, [])).toBeUndefined();
+    expect(faqPageSchema(article, [{ question: "One?", answer: "Only one." }])).toBeUndefined();
+  });
+
+  it("turns pairs into Question and Answer nodes", () => {
+    const faq = faqPageSchema(article, [
+      { question: "First?", answer: "Yes." },
+      { question: "Second?", answer: "Also yes." },
+    ]) as JsonLdObject;
+    const questions = faq.mainEntity as JsonLdObject[];
+    expect(faq["@type"]).toBe("FAQPage");
+    expect(questions).toHaveLength(2);
+    expect(questions[0]["@type"]).toBe("Question");
+    expect(questions[0].name).toBe("First?");
+    expect((questions[0].acceptedAnswer as JsonLdObject).text).toBe("Yes.");
+  });
+
+  it("hangs off the article it belongs to rather than floating free", () => {
+    const url = absolute(articlePath(article.slug));
+    const faq = faqPageSchema(article, [
+      { question: "First?", answer: "Yes." },
+      { question: "Second?", answer: "Also yes." },
+    ]) as JsonLdObject;
+    expect(faq["@id"]).toBe(`${url}#faq`);
+    expect(faq.isPartOf).toEqual({ "@id": `${url}#article` });
+    expect(faq.about).toEqual({ "@id": PERSON_ID });
+  });
+
+  it("publishes a real FAQ for every shipped article", () => {
+    // The guard in content/articles.test.ts already requires two question
+    // headings per article. This asserts the consequence the guard exists for:
+    // that the requirement actually reaches the published graph, rather than
+    // being satisfied in the prose and lost somewhere between here and the page.
+    for (const a of articles) {
+      const faq = faqPageSchema(a, questionPairs(a.body));
+      expect(faq, `no FAQPage for ${a.slug}`).toBeDefined();
+      assertNoUndefined(faq as JsonLdObject, `faq:${a.slug}`);
+      expect(() => JSON.parse(jsonLd(faq as JsonLdObject))).not.toThrow();
+    }
+  });
+
+  it("cannot break out of its script tag through an answer", () => {
+    // Same reasoning as `jsonLd`'s escape: answers are lifted verbatim out of
+    // prose, so an article that quotes a closing script tag would otherwise end
+    // the block early and spill the graph into the document as markup.
+    const faq = faqPageSchema(article, [
+      { question: "Escapes?", answer: "It handles </script> fine." },
+      { question: "Second?", answer: "Yes." },
+    ]) as JsonLdObject;
+    expect(jsonLd(faq)).not.toContain("</script>");
   });
 });
 

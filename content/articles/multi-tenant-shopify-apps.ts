@@ -30,7 +30,7 @@ const orders = await shop.orders.recent(50);
 
 The version where you pass \`shopId\` as the first argument to every function looks equivalent and isn't, because a wrong-but-valid value type-checks perfectly. A handle that carries the scope can't be passed the wrong id, because there's nowhere to pass one.
 
-## Webhooks arrive out of order, twice, or not at all
+## What do you do when webhooks arrive twice, or out of order, or not at all?
 
 Plan for all three from the start. Retrofitting is painful because it means reasoning about state you've already written wrongly.
 
@@ -49,7 +49,7 @@ No row returned means you've already processed it. Stop there. This one constrai
 
 **Not at all.** Webhooks get missed. Anything that matters needs a reconciliation job that pulls from the API and repairs the gap. Treat webhooks as an optimisation over polling, not as a source of truth.
 
-## Money is in the shop's currency, and you will get this wrong once
+## Which currency is the money actually in?
 
 Every monetary field on a Shopify object is in that shop's own currency. Not yours.
 
@@ -67,7 +67,7 @@ I published a mixed euro and sterling figure once. It was too high, nothing erro
 
 Store the currency next to every amount. Never aggregate across currencies without grouping. And if the answer is "we need one number for the front page", the honest move is to publish one currency's subtotal and say so, not to pick an exchange rate that makes the number bigger.
 
-## Tokens die while your job queue is running
+## What happens when a token dies mid job?
 
 Access tokens get revoked. Apps get uninstalled. Scopes change. All of this happens mid-flight, which means a background job that was fine when it was queued gets a 401 when it runs.
 
@@ -87,7 +87,7 @@ A single platform-wide webhook secret is correct with one tenant. With two, veri
 
 Per-install secrets, and the tenant header becomes a lookup key rather than an assertion you trust.
 
-## Things I over-thought
+## What did I over-think?
 
 **Sharding, and any scaling architecture.** One well-indexed Postgres with a shop id on everything will carry you far past the point where you know whether the product works. Index \`(shop_id, created_at)\` on the tables you list by and move on.
 

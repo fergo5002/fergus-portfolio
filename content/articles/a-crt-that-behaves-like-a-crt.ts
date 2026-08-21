@@ -15,7 +15,7 @@ It also looks like a sticker. Every effect is independent, so nothing responds t
 
 I rebuilt mine from a single premise instead: **an electron beam painting phosphor behind glass.** Every effect has to follow from that or it doesn't go in. That constraint turned out to be the whole trick, because it stops you adding tricks.
 
-## What the premise buys you
+## What does committing to the premise buy you?
 
 Once you commit, a lot of decisions stop being aesthetic choices and start having correct answers.
 
@@ -51,9 +51,9 @@ Half resolution, because it's a glow. Nobody has ever noticed the persistence bu
 
 The rule that came out of this: **nothing else may write light directly to the screen.** Every effect deposits into the simulation buffer and lets it decay. The first version had impact flashes drawn straight to the output, and they looked wrong precisely because they were the only thing on screen with no memory.
 
-## One clock
+## Why should every effect share one clock?
 
-If you take one practical thing from this, take this one.
+Because the moment two subsystems each schedule their own frame, the order they run in stops being defined, and you get a smear that lags the scroll by exactly one frame. If you take one practical thing from this, take this one.
 
 Every subsystem here wants a frame loop. The smooth-scrolling library, the shader, the physics solver, the status readouts. The obvious approach is for each to call \`requestAnimationFrame\` itself, and it works, and then you find scroll velocity is computed after the shader read it, so the smear lags the scroll by exactly one frame.
 
@@ -79,7 +79,7 @@ frame.current.velocity = v;
 root.style.setProperty("--scroll-v", String(v));
 \`\`\`
 
-## Reduced motion is not an afterthought here
+## What happens when someone turns motion off?
 
 A screen that flickers, drifts and smears is exactly what \`prefers-reduced-motion\` exists to protect people from. Getting this right is not optional and it's more than pausing an animation.
 
@@ -87,7 +87,7 @@ Under \`reduce\`: the smooth-scroll library is never mounted at all, the shader 
 
 The last one caught me out. The boot animation hides page content until it finishes, via a class set before first paint. Skip the animation but keep the class and you've built a page that is permanently invisible to the people who most needed the accommodation. Any pre-paint script that hides content needs a guaranteed path that reveals it again, and that path has to be the *first* thing you test, not the last.
 
-## What I'd tell someone doing this
+## What would I tell someone building one?
 
 One warning if you build anything like this: an effect that fragments text fragments it for machines too, which cost me my own headline in search. That is [its own article](/writing/split-text-is-costing-you-search).
 
