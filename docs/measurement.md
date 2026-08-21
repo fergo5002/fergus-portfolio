@@ -62,6 +62,13 @@ that, but nothing else is. Do not build a "returning visitors" insight; it canno
 **`ai_referral` is a floor, not a count.** Engines that strip the referrer and do not tag the URL
 are invisible. A rise is real, an absence is not evidence.
 
+**The Docker parity container does report, and it should be filtered out.** `Dockerfile.parity`
+takes the project token as a build arg so the parity build exercises the same code path production
+will, which means running the container sends real events. They are easy to spot: `$current_url`
+and `path` point at `localhost:3000`. Exclude `$current_url` containing `localhost` from anything
+you chart. The alternative was a parity build that compiles different code from the one that
+ships, which is worse.
+
 **Development does not report, and it is the code that makes that true.**
 `components/analytics/PostHogAnalytics.tsx` reads the key only when `NODE_ENV === "production"`.
 The key still sits in `.env.local` because `scripts/share-of-model/publish.mjs` needs it on disk,

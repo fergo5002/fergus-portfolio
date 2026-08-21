@@ -83,16 +83,35 @@ describe("/api/mcp telemetry", () => {
     expect(props.$process_person_profile).toBe(false);
   });
 
-  it("takes the client identity from the Mcp-Name header", async () => {
+  /**
+   * The client identity comes from `User-Agent`, and this test exists because
+   * the first version took it from `Mcp-Name` on a claim I made from memory.
+   *
+   * `Mcp-Name` is per-request routing metadata that must equal `params.name`.
+   * `lib/mcp.ts` rejects a request where they disagree, which is exactly how it
+   * was caught: a live `tools/call` carrying `Mcp-Name: post-deploy-verification`
+   * came back `400 Header mismatch`. Every row would have been labelled with the
+   * tool name and called the client.
+   */
+  it("takes the client identity from the User-Agent, not from Mcp-Name", async () => {
     await POST(
       rpc({ jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "get_profile" } }, {
-        "Mcp-Name": "Claude Desktop",
+        "user-agent": "claude-desktop/1.4",
+        // Present and legal, because it agrees with `params.name`. If this ever
+        // becomes the client label again, the assertions below go red.
+        "Mcp-Name": "get_profile",
       }),
     );
 
     const body = captured(fetchMock)!;
-    expect(body.distinct_id).toBe("mcp:Claude Desktop");
-    expect((body.properties as Record<string, unknown>).client).toBe("Claude Desktop");
+    expect(body.distinct_id).toBe("mcp:claude-desktop/1.4");
+    expect((body.properties as Record<string, unknown>).client).toBe("claude-desktop/1.4");
+    expect(body.distinct_id).not.toBe("mcp:get_profile");
+  });
+
+  it("falls back to an unknown client when nothing identifies the caller", async () => {
+    await POST(rpc({ jsonrpc: "2.0", id: 1, method: "tools/list" }));
+    expect(captured(fetchMock)!.distinct_id).toBe("mcp:unknown");
   });
 
   it("records a non-tool request as a request, not as a tool call", async () => {

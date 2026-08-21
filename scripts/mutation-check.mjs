@@ -421,6 +421,24 @@ const MUTATIONS = [
     replace: "  // observation removed",
   },
   {
+    name: "THE REGRESSION: MCP client identity comes from Mcp-Name again, labelling every row with the tool name",
+    file: "app/api/mcp/route.ts",
+    pattern: /const withClient = withMcpClient\(telemetry, request\.headers\.get\("user-agent"\)\);/,
+    replace: 'const withClient = withMcpClient(telemetry, request.headers.get("mcp-name"));',
+  },
+  {
+    name: "the transport's guess overwrites the identity the client declared itself",
+    file: "lib/analytics.ts",
+    pattern: /  if \(telemetry\.properties\.client\) return telemetry;/,
+    replace: "  // preference removed",
+  },
+  {
+    name: "the _meta client key drifts away from the one lib/mcp.ts implements",
+    file: "lib/analytics.ts",
+    pattern: /const MCP_CLIENT_INFO_KEY = "io\.modelcontextprotocol\/clientInfo";/,
+    replace: 'const MCP_CLIENT_INFO_KEY = "io.modelcontextprotocol/client-info";',
+  },
+  {
     name: "MCP telemetry reports a made-up 200 instead of the status it returned",
     file: "app/api/mcp/route.ts",
     pattern: /const telemetry = mcpCallProperties\(observed, reply\.status\);/,

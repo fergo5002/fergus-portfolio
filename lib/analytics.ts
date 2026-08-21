@@ -229,6 +229,53 @@ const MCP_FIELD_LIMIT = 120;
 export type McpTelemetry = { event: string; distinctId: string; properties: Record<string, unknown> };
 
 /**
+ * The `_meta` key a 2026-07-28 client puts its identity under.
+ *
+ * Copied as a literal rather than imported from `lib/mcp.ts`, and that is a
+ * deliberate trade rather than an oversight. `middleware.ts` imports this module
+ * for `INGEST_PREFIX`, so an import of `lib/mcp.ts` here would pull the entire
+ * MCP server, its tool table and the whole `content/` corpus into the edge
+ * bundle that runs in front of every request on the site. That is a large price
+ * for one string.
+ *
+ * The duplication is guarded: `lib/analytics.test.ts` imports `META` from
+ * `lib/mcp.ts` and asserts the two agree, so it cannot drift silently.
+ */
+const MCP_CLIENT_INFO_KEY = "io.modelcontextprotocol/clientInfo";
+
+/** Exported for the drift guard in `lib/analytics.test.ts`, and nothing else. */
+export const MCP_CLIENT_INFO_KEY_FOR_TEST = MCP_CLIENT_INFO_KEY;
+
+/** `{ name, version }`, if it is there and shaped as expected. */
+function clientInfoName(message: unknown): string | null {
+  if (!isRecord(message)) return null;
+  const params = message.params;
+  if (!isRecord(params)) return null;
+
+  // Modern: on `_meta`, on every request, which is what makes it worth reading.
+  const meta = params._meta;
+  if (isRecord(meta)) {
+    const info = meta[MCP_CLIENT_INFO_KEY];
+    if (isRecord(info) && typeof info.name === "string" && info.name.trim()) {
+      return info.name.trim().slice(0, MCP_FIELD_LIMIT);
+    }
+  }
+
+  // Legacy: on `initialize` only, so it identifies the handshake and nothing
+  // after it. Read anyway, because one labelled row beats none.
+  const legacy = params.clientInfo;
+  if (isRecord(legacy) && typeof legacy.name === "string" && legacy.name.trim()) {
+    return legacy.name.trim().slice(0, MCP_FIELD_LIMIT);
+  }
+
+  return null;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
  * What to record about one call to `/api/mcp`, or `null` for nothing.
  *
  * ## Why this is worth measuring at all
@@ -266,38 +313,86 @@ export function mcpCallProperties(message: unknown, status: number): McpTelemetr
   const method = typeof rpc.method === "string" ? rpc.method.slice(0, MCP_FIELD_LIMIT) : null;
   if (!method) return null;
 
+  // The protocol's own answer to "who is calling", preferred over the transport's
+  // because a client that declares itself in `_meta` is telling you rather than
+  // being inferred. `client_source` travels with it so a chart never has to
+  // guess how much the label is worth.
+  const declared = clientInfoName(message);
+  const identity = declared
+    ? { distinctId: `mcp:${declared}`, client: declared, client_source: "protocol" }
+    : { distinctId: "mcp:unknown" };
+  const { distinctId, ...clientProps } = identity;
+
   if (method === "tools/call") {
     const params = (rpc.params ?? {}) as { name?: unknown };
     const tool = typeof params.name === "string" ? params.name.slice(0, MCP_FIELD_LIMIT) : "unknown";
     return {
       event: "mcp_tool_call",
-      distinctId: "mcp:unknown",
-      properties: { tool, status, ok },
+      distinctId,
+      properties: { tool, status, ok, ...clientProps },
     };
   }
 
   return {
     event: "mcp_request",
-    distinctId: "mcp:unknown",
-    properties: { method, status, ok },
+    distinctId,
+    properties: { method, status, ok, ...clientProps },
   };
 }
 
 /**
- * Attach the calling client's identity, when it offered one.
+ * Attach the calling client's identity, taken from its `User-Agent`.
  *
- * MCP revision `2026-07-28` carries the client name in the `Mcp-Name` header.
- * It is free text chosen by the caller, so it is truncated and it is never
- * trusted for anything: it exists so that "Claude Desktop called `get_profile`
- * forty times" can be told apart from "one script did".
+ * ## The correction
+ *
+ * This read the `Mcp-Name` header until 2026-08-21, on my own claim that
+ * revision `2026-07-28` carries the client name there. **It does not.**
+ * `Mcp-Name` is per-request routing metadata that must equal `params.name`, and
+ * `lib/mcp.ts` rejects a request where the two disagree, which is how this was
+ * found: a live `tools/call` with `Mcp-Name: post-deploy-verification` came back
+ * `400 Header mismatch`.
+ *
+ * So the old version would have labelled every row with the **tool name** and
+ * called it the client, putting `mcp:get_profile` in the distinct id and a
+ * duplicate of `tool` in a field called `client`. Not a crash, just a column
+ * that quietly meant something other than its name. The answer was in
+ * `lib/mcp.ts` the whole time and I asserted it from memory instead.
+ *
+ * ## What identifies a client instead
+ *
+ * Two sources, in order of how much the label is worth, and `client_source`
+ * records which one produced it so a chart never has to guess:
+ *
+ * 1. **`protocol`.** The client declared itself. A 2026-07-28 client puts
+ *    `clientInfo` on `_meta` on **every** request, and a legacy client puts it
+ *    on `initialize` only. Read by `mcpCallProperties`, and preferred, because a
+ *    client telling you who it is beats inferring it.
+ * 2. **`user-agent`.** The fallback here, for the legacy era's `tools/call`,
+ *    where the handshake carried the identity and this request does not. There
+ *    is no per-request identity header in stateless MCP, so this is the only
+ *    thing left, and it is the reason the fallback exists at all rather than
+ *    leaving those rows unlabelled.
+ *
+ * Both are free text chosen by the caller, so both are truncated and neither is
+ * trusted for anything. They exist so that "one client called `get_profile`
+ * forty times" can be told apart from "forty clients did".
+ *
+ * A caveat worth keeping, since this docblock exists because of an unverified
+ * claim: **no real MCP client has connected to this server yet**, so the shape
+ * of what these fields actually contain in the wild is unobserved. The examples
+ * in the tests are invented.
  */
-export function withMcpClient(telemetry: McpTelemetry, clientName: string | null): McpTelemetry {
-  const name = clientName?.trim().slice(0, MCP_FIELD_LIMIT);
+export function withMcpClient(telemetry: McpTelemetry, userAgent: string | null): McpTelemetry {
+  // A client that declared itself in the protocol has already been read by
+  // `mcpCallProperties`, and that is the better signal. This only fills a gap.
+  if (telemetry.properties.client) return telemetry;
+
+  const name = userAgent?.trim().slice(0, MCP_FIELD_LIMIT);
   if (!name) return telemetry;
   return {
     ...telemetry,
     distinctId: `mcp:${name}`,
-    properties: { ...telemetry.properties, client: name },
+    properties: { ...telemetry.properties, client: name, client_source: "user-agent" },
   };
 }
 

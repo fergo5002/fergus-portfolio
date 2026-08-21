@@ -128,7 +128,10 @@ export async function POST(request: Request): Promise<Response> {
    */
   const telemetry = mcpCallProperties(observed, reply.status);
   if (telemetry) {
-    const withClient = withMcpClient(telemetry, request.headers.get("mcp-name"));
+    // `user-agent`, NOT `mcp-name`. `Mcp-Name` is routing metadata that must
+    // equal `params.name`; using it here labelled every row with the tool name
+    // and called it the client. See the docblock on `withMcpClient`.
+    const withClient = withMcpClient(telemetry, request.headers.get("user-agent"));
     afterResponse(() =>
       captureServerEvent({
         event: withClient.event,

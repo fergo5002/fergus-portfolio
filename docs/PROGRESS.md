@@ -76,13 +76,37 @@ bill and inflate the one number the exercise exists to produce; and a **52/52 mu
 quoted after three more mutations had been added**, which is logged in [[coding-mistakes]] as its
 own lesson about scores having timestamps.
 
-The corrected figure, from a full run after all of the above: **61/61 mutations caught, 924 tests,
-31 files.** The first re-run came back 59/61, and both survivors were guards of mine that did
-nothing: one mutated only a module initialiser that every test overwrote in `beforeEach` (and which
-is an equivalent mutant in production anyway, since `Date.now()` dwarfs the window), and one
-asserted a status equality that a hard-coded `200` satisfied because every case exercised happened
-to return 200. Fixed by mutating both occurrences of the sentinel, and by adding a JSON-RPC
-notification case that really does return 202.
+An intermediate run came back 59/61, and both survivors were guards of mine that did nothing: one
+mutated only a module initialiser that every test overwrote in `beforeEach` (and which is an
+equivalent mutant in production anyway, since `Date.now()` dwarfs the window), and one asserted a
+status equality that a hard-coded `200` satisfied because every case exercised happened to return
+200. Fixed by mutating both occurrences of the sentinel, and by adding a JSON-RPC notification case
+that really does return 202.
+
+> [!warning] `Mcp-Name` is not the client's name, and I asserted that it was
+> The MCP telemetry took the caller's identity from the `Mcp-Name` header, with a docblock stating
+> as fact that revision 2026-07-28 carries the client name there. **It does not.** `Mcp-Name` is
+> per-request routing metadata that must equal `params.name`, and `lib/mcp.ts` has a
+> `headerMismatch` check that rejects a disagreement. The answer was in this repo, in the module
+> `AGENTS.md` tells you to read before touching that endpoint, and I used memory instead.
+>
+> Found by exercising production: a live `tools/call` sent with `Mcp-Name: post-deploy-verification`
+> came back `400 Header mismatch`, and the PostHog row it had already written read
+> `distinct_id: "mcp:post-deploy-verification"` with that value sitting in a field called `client`.
+> Not a crash. A column that quietly meant something other than its label.
+>
+> Identity now comes from the protocol itself: a 2026-07-28 client puts `clientInfo` on `_meta` on
+> **every** request and a legacy client puts it on `initialize`, so that is read first and tagged
+> `client_source: "protocol"`. The `User-Agent` is the fallback, tagged `"user-agent"`, for legacy
+> `tools/call` where the handshake carried the identity and the request does not.
+>
+> The unit test could never have caught it: it passed its own chosen string into `withMcpClient` and
+> checked the string came back. **A test that supplies its own input cannot discover that the real
+> input means something else.** One live call did it in one request.
+
+Final figures, from a full run after everything above: **64/64 mutations caught, 933 tests across
+32 files**, `tsc --noEmit` clean, `next build` clean, Docker prod-parity green from `npm ci` on
+Node 24 and exercised in the running container.
 
 **Status (2026-08-21, earlier): the site is citable, it has original data, a tool and an MCP server,
 and its own costume is out of the text.** Live on `656478c`, verified in production.

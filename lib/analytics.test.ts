@@ -13,7 +13,9 @@ import {
   webVitalRating,
   mcpCallProperties,
   withMcpClient,
+  MCP_CLIENT_INFO_KEY_FOR_TEST,
 } from "./analytics";
+import { META } from "./mcp";
 
 /**
  * Referrer classification is the one number in this whole exercise that
@@ -256,21 +258,114 @@ describe("mcpCallProperties", () => {
   });
 });
 
+/**
+ * Client identity, and the correction behind it.
+ *
+ * This was read from the `Mcp-Name` header until 2026-08-21, on my own claim
+ * that revision 2026-07-28 carries the client name there. It does not:
+ * `Mcp-Name` is routing metadata that must equal `params.name`, and `lib/mcp.ts`
+ * rejects a mismatch. Caught by a live request coming back `400 Header
+ * mismatch`, after it had already written a row whose "client" was a tool name.
+ */
+describe("client identity from the protocol", () => {
+  const modern = (clientName: string) => ({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/call",
+    params: {
+      name: "get_profile",
+      _meta: { "io.modelcontextprotocol/clientInfo": { name: clientName, version: "1.0.0" } },
+    },
+  });
+
+  it("reads a modern client's declared name off _meta", () => {
+    const t = mcpCallProperties(modern("mcp-remote/0.1.29"), 200)!;
+    expect(t.distinctId).toBe("mcp:mcp-remote/0.1.29");
+    expect(t.properties.client).toBe("mcp-remote/0.1.29");
+    expect(t.properties.client_source).toBe("protocol");
+  });
+
+  it("reads a legacy client's name off initialize", () => {
+    const t = mcpCallProperties(
+      {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: { clientInfo: { name: "ExampleClient", version: "1.0.0" } },
+      },
+      200,
+    )!;
+    expect(t.properties.client).toBe("ExampleClient");
+    expect(t.properties.client_source).toBe("protocol");
+  });
+
+  it("says nothing about the client when nothing declared one", () => {
+    const t = mcpCallProperties({ jsonrpc: "2.0", id: 1, method: "tools/list" }, 200)!;
+    expect(t.distinctId).toBe("mcp:unknown");
+    expect(t.properties.client).toBeUndefined();
+    expect(t.properties.client_source).toBeUndefined();
+  });
+
+  it("does not choke on a malformed clientInfo", () => {
+    for (const params of [
+      { _meta: { "io.modelcontextprotocol/clientInfo": "a string" } },
+      { _meta: { "io.modelcontextprotocol/clientInfo": { name: 42 } } },
+      { _meta: { "io.modelcontextprotocol/clientInfo": { name: "   " } } },
+      { _meta: [] },
+      { clientInfo: null },
+    ]) {
+      const t = mcpCallProperties({ jsonrpc: "2.0", id: 1, method: "tools/list", params }, 200)!;
+      expect(t.distinctId, JSON.stringify(params)).toBe("mcp:unknown");
+    }
+  });
+
+  it("truncates a declared name", () => {
+    const t = mcpCallProperties(modern("c".repeat(5000)), 200)!;
+    expect((t.properties.client as string).length).toBeLessThanOrEqual(120);
+  });
+
+  /**
+   * The `_meta` key is a literal in `lib/analytics.ts` rather than an import,
+   * so that `middleware.ts` does not drag the whole MCP server and the
+   * `content/` corpus into the edge bundle it runs in front of every request.
+   * That trade is only safe while the two agree, so the test does the importing.
+   */
+  it("uses the same _meta key that lib/mcp.ts implements", () => {
+    expect(MCP_CLIENT_INFO_KEY_FOR_TEST).toBe(META.clientInfo);
+  });
+});
+
 describe("withMcpClient", () => {
   const base = { event: "mcp_tool_call", distinctId: "mcp:unknown", properties: { tool: "x" } };
 
-  it("uses the client name as the distinct id when one is offered", () => {
-    const t = withMcpClient(base, "Claude Desktop");
-    expect(t.distinctId).toBe("mcp:Claude Desktop");
-    expect(t.properties.client).toBe("Claude Desktop");
+  it("falls back to the User-Agent when the protocol declared nothing", () => {
+    // A real user agent shape, with the slash, semicolon and parentheses that a
+    // friendly display name does not have. The old test used "Claude Desktop",
+    // which was the shape of the header this no longer reads.
+    const ua = "node/22.3.0 (mcp-remote; +https://example.invalid)";
+    const t = withMcpClient(base, ua);
+    expect(t.distinctId).toBe(`mcp:${ua}`);
+    expect(t.properties.client).toBe(ua);
+    expect(t.properties.client_source).toBe("user-agent");
   });
 
-  it("leaves the fallback in place when no name is offered", () => {
+  it("never overwrites an identity the client declared itself", () => {
+    const declared = {
+      ...base,
+      distinctId: "mcp:mcp-remote/0.1.29",
+      properties: { tool: "x", client: "mcp-remote/0.1.29", client_source: "protocol" },
+    };
+    const t = withMcpClient(declared, "curl/8.7.1");
+    expect(t.distinctId).toBe("mcp:mcp-remote/0.1.29");
+    expect(t.properties.client_source).toBe("protocol");
+  });
+
+  it("leaves the fallback in place when nothing identifies the caller", () => {
     expect(withMcpClient(base, null).distinctId).toBe("mcp:unknown");
     expect(withMcpClient(base, "   ").distinctId).toBe("mcp:unknown");
   });
 
-  it("truncates a client name", () => {
+  it("truncates a user agent", () => {
     expect(withMcpClient(base, "c".repeat(5000)).distinctId.length).toBeLessThanOrEqual(124);
   });
 });
