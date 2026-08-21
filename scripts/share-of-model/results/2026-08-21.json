@@ -1,0 +1,313 @@
+{
+  "date": "2026-08-21",
+  "questionSetVersion": "1.0.0",
+  "operator": "Claude Code session (Opus 5), WebSearch and WebFetch tools",
+  "region": "US (the WebSearch backend is documented as US-only, which is itself a limit on this baseline: Fergus and most of his audience are in Ireland)",
+  "notes": "First run, taken deliberately one day after the SEO/GEO foundation shipped on 2026-08-20, so it is the 'before'. Fifteen of the twenty-four questions were asked. Four of the five surfaces were not reachable from an automated session and are recorded as missing rather than zero. The one surface that ran returned no appearance of fergusoreilly.dev on any question, and the probe step says why: the domain does not come back for strings that exist nowhere else on the web, so this surface appears not to hold the domain at all. Read every zero here as 'this backend cannot retrieve the site', not as 'the site was passed over'. Two findings are independent of that and stand on their own: there is an established software-industry Fergus O'Reilly (Rubrics, previously SAP and Stripe, also a Trinity College Dublin computer science graduate) who owns the entity questions, and 'Tigh Sauna' collides with Tigh'N Alluis, a Dublin mountains sauna venue with TripAdvisor and Visit Dublin coverage.",
+  "surfaces": {
+    "claude-search": {
+      "status": "run",
+      "instrument": {
+        "verdict": "index-absent",
+        "note": "three site-only strings returned nothing from the domain"
+      },
+      "notes": "This is the Claude Code WebSearch tool, not claude.ai with web search, and the two are not the same product. Probe results: 'site:fergusoreilly.dev' returned ten Wikipedia pages about people called Fergus, so the site: operator is not honoured and that probe is void. Quoted article titles were also answered topically rather than as literal strings, so the exact-match probe is weakened too. What remains: all three probe strings and the bare token 'Presterly' produced zero appearances of the domain across four attempts. The split-text title returned gsap.com and web.dev, the webhook title returned hookdeck.com and webhooks.fyi, the CRT title returned johndaro.com and Wikipedia, and 'Presterly' returned Prester John and US government shutdowns. That is consistent with the domain being absent from this index and does not prove it. A separate WebFetch of https://fergusoreilly.dev/llms.txt returned the real file with correct content, so the site is live and the fetch path is healthy. Live and retrievable are different things and only the first is established here.",
+      "rows": [
+        {
+          "id": "ent-01",
+          "band": "entity",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "crunchbase.com",
+            "linkedin.com",
+            "instagram.com",
+            "twitter.com",
+            "en.wikipedia.org",
+            "flickr.com",
+            "independent.academia.edu",
+            "freemusicarchive.org"
+          ],
+          "notes": "Answered about a different Fergus O'Reilly: co-founder at Rubrics, previously Stripe and SAP, thirty years in software, and also a Trinity College Dublin computer science graduate. The collision is close enough that the disambiguating details do not disambiguate."
+        },
+        {
+          "id": "ent-02",
+          "band": "entity",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "linkedin.com",
+            "en.wikipedia.org"
+          ],
+          "notes": "Answered about Patrick O'Reilly, a Solutions Engineer at Showtime Analytics. It noted the exact name may not match. The legal name in full returns nothing of his, which is the case alternateName in the Person graph exists to fix."
+        },
+        {
+          "id": "ent-03",
+          "band": "entity",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "tighnalluis.ie",
+            "alltogethernow.ie",
+            "visitdublin.com",
+            "tripadvisor.ie",
+            "instagram.com",
+            "teaspoonofadventure.com",
+            "en.wikipedia.org"
+          ],
+          "notes": "Read as Tigh'N Alluis, a barrel sauna and sweat house in Glencullen, County Dublin. A venue, not booking software, and it holds the name in the same city and the same market. tighsauna.com did not appear either."
+        },
+        {
+          "id": "ent-04",
+          "band": "entity",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "brookings.edu",
+            "naacpldf.org",
+            "pgpf.org",
+            "hks.harvard.edu",
+            "bloomberg.com",
+            "en.wikipedia.org",
+            "britannica.com",
+            "pressreader.com"
+          ],
+          "notes": "Three attempts. Returned US government shutdowns, then Prester John, then closed restaurant chains, then asked what Presterly was. An invented company name with a published post-mortem returning nothing is the clearest single signal in the run."
+        },
+        {
+          "id": "ent-05",
+          "band": "entity",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "oreilly.com",
+            "researchgate.net",
+            "crunchbase.com",
+            "linkedin.com",
+            "independent.academia.edu",
+            "en.wikipedia.org"
+          ],
+          "notes": "The surname collides with O'Reilly Media, so the first pass returned publisher catalogue pages. The second pass found the Rubrics Fergus O'Reilly and a Cork Institute of Technology researcher of the same name, and concluded neither has published on software engineering."
+        },
+        {
+          "id": "top-01",
+          "band": "topic",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "gsap.com",
+            "motion.dev",
+            "web.dev",
+            "motion.page",
+            "github.com",
+            "shadcn.io",
+            "uicore.co",
+            "freefrontend.com",
+            "animejs.com",
+            "aescripts.com"
+          ],
+          "notes": "It gave the correct fix, keep the original text nodes in the HTML, sourced from split-text-js and web.dev. So the question has an answer already and the article is one more voice on it rather than the only one. Library documentation owns this question."
+        },
+        {
+          "id": "top-03",
+          "band": "topic",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "hookdeck.com",
+            "dev.to",
+            "medium.com",
+            "github.com",
+            "community.shopify.com",
+            "softwareengineeringstandard.com",
+            "webhooks.fyi"
+          ],
+          "notes": "The most useful row in the run. It said outright that the results do not address whether one secret across every install is worse than per-install secrets, and suggested consulting Shopify directly. That is the exact gap the article fills, on a question that currently has no owner."
+        },
+        {
+          "id": "top-05",
+          "band": "topic",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "shopify.com",
+            "community.shopify.com",
+            "eseospace.com",
+            "infoq.com",
+            "educative.io",
+            "medium.com"
+          ],
+          "notes": "Shopify's own blog owns this one and answers it well, including the tenant_id-on-every-record advice. Hardest topic question in the set to take."
+        },
+        {
+          "id": "top-06",
+          "band": "topic",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "mindstudio.ai",
+            "medium.com",
+            "whitebeardstrategies.com",
+            "dev.to",
+            "validity.ai",
+            "bmdpat.com"
+          ],
+          "notes": "Answered with the same argument the article makes, down to the phrasing: treat every reported completion as a falsifiable claim, and check the change in the real app. Competitors here are vendor blogs and a product called Validity, so there is no dominant authority holding it."
+        },
+        {
+          "id": "top-08",
+          "band": "topic",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "startups.com",
+            "svb.com",
+            "masschallenge.org",
+            "microventures.com",
+            "gritt.io",
+            "alejandrocremades.com",
+            "qapita.com",
+            "stripe.com",
+            "en.wikipedia.org"
+          ],
+          "notes": "Every source is an accelerator, an investor or someone selling access to one. Not one is a founder who went through a programme and still wound the company down, which is the only thing the article has that they do not."
+        },
+        {
+          "id": "com-01",
+          "band": "competitive",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "lottiefiles.com",
+            "go-seo.com",
+            "vareweb.com",
+            "broworks.net",
+            "sikora.software",
+            "freelancewebprogrammer.com",
+            "swartdigital.com"
+          ],
+          "notes": "Answered entirely as a page-weight and Core Web Vitals question. Nothing in the answer mentions text extraction, which means the general question is not currently a route into the specific one the article owns."
+        },
+        {
+          "id": "com-02",
+          "band": "competitive",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "surferseo.com",
+            "aioseo.com",
+            "ideadigital.agency",
+            "joinamply.com",
+            "thetarareid.com",
+            "chatfeatured.com",
+            "ailabsaudit.com",
+            "pixelmojo.io",
+            "theagenzzy.com"
+          ],
+          "notes": "Nine sources, every one an SEO vendor or agency with a product to sell. The advice given matches what this site has already shipped: schema.org, an llms.txt, Person schema linking to verifiable profiles. Worth watching as the question most likely to reward a non-vendor source."
+        },
+        {
+          "id": "ctl-01",
+          "band": "control",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "britannica.com",
+            "en.wikipedia.org",
+            "quora.com",
+            "brainly.com",
+            "mappr.co",
+            "ebsco.com",
+            "irishtourism.com",
+            "famworld.com"
+          ],
+          "notes": "Clean. Answered Dublin, cited reference sources."
+        },
+        {
+          "id": "ctl-03",
+          "band": "control",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "yelp.com",
+            "outsider.ie",
+            "wellnessmap.ie",
+            "heydublin.ie",
+            "thegloss.ie",
+            "thesaunaguide.co.uk",
+            "irelandsaunas.com",
+            "thermae.app",
+            "wanderlog.com"
+          ],
+          "notes": "Clean, and the most informative control. Nine sauna directories and listing sites own the Dublin sauna question, which is the market Tigh Sauna's merchants sell into. None of them is a booking product."
+        },
+        {
+          "id": "ctl-04",
+          "band": "control",
+          "outcome": "answered",
+          "cited": false,
+          "mentioned": false,
+          "citingUrls": [],
+          "competingDomains": [
+            "linkedin.com",
+            "forbes.com",
+            "shopify.com",
+            "sec.gov",
+            "acquired.fm",
+            "youtube.com",
+            "instagram.com",
+            "x.com",
+            "johncoogan.com",
+            "substack.com"
+          ],
+          "notes": "Clean. Answered Tobias Lutke with no drift toward Shopify-adjacent writers."
+        }
+      ]
+    },
+    "chatgpt": {
+      "status": "missing",
+      "reason": "Not reachable from an automated Claude Code session. It needs a logged-in browser on chatgpt.com and a human at the keyboard. Not a zero."
+    },
+    "perplexity": {
+      "status": "missing",
+      "reason": "Not reachable from an automated Claude Code session. Same reason: a signed-in interactive surface. Not a zero."
+    },
+    "google-ai-overviews": {
+      "status": "missing",
+      "reason": "The AI Overview panel is rendered in the Google results page for an interactive session and is not exposed by the WebSearch tool, which returns ranked links and a synthesis of its own. Not a zero."
+    },
+    "google-ai-mode": {
+      "status": "missing",
+      "reason": "AI Mode is a separate Google tab requiring an interactive session, and it is not the same surface as the Overview panel. Not a zero."
+    }
+  },
+  "recordedAt": "2026-08-21T09:31:50.521Z"
+}

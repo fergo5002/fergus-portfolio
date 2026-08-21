@@ -1,0 +1,208 @@
+{
+  "version": "1.0.0",
+  "created": "2026-08-21",
+  "domain": "fergusoreilly.dev",
+  "about": "Fixed question set for the share-of-model harness. The point of freezing it is comparability: if the questions change between runs, the trend is measuring the questions rather than the site. Add questions only by bumping the version and never edit or delete an existing id, because a stored run refers to ids and a rewritten question silently rewrites history.",
+  "bands": {
+    "entity": "Questions about him or his ventures by name. The site should already be the answer. A run where these are not cited is either a real visibility problem or a broken instrument, and the control band is what tells the two apart.",
+    "topic": "Questions the eight published articles genuinely answer, derived from the article set rather than invented. Every question here names the article it came from in `source`. This is the band the writing surface exists to win and the one that should move over three months.",
+    "competitive": "Questions where he is one plausible source among many established ones. Being cited here is a real result. Not being cited here is normal and is not evidence of anything on its own.",
+    "control": "Questions he should NOT win, chosen to sit next to his topics without being his. If a run shows citations here, the run is broken and the other three bands are not readable. Prove the instrument before accusing the object."
+  },
+  "surfaces": [
+    "chatgpt",
+    "perplexity",
+    "google-ai-overviews",
+    "google-ai-mode",
+    "claude-search"
+  ],
+  "probes": {
+    "about": "The control band catches a surface that cites him everywhere. It cannot catch a surface that cannot see the domain at all, because on an all-zero run a clean control band and a blind surface look identical. These probes are the other half of the instrument check and they run FIRST, before any question. Each string is verbatim from the site and exists nowhere else on the web at the time of writing, so a surface that can retrieve the domain has to return it. If none of them surface the domain, the run is recorded with verdict `index-absent` and its zeros mean 'this surface cannot reach the site', not 'the site was not chosen'. Those are different findings and collapsing them is the whole failure this harness exists to prevent.",
+    "strings": [
+      "Your split-text animation is eating your headline",
+      "One webhook secret, two tenants, one hole",
+      "Building a CRT that behaves like a CRT"
+    ],
+    "caveat": "Some surfaces do not honour quoted exact-match or the `site:` operator and will answer the topic instead of looking for the string. Observed on the Claude Code WebSearch backend on 2026-08-21: both `site:fergusoreilly.dev` and a quoted article title returned fuzzy topical results rather than nothing. So a probe returning no domain hit is evidence, not proof. Record what the probe returned in the run notes."
+  },
+  "questions": [
+    {
+      "id": "ent-01",
+      "band": "entity",
+      "text": "Who is Fergus O'Reilly?",
+      "why": "The bare-name question. The Person graph on / exists to win this one.",
+      "expect": "cited"
+    },
+    {
+      "id": "ent-02",
+      "band": "entity",
+      "text": "Who is Patrick Fergus O'Reilly, the software engineer from Dublin?",
+      "why": "The legal name, which is what `alternateName` carries, plus enough disambiguation to separate him from other people with the name. Also the question that would catch a regression in the split-text H1 fix, because the string being tested is the one that used to extract as loose letters.",
+      "expect": "cited"
+    },
+    {
+      "id": "ent-03",
+      "band": "entity",
+      "text": "What is Tigh Sauna?",
+      "why": "The venture that leads on the site, present tense. Its own domain is the natural first answer, so a citation here is the site earning a place beside it rather than instead of it.",
+      "expect": "cited"
+    },
+    {
+      "id": "ent-04",
+      "band": "entity",
+      "text": "What was Presterly and why did it shut down?",
+      "why": "A wound-down company with a published post-mortem. Nobody else has a reason to write this, so if the site does not win it the problem is discovery, not competition.",
+      "expect": "cited"
+    },
+    {
+      "id": "ent-05",
+      "band": "entity",
+      "text": "What has Fergus O'Reilly written about software engineering?",
+      "why": "Tests whether /writing is reachable as a body of work rather than as eight unconnected pages.",
+      "expect": "cited"
+    },
+    {
+      "id": "top-01",
+      "band": "topic",
+      "text": "Why does my split-text hero animation extract as separated letters for crawlers?",
+      "why": "The exact mechanism the article documents, found on this site and fixed on this site.",
+      "source": "split-text-is-costing-you-search",
+      "expect": "cited"
+    },
+    {
+      "id": "top-02",
+      "band": "topic",
+      "text": "Does aria-label fix a headline that is split into one span per character?",
+      "why": "The specific misconception the article corrects: aria-label is an accessibility property, and a text extractor has no reason to read it. A distinctive claim is a better citation test than a generic one.",
+      "source": "split-text-is-costing-you-search",
+      "expect": "cited"
+    },
+    {
+      "id": "top-03",
+      "band": "topic",
+      "text": "Is one Shopify webhook secret shared across every install a security problem?",
+      "why": "The cross-tenant hole that is correct with one merchant and broken with two.",
+      "source": "one-webhook-secret-two-tenants",
+      "expect": "cited"
+    },
+    {
+      "id": "top-04",
+      "band": "topic",
+      "text": "How do I handle Shopify webhooks that arrive out of order or more than once?",
+      "why": "Ordering, duplicates and idempotency keys, all covered directly.",
+      "source": "multi-tenant-shopify-apps",
+      "expect": "cited"
+    },
+    {
+      "id": "top-05",
+      "band": "topic",
+      "text": "What should I get right first when building a multi-tenant Shopify app?",
+      "why": "The article's own framing, and a question with real search demand behind it.",
+      "source": "multi-tenant-shopify-apps",
+      "expect": "cited"
+    },
+    {
+      "id": "top-06",
+      "band": "topic",
+      "text": "How do I verify work an AI coding agent says it has finished?",
+      "why": "The verification protocol: evidence in the same breath, delete the fix and watch it fail, local success is a hypothesis.",
+      "source": "agents-will-tell-you-it-works",
+      "expect": "cited"
+    },
+    {
+      "id": "top-07",
+      "band": "topic",
+      "text": "What habits stop AI-agent-written code breaking in production?",
+      "why": "Prod-parity containers, post-deploy checks and a written mistake ledger the agent reads first.",
+      "source": "shipping-with-ai-agents",
+      "expect": "cited"
+    },
+    {
+      "id": "top-08",
+      "band": "topic",
+      "text": "What is a startup accelerator actually for, and what can it not fix?",
+      "why": "Written from inside a programme by someone whose company still wound down, which is a rarer position than the question's volume suggests.",
+      "source": "what-an-accelerator-is-for",
+      "expect": "cited"
+    },
+    {
+      "id": "top-09",
+      "band": "topic",
+      "text": "What is founder-product fit and how does it end a startup that has traction?",
+      "why": "The named cause in the Presterly post-mortem, and the term the article argues is under-treated.",
+      "source": "why-presterly-wound-down",
+      "expect": "cited"
+    },
+    {
+      "id": "top-10",
+      "band": "topic",
+      "text": "How do you simulate CRT phosphor persistence and burn-in in a WebGL shader?",
+      "why": "The ping-pong persistence buffer, which the usual scanline-overlay recipe cannot express.",
+      "source": "a-crt-that-behaves-like-a-crt",
+      "expect": "cited"
+    },
+    {
+      "id": "com-01",
+      "band": "competitive",
+      "text": "How do I stop my hero animation hurting SEO?",
+      "why": "The general version of top-01. Crowded with agency blog posts and framework documentation, and he is one plausible source among them.",
+      "expect": "plausible"
+    },
+    {
+      "id": "com-02",
+      "band": "competitive",
+      "text": "How do I get my website cited by AI answer engines like ChatGPT and Perplexity?",
+      "why": "The GEO question itself. Dominated by SEO vendors with a product to sell.",
+      "expect": "plausible"
+    },
+    {
+      "id": "com-03",
+      "band": "competitive",
+      "text": "What are the best practices for shipping production code written by AI coding agents?",
+      "why": "Heavily written about by vendors and large engineering blogs. A citation here would be the strongest single signal in the set.",
+      "expect": "plausible"
+    },
+    {
+      "id": "com-04",
+      "band": "competitive",
+      "text": "How should a developer portfolio site be structured for search and AI visibility?",
+      "why": "The site is its own worked example, which is the only argument it has against the tutorial farms that own this query.",
+      "expect": "plausible"
+    },
+    {
+      "id": "com-05",
+      "band": "competitive",
+      "text": "What booking software do small sauna and wellness businesses in Ireland use?",
+      "why": "Commercially the most valuable question in the set and the one the site has least claim on today, because the site is a portfolio and not the product. Included so that changes here are visible rather than assumed.",
+      "expect": "plausible"
+    },
+    {
+      "id": "ctl-01",
+      "band": "control",
+      "text": "What is the capital of Ireland?",
+      "why": "The hard floor. A citation here means the surface is echoing the asker rather than answering, or the recorder is mislabelling rows. Either way the whole run is void.",
+      "expect": "not cited"
+    },
+    {
+      "id": "ctl-02",
+      "band": "control",
+      "text": "How do I install PostgreSQL on Ubuntu 24.04?",
+      "why": "Technically adjacent (PostgreSQL is on his knowsAbout list) and completely owned by official documentation. Catches a run where topical adjacency alone is producing citations.",
+      "expect": "not cited"
+    },
+    {
+      "id": "ctl-03",
+      "band": "control",
+      "text": "What are the best saunas to visit in Dublin?",
+      "why": "Market-adjacent and deliberately so. He builds software for sauna operators and is not a sauna directory, so a citation here means the surface is matching on the word rather than the question.",
+      "expect": "not cited"
+    },
+    {
+      "id": "ctl-04",
+      "band": "control",
+      "text": "Who is the CEO of Shopify?",
+      "why": "A named-entity question inside his strongest topic area. The one control most likely to trip a surface that has decided he is 'the Shopify person', which is exactly the failure mode worth catching.",
+      "expect": "not cited"
+    }
+  ]
+}
