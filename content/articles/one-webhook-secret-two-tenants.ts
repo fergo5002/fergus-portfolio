@@ -17,7 +17,7 @@ It's a good bug. Not clever, not exotic, just a thing that is genuinely correct 
 
 ## The setup
 
-Shopify signs every webhook with an HMAC-SHA256 of the raw body, using a shared secret, in the \`X-Shopify-Hmac-Sha256\` header. You verify it like this, and every tutorial you'll find shows roughly this:
+Shopify signs every webhook with an HMAC-SHA256 of the raw body, using a shared secret, in the \`X-Shopify-Hmac-Sha256\` header. [Their own documentation](https://shopify.dev/docs/apps/build/webhooks/subscribe/https#step-3-validate-the-origin-of-your-webhook) shows you how to verify it, and every tutorial you'll find shows roughly the same:
 
 \`\`\`ts
 const digest = crypto

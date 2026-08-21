@@ -57,7 +57,7 @@ The rule that came out of this: **nothing else may write light directly to the s
 
 Because the moment two subsystems each schedule their own frame, the order they run in stops being defined, and you get a smear that lags the scroll by exactly one frame. If you take one practical thing from this, take this one.
 
-Every subsystem here wants a frame loop. The smooth-scrolling library, the shader, the physics solver, the status readouts. The obvious approach is for each to call \`requestAnimationFrame\` itself, and it works, and then you find scroll velocity is computed after the shader read it, so the smear lags the scroll by exactly one frame.
+Every subsystem here wants a frame loop. The smooth-scrolling library, the shader, the physics solver, the status readouts. The obvious approach is for each to call [\`requestAnimationFrame\`](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) itself, and it works, and then you find scroll velocity is computed after the shader read it, so the smear lags the scroll by exactly one frame.
 
 One loop, at the top, and everything subscribes:
 
@@ -83,7 +83,7 @@ root.style.setProperty("--scroll-v", String(v));
 
 ## What happens when someone turns motion off?
 
-A screen that flickers, drifts and smears is exactly what \`prefers-reduced-motion\` exists to protect people from. Getting this right is not optional and it's more than pausing an animation.
+A screen that flickers, drifts and smears is exactly what [\`prefers-reduced-motion\`](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion) exists to protect people from. Getting this right is not optional and it's more than pausing an animation.
 
 Under \`reduce\`: the smooth-scroll library is never mounted at all, the shader draws exactly one static frame and stops, scroll reveals apply instantly rather than transitioning, and the boot sequence doesn't run.
 

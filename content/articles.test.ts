@@ -39,6 +39,24 @@ describe("article catalogue", () => {
     expect(all.length).toBeGreaterThanOrEqual(articles.length);
   });
 
+  it("cites something outside itself", () => {
+    // The baseline audit on 2026-08-21 found zero outbound links across eight
+    // articles and 8,578 words, which by any citability rubric reads as eight
+    // pieces of unsourced opinion. It was not, but nothing on the page said so.
+    //
+    // Asserted across the corpus rather than per article on purpose. Three of
+    // these posts are first-person accounts of things that happened to Fergus,
+    // and there is no primary source for those beyond him. Padding them with
+    // citations to look authoritative would be worse than having none. What is
+    // not acceptable is a corpus that names GSAP, Shopify's webhook signing and
+    // prefers-reduced-motion and links to none of them.
+    const outbound = articles.flatMap((a) => [...a.body.matchAll(/\]\((https?:\/\/[^)\s]+)\)/g)]);
+    expect(outbound.length).toBeGreaterThanOrEqual(5);
+    for (const [, href] of outbound) {
+      expect(href, `outbound link is not https: ${href}`).toMatch(/^https:\/\//);
+    }
+  });
+
   it("resolves every slug through articleBySlug", () => {
     for (const a of articles) expect(articleBySlug(a.slug)?.title).toBe(a.title);
     expect(articleBySlug("no-such-article")).toBeUndefined();

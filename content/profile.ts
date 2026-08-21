@@ -66,15 +66,30 @@ export const profile: Profile = {
     "Before this I was co-founder and CTO of Presterly, which predicted when a Shopify brand's customers would run out and reached them over SMS and WhatsApp at that moment. We wound it down in August 2026. Before that I was a founding engineer at Loira AI in Stockholm. I've also written a game engine's lighting system and a contrarian trading bot. I like starting things, and I like shipping them end to end.",
     "Outside the terminal you'll find me at a tennis court, in the mountains, or at the sea.",
   ],
+  /**
+   * These links are the site's `sameAs` edges, which is to say they are the
+   * evidence that the person described here is the same person found elsewhere.
+   * That makes an empty profile actively harmful rather than merely useless: an
+   * engine that follows the edge and finds a blank page learns the opposite of
+   * what the field is for, and this is the same reasoning `knowsAbout` below is
+   * already held to.
+   *
+   * `github.com/oreillyfergus` was listed here and was removed on 2026-08-21.
+   * Checked against the GitHub API rather than assumed: zero public
+   * repositories, zero followers, no display name, no linked site. It was the
+   * Presterly-era account and its work was never public. Worse, it was labelled
+   * "github (work)", so every engine reading `/llms.txt` was being pointed at
+   * the empty one in preference to the one with the code on it.
+   *
+   * The other half of this is off-site and is Fergus's to do: setting the
+   * display name and the website field on the remaining account is what makes
+   * the link reciprocal, and a one-directional identity claim is the weaker
+   * half of a pair.
+   */
   contact: [
     { label: "email", value: "oreillferg@gmail.com", href: "mailto:oreillferg@gmail.com" },
     {
-      label: "github (work)",
-      value: "github.com/oreillyfergus",
-      href: "https://github.com/oreillyfergus",
-    },
-    {
-      label: "github (personal)",
+      label: "github",
       value: "github.com/fergo5002",
       href: "https://github.com/fergo5002",
     },

@@ -85,7 +85,7 @@ That column also turns out to be the honest basis for counting customers. An ins
 
 Covered properly in [one webhook secret, two tenants](/writing/one-webhook-secret-two-tenants), but it belongs on this list because it's the one that's genuinely dangerous.
 
-A single platform-wide webhook secret is correct with one tenant. With two, verifying the HMAC only proves the request was signed by *one of* your merchants, and the tenant is read from a header the caller controls. Merchant A can write into merchant B.
+A single [platform-wide webhook secret](https://shopify.dev/docs/apps/build/webhooks) is correct with one tenant. With two, verifying the HMAC only proves the request was signed by *one of* your merchants, and the tenant is read from a header the caller controls. Merchant A can write into merchant B.
 
 Per-install secrets, and the tenant header becomes a lookup key rather than an assertion you trust.
 

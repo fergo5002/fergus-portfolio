@@ -11,7 +11,7 @@ export const acceleratorWorth: Article = {
   tags: ["Startups", "Accelerators", "Founders"],
   summary:
     "An honest account of what a startup accelerator provides and what it cannot: forced deadlines and access are real value, product direction and founder alignment are not things a programme can supply. Written from the experience of a company that went through one and still wound down.",
-  body: `I got into Hatch105 as one of nine from around 1,700 applicants. The company I took through it doesn't exist any more.
+  body: `I got into [Hatch105](https://hatch105.com) as one of nine from around 1,700 applicants. The company I took through it doesn't exist any more.
 
 That makes me a reasonable person to ask whether it was worth it, because I have no programme to promote and no outcome to protect.
 

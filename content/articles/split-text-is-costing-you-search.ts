@@ -13,7 +13,7 @@ export const splitTextSeo: Article = {
     "Per-character split-text animations (GSAP SplitText, Framer Motion stagger, hand-rolled span splitting) can make a headline extract as separated letters for naive HTML-to-text crawlers, including the ones feeding AI answer engines. Fix: render a contiguous copy of the text alongside the animated one.",
   body: `Per-character text animations can turn your best headline into separated letters for anything doing naive HTML-to-text extraction, which is most of what feeds an AI answer engine. I found it on my own site, which is the only reason I'm confident it's worth writing down.
 
-The homepage headline is my name. It animates in one character at a time, because that looks good and because [the whole site is pretending to be a CRT terminal](/writing/a-crt-that-behaves-like-a-crt). To do that, the name is split into one element per letter. Standard stuff. GSAP's SplitText does it, Framer Motion's stagger examples do it, and every "animated hero text" tutorial you have ever read does it.
+The homepage headline is my name. It animates in one character at a time, because that looks good and because [the whole site is pretending to be a CRT terminal](/writing/a-crt-that-behaves-like-a-crt). To do that, the name is split into one element per letter. Standard stuff. [GSAP's SplitText](https://gsap.com/docs/v3/Plugins/SplitText/) does it, [Framer Motion's stagger examples](https://motion.dev/docs/react-animation) do it, and every "animated hero text" tutorial you have ever read does it.
 
 Then I ran the live page through a plain HTML-to-text extraction, the sort of thing that feeds a scraper, and got this back:
 

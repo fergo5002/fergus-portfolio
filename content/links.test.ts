@@ -53,9 +53,17 @@ describe("content links", () => {
     }
   });
 
-  it("cover both of Fergus's GitHub accounts", () => {
-    const hrefs = profile.contact.map((c) => c.href);
-    expect(hrefs).toContain("https://github.com/oreillyfergus");
-    expect(hrefs).toContain("https://github.com/fergo5002");
+  it("claims one GitHub identity, not two", () => {
+    // This test used to require both accounts and was changed on 2026-08-21.
+    // The contact list is what builds `sameAs`, so every entry is a claim that
+    // the profile on the other end is the same person. `oreillyfergus` was
+    // checked against the GitHub API and has zero public repositories, zero
+    // followers and no display name, so following that edge corroborated
+    // nothing, and it was labelled "work" so `/llms.txt` preferred it over the
+    // account with the code on it. Two thin identities are weaker than one
+    // evidenced identity, which is the whole reason `sameAs` exists.
+    const github = profile.contact.filter((c) => c.href.includes("github.com"));
+    expect(github).toHaveLength(1);
+    expect(github[0].href).toBe("https://github.com/fergo5002");
   });
 });
