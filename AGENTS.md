@@ -7,9 +7,26 @@ before touching code. (Claude Code, Cursor, Copilot, and others read `AGENTS.md`
 
 **FergusOS Terminal**: Patrick Fergus O'Reilly's personal portfolio, styled as a retro CRT
 computer terminal (green phosphor + amber accent, scanlines, boot sequence, interactive
-command line). Six routes: landing (`/`), experience (`/experience`), projects
-(`/projects`), writing index (`/writing`), articles (`/writing/[slug]`) and contact
-(`/contact`).
+command line). Nine routes: landing (`/`), experience (`/experience`), projects
+(`/projects`), writing index (`/writing`), articles (`/writing/[slug]`), contact
+(`/contact`), tools index (`/tools`), the headline checker (`/tools/headline-check`) and the
+MCP documentation page (`/mcp`).
+
+Plus one API route. **`/api/mcp` is a Model Context Protocol server**, unauthenticated because
+everything it returns is already on the pages, with six tools that all read from `content/` so it
+cannot say something the site does not. Read `lib/mcp.ts`'s docblock before touching it: it names
+the spec revision it implements and the URL that revision was read from. That matters more than
+usual here, because revision `2026-07-28` **deleted** the `initialize` handshake and moved to
+per-request metadata, so anything written from memory ships the wrong protocol. It answers both
+eras on purpose: modern statelessly, and the old handshake because that is what shipped clients
+still open with.
+
+**`/tools/headline-check` fetches a URL a stranger typed**, which makes it the only thing on this
+site with a real attack surface. `lib/headline-fetch.ts` refuses private, loopback, link-local and
+reserved addresses on the typed URL and again on every redirect hop, checks every DNS answer
+rather than the first, and caps time and size. Its docblock states the gap it does not close (DNS
+rebinding) and the thing that bounds it (the content type is checked before any body is read).
+Do not weaken either without reading that first.
 
 **The site is also a search and answer-engine surface**, which is a second set of constraints on
 top of the CRT premise and does not bend to it. Every route carries a canonical URL and JSON-LD;

@@ -6,7 +6,69 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
 
-**Status (2026-08-20, latest): the tube is calmer, and the contact form clicks when you type.**
+**Status (2026-08-21, latest): the site is citable, it has original data, a tool and an MCP server,
+and its own costume is out of the text.** Live on `656478c`, verified in production.
+
+Yesterday's work made the site crawlable. This made it quotable, and then turned its own
+instrument on itself and found two more of the bug it wrote about.
+
+- **Citability.** Question-framed headings went from **0 of 46 to 32 of 46**, every section under
+  one opens by answering it, and `lib/faq.ts` builds `FAQPage` from those headings so the graph
+  cannot claim an answer that is not on the page. All of it is a test now, not a note:
+  `content/articles.test.ts` gained a citability block that caught seven real thin sections while
+  it was being written.
+- **Original research.** `/writing/split-text-audit-2026`, 154 Awwwards winners fetched as server
+  HTML, dataset checked in at `/data/split-text-audit-2026-08.json` and re-runnable from
+  `scripts/split-text-audit.mjs`. The result is not the one it went looking for and the piece says
+  so: 54 of 151 (35.8%) serve no h1 at all, exactly one fragments its h1.
+- **A tool.** `/tools/headline-check`. Works with JavaScript off, refuses private and reserved
+  addresses on the typed URL and every redirect hop.
+- **An MCP server.** `/api/mcp`, six tools, spec revision 2026-07-28, dual-era so real clients work.
+- **The costume.** Every article heading extracted as `#The actual reason`, and every page opened
+  with ~150 characters of terminal chrome before the first real word. Both reproduced against live
+  HTML, both fixed by drawing the text from CSS. See the rule in `AGENTS.md`.
+
+> [!tip] Verified in production on 2026-08-21, not asserted
+> `dpl_5kurKBLJx9VLXrfhPGyqXx6oWiew`, `readyState: READY`, `aliasAssigned: true`, sha `656478c`
+> matching the push, `fergusoreilly.dev` in the alias list.
+>
+> Exercised live, not pinged: all twelve routes 200 with the right content types including
+> `/.well-known/mcp.json`; MCP `tools/list` returns six tools and `tools/call get_profile` returns
+> real data with `resultType: "complete"`; the checker POSTed with **no JavaScript** classified
+> `brand.ivress.co.jp` as Fragmented and refused `169.254.169.254`; `FAQPage` renders with seven
+> real pairs and `isPartOf` now resolves; the article's extractable text reaches its headline at
+> character ~110 rather than ~240. Runtime logs across the whole test window: every request 200,
+> no errors.
+>
+> **The one warning, and it is not a defect.** `Missing 'origin' header from a forwarded Server
+> Actions request` appears twice, once per curl POST. curl does not send `Origin`; a browser
+> always does. It means the no-JS proof deliberately went around Next's CSRF check, which is worth
+> knowing about the test rather than about the feature.
+>
+> **What this did NOT verify.** Nobody has looked at the pixels: no browser ran against any of
+> these pages, so the CRT styling of `/tools`, `/mcp` and the new prose table, their contrast on
+> the amber and ice themes, and the reduced-motion behaviour are argued from the tokens and the
+> contrast test, not seen. No real MCP client has connected. Nothing here says anything about
+> whether any of it improves ranking or citation: that is what `scripts/share-of-model/` is for,
+> and its first run is the "before".
+
+> [!warning] Open, and deliberately not closed today
+> **DNS rebinding beats the SSRF guard in `lib/headline-fetch.ts`.** It resolves, decides, then
+> hands the hostname to `fetch`, which resolves again. The real fix is pinning the resolved
+> address through a `lookup` hook. What bounds it: the content type is checked before a single
+> byte of the body is read, so a rebind landing on an instance metadata endpoint gets `text/plain`,
+> fails the gate, and is discarded unread. That protects the data, not the request.
+>
+> **`/api/mcp` has no rate limit.** Read-only, stateless, no outbound I/O, so it is a cost question
+> rather than a security one. A per-instance limiter on serverless would mostly annoy legitimate
+> agents.
+>
+> **Fergus's, off-site and 30 seconds each:** set the display name and the website field on
+> `github.com/fergo5002`. The `sameAs` claim from this site is one-directional until that end links
+> back. And "Tigh Sauna" collides with **Tigh'N Alluis**, a sauna venue in the Dublin mountains with
+> TripAdvisor and Visit Dublin coverage: same word, same city, same market. That is a brand call.
+
+**Status (2026-08-20): the tube is calmer, and the contact form clicks when you type.**
 Three things Fergus asked for. The shell's membrane click now fires on all three contact fields
 (same key filter as `Terminal.tsx`, asserted against it rather than restated). The periodic
 full-screen flicker and the channel-change burst are halved in `app/globals.css`. The pointer halo
