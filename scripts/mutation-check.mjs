@@ -384,6 +384,12 @@ const MUTATIONS = [
     replace: 'import posthog from "posthog-js";\n      void Promise.resolve().then(() => {',
   },
   {
+    name: "THE SITE-BREAKER: the redirect goes back to nextUrl.clone() and points at itself",
+    file: "middleware.ts",
+    pattern: /const url = new URL\(request\.url\);/,
+    replace: "const url = request.nextUrl.clone();",
+  },
+  {
     name: "the matcher's comment and its regex disagree again, this time about _vercel",
     file: "middleware.ts",
     pattern: /\|_vercel\|ingest\//,

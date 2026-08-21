@@ -62,11 +62,31 @@ export function middleware(request: NextRequest, event: NextFetchEvent): NextRes
 
   const target = trailingSlashTarget(pathname);
   if (target) {
-    const url = request.nextUrl.clone();
+    /**
+     * A plain `URL` from `request.url`, **not** `request.nextUrl.clone()`.
+     *
+     * This is the bug the Docker parity container caught and no unit test here
+     * could have. `NextURL` records path information, trailing slash included,
+     * when it is constructed, and re-applies it when it is formatted. So
+     * cloning the URL for `/writing/`, setting `.pathname = "/writing"` and
+     * handing it to `NextResponse.redirect` produced:
+     *
+     *     HTTP/1.1 308 Permanent Redirect
+     *     location: /writing/
+     *
+     * A permanent redirect to itself. curl followed it fifty times and gave up.
+     * Every page with a trailing slash on the whole site, unreachable, and
+     * `next build` was clean and all 903 tests were green throughout.
+     *
+     * `skipTrailingSlashRedirect` is why: it tells Next not to normalise, and
+     * `NextURL` honours that when it re-formats. A standard `URL` has no such
+     * memory and serialises exactly what it is given.
+     */
+    const url = new URL(request.url);
     url.pathname = target;
-    // 308 rather than 301: it is the permanent redirect that is defined to
-    // preserve the method, and it is what Next itself issues here. Anything
-    // that POSTs to a trailing-slash URL keeps working.
+    // 308 rather than 301: it is the permanent redirect defined to preserve the
+    // method, and it is what Next itself issues here. Anything that POSTs to a
+    // trailing-slash URL keeps working.
     return NextResponse.redirect(url, 308);
   }
 

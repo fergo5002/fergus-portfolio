@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { config } from "./middleware";
+import { NextRequest } from "next/server";
+import { config, middleware } from "./middleware";
 
 /**
  * What the middleware matcher actually lets through.
@@ -87,5 +88,107 @@ describe("the middleware matcher", () => {
     // Without this, adding a second pattern would leave every test here quietly
     // measuring a subset of the real configuration.
     expect(config.matcher).toHaveLength(1);
+  });
+});
+
+/**
+ * What the middleware actually returns, run against real `NextRequest` objects.
+ *
+ * ## The bug this exists for
+ *
+ * The first version of the redirect used `request.nextUrl.clone()`, set
+ * `.pathname` to the stripped path, and returned it. Against the production
+ * build in a container, `/writing/` answered:
+ *
+ *     HTTP/1.1 308 Permanent Redirect
+ *     location: /writing/
+ *
+ * A permanent redirect to itself. curl followed it fifty times and stopped.
+ * Every trailing-slash URL on the site was unreachable, and `next build` was
+ * clean, `tsc` was clean, and all 903 tests were green while it was true.
+ *
+ * `NextURL` records path information when it is constructed, trailing slash
+ * included, and re-applies it when formatted, which is exactly what
+ * `skipTrailingSlashRedirect: true` asks it to do. Setting `.pathname` does not
+ * clear that memory.
+ *
+ * The lesson worth keeping is not about `NextURL`. It is that every test here
+ * was about the **inputs** to the decision (`lib/edge.test.ts` proves
+ * `trailingSlashTarget("/writing/") === "/writing"`, and it does) and none was
+ * about the **response**. The unit under test was correct and the thing it was
+ * wired into was not. So these assert the header that ships.
+ */
+describe("the middleware's response", () => {
+  /** `NextFetchEvent` is not constructible here; only `waitUntil` is used. */
+  const event = { waitUntil: () => {} } as unknown as Parameters<typeof middleware>[1];
+
+  const run = (url: string, userAgent = "Mozilla/5.0 (a browser)") =>
+    middleware(new NextRequest(new Request(url, { headers: { "user-agent": userAgent } })), event);
+
+  it("redirects a trailing slash to a path WITHOUT one", () => {
+    const res = run("https://fergusoreilly.dev/writing/");
+    expect(res.status).toBe(308);
+
+    const location = res.headers.get("location");
+    expect(location, "no Location header on a redirect").toBeTruthy();
+    // The assertion that was missing. `.endsWith("/writing")` alone would pass
+    // for `/writing/` on some URL shapes, so the self-reference is named too.
+    expect(new URL(location!, "https://fergusoreilly.dev").pathname).toBe("/writing");
+    expect(location).not.toMatch(/\/writing\/$/);
+  });
+
+  it("keeps the query string across the redirect", () => {
+    const res = run("https://fergusoreilly.dev/writing/?utm_source=chatgpt.com");
+    const url = new URL(res.headers.get("location")!, "https://fergusoreilly.dev");
+    expect(url.pathname).toBe("/writing");
+    expect(url.searchParams.get("utm_source")).toBe("chatgpt.com");
+  });
+
+  it("does not redirect a path that is already clean", () => {
+    expect(run("https://fergusoreilly.dev/writing").status).toBe(200);
+    expect(run("https://fergusoreilly.dev/").status).toBe(200);
+  });
+
+  it("does not redirect the analytics proxy", () => {
+    // The reason `skipTrailingSlashRedirect` was turned on in the first place.
+    expect(run("https://fergusoreilly.dev/ingest/e/").status).toBe(200);
+  });
+
+  it("lets a crawler through rather than blocking it", () => {
+    // The capture is fire-and-forget through `waitUntil`; what matters here is
+    // that identifying a crawler never changes what it is served.
+    const res = run(
+      "https://fergusoreilly.dev/writing",
+      "Mozilla/5.0 (compatible; GPTBot/1.2; +https://openai.com/gptbot)",
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it("records the crawler visit exactly once, without awaiting it", () => {
+    const scheduled: unknown[] = [];
+    const capturingEvent = {
+      waitUntil: (p: unknown) => scheduled.push(p),
+    } as unknown as Parameters<typeof middleware>[1];
+
+    middleware(
+      new NextRequest(
+        new Request("https://fergusoreilly.dev/writing", {
+          headers: { "user-agent": "compatible; ChatGPT-User/1.0" },
+        }),
+      ),
+      capturingEvent,
+    );
+    expect(scheduled).toHaveLength(1);
+
+    scheduled.length = 0;
+    middleware(
+      new NextRequest(
+        new Request("https://fergusoreilly.dev/writing", {
+          headers: { "user-agent": "Mozilla/5.0 (a browser)" },
+        }),
+      ),
+      capturingEvent,
+    );
+    expect(scheduled, "an ordinary visitor must cost no network call").toHaveLength(0);
   });
 });
