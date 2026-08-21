@@ -466,6 +466,22 @@ const POSTHOG_DEFAULTS = "2026-05-30" as const;
  *   computed on its own servers instead. Get this wrong and the site starts
  *   setting tracking cookies on EU visitors with no banner in front of them,
  *   and every test still passes.
+ *
+ *   **This line is only half of it, and the other half is not in this repo.**
+ *   The PostHog *project* must have `cookieless_server_hash_mode` enabled, and
+ *   it is off by default and not exposed anywhere in PostHog's settings UI. With
+ *   it off, the browser posts events carrying the `$posthog_cookieless` sentinel
+ *   distinct id, the ingestion endpoint answers **`200 {"status":"Ok"}`**, and
+ *   the events are dropped. No error, no ingestion warning, nothing in the
+ *   console. Server-side events keep arriving normally the whole time, so the
+ *   project looks alive and only the browser half is missing.
+ *
+ *   That is exactly what happened on 2026-08-21. Set for project 569350 over the
+ *   API (`PATCH /api/projects/569350/ { cookieless_server_hash_mode: 1 }`,
+ *   1 being the stateless mode, which keeps no per-visitor state anywhere), and
+ *   browser events appeared immediately with `distinct_id: "cookieless_..."`.
+ *   If pageviews ever go quiet again while crawler events keep flowing, check
+ *   this before anything in this file.
  * - **`disable_session_recording: true`.** Not a preference, an entailment.
  *   Replay needs somewhere to keep a session id and the line above removes it,
  *   so PostHog would disable replay anyway. It is stated explicitly so it reads

@@ -42,6 +42,32 @@ single number, which is why there are three.
 | `mcp_request` | same | same | Everything that is not a `tools/call` |
 | `share_of_model` | `publish.mjs`, by hand | `share-of-model:<surface>` | `citation_share`, `bands`, `instrument_verdict` |
 
+## The one that will waste your afternoon
+
+**Cookieless needs a PostHog *project* setting, not just the SDK option, and it fails silently.**
+`cookieless_server_hash_mode` must be on. It is **off by default** and is **not in PostHog's
+settings UI** at all. With it off:
+
+- the browser posts events with the `$posthog_cookieless` sentinel distinct id,
+- the endpoint answers `200 {"status":"Ok"}`,
+- and the events are dropped. No error, no ingestion warning, nothing in the console.
+
+Server-side events (`ai_crawler_visit`, `mcp_tool_call`) keep arriving perfectly throughout,
+because they carry ordinary distinct ids. So the project looks alive and only the browser half is
+missing, which is the most misleading shape a fault can take.
+
+Set on 2026-08-21 over the API:
+
+```
+PATCH /api/projects/569350/   { "cookieless_server_hash_mode": 1 }
+```
+
+`1` is the stateless mode: the hash is derived per day from request attributes and no per-visitor
+state is kept anywhere, on the device or on the server. Browser events appeared within seconds of
+the change, carrying `distinct_id: "cookieless_..."`.
+
+**If pageviews ever go quiet while crawler events keep flowing, check this first.**
+
 ## Things that will mislead you
 
 **`purpose: "user-fetch"` is the number worth watching.** `ChatGPT-User`, `Claude-User`,

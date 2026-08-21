@@ -240,6 +240,11 @@ Spec: `docs/superpowers/specs/2026-08-04-mass-memory-voice-design.md`.
     on 2026-08-21. Get it wrong and the site starts setting tracking cookies on EU visitors
     with nothing in front of them, everything keeps working, and no test would notice, which
     is why there is one that does.
+  - **And the SDK option is only half of it.** The PostHog *project* needs
+    `cookieless_server_hash_mode` on. It is off by default, it is not in PostHog's settings UI,
+    and with it off the browser's events get `200 {"status":"Ok"}` and are silently dropped
+    while server-side events keep arriving normally. If pageviews go quiet but crawler events
+    keep flowing, that is the first thing to check. `docs/measurement.md` has the API call.
   - **Session replay is therefore off, and that is an entailment rather than a preference.**
     Replay needs somewhere to keep a session id and cookieless removes it, so PostHog would
     disable it anyway. It is set explicitly so it reads as a consequence, not a bug to fix.

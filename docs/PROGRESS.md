@@ -104,9 +104,38 @@ that really does return 202.
 > checked the string came back. **A test that supplies its own input cannot discover that the real
 > input means something else.** One live call did it in one request.
 
+> [!danger] Cookieless was silently discarding every browser event, and the endpoint said 200
+> Found by loading the live site in a real browser after everything else was verified. Beacons went
+> out through the proxy and returned `200 {"status":"Ok"}`. **Nothing was recorded.** No error, no
+> ingestion warning, no console message. Server-side events (`ai_crawler_visit`, `mcp_tool_call`)
+> were arriving perfectly throughout, so the project looked alive and only the browser half was
+> missing.
+>
+> Cause: `cookieless_mode: "always"` in the SDK is **half** of cookieless. The PostHog *project*
+> also needs `cookieless_server_hash_mode`, which is **off by default and not in PostHog's settings
+> UI at all**. Without it there is no hash pipeline to resolve the `$posthog_cookieless` sentinel
+> distinct id, so the events are accepted and thrown away. Set over the API to `1` (stateless: no
+> per-visitor state anywhere, on the device or the server). Browser events appeared within seconds.
+>
+> **Verified after the fix, in a real browser against production:** `$pageview` on first load and
+> again on client-side navigation (so `history_change` is doing its job), `ai_referral` with
+> `ai_engine: "chatgpt"` and `ai_via: "utm"`, `web_vital`, `$pageleave`, all with
+> `distinct_id: "cookieless_..."` and **zero cookies and zero PostHog storage on the device**.
+>
+> Two process notes. I first checked twenty seconds after sending and declared two probes dropped;
+> one of them arrived later, which sent me chasing proxies and CORS when the first guess had been
+> right. Logged to [[coding-mistakes]]: establish a system's latency with a known-good control
+> before reading absence as evidence. And the general form is in [[coding-playbook]]: **a 200 from
+> an ingestion endpoint means accepted, never recorded.** Verify telemetry by querying the store.
+
 Final figures, from a full run after everything above: **64/64 mutations caught, 933 tests across
 32 files**, `tsc --noEmit` clean, `next build` clean, Docker prod-parity green from `npm ci` on
 Node 24 and exercised in the running container.
+
+**Open observation, cause not established.** Two `$pageview` events were recorded for `/projects`
+21 seconds apart with nothing navigating in between. Nothing in this repo touches the History API
+(grepped), so it is not the site's own doing, and it is recorded here as something to watch rather
+than diagnosed. If pageview counts read high later, start there.
 
 **Status (2026-08-21, earlier): the site is citable, it has original data, a tool and an MCP server,
 and its own costume is out of the text.** Live on `656478c`, verified in production.
