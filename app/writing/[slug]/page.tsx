@@ -14,6 +14,7 @@ import {
   blogPostingSchema,
   breadcrumbSchema,
   faqPageSchema,
+  blogReferenceSchema,
   articlePath,
 } from "@/lib/seo";
 
@@ -87,6 +88,9 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       <JsonLd
         nodes={[
           blogPostingSchema(article, wordCount(article.body)),
+          // The post says it is part of the blog, so the blog has to be here for
+          // that edge to resolve. Without it the claim dangles.
+          blogReferenceSchema(),
           breadcrumbSchema([
             { name: "Home", path: "/" },
             { name: "Writing", path: "/writing" },

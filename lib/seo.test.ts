@@ -18,6 +18,7 @@ import {
   blogPostingSchema,
   breadcrumbSchema,
   faqPageSchema,
+  blogReferenceSchema,
   articlePath,
   type JsonLdObject,
 } from "./seo";
@@ -172,13 +173,28 @@ describe("websiteSchema and profilePageSchema", () => {
 });
 
 describe("collection pages", () => {
-  it("lists every project with an absolute url", () => {
+  it("lists every project as a typed CreativeWork, not a bare row", () => {
+    // Changed on 2026-08-21. A bare `ListItem` says "row three of a list" and
+    // stops meaning anything once it is read outside the list. Wrapping a
+    // `CreativeWork` keeps it a work, and crediting the same `PERSON_ID` every
+    // other node uses is what attaches the projects to the person rather than
+    // leaving them as anonymous entries on a page about him.
     const list = projectsPageSchema().mainEntity as JsonLdObject;
     const items = list.itemListElement as JsonLdObject[];
     expect(items.length).toBeGreaterThan(0);
     expect(items[0].position).toBe(1);
-    expect(String(items[0].url)).toMatch(/^https:\/\//);
+    const work = items[0].item as JsonLdObject;
+    expect(work["@type"]).toBe("CreativeWork");
+    expect(String(work.url)).toMatch(/^https:\/\//);
+    expect(work.creator).toEqual({ "@id": PERSON_ID });
     assertNoUndefined(items, "projects");
+  });
+
+  it("keeps experience as plain rows, because a role is not a creative work", () => {
+    const items = (experiencePageSchema().mainEntity as JsonLdObject)
+      .itemListElement as JsonLdObject[];
+    expect(items[0].item).toBeUndefined();
+    expect(String(items[0].url)).toMatch(/^https:\/\//);
   });
 
   it("lists every role and survives an entry with no summary", () => {
@@ -298,5 +314,20 @@ describe("graph", () => {
     const g = graph([personSchema(), websiteSchema(), profilePageSchema()]);
     assertNoUndefined(g, "landing");
     expect(() => JSON.parse(jsonLd(g))).not.toThrow();
+  });
+});
+
+describe("blogReferenceSchema", () => {
+  it("resolves the isPartOf edge every BlogPosting claims", () => {
+    // The dangling reference this exists to fix: a post asserting membership of
+    // a node that was not in its own page's graph.
+    const post = blogPostingSchema(articles[0], 900);
+    const blog = blogReferenceSchema();
+    expect((post.isPartOf as JsonLdObject)["@id"]).toBe(blog["@id"]);
+    assertNoUndefined(blog, "blogref");
+  });
+
+  it("attributes the blog to the same person as everything else", () => {
+    expect(blogReferenceSchema().author).toEqual({ "@id": PERSON_ID });
   });
 });

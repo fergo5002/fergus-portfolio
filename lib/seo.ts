@@ -232,11 +232,21 @@ export function breadcrumbSchema(trail: { name: string; path: string }[]): JsonL
   };
 }
 
-/** A page that exists to list other things (projects, experience, writing). */
+/**
+ * A page that exists to list other things (projects, experience, writing).
+ *
+ * `itemType` decides the shape of each entry, and the difference matters. A
+ * bare `ListItem` says "row three of a list" and nothing else. Give it an
+ * `itemType` and each row wraps a real typed thing, so a `CreativeWork` is
+ * still a creative work when it is read outside the list it happened to be in.
+ * The audit on 2026-08-21 found `/projects` shipping bare rows, which is the
+ * weaker of the two for no gain.
+ */
 export function collectionPageSchema(args: {
   path: string;
   name: string;
   description: string;
+  itemType?: string;
   items: { name: string; url: string; description?: string }[];
 }): JsonLdObject {
   return prune({
@@ -254,9 +264,17 @@ export function collectionPageSchema(args: {
         prune({
           "@type": "ListItem",
           position: i + 1,
-          name: item.name,
-          description: item.description,
-          url: absolute(item.url),
+          ...(args.itemType
+            ? {
+                item: prune({
+                  "@type": args.itemType,
+                  name: item.name,
+                  description: item.description,
+                  url: absolute(item.url),
+                  ...(args.itemType === "CreativeWork" ? { creator: { "@id": PERSON_ID } } : {}),
+                }),
+              }
+            : { name: item.name, description: item.description, url: absolute(item.url) }),
         }),
       ),
     },
@@ -269,12 +287,32 @@ export function projectsPageSchema(): JsonLdObject {
     path: "/projects",
     name: `Projects · ${profile.shortName}`,
     description: `Things ${profile.shortName} has built.`,
+    itemType: "CreativeWork",
     items: projects.map((p) => ({
       name: p.title,
       url: `/projects#${p.slug}`,
       description: p.tagline,
     })),
   });
+}
+
+/**
+ * The `Blog` node, as a reference rather than the full listing.
+ *
+ * Every `BlogPosting` says `isPartOf` the blog. On the article pages that
+ * `@id` pointed at a node that was not in the graph, so the reference dangled:
+ * the page asserted membership of something it never described. Including this
+ * stub costs four properties and makes the edge resolve where it is claimed.
+ * The full node, with every post on it, still only ships on `/writing`.
+ */
+export function blogReferenceSchema(): JsonLdObject {
+  return {
+    "@type": "Blog",
+    "@id": `${absolute("/writing")}#blog`,
+    url: absolute("/writing"),
+    name: `Writing · ${profile.shortName}`,
+    author: { "@id": PERSON_ID },
+  };
 }
 
 /** The experience page, built from `content/experience.ts`. */
