@@ -3,6 +3,7 @@ import { JetBrains_Mono, VT323 } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import PostHogAnalytics from "@/components/analytics/PostHogAnalytics";
 import "./globals.css";
+import AwayTitle from "@/components/AwayTitle";
 import CrtShell from "@/components/CrtShell";
 import Nav from "@/components/Nav";
 import SystemProvider from "@/components/system/SystemProvider";
@@ -171,6 +172,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           broken". `components/analytics/PostHogAnalytics.tsx` has the rest.
         */}
         <PostHogAnalytics />
+        {/*
+          Renames the tab to "Come back 🤖" once the visitor has gone elsewhere,
+          and puts the real title back when they return. Outside CrtShell for the
+          same reason as the two analytics components: it renders nothing, so
+          being inside the tube would buy it nothing but a transform to inherit.
+          `lib/away.ts` has the reasoning, including why this cannot cost the
+          site a word in search.
+        */}
+        <AwayTitle />
       </body>
     </html>
   );
