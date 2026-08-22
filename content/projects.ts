@@ -40,7 +40,8 @@ export const projects: Project[] = [
     stack: ["Next.js", "TypeScript", "Fastify", "PostgreSQL", "Supabase", "Shopify", "Railway", "Vercel"],
     links: [{ label: "live", href: "https://tighsauna.com" }],
     image: "/img/tigh-sauna.png",
-    imageAlt: "The Tigh Sauna wordmark in steam teal, above the line 'booking and operations for saunas'",
+    imageAlt:
+      "The Tigh Sauna mark, a pitched house with an arched door, in steam teal on warm birch, above the words 'Tigh Sauna'",
   },
   {
     slug: "presterly",

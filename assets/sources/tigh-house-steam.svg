@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24">
+  <!--
+    KEEP THE `<svg` TAG ON LINE 1. This documentation sits inside the element on
+    purpose. libvips sniffs only about the first thousand bytes of a *file* for
+    the SVG signature, so a header comment this long above the tag pushes the
+    signature out of that window and `sharp(path)` fails with the thoroughly
+    unhelpful "Input file contains unsupported image format". Measured, not
+    guessed: the load flips from OK to FAIL as the tag crosses ~1000 bytes.
+    (Passing a Buffer hides it, because sharp sniffs those itself.)
+
+    The Tigh Sauna mark: a pitched house with an arched door cut out of it.
+
+    Vendored from the product's own icon, `apps/site/src/app/icon.svg` in
+    `sauna-os`, which is generated in turn from the `TighMark` path in
+    `apps/site/src/components/logo.tsx`. Copied here rather than fetched so this
+    card keeps building after the live site is next redesigned, the same reason
+    `loira-l-white.svg` is vendored.
+
+    Two things are load-bearing and must survive any edit:
+
+     - `fill-rule="evenodd"`. The house and its door are ONE path, not a wall
+       with a door drawn on top, so the arch is a hole punched through the
+       shape. Drop the even-odd rule and the door fills solid, leaving a blob.
+     - The arch itself. A square door is the generic home icon every dashboard
+       ships; the arch is what reads as a hut, and it is the one detail that
+       still survives at 16px.
+
+    `width`/`height` are 512 only so sharp rasterises this large enough to scale
+    down onto a 960px card without softening. The geometry is the 24-unit viewBox.
+  -->
+  <path
+    d="M11.23 2.16a1.2 1.2 0 0 1 1.54 0L22.4 10.5v10.1a1.2 1.2 0 0 1-1.2 1.2H2.8a1.2 1.2 0 0 1-1.2-1.2V10.5ZM9.1 21.8v-7a2.9 2.9 0 0 1 5.8 0v7Z"
+    fill="#0f6472"
+    fill-rule="evenodd"
+  />
+</svg>

@@ -429,15 +429,25 @@ clone still builds everything else.
   decoder; it reads the metadata then fails on the pixels), so the script shells out to `ffmpeg`
   to decode to PNG first and crops from that. ffmpeg on PATH is needed for this step only.
 - `presterly.png`, `loira.png`: brand marks composited onto 16:9 cards.
-- `tigh-sauna.png`: a typographic lockup in Tigh Sauna's colours, `steam #0f6472` on
-  `birch #faf6f0`, with three session bars standing in for a diary. No vendored mark, so this
-  is the one builder that can never skip. **Do not restyle it in the old ember orange**: ember
-  only reached 3.94:1 on white, which is why it stopped being used for text.
+- `tigh-sauna.png`: the Tigh Sauna house mark over the wordmark, `steam #0f6472` on
+  `birch #faf6f0`. The mark is vendored at `assets/sources/tigh-house-steam.svg`, copied from
+  the product's own `apps/site/src/app/icon.svg`. **Do not restyle it in the old ember orange**:
+  ember only reached 3.94:1 on white, which is why it stopped being used for text.
+  It previously carried a typographic lockup with three session bars and the tagline, written
+  when there was no mark to copy; both went when the real house arrived, the tagline because
+  the card sits directly above that same sentence and was printing it twice.
   This replaced `firespark.png`, and the Firespark builder and its vendored spark were deleted
   with it. **Firespark, Hearth and Sauna OS are retired names for what is now Tigh Sauna.** They
   survive in package names and deploy paths and must never appear in anything a person reads;
   `content/links.test.ts` fails the build if one reaches an outbound link. Firecracker Saunas is
   a *customer*, a different thing, and is not the same as Firespark.
+
+  **The trap that cost time here, and will again:** libvips sniffs only about the first thousand
+  bytes of a *file* for the SVG signature. A vendored mark whose provenance comment sits above
+  its `<svg>` tag pushes that signature out of the window, and `sharp(path)` then fails with
+  "Input file contains unsupported image format", which reads like a corrupt file rather than a
+  long comment. Keep `<svg` on line 1 and document inside the element. Passing a Buffer hides
+  the problem, because sharp sniffs those itself.
 - `remand.png`, `contrabot.png`: authored SVG, rasterised. Deliberately not stock screenshots.
   In `contrabot`, **all geometry is in screen coordinates where a smaller y is a higher price**,
   getting that backwards once produced a rising chart captioned as a profitable short.
