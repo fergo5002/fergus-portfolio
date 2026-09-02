@@ -21,6 +21,8 @@
  * should render slightly wrong, not take down the route.
  */
 
+import { parseChart, type ChartSpec } from "./chart";
+
 export type Inline =
   | { type: "text"; value: string }
   | { type: "strong"; value: string }
@@ -35,6 +37,7 @@ export type Block =
   | { type: "code"; lang: string; value: string }
   | { type: "quote"; inline: Inline[] }
   | { type: "table"; head: Inline[][]; rows: Inline[][][] }
+  | { type: "chart"; spec: ChartSpec }
   | { type: "rule" };
 
 /**
@@ -206,7 +209,22 @@ export function parseMarkdown(source: string): Block[] {
         i++;
       }
       i++; // past the closing fence, or past the end
-      blocks.push({ type: "code", lang, value: body.join("\n") });
+      const value = body.join("\n");
+
+      // A fence tagged `chart` carries JSON rather than source. It becomes a
+      // typed chart block if it validates, and stays a code block if it does
+      // not, so a mistyped spec renders as the JSON the author wrote instead of
+      // taking the route down. `lib/chart.ts` owns every rule about what counts
+      // as valid, and returns null rather than throwing for exactly this reason.
+      if (lang === "chart") {
+        const spec = parseChart(value);
+        if (spec) {
+          blocks.push({ type: "chart", spec });
+          continue;
+        }
+      }
+
+      blocks.push({ type: "code", lang, value });
       continue;
     }
 
@@ -345,6 +363,19 @@ export function toPlainText(source: string): string {
         return [...block.head, ...block.rows.flat()].map((cell) =>
           cell.map((n) => n.value).join(""),
         );
+      // Same argument as the table above, and the same shape: labels first,
+      // then the numbers. A chart is the densest data in an article, so an
+      // excerpt that dropped it would lose the finding the piece exists for.
+      // This doubles as the text alternative behind the figure.
+      if (block.type === "chart") {
+        const { title, categories, series, caption } = block.spec;
+        return [
+          title,
+          ...categories,
+          ...series.flatMap((s) => [s.label, ...s.values.map(String)]),
+          ...(caption ? [caption] : []),
+        ];
+      }
       return [block.inline.map((n) => n.value).join("")];
     })
     .join(" ")

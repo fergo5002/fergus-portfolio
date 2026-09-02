@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { parseMarkdown, type Block, type Inline } from "@/lib/markdown";
+import { Chart } from "./Chart";
 
 /**
  * Renders parsed markdown as real React elements.
@@ -121,6 +122,12 @@ function renderBlock(block: Block, i: number) {
           {renderInline(block.inline)}
         </blockquote>
       );
+    case "chart":
+      // The figure draws itself from a typed spec, never from HTML in the
+      // article body. `lib/chart.ts` has already rejected anything malformed, so
+      // by the time a chart block exists here its shape is guaranteed and the
+      // component has no validation to do.
+      return <Chart key={i} spec={block.spec} />;
     case "table":
       // A real table, not a grid of divs. The header cells carry `scope="col"`
       // so a screen reader announces the column a value belongs to instead of

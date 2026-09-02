@@ -44,9 +44,13 @@ import { acceleratorWorth } from "./articles/what-an-accelerator-is-for";
 import { crtThatBehaves } from "./articles/a-crt-that-behaves-like-a-crt";
 import { splitTextSeo } from "./articles/split-text-is-costing-you-search";
 import { splitTextAudit } from "./articles/split-text-audit-2026";
+import { uuidsAgreed } from "./articles/the-test-passed-because-the-uuids-agreed";
+import { qualcommOverlay } from "./articles/a-qualcomm-overlay-appeared-in-our-dungeon";
 
 /** Newest first. This order is the published order everywhere. */
 export const articles: Article[] = [
+  uuidsAgreed,
+  qualcommOverlay,
   splitTextAudit,
   splitTextSeo,
   agentsShipping,

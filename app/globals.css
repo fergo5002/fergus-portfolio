@@ -2504,6 +2504,194 @@ h4.prose__h {
   margin: var(--sp-6) 0;
 }
 
+/* ── the figure ────────────────────────────────────────────────────────────
+   A chart on a monochrome CRT cannot separate series by hue, so identity comes
+   from a direct label, a fixed legend position and a dash pattern, and the
+   luminance steps below are the fourth cue rather than the only one. See the
+   header of `components/Chart.tsx`.
+
+   The whole figure is one panel, like `.prose__tablewrap`, because that is what
+   the article's other block-level data already looks like. */
+.chart {
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg-panel-2);
+}
+
+.chart__title {
+  font-family: var(--font-screen);
+  color: var(--green-bright);
+  letter-spacing: 0.04em;
+  font-size: 0.95rem;
+  margin: 0 0 var(--sp-1);
+}
+
+/* The readout is a strip, not a floating tooltip: no viewport-edge collision to
+   solve and it is reachable by keyboard. It holds its height when empty so the
+   figure does not jump as the pointer moves across it. */
+.chart__readout {
+  font-size: 0.78rem;
+  color: var(--amber);
+  margin: 0 0 var(--sp-2);
+  min-height: 1.4em;
+  white-space: pre-wrap;
+}
+
+/* Deliberately NOT `width: 100%`.
+   The SVG carries a viewBox, so a percentage width scales the whole drawing to
+   fit the box, and that scales the type with it: at a 320px container the 11px
+   tick labels came out around 5px and the figure was unreadable on a phone.
+   The component measures its own container and renders at that pixel width
+   instead, so the plot reflows and the text never shrinks. `max-width` is the
+   safety net for the first paint before the observer has measured. */
+.chart__plot {
+  /* No padding, no border. Its width is the plot's width, which is what the
+     component measures. */
+  width: 100%;
+}
+
+.chart__svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.chart__svg:focus-visible {
+  outline: 1px solid var(--amber);
+  outline-offset: 4px;
+}
+
+.chart__grid {
+  stroke: var(--green-line);
+  stroke-width: 1;
+}
+
+.chart__axis {
+  stroke: var(--green-dim);
+  stroke-width: 1;
+}
+
+.chart__tick,
+.chart__cat,
+.chart__value,
+.chart__baselabel {
+  font-family: var(--font-body);
+  font-size: 11px;
+  fill: var(--green-dim);
+}
+
+.chart__cat {
+  fill: var(--green);
+}
+
+.chart__value {
+  fill: var(--green-faint);
+}
+
+.chart__tick.is-on {
+  fill: var(--amber);
+}
+
+.chart__bar,
+.chart__dot {
+  transition: none;
+}
+
+/* Hovering a row lifts its own label and value only. The bar keeps its series
+   colour so the reader is never asked to re-identify a series mid-hover. */
+.chart__group.is-on .chart__cat,
+.chart__group.is-on .chart__value {
+  fill: var(--amber);
+}
+
+.chart__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.chart__dot {
+  /* A 2px surface ring, so overlapping markers stay countable. */
+  stroke: var(--bg-panel-2);
+  stroke-width: 2;
+}
+
+.chart__cross {
+  stroke: var(--amber);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.chart__baseline {
+  stroke: var(--amber);
+  stroke-width: 1;
+  stroke-dasharray: 6 4;
+  opacity: 0.7;
+}
+
+.chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1) var(--sp-3);
+  list-style: none;
+  padding: 0;
+  margin: var(--sp-2) 0 0;
+  font-size: 0.78rem;
+  color: var(--green);
+}
+
+.chart__legenditem {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.chart__data {
+  margin-top: var(--sp-3);
+  font-size: 0.8rem;
+}
+
+.chart__data summary {
+  cursor: pointer;
+  color: var(--green-dim);
+}
+
+.chart__data summary:hover,
+.chart__data summary:focus-visible {
+  color: var(--amber);
+}
+
+.chart__data .prose__tablewrap {
+  margin-top: var(--sp-2);
+  margin-bottom: 0;
+}
+
+.chart__caption {
+  font-size: 0.75rem;
+  color: var(--green-dim);
+  margin: var(--sp-2) 0 0;
+}
+
+/* The site's phosphor bloom is set on `.prose` for headings only. A figure full
+   of thin strokes and 11px labels turns to mush under it, so it opts out. */
+.chart text,
+.chart__svg {
+  text-shadow: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .chart__bar,
+  .chart__dot {
+    transition:
+      fill 120ms linear,
+      r 120ms linear;
+  }
+}
+
 /* ── the call to action ────────────────────────────────────────────────── */
 
 .talk {

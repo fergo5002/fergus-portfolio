@@ -344,3 +344,44 @@ describe("tableOfContents", () => {
     ]);
   });
 });
+
+describe("chart fences", () => {
+  const spec = {
+    kind: "bar",
+    title: "Rays cast per frame",
+    categories: ["naive", "culled"],
+    series: [{ label: "rays", values: [4096, 312] }],
+    caption: "Measured on 2 Sep 2026.",
+  };
+  const fence = (body: string) => "```chart\n" + body + "\n```";
+
+  it("becomes a typed chart block, not HTML and not a code listing", () => {
+    const blocks = parseMarkdown(fence(JSON.stringify(spec)));
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe("chart");
+    expect(blocks[0]).toMatchObject({ spec: { title: "Rays cast per frame" } });
+  });
+
+  it("falls back to a code block when the spec is malformed", () => {
+    // The route must survive a typo in a data block. Rendering the JSON the
+    // author actually wrote is the useful failure, because it shows them the
+    // mistake instead of hiding it behind an empty figure.
+    const blocks = parseMarkdown(fence("{ kind: not json }"));
+    expect(blocks[0].type).toBe("code");
+  });
+
+  it("leaves every other fenced language alone", () => {
+    const blocks = parseMarkdown("```glsl\ngl_FragColor = vec4(1.0);\n```");
+    expect(blocks[0]).toMatchObject({ type: "code", lang: "glsl" });
+  });
+
+  it("puts the chart's numbers into the plain text, the way a table's are", () => {
+    // An excerpt or meta description built from the body must not silently drop
+    // the one finding the article exists to report.
+    const text = toPlainText(fence(JSON.stringify(spec)));
+    expect(text).toContain("Rays cast per frame");
+    expect(text).toContain("4096");
+    expect(text).toContain("312");
+    expect(text).toContain("Measured on 2 Sep 2026.");
+  });
+});
