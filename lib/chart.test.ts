@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseChart, niceTicks, seriesExtent, type ChartSpec } from "./chart";
+import { parseChart, niceTicks, seriesExtent, describeChart, type ChartSpec } from "./chart";
 
 const minimal = {
   kind: "bar",
@@ -151,5 +151,73 @@ describe("niceTicks", () => {
     const ticks = niceTicks(-30, 10);
     expect(ticks[0]).toBeLessThanOrEqual(-30);
     expect(ticks[ticks.length - 1]).toBeGreaterThanOrEqual(10);
+  });
+});
+
+describe("describeChart", () => {
+  const make = (patch: Record<string, unknown>) =>
+    parseChart(JSON.stringify({ ...minimal, ...patch })) as ChartSpec;
+
+  it("pairs each category with its value rather than listing them apart", () => {
+    // The first version read out every label, then every number, as two
+    // separate comma-separated runs. A listener had to hold three labels in
+    // their head and re-pair them by position.
+    const text = describeChart(make({ categories: ["a", "b"], series: [{ label: "n", values: [1, 2] }] }));
+    expect(text).toContain("a: 1");
+    expect(text).toContain("b: 2");
+  });
+
+  /**
+   * The bug this exists to stop, found in shipped output. The real categories
+   * on one article are "Broken, random ids", "Broken, chosen ids" and "Fixed,
+   * chosen ids". Joining those with ", " produced nine comma-separated tokens
+   * with nothing marking where one category ended, which a screen reader reads
+   * as one flat run.
+   */
+  it("separates entries with a character the labels cannot contain", () => {
+    const text = describeChart(
+      make({
+        categories: ["Broken, random ids", "Broken, chosen ids", "Fixed, chosen ids"],
+        series: [{ label: "deadlocks", values: [0, 6, 0] }],
+      }),
+    );
+    expect(text).toContain("Broken, random ids: 0;");
+    expect(text).toContain("Broken, chosen ids: 6;");
+    // The pairs are separable even though every label carries a comma.
+    expect(text.split(";").length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("names the series only when there is more than one", () => {
+    const one = describeChart(make({ categories: ["a", "b"], series: [{ label: "ms", values: [1, 2] }] }));
+    expect(one).not.toContain("ms 1");
+
+    const two = describeChart(
+      make({
+        categories: ["a", "b"],
+        series: [
+          { label: "read", values: [1, 2] },
+          { label: "write", values: [3, 4] },
+        ],
+      }),
+    );
+    expect(two).toContain("read 1");
+    expect(two).toContain("write 3");
+  });
+
+  it("carries the unit and the baseline", () => {
+    const text = describeChart(make({ unit: "ms", baseline: 16.6, baselineLabel: "frame budget" }));
+    expect(text).toContain("ms");
+    expect(text).toContain("frame budget");
+  });
+
+  it("stops reading out every row once there are too many to follow", () => {
+    // Forty pairs read aloud is not an accessible alternative, it is a denial
+    // of service. Past the cap it points at the table instead.
+    const many = Array.from({ length: 40 }, (_, i) => `row ${i}`);
+    const spec = make({ categories: many, series: [{ label: "n", values: many.map((_, i) => i) }] });
+    const text = describeChart(spec);
+    expect(text).toContain("40");
+    expect(text).not.toContain("row 39");
+    expect(text.length).toBeLessThan(240);
   });
 });

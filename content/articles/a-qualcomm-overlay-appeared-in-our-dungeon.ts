@@ -39,7 +39,7 @@ Having thrown the benchmark away, I had no hardware numbers at all, so the budge
   "categories": ["q=0", "q=1", "q=2", "q=3"],
   "series": [{ "label": "PostFX", "values": [0, 0.6, 1.0, 1.6] }],
   "baseline": 16.6,
-  "baselineLabel": "16.6 ms frame budget",
+  "baselineLabel": "60fps frame budget",
   "caption": "Estimated by counting texture taps against a reference figure for a 2018 integrated GPU. Never confirmed on real hardware."
 }
 \`\`\`

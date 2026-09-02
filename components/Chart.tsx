@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { niceTicks, seriesExtent, type ChartSpec } from "@/lib/chart";
+import { describeChart, formatValue, niceTicks, seriesExtent, type ChartSpec } from "@/lib/chart";
 
 /**
  * The figure an article draws.
@@ -30,7 +30,6 @@ const STROKE = ["var(--green-bright)", "var(--green)", "var(--green-dim)", "var(
 /** Secondary encoding, so the line series never rely on luminance alone. */
 const DASH = ["", "7 4", "2 4", "10 3 2 3"];
 
-const FONT = 12;
 /** JetBrains Mono advance width at 12px. Used to reserve label gutters. */
 const CH = 7.2;
 
@@ -39,15 +38,6 @@ const BAR_GAP = 2; // Surface gap between bars inside a group.
 const GROUP_GAP = 12;
 const AXIS_H = 24;
 const LINE_H = 260;
-
-function format(value: number, unit?: string): string {
-  const abs = Math.abs(value);
-  // Thousands separators past 10,000 only. Below that a monospace column reads
-  // fine without them and the comma is noise.
-  const text =
-    abs >= 10_000 ? value.toLocaleString("en-IE") : String(Number(value.toFixed(2)));
-  return unit ? `${text}${unit.startsWith("%") ? "" : " "}${unit}` : text;
-}
 
 /**
  * A rectangle with only its far end rounded, so the bar stays anchored to the
@@ -69,7 +59,20 @@ function barPath(x: number, y: number, w: number, h: number, flip: boolean): str
 
 export function Chart({ spec }: { spec: ChartSpec }) {
   const wrap = useRef<HTMLDivElement>(null);
-  const [width, setWidth] = useState(640);
+  /**
+   * The width the server renders at, before the client has measured anything.
+   *
+   * 360 rather than 640, and the difference matters. `.chart__svg` is capped at
+   * `max-width: 100%`, so a default WIDER than the container makes the browser
+   * scale the whole SVG coordinate system down to fit, taking the 11px labels
+   * with it: at a 326px phone column a 640 default renders type at about half
+   * size until hydration replaces it. A default NARROWER than the container is
+   * never scaled, because `max-width` does not stretch. So the first paint is a
+   * slightly narrow chart at the correct type size rather than a full-width one
+   * that is blurry, and the height of both chart kinds is independent of width,
+   * so nothing moves vertically when the real measurement lands.
+   */
+  const [width, setWidth] = useState(360);
   const [active, setActive] = useState<number | null>(null);
 
   useEffect(() => {
@@ -94,6 +97,10 @@ export function Chart({ spec }: { spec: ChartSpec }) {
   }, []);
 
   const { categories, series, unit, kind } = spec;
+  // Clamped rather than trusted. Nothing stops a mounted instance being handed a
+  // spec with fewer categories than the current selection, and a stale index
+  // would quietly point the readout and the highlight at the wrong row.
+  const selected = active !== null && active < categories.length ? active : null;
   const extent = seriesExtent(spec);
   const ticks = niceTicks(extent.min, extent.max);
   const lo = ticks[0];
@@ -127,10 +134,10 @@ export function Chart({ spec }: { spec: ChartSpec }) {
    * does not jump as the pointer crosses it.
    */
   const readout =
-    active === null
+    selected === null
       ? ""
-      : `${categories[active]}  ${series
-          .map((s) => `${series.length > 1 ? `${s.label} ` : ""}${format(s.values[active], unit)}`)
+      : `${categories[selected]}  ${series
+          .map((s) => `${series.length > 1 ? `${s.label} ` : ""}${formatValue(s.values[selected], unit)}`)
           .join("   ")}`;
 
   /**
@@ -149,9 +156,16 @@ export function Chart({ spec }: { spec: ChartSpec }) {
   );
   const labelChars = Math.max(4, Math.floor((labelWidth - 8) / CH));
   const shortLabel = (c: string) => (c.length <= labelChars ? c : `${c.slice(0, labelChars - 1)}…`);
-  const valueGutter = (Math.max(...series.flatMap((s) => s.values.map((v) => format(v, unit).length))) + 1) * CH;
+  // Capped for the same reason as the label gutter above. Nothing bounds how
+  // long a unit string or a formatted value can be, and an uncapped gutter can
+  // push the plot itself down to its 40px floor, which cramps silently rather
+  // than failing where an author would notice.
+  const valueGutter = Math.min(
+    (Math.max(...series.flatMap((s) => s.values.map((v) => formatValue(v, unit).length))) + 1) * CH,
+    Math.max(48, width * 0.25),
+  );
 
-  const plotLeft = kind === "bar" ? labelWidth : Math.max(...ticks.map((t) => format(t).length)) * CH + 8;
+  const plotLeft = kind === "bar" ? labelWidth : Math.max(...ticks.map((t) => formatValue(t).length)) * CH + 8;
   const plotRight = kind === "bar" ? valueGutter : 12;
   const plotW = Math.max(40, width - plotLeft - plotRight);
 
@@ -185,9 +199,7 @@ export function Chart({ spec }: { spec: ChartSpec }) {
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         role="img"
-        aria-label={`${spec.title}. ${series
-          .map((s) => `${s.label}: ${s.values.map((v) => format(v, unit)).join(", ")}`)
-          .join(". ")}. Categories: ${categories.join(", ")}.`}
+        aria-label={describeChart(spec)}
         tabIndex={0}
         onKeyDown={onKey}
         onPointerLeave={() => setActive(null)}
@@ -208,7 +220,7 @@ export function Chart({ spec }: { spec: ChartSpec }) {
             ))}
             {ticks.map((t) => (
               <text key={`l${t}`} x={x(t)} y={plotH + 15} className="chart__tick" textAnchor="middle">
-                {format(t)}
+                {formatValue(t)}
               </text>
             ))}
 
@@ -228,10 +240,10 @@ export function Chart({ spec }: { spec: ChartSpec }) {
 
             {categories.map((cat, i) => {
               const top = i * (groupH + GROUP_GAP) + GROUP_GAP / 2;
-              const on = active === i;
+              const on = selected === i;
               return (
                 <g
-                  key={cat}
+                  key={`${cat}-${i}`}
                   onPointerEnter={() => setActive(i)}
                   className={on ? "chart__group is-on" : "chart__group"}
                 >
@@ -247,7 +259,7 @@ export function Chart({ spec }: { spec: ChartSpec }) {
                     const w = x(v) - zero;
                     return (
                       <path
-                        key={s.label}
+                        key={`${s.label}-${si}`}
                         d={barPath(zero, yy, w, BAR_H, w < 0)}
                         className="chart__bar"
                         style={{ fill: STROKE[si] }}
@@ -261,12 +273,12 @@ export function Chart({ spec }: { spec: ChartSpec }) {
                     const yy = top + si * (BAR_H + BAR_GAP);
                     return (
                       <text
-                        key={`v${s.label}`}
+                        key={`v${s.label}-${si}`}
                         x={Math.max(x(v), zero) + 6}
                         y={yy + BAR_H - 3}
                         className="chart__value"
                       >
-                        {format(v, unit)}
+                        {formatValue(v, unit)}
                       </text>
                     );
                   })}
@@ -280,7 +292,7 @@ export function Chart({ spec }: { spec: ChartSpec }) {
               <g key={t}>
                 <line x1={plotLeft} x2={plotLeft + plotW} y1={y(t)} y2={y(t)} className="chart__grid" />
                 <text x={plotLeft - 8} y={y(t) + 4} className="chart__tick" textAnchor="end">
-                  {format(t)}
+                  {formatValue(t)}
                 </text>
               </g>
             ))}
@@ -311,19 +323,19 @@ export function Chart({ spec }: { spec: ChartSpec }) {
               />
             ))}
 
-            {active !== null && (
-              <line x1={xAt(active)} x2={xAt(active)} y1={0} y2={plotH} className="chart__cross" />
+            {selected !== null && (
+              <line x1={xAt(selected)} x2={xAt(selected)} y1={0} y2={plotH} className="chart__cross" />
             )}
 
             {series.map((s, si) =>
               s.values.map((v, i) => (
                 <circle
-                  key={`${s.label}${i}`}
+                  key={`${s.label}-${si}-${i}`}
                   cx={xAt(i)}
                   cy={y(v)}
-                  r={active === i ? 5 : 4}
+                  r={selected === i ? 5 : 4}
                   className="chart__dot"
-                  style={{ fill: active === i ? "var(--amber)" : STROKE[si] }}
+                  style={{ fill: selected === i ? "var(--amber)" : STROKE[si] }}
                 />
               )),
             )}
@@ -333,7 +345,7 @@ export function Chart({ spec }: { spec: ChartSpec }) {
                 key={cat}
                 x={xAt(i)}
                 y={plotH + 16}
-                className={active === i ? "chart__tick is-on" : "chart__tick"}
+                className={selected === i ? "chart__tick is-on" : "chart__tick"}
                 textAnchor={i === 0 ? "start" : i === categories.length - 1 ? "end" : "middle"}
               >
                 {cat}
@@ -345,7 +357,7 @@ export function Chart({ spec }: { spec: ChartSpec }) {
               const w = plotW / Math.max(1, categories.length - 1);
               return (
                 <rect
-                  key={`hit${cat}`}
+                  key={`hit-${cat}-${i}`}
                   x={xAt(i) - w / 2}
                   y={0}
                   width={w}
@@ -402,11 +414,11 @@ export function Chart({ spec }: { spec: ChartSpec }) {
             </thead>
             <tbody>
               {categories.map((cat, i) => (
-                <tr key={cat}>
+                <tr key={`${cat}-${i}`}>
                   <td className="prose__td">{cat}</td>
-                  {series.map((s) => (
-                    <td key={s.label} className="prose__td">
-                      {format(s.values[i], unit)}
+                  {series.map((s, si) => (
+                    <td key={`${s.label}-${si}`} className="prose__td">
+                      {formatValue(s.values[i], unit)}
                     </td>
                   ))}
                 </tr>

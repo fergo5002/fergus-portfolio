@@ -183,3 +183,62 @@ export function niceTicks(min: number, max: number, maxTicks = 6): number[] {
   for (let i = 0; i <= count; i++) ticks.push(quantise(start + i * step, step));
   return ticks;
 }
+
+/**
+ * Renders one value for a reader. Thousands separators past 10,000 only: below
+ * that a monospace column reads fine without them and the comma is noise. Lives
+ * here rather than in the component so the figure and its text alternative can
+ * never disagree about how a number is written.
+ */
+export function formatValue(value: number, unit?: string): string {
+  const abs = Math.abs(value);
+  const text = abs >= 10_000 ? value.toLocaleString("en-IE") : String(Number(value.toFixed(2)));
+  return unit ? `${text}${unit.startsWith("%") ? "" : " "}${unit}` : text;
+}
+
+/**
+ * Past this many rows the spoken description stops enumerating and points at
+ * the table instead. Forty label-and-value pairs read aloud is not an
+ * accessible alternative to a chart, it is a way of burying the answer.
+ */
+const MAX_SPOKEN_ROWS = 12;
+
+/**
+ * The chart's text alternative, used as the `aria-label` on the figure.
+ *
+ * Two rules, both learnt from what shipped. Each category is paired with its
+ * own value rather than the labels being read as one list and the numbers as
+ * another, because re-pairing them by position is work a listener should not
+ * have to do. And the pairs are separated by a semicolon, because the first
+ * version joined them with ", " while the real categories on one article were
+ * "Broken, random ids", "Broken, chosen ids" and "Fixed, chosen ids": commas
+ * inside the labels and commas between them collapsed into one flat run of
+ * nine tokens with no way to tell where a category ended.
+ */
+export function describeChart(spec: ChartSpec): string {
+  const { kind, title, categories, series, unit } = spec;
+  const head = `${kind === "bar" ? "Bar chart" : "Line chart"}. ${title}.`;
+  const reference =
+    spec.baseline === undefined
+      ? ""
+      : ` Reference line at ${formatValue(spec.baseline, unit)}${
+          spec.baselineLabel ? `, ${spec.baselineLabel}` : ""
+        }.`;
+
+  if (categories.length > MAX_SPOKEN_ROWS) {
+    return `${head} ${categories.length} rows; the full data is in the table below the chart.${reference}`;
+  }
+
+  const pairs = categories.map((cat, i) => {
+    const values = series
+      .map((s) =>
+        series.length > 1
+          ? `${s.label} ${formatValue(s.values[i], unit)}`
+          : formatValue(s.values[i], unit),
+      )
+      .join(" / ");
+    return `${cat}: ${values}`;
+  });
+
+  return `${head} ${pairs.join("; ")}.${reference}`;
+}
