@@ -30,12 +30,12 @@ export const projects: Project[] = [
   {
     slug: "tigh-sauna",
     title: "Tigh Sauna",
-    tagline: "Running a sauna shouldn't be admin. Bookings, payments and customers in one place.",
+    tagline: "The back of house for Irish saunas. Bookings, payments and customers in one place.",
     role: "Co-Founder, Engineering",
     year: "2026 – Present",
     bullets: [
-      "One system a venue actually runs on: take a booking, take the money, know who turned up, and get them back again. Quick to set up, and nothing to wire together.",
-      "Each venue's storefront is on Shopify, so they sell from day one, and the booking, the diary and the customer record all follow from the order without anyone retyping it.",
+      "One system a venue runs on: take the booking, take the money, know who turned up, get them back. Nothing to wire together.",
+      "Each storefront is on Shopify, so a venue sells from day one. The booking, the diary and the customer record all follow from the order.",
     ],
     stack: ["Next.js", "TypeScript", "Fastify", "PostgreSQL", "Supabase", "Shopify", "Railway", "Vercel"],
     links: [{ label: "live", href: "https://tighsauna.com" }],
@@ -65,7 +65,7 @@ export const projects: Project[] = [
     role: "Founding Engineer",
     year: "Feb – Jun 2026",
     bullets: [
-      "Turns signals from meetings, email, and chat into tracked, assigned work, replacing manual coordination with intelligent automation.",
+      "Turns what gets said in meetings, email and chat into tracked, assigned work, so nobody has to chase it.",
       "TypeScript monorepo: Next.js frontend, Fastify API, BullMQ workers, PostgreSQL + Redis, with LLMs driving task extraction and status inference.",
     ],
     stack: ["TypeScript", "Next.js", "Fastify", "BullMQ", "PostgreSQL", "Redis", "LLMs"],
@@ -95,8 +95,8 @@ export const projects: Project[] = [
     role: "Shaders & Lighting Engineer",
     year: "TCD × Qualcomm",
     bullets: [
-      "Top-down roguelike built from scratch in a team of 8, mentored by a Qualcomm staff engineer specialising in graphics commercialisation.",
-      "Implemented dynamic lighting, shadow casting, and custom GLSL shader effects in a TypeScript engine on Phaser 3.",
+      "Top-down roguelike built from scratch by a team of 8, mentored by a Qualcomm graphics engineer.",
+      "I wrote the lighting: dynamic lights, shadow casting and custom GLSL, in a TypeScript engine on Phaser 3.",
     ],
     stack: ["TypeScript", "Phaser 3", "GLSL", "WebGL"],
     links: [],

@@ -61,7 +61,7 @@ export const profile: Profile = {
     "BA Computer Science (Major) & Business (Minor) @ Trinity College Dublin, First Class Honours (1.1)",
   bio: [
     "I'm a builder. I like making things that are genuinely nice to look at, and I like making them hold up once real traffic turns up. Those two pull against each other most days, and getting both is the part I actually enjoy.",
-    "Right now I'm building Tigh Sauna with Connell Kennelly. Running a sauna shouldn't be admin. So we took the admin off it: bookings, payments and customers in one place, quick to set up, and built so people come back instead of visiting once and drifting off. We're building it with two Irish sauna businesses.",
+    "I'm building Tigh Sauna, the back of house for Irish sauna operators: bookings, payments and customers in one place, quick to set up, and built to turn a first visit into a habit.",
     "I'm starting third year of Computer Science and Business at Trinity College Dublin, on a 1.1 so far, and building full time alongside it.",
     "Before this I was co-founder and CTO of Presterly, which predicted when a Shopify brand's customers would run out and reached them over SMS and WhatsApp at that moment. We wound it down in August 2026. Before that I was a founding engineer at Loira AI in Stockholm. I've also written a game engine's lighting system and a contrarian trading bot. I like starting things, and I like shipping them end to end.",
     "Outside the terminal you'll find me at a tennis court, in the mountains, or at the sea.",

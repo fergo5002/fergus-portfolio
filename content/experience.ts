@@ -25,12 +25,11 @@ export const experience: ExperienceEntry[] = [
     location: "Dublin, Ireland",
     isNew: true,
     summary:
-      "Running a sauna shouldn't be admin. Tigh Sauna takes it off them: bookings, payments and customers in one place, quick to set up, and built so people come back.",
+      "The back of house for Irish sauna operators: bookings, payments and customers in one place, quick to set up, and built to turn a first visit into a habit.",
     bullets: [
-      "Co-founded with Connell Kennelly. He owns design and the business side, I own the backend and the platform.",
-      "Built the whole thing: one booking and operations system every venue runs on, with each venue's storefront on Shopify so they take money the day they open.",
-      "Merged three separate codebases into one product, one database and one login, so a venue signs in once and the software stops behaving like three tools stapled together.",
-      "Being built with two Irish sauna businesses rather than in a vacuum, which is why the awkward parts got found early.",
+      "I own the backend and the platform. One booking and operations system every venue runs on, with each storefront on Shopify so they take money the day they open.",
+      "Merged three codebases into one product, one database and one login, so a venue signs in once instead of running three tools stapled together.",
+      "Built with live venues rather than in a vacuum, which is why the awkward parts got found early.",
     ],
     link: { label: "tighsauna.com", href: "https://tighsauna.com" },
   },
@@ -60,10 +59,10 @@ export const experience: ExperienceEntry[] = [
     summary:
       "AI startup building an autonomous execution layer for project management, selected into SSE Business Lab at the Stockholm School of Economics.",
     bullets: [
-      "Founding engineer on a platform that turns signals from meetings, email, and chat into tracked, actioned work, replacing manual coordination.",
+      "Founding engineer on a platform that turns what gets said in meetings, email and chat into tracked, actioned work.",
       "Architected the platform as a TypeScript monorepo (Next.js frontend, Fastify API, BullMQ worker pipeline, PostgreSQL, Redis), integrating LLMs for real-time task extraction and status inference.",
-      "Drove the company's selection into SSE Business Lab, the Stockholm School of Economics' startup incubator, and set the founding team's engineering workflows, code review standards, and CI/CD.",
-      "Shipped Slack, Google Calendar, and email integrations for live signal ingestion.",
+      "Drove the company's selection into SSE Business Lab, the Stockholm School of Economics' startup incubator, and set the founding team's engineering workflow, code review standards and CI/CD.",
+      "Shipped the Slack, Google Calendar and email integrations that feed it.",
     ],
     link: { label: "loira.ai", href: "https://loira.ai" },
   },
@@ -74,7 +73,7 @@ export const experience: ExperienceEntry[] = [
     dates: "2024 – 2025",
     location: "Dublin, Ireland",
     bullets: [
-      "Analysed semiconductor and tech-hardware equities for a student fund with AUM > €700,000 using quantitative and qualitative valuation frameworks.",
+      "Analysed semiconductor and tech-hardware equities for a student fund with over €700,000 under management.",
       "Led an inter-sector pitch team, building and presenting investment theses to fund leadership.",
     ],
   },
