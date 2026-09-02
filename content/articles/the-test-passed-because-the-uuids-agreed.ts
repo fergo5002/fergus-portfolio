@@ -51,10 +51,10 @@ Pin the ids so the two rooms sort their overlapping windows in opposite directio
 \`\`\`chart
 {
   "kind": "bar",
-  "title": "Deadlocks in eight concurrent rounds",
+  "title": "Deadlocks observed",
   "categories": ["Broken, random ids", "Broken, chosen ids", "Fixed, chosen ids"],
   "series": [{ "label": "deadlocks", "values": [0, 6, 0] }],
-  "caption": "Two concurrent group holds on overlapping windows across the same two rooms, eight rounds each. Measured 2 September 2026."
+  "caption": "Two concurrent group holds on overlapping windows across the same two rooms. Eight rounds against the broken function, six against the fixed one. Measured 2 September 2026."
 }
 \`\`\`
 
