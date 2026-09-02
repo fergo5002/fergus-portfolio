@@ -8,7 +8,7 @@ export const uuidsAgreed: Article = {
   date: "2026-09-02",
   tags: ["PostgreSQL", "Concurrency", "Testing", "Booking"],
   summary:
-    "How a Postgres deadlock in a group-booking path survived a green concurrency test: the lock order only inverts when two rooms disagree about which overlapping window sorts lower, which randomly generated UUIDs rarely do. With ids chosen to disagree, the same control gives six deadlocks in eight rounds against the broken function and none against the fix.",
+    "How a Postgres deadlock in a group-booking path survived a green concurrency test: the lock order only inverts when two rooms disagree about which overlapping window sorts lower, which randomly generated UUIDs rarely do. With ids chosen to disagree, the same control gives six deadlocks in eight rounds against the broken function, and none in six rounds against the fix.",
   body: `A sauna venue can be booked whole. One customer takes every barrel for the hour, and the software has to hold all of them or none of them. I wrote that, convinced myself it could not deadlock, and was wrong. The test that should have caught it ran eight concurrent rounds and reported nothing, which is the part worth writing down.
 
 ## What actually deadlocks here?
