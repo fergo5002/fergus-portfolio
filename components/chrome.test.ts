@@ -114,3 +114,26 @@ describe("the stylesheet draws what the markup no longer says", () => {
 function escape(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
+
+describe("the prompt costume is drawn once", () => {
+  // `.promptline__sep::before` and `.promptline__dollar::before` in
+  // app/globals.css carry a literal ":" and "$", unconditionally, for every
+  // element with those classes. `PromptLine` therefore renders empty spans.
+  // `Terminal` once wrote the same two characters as text as well, so the live
+  // home page read "fergus@portfolio::~ $$" until 2026-09-03. The characters
+  // belong to the stylesheet, and only to the stylesheet.
+  const terminal = readFileSync(join(process.cwd(), "components", "Terminal.tsx"), "utf8").replace(
+    /\r\n/g,
+    "\n",
+  );
+
+  it("leaves the separator and the dollar to the stylesheet", () => {
+    expect(terminal).not.toContain('<span className="promptline__sep">');
+    expect(terminal).not.toContain('<span className="promptline__dollar">');
+  });
+
+  it("still renders both spans, because the stylesheet needs something to hang on", () => {
+    expect(terminal).toContain('<span className="promptline__sep" />');
+    expect(terminal).toContain('<span className="promptline__dollar" />');
+  });
+});
