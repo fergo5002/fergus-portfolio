@@ -105,3 +105,31 @@ describe("the stylesheet", () => {
     expect(css).toMatch(/html\.is-ejecting \.shell \{\r?\n\s*position: absolute;/);
   });
 });
+
+describe("the status bar prompt", () => {
+  const statusBar = code(read("components", "system", "StatusBar.tsx"));
+
+  it("is a real button that summons the shell", () => {
+    expect(statusBar).toMatch(/className="statusbar__prompt"/);
+    expect(statusBar).toMatch(/onClick=\{summonShell\}/);
+    expect(statusBar).toMatch(/<button\s+type="button"\s+className="statusbar__prompt"/);
+  });
+
+  it("says whether the drawer is open, except on the page that has no drawer", () => {
+    expect(statusBar).toMatch(/aria-expanded=\{shell\.inline \? undefined : shell\.open\}/);
+    expect(statusBar).toMatch(/useSyncExternalStore\(shellStore\.subscribe, shellStore\.get, getServerShell\)/);
+  });
+
+  it("is 44px both ways on small screens, in a rule that wins on order", () => {
+    const mobile = /\.statusbar__prompt \{[^}]*min-height: 44px;[^}]*\}/.exec(css);
+    expect(mobile).not.toBeNull();
+    expect(mobile?.[0]).toMatch(/min-width: 44px;/);
+    expect(mobile?.[0]).toMatch(/align-self: flex-end;/);
+    // The override of `.statusbar__readouts { display: contents }` must come
+    // after it in the file, or it loses on the cascade with equal specificity.
+    const contents = /\.statusbar__readouts \{\r?\n\s*display: contents;/.exec(css);
+    const flex = /\.statusbar__readouts \{\r?\n\s*display: flex;/.exec(css);
+    expect(contents?.index).toBeGreaterThan(-1);
+    expect(flex?.index).toBeGreaterThan(contents?.index ?? Infinity);
+  });
+});

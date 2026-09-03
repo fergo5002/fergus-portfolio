@@ -1,10 +1,14 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { formatUptime, memoryAddress } from "@/lib/system";
+import { INITIAL_SHELL, shellStore } from "@/lib/shell";
+import { summonShell } from "@/components/ShellDrawer";
 import { useSystem } from "./SystemProvider";
 import MachineControls from "./MachineControls";
+
+const getServerShell = () => INITIAL_SHELL;
 
 /**
  * A fixed instrument strip along the bottom of the tube: uptime, the current
@@ -18,6 +22,7 @@ import MachineControls from "./MachineControls";
 export default function StatusBar() {
   const path = usePathname();
   const { frame, onFrame, reducedMotion, settings } = useSystem();
+  const shell = useSyncExternalStore(shellStore.subscribe, shellStore.get, getServerShell);
 
   const uptimeRef = useRef<HTMLSpanElement>(null);
   const memRef = useRef<HTMLSpanElement>(null);
@@ -77,6 +82,19 @@ export default function StatusBar() {
         <span className="statusbar__seg statusbar__hide-sm">{settings.theme}</span>
       </span>
       <MachineControls />
+      {/* The drawer's handle. On the home page, which hosts the terminal
+          inline, it jumps to that instead, and reports no expanded state
+          because there is nothing to expand. */}
+      <button
+        type="button"
+        className="statusbar__prompt"
+        onClick={summonShell}
+        aria-expanded={shell.inline ? undefined : shell.open}
+        title={shell.inline ? "Jump to the terminal" : "Open the terminal (backtick)"}
+      >
+        <span aria-hidden="true">$</span>
+        <span className="statusbar__prompt-label">prompt</span>
+      </button>
     </div>
   );
 }
