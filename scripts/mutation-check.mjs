@@ -544,6 +544,47 @@ const MUTATIONS = [
     pattern: /(?<lead>\.statusbar__prompt \{\r?\n    align-self: flex-end;[\s\S]{0,120}min-height: )44px;/,
     replace: "$<lead>22px;",
   },
+
+  // ── what the review of F2 found ──
+  {
+    // The home page's half of the backtick rule. `lib/shell.ts` declines to
+    // open on the inline route, so deleting this breaks nothing loudly: the
+    // key just stops doing anything on `/`.
+    name: "the backtick on the home page stops reaching the inline terminal",
+    file: "components/ShellDrawer.tsx",
+    pattern: /  if \(shellStore\.get\(\)\.inline\) \{[\s\S]*?\r?\n  \}\r?\n/,
+    replace: "",
+  },
+  {
+    name: "the status bar writes its dollar into the document again",
+    file: "components/system/StatusBar.tsx",
+    pattern: /(<span className="statusbar__prompt-label">prompt<\/span>)/,
+    replace: '<span aria-hidden="true">$ </span>\r\n        $1',
+  },
+  {
+    name: "smooth scrolling escapes the reduced-motion gate",
+    file: "app/globals.css",
+    pattern:
+      /@media \(prefers-reduced-motion: no-preference\) \{\r?\n  html \{\r?\n    scroll-behavior: smooth;\r?\n  \}\r?\n\}/,
+    replace: "html {\r\n  scroll-behavior: smooth;\r\n}",
+  },
+  {
+    name: "the default check hand-lists its fields, so a fifth one is ignored",
+    file: "lib/system.ts",
+    pattern:
+      /  const keys = Object\.keys\(DEFAULT_SETTINGS\) as \(keyof SystemSettings\)\[\];\r?\n  return keys\.every\(\(k\) => s\[k\] === DEFAULT_SETTINGS\[k\]\);/,
+    replace:
+      "  return (\r\n    s.theme === DEFAULT_SETTINGS.theme &&\r\n    s.crtEnabled === DEFAULT_SETTINGS.crtEnabled &&\r\n    s.scanlines === DEFAULT_SETTINGS.scanlines &&\r\n    s.audio === DEFAULT_SETTINGS.audio\r\n  );",
+  },
+  {
+    // Not a guard being broken but a future being simulated: a tool writing a
+    // key `forget` has never heard of. The walk in `lib/forget.test.ts` is the
+    // only thing that would ever notice.
+    name: "a tool writes a key forget has never heard of",
+    file: "lib/presence.ts",
+    pattern: /(export const localPresence)/,
+    replace: 'export function leak(): void {\r\n  window.localStorage.setItem("not-ours", "1");\r\n}\r\n\r\n$1',
+  },
 ];
 
 let caught = 0;
