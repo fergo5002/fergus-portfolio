@@ -33,6 +33,7 @@ const read = (...parts: string[]) => readFileSync(join(process.cwd(), ...parts),
 
 const promptLine = read("components", "PromptLine.tsx");
 const markdown = read("components", "Markdown.tsx");
+const statusBar = read("components", "system", "StatusBar.tsx");
 const css = read("app", "globals.css");
 
 /** Strip comments and docblocks so a rule is not satisfied by prose about it. */
@@ -135,5 +136,29 @@ describe("the prompt costume is drawn once", () => {
   it("still renders both spans, because the stylesheet needs something to hang on", () => {
     expect(terminal).toContain('<span className="promptline__sep" />');
     expect(terminal).toContain('<span className="promptline__dollar" />');
+  });
+});
+
+describe("the status bar prompt writes no costume into the document", () => {
+  // The button shipped as `<span aria-hidden="true">$</span>` beside its label.
+  // That is the same shape as the prompt-line bug measured on 2026-08-21, and
+  // `aria-hidden` does not take text out of extraction. The status bar is on
+  // every route, so the glyph sat in front of every page's words.
+  //
+  // `.shell__title` ("fsh") is deliberately not covered here. It renders only
+  // while the drawer is open, which takes a client gesture, so it is never in
+  // the server HTML a crawler or a text extractor reads.
+  const source = code(statusBar);
+
+  it("renders no element whose text is the dollar", () => {
+    expect(/>\s*\$\s*</.exec(source)?.[0], "a status bar element has $ as its text").toBeUndefined();
+  });
+
+  it("keeps the button's accessible name, which was never the problem", () => {
+    expect(source).toContain('<span className="statusbar__prompt-label">prompt</span>');
+  });
+
+  it("leaves the glyph to the stylesheet", () => {
+    expect(css).toMatch(/\.statusbar__prompt::before\s*\{[^}]*content:\s*"\$"/);
   });
 });

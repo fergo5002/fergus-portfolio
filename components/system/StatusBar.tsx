@@ -84,15 +84,24 @@ export default function StatusBar() {
       <MachineControls />
       {/* The drawer's handle. On the home page, which hosts the terminal
           inline, it jumps to that instead, and reports no expanded state
-          because there is nothing to expand. */}
+          because there is nothing to expand.
+
+          `aria-controls` names the drawer only while the drawer is there. It
+          renders nothing when closed, so pointing at `shell-drawer` the rest of
+          the time would be a reference to an element that does not exist. */}
       <button
         type="button"
         className="statusbar__prompt"
         onClick={summonShell}
         aria-expanded={shell.inline ? undefined : shell.open}
+        aria-controls={!shell.inline && shell.open ? "shell-drawer" : undefined}
         title={shell.inline ? "Jump to the terminal" : "Open the terminal (backtick)"}
       >
-        <span aria-hidden="true">$</span>
+        {/* The `$` is drawn by `.statusbar__prompt::before`, not written here.
+            Costume text in the document is the bug this repo has now shipped
+            twice: `aria-hidden` keeps it out of the accessibility tree and does
+            nothing at all to a text extractor. `components/chrome.test.ts` is
+            the guard. The accessible name stays "prompt", from the label. */}
         <span className="statusbar__prompt-label">prompt</span>
       </button>
     </div>

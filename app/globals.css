@@ -3566,6 +3566,13 @@ html.is-ejecting .shell {
   border-radius: 3px;
   cursor: pointer;
 }
+/* The glyph is costume, so it is drawn rather than written. Same rule as
+   `.promptline__dollar::before` above, and for the same measured reason: a
+   text extractor reads the document, not `aria-hidden`. It is a flex item
+   like the span it replaces, so the gap and the alignment are unchanged. */
+.statusbar__prompt::before {
+  content: "$";
+}
 .statusbar__prompt:hover,
 .statusbar__prompt[aria-expanded="true"] {
   color: var(--green-bright);
