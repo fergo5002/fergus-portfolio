@@ -65,12 +65,45 @@ describe("derived lists", () => {
     expect(runCommand("help")).toEqual({ type: "output", lines: HELP_LINES });
   });
 
-  it("HELP_LINES is sorted between its header and footer", () => {
-    const body = HELP_LINES.filter((l) => l.startsWith("    ") && !l.includes("·"));
-    const names = body.map((l) => l.trim().split(/\s+/)[0]);
-    expect(names).toEqual([...names].sort());
-    expect(names).toContain("gravity");
-    expect(names).toContain("sudo");
+  it("HELP_LINES is, line for line, the text the site printed before the registry existed", () => {
+    // The parity oracle. Sections, their order and the order within them were
+    // hand-curated in the old hard-coded array; the registry reproduces them
+    // from `group` and `rank`. A new command with a help line must pick a
+    // section and a rank, and this list must grow with it.
+    expect(HELP_LINES).toEqual([
+      "FergusOS 5.0 · command reference",
+      "",
+      "  navigate",
+      "    whoami            who is this",
+      "    ls                list sections",
+      "    cd <section>      jump to a section",
+      "    open <project>    open a project by name",
+      "    cat about.txt     read the bio",
+      "    resume            print the short CV",
+      "    contact           show contact details",
+      "",
+      "  system",
+      "    neofetch          system summary",
+      "    uptime            session uptime",
+      "    top               running processes",
+      "    theme <name>      green · amber · ice",
+      "    crt <on|off>      toggle the tube",
+      "    scanlines <0-100> set mask intensity",
+      "    matrix            let it rain",
+      "    degauss           thump the magnets",
+      "",
+      "  physical",
+      "    gravity           drop the page. drag it. throw it.",
+      "    eject / dock      pull the camera back off the glass",
+      "    sound <on|off>    the tube has a voice",
+      "",
+      "  shell",
+      "    history · echo · date · pwd · clear · help",
+      "    tab completes · up/down recalls · ctrl+L clears",
+      "",
+      "  and one more thing",
+      "    sudo hire-me      ;)",
+    ]);
   });
 });
 

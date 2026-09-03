@@ -46,6 +46,8 @@ export const effects = [
   defineCommand({
     name: "theme",
     help: "theme <name>      green · amber · ice",
+    group: "system",
+    rank: 4,
     argPool: ["green", "amber", "ice"],
     run: (args, ctx) => {
       const arg = argOf(args);
@@ -58,6 +60,8 @@ export const effects = [
   defineCommand({
     name: "crt",
     help: "crt <on|off>      toggle the tube",
+    group: "system",
+    rank: 5,
     argPool: ["on", "off"],
     run: (args) => {
       const arg = argOf(args);
@@ -73,6 +77,8 @@ export const effects = [
   defineCommand({
     name: "scanlines",
     help: "scanlines <0-100> set mask intensity",
+    group: "system",
+    rank: 6,
     run: (args) => {
       const arg = argOf(args);
       const n = Number(arg);
@@ -88,6 +94,8 @@ export const effects = [
   defineCommand({
     name: "matrix",
     help: "matrix            let it rain",
+    group: "system",
+    rank: 7,
     run: () => ({
       type: "effect",
       effect: { kind: "matrix", ms: 9000 },
@@ -98,12 +106,16 @@ export const effects = [
   defineCommand({
     name: "degauss",
     help: "degauss           thump the magnets",
+    group: "system",
+    rank: 8,
     run: () => ({ type: "effect", effect: { kind: "degauss" }, lines: ["*THWOMP*"] }),
   }),
 
   defineCommand({
     name: "gravity",
     help: "gravity           drop the page. drag it. throw it.",
+    group: "physical",
+    rank: 1,
     argPool: ["on", "off"],
     run: (args, ctx) => {
       const arg = argOf(args);
@@ -122,6 +134,8 @@ export const effects = [
   defineCommand({
     name: "eject",
     help: "eject / dock      pull the camera back off the glass",
+    group: "physical",
+    rank: 2,
     run: ejectOrDock("eject"),
   }),
 
@@ -133,6 +147,8 @@ export const effects = [
   defineCommand({
     name: "sound",
     help: "sound <on|off>    the tube has a voice",
+    group: "physical",
+    rank: 3,
     argPool: ["on", "off"],
     run: (args) => {
       const arg = argOf(args);

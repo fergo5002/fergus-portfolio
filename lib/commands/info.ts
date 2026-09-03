@@ -86,6 +86,8 @@ export const info = [
   defineCommand({
     name: "contact",
     help: "contact           show contact details",
+    group: "navigate",
+    rank: 7,
     run: () => ok(profile.contact.map((c) => `${c.label}: ${c.value}`)),
   }),
 
@@ -93,18 +95,24 @@ export const info = [
     name: "resume",
     aliases: ["cv"],
     help: "resume            print the short CV",
+    group: "navigate",
+    rank: 6,
     run: () => ok(resume()),
   }),
 
   defineCommand({
     name: "neofetch",
     help: "neofetch          system summary",
+    group: "system",
+    rank: 1,
     run: (_args, ctx) => ok(neofetch(ctx)),
   }),
 
   defineCommand({
     name: "uptime",
     help: "uptime            session uptime",
+    group: "system",
+    rank: 2,
     run: (_args, ctx) => ok([`up ${formatUptime(ctx.uptimeMs ?? 0)}  ·  1 user  ·  load average: 0.94`]),
   }),
 
@@ -112,6 +120,8 @@ export const info = [
     name: "top",
     aliases: ["ps"],
     help: "top               running processes",
+    group: "system",
+    rank: 3,
     run: () => ok(top()),
   }),
 

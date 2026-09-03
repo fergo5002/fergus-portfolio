@@ -7,6 +7,8 @@ export const sudo = [
   defineCommand({
     name: "sudo",
     help: "sudo hire-me      ;)",
+    group: "more",
+    rank: 1,
     run: (args) => {
       const arg = argOf(args);
       if (arg === "hire-me" || arg === "hire me")

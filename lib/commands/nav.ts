@@ -14,6 +14,8 @@ export const nav = [
   defineCommand({
     name: "whoami",
     help: "whoami            who is this",
+    group: "navigate",
+    rank: 1,
     run: () => ok([profile.name, profile.tagline]),
   }),
 
@@ -21,12 +23,16 @@ export const nav = [
     name: "ls",
     aliases: ["dir"],
     help: "ls                list sections",
+    group: "navigate",
+    rank: 2,
     run: () => ok(["sections/", "  " + SECTIONS.join("   ")]),
   }),
 
   defineCommand({
     name: "cd",
     help: "cd <section>      jump to a section",
+    group: "navigate",
+    rank: 3,
     argPool: [...SECTIONS],
     run: (args, ctx, raw) => {
       const dest = argOf(args).replace(/^\/+|\/+$/g, "");
@@ -49,6 +55,8 @@ export const nav = [
   defineCommand({
     name: "open",
     help: "open <project>    open a project by name",
+    group: "navigate",
+    rank: 4,
     argPool: projects.map((p) => p.slug),
     run: (args) => {
       const arg = argOf(args);
@@ -64,6 +72,8 @@ export const nav = [
   defineCommand({
     name: "cat",
     help: "cat about.txt     read the bio",
+    group: "navigate",
+    rank: 5,
     argPool: ["about.txt"],
     run: (args) => {
       const arg = argOf(args);

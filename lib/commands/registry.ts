@@ -14,11 +14,17 @@ import type { CommandContext, CommandResult } from "./shared";
  * needs one; never rename these.
  */
 
+export type HelpGroup = "navigate" | "system" | "physical" | "shell" | "more";
+
 export type CommandDef = {
   name: string;
   aliases?: string[];
   /** One pre-formatted line for HELP_LINES, without the indent. Omitted or hidden: not listed. */
   help?: string;
+  /** Which section of `help` the line sits under. Defaults to "shell". */
+  group?: HelpGroup;
+  /** Position within the section, ascending; ties and omissions fall back to name order. */
+  rank?: number;
   /** Absent from help, completion and ls. Reachable by name, and through `cd <name>`. */
   hidden?: boolean;
   /** Completion candidates for the first argument. The function form is called with an empty context by `complete()`. */
@@ -71,21 +77,51 @@ export function findCommand(word: string): CommandDef | undefined {
 
 export const HELP_HEAD: string[] = ["FergusOS 5.0 · command reference", ""];
 
+/** The two lines that describe the shell itself. They sit under "shell" and are not commands. */
 export const HELP_FOOT: string[] = [
-  "",
   "    history · echo · date · pwd · clear · help",
   "    tab completes · up/down recalls · ctrl+L clears",
 ];
 
 /**
+ * The sections of `help`, in the order they print. The titles and the order
+ * are the ones the site has always had; the registry only decides which
+ * commands sit under each. A section with nothing in it is skipped, except
+ * "shell", whose two lines are static.
+ */
+export const HELP_GROUPS: { id: HelpGroup; title: string }[] = [
+  { id: "navigate", title: "navigate" },
+  { id: "system", title: "system" },
+  { id: "physical", title: "physical" },
+  { id: "shell", title: "shell" },
+  { id: "more", title: "and one more thing" },
+];
+
+const byRankThenName = (a: CommandDef, b: CommandDef): number => {
+  const ra = a.rank ?? Number.POSITIVE_INFINITY;
+  const rb = b.rank ?? Number.POSITIVE_INFINITY;
+  if (ra !== rb) return ra < rb ? -1 : 1;
+  return byNameAsc(a, b);
+};
+
+/**
  * The `help` text, from a list of definitions. `help` the command and
  * `HELP_LINES` the export both call this on `listCommands()`, so they cannot
- * disagree. Pure over its argument so the order test needs no registry.
+ * disagree. Pure over its argument, and independent of registration order:
+ * sections print in `HELP_GROUPS` order and commands by rank, then name.
  */
 export function helpLines(defs: CommandDef[]): string[] {
-  const listed = defs
-    .filter((d) => !d.hidden && d.help)
-    .sort(byNameAsc)
-    .map((d) => `    ${d.help}`);
-  return [...HELP_HEAD, ...listed, ...HELP_FOOT];
+  const listed = defs.filter((d) => !d.hidden && d.help);
+  const sections: string[][] = [];
+  for (const group of HELP_GROUPS) {
+    const own = listed
+      .filter((d) => (d.group ?? "shell") === group.id)
+      .sort(byRankThenName)
+      .map((d) => `    ${d.help}`);
+    const lines = group.id === "shell" ? [...own, ...HELP_FOOT] : own;
+    if (lines.length === 0) continue;
+    sections.push([`  ${group.title}`, ...lines]);
+  }
+  const body = sections.flatMap((section, i) => (i === 0 ? section : ["", ...section]));
+  return [...HELP_HEAD, ...body];
 }

@@ -84,6 +84,25 @@ describe("helpLines", () => {
   it("indents each listed line by four and lists only commands with help that are not hidden", () => {
     const lines = helpLines([b, quiet, hid, a]);
     const body = lines.slice(HELP_HEAD.length, -HELP_FOOT.length);
-    expect(body).toEqual(["    apple             a fruit", "    banana            another"]);
+    expect(body).toEqual(["  shell", "    apple             a fruit", "    banana            another"]);
+  });
+
+  it("prints sections in the fixed order, commands by rank then name, and skips empty sections", () => {
+    const nav2 = cmd("zeta", { help: "zeta              second", group: "navigate", rank: 2 });
+    const nav1 = cmd("alpha", { help: "alpha             first", group: "navigate", rank: 1 });
+    const more = cmd("egg", { help: "egg               last", group: "more" });
+    const lines = helpLines([more, nav2, nav1]);
+    expect(lines).toEqual([
+      ...HELP_HEAD,
+      "  navigate",
+      "    alpha             first",
+      "    zeta              second",
+      "",
+      "  shell",
+      ...HELP_FOOT,
+      "",
+      "  and one more thing",
+      "    egg               last",
+    ]);
   });
 });
