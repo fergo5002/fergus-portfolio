@@ -17,9 +17,9 @@
  *
  *   skipped       more text runs than the allowance produced no contrast
  *                 reading at all (see MAX_SKIPPED_TEXTS)
- *   layout-moved  the document's height changed between reading the rectangles
- *                 and taking the photograph, so the two do not describe the
- *                 same page
+ *   layout-moved  the document changed size across the shutter, or the
+ *                 photograph is not the viewport the rectangles were measured
+ *                 in, so the two do not describe the same page
  *
  * ## Why contrast is sampled from pixels rather than read from tokens
  *
@@ -215,6 +215,11 @@
  * capture reads the line at 1.00:1 on the tail band below it, the old
  * visibility test measures a label nobody can see, and the covered paragraph
  * reads as white ink on white paper.
+ *
+ * A fifth case pins the accounting rather than a correction: `p#escape` sits
+ * above the top of the document, the way the site's own skip link waits for
+ * focus, and it has to appear in `offscreen`, never in the samples, and never
+ * in the skip count.
  *
  * Two more things the fixtures pin, both added because the first version of
  * this self-test could not have failed on them.
@@ -720,11 +725,11 @@ async function checkRoute(browser, profile, url, outDir, label) {
 
   const image = await decode(png);
   // The shot is the viewport, so its width is the viewport's CSS width times
-  // the device scale factor. On an overflowing page the document is wider
-  // than that and the text past the edge is off the image; `sampleContrast`
-  // clips to the image and skips a rectangle it cannot see enough of, which
-  // is also what a visitor cannot see. The overflow check has already failed
-  // that page by name.
+  // the device scale factor. Anything the viewport does not contain was
+  // dropped in `auditInPage` and listed under `offscreen` there; the clipping
+  // in `sampleContrast` is the backstop for a rectangle that straddles the
+  // edge. On an overflowing page the overflow check has already failed the
+  // route by name.
   const scale = image.width / audit.viewportWidth;
 
   /**
@@ -788,13 +793,17 @@ async function checkRoute(browser, profile, url, outDir, label) {
     }
     samples.push({ el: entry.el, ratio: s.ratio, viaMedian: s.viaMedian, viaDark: s.viaDark, sd: s.sd });
     if (s.ratio < MIN_CONTRAST) {
-      const worst = s.viaDark < s.viaMedian ? "darkest quartile" : "median";
+      // The ground printed is the one that bit, so the numbers in the line and
+      // the colours in the line describe the same reading.
+      const quartileBit = s.viaDark < s.viaMedian;
+      const bg = quartileBit ? s.dark : s.paper;
       contrastFailures.push({
         check: "contrast",
         el: entry.el,
         detail:
-          `${s.ratio.toFixed(2)}:1 (${worst}; median ${s.viaMedian.toFixed(2)}, quartile ${s.viaDark.toFixed(2)}, ` +
-          `ground sd ${s.sd.toFixed(3)}), ink rgb(${s.ink.join(",")}) on rgb(${s.paper.join(",")}), "${entry.text}"`,
+          `${s.ratio.toFixed(2)}:1 (${quartileBit ? "darkest quartile" : "median"}; median ` +
+          `${s.viaMedian.toFixed(2)}, quartile ${s.viaDark.toFixed(2)}, ground sd ${s.sd.toFixed(3)}), ` +
+          `ink rgb(${s.ink.join(",")}) on rgb(${bg.join(",")}), "${entry.text}"`,
       });
     }
   }
@@ -1036,6 +1045,19 @@ async function selfTest(args) {
           `${r.profile} good: ${r.skipped.length} skipped runs, expected exactly the covered paragraph: ` +
             r.skipped.map((s) => `${s.el} (${s.reason})`).join("; "),
         );
+      }
+
+      /**
+       * And the line above the top of the page, which is the other half of the
+       * same accounting. It has to be reported, it must never be sampled, and
+       * it must not land in the skip count: a skip is the sampler failing on
+       * something that was there, and there was nothing there.
+       */
+      if (!r.offscreen.some((o) => o.el.includes("p#escape"))) {
+        problems.push(`${r.profile} good: the line above the top of the page was not reported as offscreen`);
+      }
+      if (sampledEls.some((e) => e.includes("p#escape"))) {
+        problems.push(`${r.profile} good: the line above the top of the page was sampled`);
       }
 
       /**

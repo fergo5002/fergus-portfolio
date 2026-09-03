@@ -79,9 +79,27 @@
   #cover { position: relative; }
   #covered { margin: 0; color: #111; background: #fff; }
   #occluder { position: absolute; inset: 0; background: #fff; }
+
+  /* ── above the top of the page ────────────────────────────────────────
+     The shape of the site's own skip link, which lives off the top until it
+     is focused. Nothing of it is in the photograph, so it belongs in the
+     offscreen list and never in the sampled set, and it must not count as a
+     skip: a skip is the sampler failing on something that was there. */
+  /* Boxed and parked 200px up so it stays clear of the top edge on the 320px
+     profile too, where an unsized absolute box wraps to three or four lines. */
+  #escape {
+    position: absolute;
+    top: -200px;
+    left: 0;
+    width: 240px;
+    margin: 0;
+    color: #111;
+    background: #fff;
+  }
 </style>
 </head>
 <body>
+<p id="escape">Parked above the top, like a skip link waiting for focus.</p>
 <h1>Good fixture</h1>
 <p id="fine">Readable control paragraph, near-black on white.</p>
 <p id="dim">Formerly dim paragraph, now dark grey on white, with <a id="inline" href="#fine">an inline link in a sentence</a> that is exempt from the tap-target rule.</p>
