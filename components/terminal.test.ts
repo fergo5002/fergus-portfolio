@@ -33,3 +33,38 @@ describe("Terminal and a program result", () => {
     expect(terminal).toMatch(/"no runtime yet"/);
   });
 });
+
+describe("Terminal reads the shared history", () => {
+  it("subscribes to the history store rather than keeping entries in state", () => {
+    expect(terminal).toMatch(/useSyncExternalStore\(historyStore\.subscribe, historyStore\.get/);
+    expect(terminal).not.toMatch(/useState<Entry\[\]>/);
+  });
+
+  it("dispatches typed, print and clear, and nothing else", () => {
+    expect(terminal).toMatch(/historyStore\.dispatch\(\{ type: "typed", cmd: raw \}\)/);
+    expect(terminal).toMatch(/historyStore\.dispatch\(\{ type: "print", cmd: raw, lines: \[res\.program\.title, "no runtime yet"\] \}\)/);
+    expect(terminal).toMatch(/historyStore\.dispatch\(\{ type: "clear" \}\)/);
+  });
+
+  it("gives the drawer a way to take focus and its own ids", () => {
+    expect(terminal).toMatch(/autoFocus/);
+    expect(terminal).toMatch(/useId\(\)/);
+    expect(terminal).not.toMatch(/id="term-input"/);
+  });
+});
+
+describe("Terminal applies forget and feeds the session commands", () => {
+  it("hands the command the storage keys and the presence count", () => {
+    expect(terminal).toMatch(/storageKeys: readStorageKeys\(\)/);
+    expect(terminal).toMatch(/presence,/);
+    expect(terminal).toMatch(/localPresence\.count\(\)/);
+  });
+
+  it("removes exactly the keys the effect names, through the owned-key filter", () => {
+    expect(terminal).toMatch(/case "forget":[\s\S]{0,200}removeKeys\(window\.localStorage, effect\.keys\)/);
+  });
+
+  it("admits it when storage refuses", () => {
+    expect(terminal).toMatch(/storage refused the change/);
+  });
+});
