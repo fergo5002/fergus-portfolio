@@ -512,6 +512,38 @@ const MUTATIONS = [
     pattern: /\.filter\(\(d\) => !d\.hidden\)\.sort\(byNameAsc\)/,
     replace: ".filter((d) => !d.hidden)",
   },
+
+  // ── the shell everywhere (F2) ──
+  {
+    name: "the drawer opens on the page that already has a terminal",
+    file: "lib/shell.ts",
+    pattern: /return state\.inline \|\| state\.open \? state : \{ \.\.\.state, open: true \};/,
+    replace: "return state.open ? state : { ...state, open: true };",
+  },
+  {
+    name: "a backtick typed into a field summons the shell",
+    file: "lib/shell.ts",
+    pattern: /if \(tag === "INPUT" \|\| tag === "TEXTAREA" \|\| tag === "SELECT"\) return false;/,
+    replace: "",
+  },
+  {
+    name: "forget removes a key the site does not own",
+    file: "lib/forget.ts",
+    pattern: /    if \(!isOwnedKey\(key\)\) continue;/,
+    replace: "",
+  },
+  {
+    name: "the defaults are written to storage again",
+    file: "lib/system.ts",
+    pattern: /if \(isDefaultSettings\(settings\)\) target\.removeItem\(SETTINGS_KEY\);/,
+    replace: "if (false) target.removeItem(SETTINGS_KEY);",
+  },
+  {
+    name: "the phone tap target shrinks back under 44px",
+    file: "app/globals.css",
+    pattern: /(?<lead>\.statusbar__prompt \{\r?\n    align-self: flex-end;[\s\S]{0,120}min-height: )44px;/,
+    replace: "$<lead>22px;",
+  },
 ];
 
 let caught = 0;
