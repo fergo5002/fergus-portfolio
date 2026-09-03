@@ -18,11 +18,20 @@
  * backgrounds. That is a fact about the stylesheet. It is not a fact about what
  * a visitor sees, because between the token and the eye sit the scanline
  * overlay, the phosphor shader, `text-shadow` glow, translucent panels and
- * whatever a theme does to `--bg`. Check the thing that ships. So this takes a
- * full-page screenshot, finds every element that has its own text, and reads
- * the pixels inside that text's rectangles. The foreground is estimated as the
- * 15% of pixels closest to the element's computed `color`; the background is
- * the per-channel median of the rest. WCAG contrast is computed on those two.
+ * whatever a theme does to `--bg`. Check the thing that ships. So this
+ * screenshots the whole page, finds every element that has its own text, and
+ * reads the pixels inside that text's rectangles. The foreground is estimated as the
+ * mean of the 2% of pixels closest to the element's computed `color` (never
+ * fewer than eight); the background is the per-channel median of the rest.
+ * WCAG contrast is computed on those two.
+ *
+ * Two per cent, not more. A text rect is mostly paper, and a thin glyph's
+ * rect is nearly all paper, so a wider slice fills up with half-covered edge
+ * pixels and reads darker than the ink. Measured on the first real run: the
+ * "Email me" of the call to action passed at 8.4:1 while the arrow beside it,
+ * same element, same colour, same panel, read 2.5:1 with a 15% slice and
+ * 10.4:1 with this one. The status bar's `--green-dim` readouts moved from
+ * 1.4 to 4.7:1, which is what the tokens say they are.
  *
  * It is an estimate, and the summary names the element so a person can look.
  * Things that fool it: a glow that fills most of a very small rect, text over a
@@ -32,6 +41,23 @@
  * `no-preference` is a stream of random glyphs at the moment of the shot. The
  * four checks are about layout and colour, which do not depend on motion;
  * motion is On the glass's job, not this script's.
+ *
+ * ## One layout for the rectangles and the pixels
+ *
+ * The page is measured and photographed in the same layout: the viewport is
+ * resized to the document's height first, and then the rectangles are read
+ * and a plain screenshot of that viewport is taken. Playwright's `fullPage`
+ * option was the first version, and on Chromium the capture drops the
+ * emulated media state, which relays the page out under the rectangles.
+ * Measured on `/tools/headline-check`, Pixel 5: the document was 1929px tall
+ * before the capture and 1876px after, and the 41 elements that changed were
+ * the ones a `@media (hover: none)` rule touches. `.hcheck__label` is 44px
+ * tall when it is measured, because the touch floor applies, and 20px in the
+ * photograph, because it no longer does. Everything below each of those rules
+ * rides up with it: 11 CSS px at the label, 18 by the bottom of the page. So
+ * the sample read the panel behind the text and called a label 1.8:1 that
+ * WebKit, whose capture keeps the emulation, read at 12.8:1. Same CSS, same
+ * pixels on a phone; the instrument was looking in the wrong place.
  *
  * ## Tap targets and inline links
  *
@@ -62,6 +88,16 @@
  * controls are not reported, and that the good one passes clean. It runs
  * first in CI, before any real route, because a check that has never been
  * seen to fail is a ritual (CLAIMS.md, rule 1: prove the instrument first).
+ *
+ * The good fixture also carries one case for each of the three corrections
+ * above: a thin glyph in a roomy box, a line under a band only a coarse
+ * pointer sees, and the visually hidden idiom. All three are fine for a
+ * reader, all three were reported as faults before, and reverting any one
+ * correction brings its false failure back on the good page: the wide slice
+ * reads the glyph at 1.5:1, the full-page capture reads the line at 1.00:1 on
+ * the tail band below it, and the old visibility test measures a label nobody
+ * can see. A checker that cries wolf is worse than no checker, so the fixture
+ * pins all three.
  *
  * Usage:
  *   node scripts/phone-check.mjs --self-test
@@ -151,11 +187,14 @@ function auditInPage({ minInput, minTap }) {
     return parts.join(" > ");
   };
 
+  // A box under 2px in either direction is the visually-hidden idiom (1px by
+  // 1px, clipped), which is text for a screen reader and not for an eye. It
+  // has no contrast to sample and no target to tap.
   const visible = (el) => {
     const cs = getComputedStyle(el);
     if (cs.display === "none" || cs.visibility === "hidden" || Number(cs.opacity) === 0) return false;
     const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
+    return r.width >= 2 && r.height >= 2;
   };
 
   const failures = [];
@@ -298,10 +337,10 @@ async function decode(png) {
 }
 
 /**
- * The estimate. Ink is the mean of the 15% of pixels nearest the computed
+ * The estimate. Ink is the mean of the 2% of pixels nearest the computed
  * colour (at least eight); paper is the per-channel median of everything
- * else. Returns null when there is too little to sample or the text is
- * transparent.
+ * else. The header says why the slice is that thin. Returns null when there
+ * is too little to sample or the text is transparent.
  */
 function sampleContrast(image, entry, scale) {
   const fg = parseColor(entry.color);
@@ -321,7 +360,7 @@ function sampleContrast(image, entry, scale) {
   }
   if (pixels.length < 32) return null;
   const ranked = pixels.map((p) => ({ p, d: dist2(p, fg) })).sort((a, b) => a.d - b.d);
-  const n = Math.max(8, Math.floor(ranked.length * 0.15));
+  const n = Math.max(8, Math.floor(ranked.length * 0.02));
   const ink = meanColour(ranked.slice(0, n).map((x) => x.p));
   const paper = medianColour(ranked.slice(n).map((x) => x.p));
   return { ratio: contrast(ink, paper), ink, paper };
@@ -344,23 +383,41 @@ async function checkRoute(browser, profile, url, outDir, label) {
   await page.goto(url, { waitUntil: "networkidle", timeout });
   await page.waitForTimeout(500);
 
+  // One layout for the rectangles and the pixels (see the header). The
+  // viewport takes the document's height, twice if the first resize changed
+  // it, and the screenshot is of that viewport rather than a `fullPage`.
+  const { width } = profile.device.viewport;
+  for (let pass = 0; pass < 2; pass++) {
+    const docHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+    const height = Math.min(Math.max(profile.device.viewport.height, docHeight), 16_000);
+    if (page.viewportSize()?.height === height) break;
+    await page.setViewportSize({ width, height });
+    await page.waitForTimeout(250);
+  }
+
   const audit = await page.evaluate(auditInPage, { minInput: MIN_INPUT_FONT_PX, minTap: MIN_TAP_PX });
-  const png = await page.screenshot({ fullPage: true, animations: "disabled", caret: "hide" });
+  const png = await page.screenshot({ fullPage: false, animations: "disabled", caret: "hide" });
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, `${label}.${profile.id}.png`), png);
 
   const image = await decode(png);
-  // Measured, not assumed: a full-page shot is the page's CSS width times the
-  // device scale factor, and on an overflowing page the page is wider than
-  // the viewport.
-  const scale = image.width / Math.max(audit.viewportWidth, audit.scrollWidth);
+  // The shot is the viewport, so its width is the viewport's CSS width times
+  // the device scale factor. On an overflowing page the document is wider
+  // than that and the text past the edge is off the image; `sampleContrast`
+  // clips to the image and skips a rectangle it cannot see enough of, which
+  // is also what a visitor cannot see. The overflow check has already failed
+  // that page by name.
+  const scale = image.width / audit.viewportWidth;
 
   const contrastFailures = [];
-  let sampled = 0;
+  // Kept by name, not just counted: the self-test asserts that its pinned
+  // cases were measured. An element the sampler quietly skips is an element
+  // nobody is checking, and a count cannot tell you which one it was.
+  const sampledEls = [];
   for (const entry of audit.texts) {
     const s = sampleContrast(image, entry, scale);
     if (!s) continue;
-    sampled += 1;
+    sampledEls.push(entry.el);
     if (s.ratio < MIN_CONTRAST) {
       contrastFailures.push({
         check: "contrast",
@@ -378,7 +435,8 @@ async function checkRoute(browser, profile, url, outDir, label) {
     failures: [...audit.failures, ...contrastFailures],
     inline: audit.inline,
     exempt: audit.exempt,
-    sampled,
+    sampled: sampledEls.length,
+    sampledEls,
   };
 }
 
@@ -506,6 +564,40 @@ async function selfTest(args) {
       if (r.sampled < 3) problems.push(`${r.profile} good: only ${r.sampled} text elements sampled`);
       if (!r.inline.some((i) => i.el.includes("a#inline"))) {
         problems.push(`${r.profile} good: the inline link was not listed as inline`);
+      }
+
+      /**
+       * Three cases that the first real run put here, one for each way this
+       * script was wrong about a page that was fine. Every one of them is a
+       * pass on the good fixture, so the loop above already fails if the
+       * correction is reverted and the false failure comes back. These lines
+       * add the other half: that the element was measured at all, because a
+       * sampler that silently skips an element passes it for the wrong reason.
+       *
+       *   span#arrow   a thin glyph alone in a roomy box. A wide ink slice
+       *                fills up with paper and reads the arrow as grey.
+       *   p#shift      a line under a band as tall as the viewport, on a page
+       *                taller than the phone. Measured in one layout and
+       *                photographed in another, its rectangle lands in the
+       *                band above it.
+       *   label#vhlabel  the visually hidden idiom: one clipped CSS pixel with
+       *                its text overflowing. Nobody sees it, so it has no
+       *                contrast to read and no target to tap.
+       */
+      if (!r.sampledEls.some((e) => e.includes("span#arrow"))) {
+        problems.push(`${r.profile} good: the thin glyph was never sampled`);
+      }
+      if (!r.sampledEls.some((e) => e.includes("p#shift"))) {
+        problems.push(`${r.profile} good: the line under the viewport-tall band was never sampled`);
+      }
+      const mentions = [
+        ...r.sampledEls,
+        ...r.failures.map((f) => f.el),
+        ...r.exempt.map((e) => e.el),
+        ...r.inline.map((i) => i.el),
+      ];
+      if (mentions.some((e) => e.includes("label#vhlabel"))) {
+        problems.push(`${r.profile} good: the visually hidden label was measured and must not be`);
       }
     }
 
