@@ -69,6 +69,16 @@ now passes its parts as CSS custom properties and `app/globals.css` draws them w
 the spans stay so the per-part colours stay with them. The heading anchor is drawn the same way.
 `components/chrome.test.ts` is the guard.
 
+**It has come back twice since, both times as a `$`,** which is why the guard now covers three
+files rather than one. `Terminal.tsx` wrote the separator and the dollar as text while the
+stylesheet was already drawing them, so the live home page read `fergus@portfolio::~ $$` until
+2026-09-03. Then the status bar's prompt button shipped a `<span aria-hidden="true">$</span>`,
+which put a `$` in front of every page's words on every route. A one-character string still feels
+too small to be content, and that instinct is the bug. The test for it: if the string is there to
+set a mood, it goes in `content`, whatever its length, and whether or not it is server-rendered
+decides only how much it costs. Client-only costume is fine as text, which is why `.shell__title`
+("fsh") stays: the drawer renders nothing until somebody opens it.
+
 The nav is the deliberate exception. Its links read `cd experience` rather than `Experience`,
 which is weak anchor text, but they are real navigation and a crawler needs to follow them.
 That is a design call, not a bug, and it is Fergus's to change if he ever wants to.
