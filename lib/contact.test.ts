@@ -326,15 +326,12 @@ describe("mailtoFallback", () => {
  */
 describe("ContactForm is wired the way the no-JS path needs", () => {
   // Normalised to LF: on a Windows checkout with autocrlf the file is CRLF on
-  // disk and every `indexOf("<form
-")` below returns -1, which made this test
-  // red at baseline on this machine while green in CI. Same fragility class as
-  // the CRLF anchors in scripts/mutation-check.mjs.
+  // disk and every indexOf of a bare newline below returns -1, which made this
+  // test red at baseline on this machine while green in CI. Same fragility
+  // class as the CRLF anchors in scripts/mutation-check.mjs.
   const src = readFileSync(join(process.cwd(), "components", "ContactForm.tsx"), "utf8").replace(
-    /
-/g,
-    "
-",
+    /\r\n/g,
+    "\n",
   );
 
   it("was actually read", () => {
