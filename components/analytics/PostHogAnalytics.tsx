@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useReportWebVitals } from "next/web-vitals";
 import { detectAiEngine, posthogClientOptions, webVitalRating } from "@/lib/analytics";
+import { registerToolRunSink } from "@/lib/tools/events";
 
 /**
  * PostHog, loaded after first paint, plus the two things this site measures
@@ -103,6 +104,16 @@ function capture(event: string, properties: Record<string, unknown>): void {
   }
   if (pending.length < PENDING_LIMIT) pending.push({ event, properties });
 }
+
+/**
+ * Browser-side tool runs (`lib/tools/events.ts`) arrive through the same
+ * queue as web vitals, so a run that happens before the SDK loads is kept.
+ * Gated on `KEY` like everything else here: development reports nothing.
+ */
+registerToolRunSink((event, properties) => {
+  if (!KEY) return;
+  capture(event, properties);
+});
 
 /**
  * How long to wait before giving up on idle time and loading anyway.

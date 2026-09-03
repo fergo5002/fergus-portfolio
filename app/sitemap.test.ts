@@ -2,8 +2,9 @@ import { describe, it, expect } from "vitest";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import sitemap from "@/app/sitemap";
-import { SITE_URL, absolute, articlePath } from "@/lib/seo";
+import { SITE_URL, absolute, articlePath, toolPath } from "@/lib/seo";
 import { articles } from "@/content/articles";
+import { liveTools, tools } from "@/content/tools";
 
 /**
  * Guards `/sitemap.xml` against the failure its own docblock warns about: a
@@ -69,5 +70,20 @@ describe("sitemap", () => {
    */
   it("lists /contact, which nothing in the nav links to", () => {
     expect(urls).toContain(absolute("/contact"));
+  });
+
+  /**
+   * Tool routes come from the registry. A `soon` tool is a name on the index
+   * and nothing else, so naming its route here would be the exact failure the
+   * sitemap's docblock warns about. The `soon` half of this is vacuous until a
+   * `soon` entry exists; `lib/tools/listing.test.ts` exercises that branch with
+   * a fixture, and this one bites the day a real entry is added.
+   */
+  it("lists every live tool, and no soon one", () => {
+    const listed = urls.filter((u) => u.startsWith(`${SITE_URL}/tools/`));
+    expect(listed.sort()).toEqual(liveTools.map((t) => absolute(toolPath(t.slug))).sort());
+    for (const t of tools) {
+      if (t.status === "soon") expect(urls).not.toContain(absolute(toolPath(t.slug)));
+    }
   });
 });

@@ -6,6 +6,7 @@ import { profile } from "@/content/profile";
 import { projects } from "@/content/projects";
 import { experience } from "@/content/experience";
 import { skills } from "@/content/skills";
+import { tools, toolShellCopy } from "@/content/tools";
 
 /**
  * Fergus's house style (`~/.claude/LANGUAGE.md`) bans em dashes outright, and by
@@ -98,6 +99,14 @@ describe("house style", () => {
       ...e.bullets.map((b, i) => ({ where: `experience.${e.id}.bullets[${i}]`, text: b })),
     ]),
     ...skills.map((g) => ({ where: `skills.${g.label}`, text: g.items.join(", ") })),
+    ...tools.flatMap((t) => [
+      { where: `tools.${t.slug}.name`, text: t.name },
+      { where: `tools.${t.slug}.blurb`, text: t.blurb },
+      ...t.cantSee.map((line, i) => ({ where: `tools.${t.slug}.cantSee[${i}]`, text: line })),
+    ]),
+    { where: "toolShellCopy.privacy.browser", text: toolShellCopy.privacy.browser },
+    { where: "toolShellCopy.privacy.server", text: toolShellCopy.privacy.server },
+    { where: "toolShellCopy.cantSeeHeading", text: toolShellCopy.cantSeeHeading },
   ];
 
   // Restored after being briefly replaced by the file scan above. Checking the

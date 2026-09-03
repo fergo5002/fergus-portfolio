@@ -7,7 +7,7 @@ import {
   MODERN_PROTOCOL_VERSION,
   type McpReply,
 } from "@/lib/mcp";
-import { after } from "next/server";
+import { afterResponse } from "@/lib/after";
 import { mcpCallProperties, withMcpClient } from "@/lib/analytics";
 import { captureServerEvent } from "@/lib/posthog-server";
 
@@ -75,34 +75,6 @@ const RPC_HEADERS: Record<string, string> = {
   "cache-control": "no-store",
   "mcp-protocol-version": MODERN_PROTOCOL_VERSION,
 };
-
-/**
- * Schedule work for after the response, and shrug if that is not possible.
- *
- * `after` needs a request scope. It has one on every real request, because this
- * route is `force-dynamic`, and it does **not** have one when the handler is
- * called directly, which is exactly what `lib/mcp.test.ts` does: it exercises
- * `POST` against a plain `Request` to prove the protocol without standing up a
- * server. Six of those tests went red the moment `after` was introduced.
- *
- * Catching is the right answer rather than a workaround, and it is this file's
- * own rule applied consistently: telemetry may not change what the protocol
- * answers, and a throw from the recording path would do precisely that. The
- * cost of the fallback is one unrecorded call in a context where there was
- * nothing worth recording anyway.
- *
- * There is deliberately no second guard on the presence of a PostHog key. It
- * would make the tests pass without ever running the branch below, and a guard
- * that is never exercised is decoration. `captureServerEvent` already returns
- * `false` without a key.
- */
-function afterResponse(work: () => void): void {
-  try {
-    after(work);
-  } catch {
-    // No request scope. Nothing to do, and nothing to say about it.
-  }
-}
 
 export async function POST(request: Request): Promise<Response> {
   // Captured by the callback below rather than returned, so `handle`'s contract

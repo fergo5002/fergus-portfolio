@@ -229,6 +229,10 @@ for the phone check. Nothing else without an argument.
   driven by CSS variables at the top of that file (`--green`, `--amber`, `--bg`, spacing,
   `--glow`). Three phosphor themes are defined as `html[data-theme="..."]` blocks; their
   matching shader colours live in `THEME_PHOSPHOR` in `lib/system.ts`: change both together.
+  Since the toolshed programme (2026-09-03) a tool may own `app/tools/<slug>/tool.css`,
+  imported by its own `page.tsx`; `globals.css` stays the shell's. The tools list lives in
+  `content/tools/`, one file per tool, and every tool renders through
+  `components/tools/ToolPage.tsx`.
 - **Animation libraries (changed in v4):** `lenis` (inertial scroll), `ogl` (the WebGL
   phosphor shader) and `motion` (springs). v5 added no dependencies: the physics solver and
   the synth are both hand-written, because a physics engine that ships 90 kB to drop some
@@ -246,7 +250,18 @@ for the phone check. Nothing else without an argument.
   `@media (prefers-reduced-motion: no-preference)` (CSS) or a `matchMedia` check (JS) with a
   static/instant fallback. Under `reduce`, Lenis is never mounted, the shader draws one static
   frame, and reveals apply instantly. Keep text contrast ≥ 4.5:1, alt text on images, visible
-  focus.
+  focus. Every live tool route is driven through WebKit at 390 and 320 and a throttled
+  Chromium in CI by `scripts/phone-check.mjs`, which fails on overflow, inputs under 16px,
+  tap targets under 44px and sampled contrast under 4.5:1, and also on a route that leaves
+  more than two text runs unread or whose photograph is not the layout its rectangles were
+  measured in. A resized desktop window does not count. Its self-test pins every floor from
+  both sides and asserts three hand-computed contrast ratios, so loosening one is red rather
+  than quiet; read that file's header before changing a number in it.
+  **A `(hover: none)` rule is about the finger and applies on a 27" touchscreen too.** Pair it
+  with a width when the rule is really about running out of room: the touch status bar block
+  in `globals.css` was one block doing both and dropped a readout on any touchscreen, which
+  the phone check cannot see because it only drives 320 and 390. `app/globals.test.ts` guards
+  the split.
 - **No backticks inside the GLSL.** The shaders are template literals, so a backtick in a
   comment terminates the string and the build fails with a syntax error hundreds of lines from
   the real cause. This has now bitten twice.

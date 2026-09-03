@@ -14,6 +14,10 @@ import {
   mcpCallProperties,
   withMcpClient,
   MCP_CLIENT_INFO_KEY_FOR_TEST,
+  TOOL_RUN_EVENT,
+  toolRunProperties,
+  type ToolOutcome,
+  type ToolRunPayload,
 } from "./analytics";
 import { META } from "./mcp";
 
@@ -434,5 +438,47 @@ describe("ingestRewrites", () => {
     for (const rule of rules) {
       expect(rule.source.startsWith(`${INGEST_PREFIX}/`), rule.source).toBe(true);
     }
+  });
+});
+
+/**
+ * The toolshed's one privacy rule, as a value: `tool_run` carries the slug,
+ * the outcome and the time, and never the input. The whitelist is what makes
+ * that true even for a caller who spreads their whole state into the payload.
+ */
+describe("tool runs", () => {
+  it("names the event tool_run", () => {
+    expect(TOOL_RUN_EVENT).toBe("tool_run");
+  });
+
+  it("records the slug, the outcome and the time, and nothing else", () => {
+    const props = toolRunProperties({ tool: "headline-check", outcome: "ok", ms: 412.6 });
+    expect(props).toEqual({ tool: "headline-check", outcome: "ok", ms: 413 });
+    expect(Object.keys(props).sort()).toEqual(["ms", "outcome", "tool"]);
+  });
+
+  it("drops anything a careless caller spreads in, the URL above all", () => {
+    const leaky = {
+      tool: "headline-check",
+      outcome: "error",
+      ms: 5,
+      url: "https://example.com/private?token=secret",
+      input: "pasted text",
+    } as ToolRunPayload;
+    const props = toolRunProperties(leaky) as Record<string, unknown>;
+    expect(props.url).toBeUndefined();
+    expect(props.input).toBeUndefined();
+    expect(JSON.stringify(props)).not.toContain("secret");
+  });
+
+  it("truncates the slug and clamps the time", () => {
+    expect(toolRunProperties({ tool: "a".repeat(500), outcome: "ok", ms: 1 }).tool.length).toBeLessThanOrEqual(120);
+    expect(toolRunProperties({ tool: "x", outcome: "ok", ms: -20 }).ms).toBe(0);
+    expect(toolRunProperties({ tool: "x", outcome: "ok", ms: Number.NaN }).ms).toBe(0);
+    expect(toolRunProperties({ tool: "", outcome: "ok", ms: 1 }).tool).toBe("unknown");
+  });
+
+  it("refuses to invent an outcome", () => {
+    expect(toolRunProperties({ tool: "x", outcome: "won" as ToolOutcome, ms: 1 }).outcome).toBe("error");
   });
 });

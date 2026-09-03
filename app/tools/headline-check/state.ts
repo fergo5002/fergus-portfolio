@@ -8,10 +8,12 @@ import type { HeadingReport, Verdict } from "@/lib/headline";
  * build error, and putting the types in there drags the module that fetches
  * arbitrary URLs into the client bundle's import graph.
  *
- * The copy lives here rather than in `content/`, which is where AGENTS.md says
- * copy belongs, because this change was scoped to `lib/`, `app/tools/` and the
- * stylesheet. Moving `headlineCopy` to `content/tools.ts` is the tidy-up, and
- * it is a move rather than a rewrite.
+ * The form's copy lives here rather than in `content/`, which is where
+ * AGENTS.md says copy belongs, because the original change was scoped to
+ * `lib/`, `app/tools/` and the stylesheet. The page-level copy (name, blurb,
+ * privacy, the "can't see" lines) moved to `content/tools/headline-check.ts`
+ * with the toolshed programme; what is left is the form's own strings, and
+ * moving them to `content/` is still a move rather than a rewrite.
  */
 
 export const URL_FIELD = "url";
@@ -45,11 +47,6 @@ export const INITIAL_TOOL_STATE: ToolState = { status: "idle", seq: 0 };
 export const ARTICLE_PATH = "/writing/split-text-is-costing-you-search";
 
 export const headlineCopy = {
-  command: "curl -s $URL | strip-tags",
-  path: "~/tools",
-  title: "headline-check",
-  lede: "Paste a URL. See how its h1 comes out for something that reads HTML without running it, which is most of what reads the web now.",
-
   label: "Page URL",
   placeholder: "example.com/page",
   submit: "Check the heading",

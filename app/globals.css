@@ -1690,7 +1690,7 @@ html.js .exp__spine {
     --sp-4: 18px;
     --sp-5: 24px;
     --sp-6: 32px;
-    --nav-h: 40px;
+    --nav-h: 44px;
     --status-h: 22px;
   }
 
@@ -1743,11 +1743,15 @@ html.js .exp__spine {
     gap: var(--sp-2);
   }
   /* Real touch targets. 44px is the floor Apple and WCAG 2.2 both land on, and
-     these were 20px tall links in a 44px bar. */
+     these were 20px tall links in a 44px bar. 40 was still four short of the
+     floor this comment names, and the bar centres its links, so the last four
+     pixels were dead space above and below rather than anything to press.
+     Measured at 47x40 on all three profiles by scripts/phone-check.mjs. The
+     bar is `--nav-h`, 44px on this breakpoint, so the links now fill it. */
   .nav__link {
     display: flex;
     align-items: center;
-    min-height: 40px;
+    min-height: 44px;
     padding: 0 var(--sp-2);
   }
 
@@ -2146,13 +2150,79 @@ html.is-gravity .statusbar {
    the tree. Branching JSX on a client-only media query is a hydration mismatch
    for exactly the visitors the preference protects; `display: none` also takes
    them out of the focus order, which visual hiding would not. */
+.machine__motion {
+  display: contents;
+}
+/* After the rule above, never before it. Same specificity, so the later one
+   wins, and until 2026-09-03 the `contents` rule came second: gravity and
+   eject were offered under `reduce` after all, in a 21 by 16 box. The phone
+   check, which drives every route under `reduce`, is what found them. */
 @media (prefers-reduced-motion: reduce) {
   .machine__motion {
     display: none;
   }
 }
-.machine__motion {
-  display: contents;
+
+/* ── touch: the bar is a touch bar ────────────────────────────────────────
+   Found by scripts/phone-check.mjs on its first run, 2026-09-03. On a phone
+   the machine controls were 21 by 16, and the readouts pushed the last of
+   them past the right edge of a 390px bar. 44px is the floor Apple and WCAG
+   2.2 both land on. `--status-h` is the one token the page padding and the
+   shader's bezel both read, so the change stays coherent. The skip link and
+   the call to action are the two shell links the same run found three pixels
+   short.
+
+   The fix was one `(hover: none)` block, and review split it, because it was
+   two findings wearing one media query. A thumb is 44px wide on any screen, so
+   the floors below follow from the input and belong on `(hover: none)` like
+   the rest of this file. Running out of room in the bar does not: that was a
+   390px bar, and a touchscreen till or a 27" all-in-one has a metre of it. In
+   one block, those machines lost the memory readout and had the working
+   directory truncated for space they were not short of. */
+@media (hover: none) {
+  :root {
+    --status-h: 44px;
+  }
+  .machine__btn {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+  .skiplink,
+  .talk__cta {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}
+
+/* The other half: space, not thumbs. The costume readout that carries no
+   information (the memory address) goes, the working directory truncates
+   rather than pushing the controls out of reach, and the control row stops
+   claiming flex space. 768px rather than a new number, because that is where
+   this file already shrinks the bar (`--status-h: 22px`, `.statusbar` down to
+   0.62rem, `.statusbar__hide-sm` gone), so the readouts leave with the rest of
+   the narrow-screen budget instead of at a breakpoint of their own.
+
+   Measured on a WebKit touch context at 820, 900 and 1280 CSS px, against a
+   production build on 2026-09-03: the bar is 44px tall, the machine buttons
+   are 49 by 44, the memory readout is in it, the widest thing in the bar ends
+   16px inside the viewport, and `scrollWidth` equals `clientWidth` on all
+   three. */
+@media (hover: none) and (max-width: 768px) {
+  .statusbar__mem {
+    display: none;
+  }
+  .statusbar__pwd {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .machine {
+    flex: none;
+    gap: 0;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -2727,7 +2797,7 @@ h4.prose__h {
 }
 
 .talk__prompt {
-  color: var(--green-dim);
+  color: var(--green);
   font-size: 0.78rem;
   margin: 0 0 var(--sp-2);
 }
@@ -2767,7 +2837,7 @@ h4.prose__h {
 .talk__alt {
   margin: var(--sp-3) 0 0;
   font-size: 0.8rem;
-  color: var(--green-dim);
+  color: var(--green);
 }
 
 /* The pre-hydration copy of the hero name. HeroName renders this on the server
@@ -3001,7 +3071,8 @@ textarea.cform__input {
 }
 
 /* ============================================================================
-   TOOLS (/tools and /tools/headline-check)
+   TOOLS (/tools, and the shell every tool renders through)
+   The headline checker's own rules live in app/tools/headline-check/tool.css.
    ----------------------------------------------------------------------------
    Appended as one block on purpose: nothing above this line was touched.
 
@@ -3034,6 +3105,9 @@ textarea.cform__input {
 }
 
 .tools__link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   border-bottom: none;
   text-shadow: none;
 }
@@ -3065,417 +3139,60 @@ textarea.cform__input {
   margin: 0;
 }
 
-/* ── the checker ────────────────────────────────────────────────────────── */
-
-.hcheck {
-  max-width: 68ch;
-  margin-top: var(--sp-5);
-}
-
-.hcheck__form {
-  display: grid;
-  gap: var(--sp-1);
-}
-
-/* --green, not --green-dim: a form label is the accessible name of its field,
-   so it is the last thing on the page allowed to be borderline. */
-.hcheck__label {
-  color: var(--green);
-  font-size: 0.82rem;
-}
-
-.hcheck__field {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-}
-
-.hcheck__input {
-  flex: 1 1 22ch;
-  min-width: 0;
-  background: var(--bg-panel);
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
-  color: var(--green-bright);
-  caret-color: var(--green-bright);
-  font: inherit;
-  padding: var(--sp-2) var(--sp-3);
-  text-shadow: none;
-}
-
-.hcheck__input::placeholder {
-  color: var(--green-dim);
-}
-
-.hcheck__input:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 2px;
-  border-color: var(--amber);
-}
-
-.hcheck__input[aria-invalid="true"] {
-  border-color: var(--red);
-}
-
-.hcheck__submit {
-  border: 1px solid var(--amber);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--amber);
-  font: inherit;
-  padding: var(--sp-2) var(--sp-4);
-  cursor: pointer;
-  white-space: nowrap;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.hcheck__submit:hover:not(:disabled),
-.hcheck__submit:focus-visible {
-  background: var(--amber);
-  color: var(--bg);
-  text-shadow: none;
-}
-
-.hcheck__submit:disabled {
-  cursor: progress;
-}
-
-/* The arrow, and the dots while a fetch is in flight. Drawn here rather than
-   written into the button, because a decorative glyph in the markup is a real
-   text node and lands in every extraction of the page. aria-hidden does not
-   save it: that is an accessibility property, and a text extractor has no
-   reason to read one. It is the split hero name again, one character wide. */
-.hcheck__submit::after {
-  content: " \2192";
-}
-
-.hcheck__submit:disabled::after {
-  content: " ...";
-}
-
-.hcheck__error {
-  color: var(--red);
-  font-size: 0.82rem;
-  text-shadow: none;
-  margin: var(--sp-1) 0 0;
-}
-
-/* Left in the DOM when empty, because it is the aria-live region and one that
-   arrives with its content is not reliably announced. */
-.hcheck__result:not(:empty) {
-  margin-top: var(--sp-5);
-}
-
-.hcheck__panel {
-  border: 1px solid var(--green-line);
-  border-left: 3px solid var(--amber);
-  background: var(--bg-panel-2);
-  padding: var(--sp-3) var(--sp-4);
-}
-
-.hcheck__panel.is-failed {
-  border-left-color: var(--red);
-}
-
-.hcheck__panel-title {
-  font-family: var(--font-screen);
-  font-size: 1.05rem;
-  color: var(--amber);
-  margin: 0 0 var(--sp-2);
-}
-
-.hcheck__panel.is-failed .hcheck__panel-title {
-  color: var(--red);
-}
-
-.hcheck__panel-body {
-  color: var(--green);
-  text-shadow: none;
-  margin: 0 0 var(--sp-3);
-}
-
-.hcheck__panel-body:last-child {
-  margin-bottom: 0;
-}
-
-.hcheck__report {
-  display: grid;
-  gap: var(--sp-4);
-}
-
-.hcheck__checked {
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--green);
-  text-shadow: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  align-items: baseline;
-}
-
-.hcheck__checked-k {
-  color: var(--amber);
-}
-
-/* A URL is one long unbreakable token, so it has to be told it may break or it
-   pushes the whole panel sideways on a phone. */
-.hcheck__url {
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  color: var(--green-bright);
-}
-
-.hcheck__hops {
+/* A tool that is promised and not built. Same row, no link, and the label is
+   real text rather than CSS content because it is information, not costume:
+   a visitor needs to read "soon" to know why the name does nothing. */
+.tools__title.is-soon {
   color: var(--green);
 }
 
-.hcheck__verdict {
-  border: 1px solid var(--green-line);
-  border-left: 3px solid var(--amber);
-  background: var(--bg-panel-2);
-  padding: var(--sp-3) var(--sp-4);
-}
-
-.hcheck__verdict.is-clean {
-  border-left-color: var(--green);
-}
-
-.hcheck__verdict.is-fragmented {
-  border-left-color: var(--red);
-}
-
-.hcheck__verdict-title {
-  font-family: var(--font-screen);
-  font-size: 1.15rem;
-  color: var(--amber);
-  margin: 0 0 var(--sp-2);
-}
-
-.hcheck__verdict.is-clean .hcheck__verdict-title {
-  color: var(--green-bright);
-}
-
-.hcheck__verdict.is-fragmented .hcheck__verdict-title {
-  color: var(--red);
-}
-
-/* The two readings, side by side where there is room and stacked where there is
-   not. The comparison IS the tool, so they must never be far enough apart to
-   need scrolling between them. */
-.hcheck__views {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: var(--sp-3);
-}
-
-.hcheck__view {
-  border: 1px solid var(--green-line);
-  background: var(--bg-panel);
-  padding: var(--sp-3);
-}
-
-.hcheck__view-title {
-  font-family: var(--font-screen);
-  font-size: 0.95rem;
-  color: var(--amber);
-  margin: 0 0 var(--sp-2);
-  text-transform: lowercase;
-}
-
-.hcheck__string {
-  margin: 0;
-  color: var(--green-bright);
-  text-shadow: none;
-  overflow-wrap: anywhere;
-  line-height: 1.5;
-}
-
-/* The crawler's reading is the one somebody came here to look at. It is set in
-   the screen face and spaced a touch wider so loose letters read AS loose
-   letters rather than as a font quirk. */
-.hcheck__view.is-crawler .hcheck__string {
-  font-family: var(--font-screen);
-  font-size: 1.15rem;
-  letter-spacing: 0.02em;
-  color: var(--amber);
-}
-
-.hcheck__empty {
-  color: var(--green);
-  font-style: normal;
-  opacity: 0.85;
-}
-
-.hcheck__evidence {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--sp-3);
-  margin: 0;
-  border-top: 1px solid var(--green-line);
-  padding-top: var(--sp-3);
-}
-
-.hcheck__stat dt {
+.tools__soon {
+  font-family: var(--font-body);
   font-size: 0.75rem;
-  color: var(--green);
-  text-shadow: none;
+  color: var(--amber);
+  margin-left: var(--sp-2);
+  vertical-align: middle;
 }
 
-.hcheck__stat dd {
-  margin: var(--sp-1) 0 0;
-  font-family: var(--font-screen);
-  font-size: 1.3rem;
-  color: var(--green-bright);
-}
+/* ── the tool shell (components/tools/ToolPage.tsx) ────────────────────── */
 
-.hcheck__fix {
-  border: 1px solid var(--green-line);
-  border-left: 3px solid var(--amber);
-  background: var(--bg-panel-2);
-  padding: var(--sp-3) var(--sp-4);
-}
-
-/* Its own scroller, so a long line of markup never makes the page scroll
-   sideways. */
-.hcheck__code {
-  margin: 0 0 var(--sp-3);
-  padding: var(--sp-3);
-  background: var(--bg-panel);
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
-  overflow-x: auto;
+/* Where the tool runs, said before anything is pasted into it. Amber, the
+   weight of a panel title, because it is the one line a cautious visitor is
+   looking for. The negative top margin cancels the lede's own bottom margin
+   so this sits one stack gap under it rather than two. */
+.tool__privacy {
+  margin: calc(-1 * var(--sp-5)) 0 0;
   font-size: 0.82rem;
-  line-height: 1.6;
-  color: var(--green-bright);
+  color: var(--amber);
   text-shadow: none;
+  max-width: 62ch;
 }
 
-.hcheck__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  margin: 0 0 var(--sp-3);
-}
-
-.hcheck__alt {
-  display: inline-block;
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--green-bright);
-  font: inherit;
-  padding: var(--sp-2) var(--sp-3);
-  text-decoration: none;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.hcheck__alt:hover,
-.hcheck__alt:focus-visible {
-  background: var(--green-bright);
-  border-color: var(--green-bright);
-  color: var(--bg);
-  text-shadow: none;
-}
-
-/* What the tool cannot see, printed where the answer is rather than in a footer
-   nobody reaches. A check that hides its blind spot is worse than no check. */
-.hcheck__limits {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--green);
-  text-shadow: none;
-  border-top: 1px solid var(--green-line);
-  padding-top: var(--sp-3);
-}
-
-.hcheck__why {
-  margin-top: var(--sp-6);
+/* What the tool cannot see, at the foot, where the answer is. Real text, not
+   costume: a reviewer checks these lines against the code. */
+.tool__cantsee {
   border-top: 1px solid var(--green-line);
   padding-top: var(--sp-4);
   max-width: 62ch;
 }
 
-.hcheck__why-body {
-  color: var(--green);
-  text-shadow: none;
+.tool__cantsee-title {
+  font-family: var(--font-screen);
+  font-size: 1rem;
+  color: var(--amber);
   margin: 0 0 var(--sp-3);
 }
 
-.hcheck__why-body:last-child {
-  margin-bottom: 0;
+.tool__cantsee-list {
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: var(--sp-2);
 }
 
-/* ── motion ─────────────────────────────────────────────────────────────────
-   Both gated. Under `reduce` the result is simply there, which is the correct
-   behaviour and not a degraded one: nothing here is telling a story. */
-@media (prefers-reduced-motion: no-preference) {
-  .hcheck__report,
-  .hcheck__panel {
-    animation: hcheck-arrive 240ms ease-out both;
-  }
-
-  /* Deliberately gentle. This site halved three separate full-screen flashes on
-     2026-08-20 because they were collectively a strobe, and a pulsing button is
-     the same mistake at a smaller scale if it is allowed to be bright. */
-  .hcheck__submit:disabled {
-    animation: hcheck-working 1100ms ease-in-out infinite;
-  }
-}
-
-@keyframes hcheck-arrive {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes hcheck-working {
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 0.85;
-  }
-}
-
-/* ── small screens ──────────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  /* iOS zooms the whole page when a focused input is under 16px, and the body
-     size here is 16px only on desktop. Same fix as .term__input and
-     .cform__input above. */
-  .hcheck__input {
-    font-size: 16px;
-  }
-  .hcheck__submit {
-    width: 100%;
-  }
-  .hcheck__view.is-crawler .hcheck__string {
-    font-size: 1.05rem;
-  }
-}
-
-/* A magnetic spring means nothing without a cursor, and a thumb needs 44px.
-   These are ~34px from their padding alone. */
-@media (hover: none) {
-  .hcheck__submit,
-  .hcheck__alt {
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
+.tool__cantsee-item {
+  color: var(--green);
+  text-shadow: none;
 }
 
 /* ==========================================================================

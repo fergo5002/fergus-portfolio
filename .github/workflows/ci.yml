@@ -1,9 +1,11 @@
-# Two jobs. `check` is the gate every pull request waits on: types, tests,
+# Three jobs. `check` is the gate every pull request waits on: types, tests,
 # build. `mutation` runs scripts/mutation-check.mjs, which breaks each guard
-# on purpose and reruns the suite once per mutation (64 at the time of
+# on purpose and reruns the suite once per mutation (75 at the time of
 # writing; count them with `grep -c '^\s*name: "' scripts/mutation-check.mjs`
 # rather than trusting this comment), so it gets its own job and its own
-# timeout rather than slowing the gate.
+# timeout rather than slowing the gate. `phone` builds the site, serves it,
+# proves the phone check can fail on its own fixtures, and then runs it on
+# every live tool route the sitemap lists.
 #
 # The build needs no secrets. NEXT_PUBLIC_POSTHOG_KEY absent compiles
 # analytics to a no-op (see lib/analytics.ts), and RESEND_API_KEY is read at
@@ -54,3 +56,46 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node scripts/mutation-check.mjs
+
+  phone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Browser binaries are cached by lockfile hash; --with-deps still puts
+      # the OS libraries WebKit needs on the runner, which is not cacheable.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps webkit chromium
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_POSTHOG_KEY: ""
+      - name: start the production server
+        run: |
+          nohup npm start > .phone-check-server.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/tools > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo "next start did not answer on :3000 within 60s"
+          cat .phone-check-server.log
+          exit 1
+      # The instrument first. A check that has never been seen to fail proves
+      # nothing when it passes.
+      - name: prove the phone check can fail
+        run: node scripts/phone-check.mjs --self-test --out .phone-check
+      - name: phone check on every live tool route
+        run: node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap --out .phone-check
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: phone-check-screenshots
+          path: .phone-check/
+          if-no-files-found: ignore

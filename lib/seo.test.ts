@@ -20,6 +20,8 @@ import {
   faqPageSchema,
   blogReferenceSchema,
   articlePath,
+  toolPath,
+  toolPageSchema,
   type JsonLdObject,
 } from "./seo";
 import { articles } from "@/content/articles";
@@ -329,5 +331,37 @@ describe("blogReferenceSchema", () => {
 
   it("attributes the blog to the same person as everything else", () => {
     expect(blogReferenceSchema().author).toEqual({ "@id": PERSON_ID });
+  });
+});
+
+describe("tool schemas", () => {
+  it("builds tool paths from slugs", () => {
+    expect(toolPath("headline-check")).toBe("/tools/headline-check");
+  });
+
+  it("declares a tool as a free WebApplication by the person, on the site", () => {
+    const node = toolPageSchema({ slug: "x", name: "X", blurb: "Does x." });
+    expect(node["@type"]).toBe("WebApplication");
+    expect(node["@id"]).toBe(`${SITE_URL}/tools/x#app`);
+    expect(node.url).toBe(`${SITE_URL}/tools/x`);
+    expect(node.description).toBe("Does x.");
+    expect(node.author).toEqual({ "@id": PERSON_ID });
+    expect(node.isPartOf).toEqual({ "@id": WEBSITE_ID });
+    expect((node.offers as JsonLdObject).price).toBe("0");
+  });
+
+  it("lets a page add an edge the registry does not carry", () => {
+    // The headline checker's `isBasedOn` points at the article it came from.
+    // That relationship is the page's, not the registry's.
+    const node = toolPageSchema(
+      { slug: "x", name: "X", blurb: "Does x." },
+      { isBasedOn: absolute("/writing/y") },
+    );
+    expect(node.isBasedOn).toBe(`${SITE_URL}/writing/y`);
+  });
+
+  it("keeps the registry's identity even when extra tries to change it", () => {
+    const node = toolPageSchema({ slug: "x", name: "X", blurb: "Does x." }, { name: "Other" });
+    expect(node.name).toBe("X");
   });
 });

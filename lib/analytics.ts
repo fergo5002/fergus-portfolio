@@ -438,6 +438,48 @@ export function webVitalRating(name: string, value: number): WebVitalRating {
 }
 
 /* ------------------------------------------------------------------ */
+/* Tool runs                                                            */
+/* ------------------------------------------------------------------ */
+
+/** One event per run of a `/tools/<slug>` tool, whatever the outcome. */
+export const TOOL_RUN_EVENT = "tool_run" as const;
+
+/**
+ * `ok`: the tool produced its answer. `refused`: it declined before doing any
+ * work (a budget, an empty or oversized input). `error`: it tried and could
+ * not (the page would not fetch, the file would not parse).
+ */
+export type ToolOutcome = "ok" | "refused" | "error";
+
+export type ToolRunPayload = { tool: string; outcome: ToolOutcome; ms: number };
+
+const TOOL_OUTCOMES: readonly ToolOutcome[] = ["ok", "refused", "error"];
+
+/**
+ * The properties recorded for one tool run, and nothing else.
+ *
+ * Built field by field from a whitelist rather than by spreading the payload,
+ * and that is the toolshed's whole privacy story in one function. A caller
+ * who writes `{ ...state, tool, outcome, ms }` by accident hands over the
+ * visitor's URL, and this drops it on the floor. The input never reaches
+ * PostHog: not the URL, not the text, not a hash of either.
+ *
+ * `tool` is truncated like every other caller-controlled label here, `ms` is
+ * clamped to a non-negative integer, and an outcome outside the three is
+ * recorded as `error` rather than trusted.
+ */
+export function toolRunProperties(payload: ToolRunPayload): {
+  tool: string;
+  outcome: ToolOutcome;
+  ms: number;
+} {
+  const tool = String(payload.tool ?? "").slice(0, MCP_FIELD_LIMIT) || "unknown";
+  const outcome = TOOL_OUTCOMES.includes(payload.outcome) ? payload.outcome : "error";
+  const ms = Number.isFinite(payload.ms) ? Math.max(0, Math.round(payload.ms)) : 0;
+  return { tool, outcome, ms };
+}
+
+/* ------------------------------------------------------------------ */
 /* How the browser SDK is configured                                    */
 /* ------------------------------------------------------------------ */
 

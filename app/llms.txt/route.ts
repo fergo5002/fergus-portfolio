@@ -1,9 +1,10 @@
-import { absolute, articlePath, sameAs } from "@/lib/seo";
+import { absolute, articlePath, sameAs, toolPath } from "@/lib/seo";
 import { MCP_ENDPOINT, MCP_DOCS_URL, MODERN_PROTOCOL_VERSION, TOOL_NAMES } from "@/lib/mcp";
 import { profile } from "@/content/profile";
 import { experience } from "@/content/experience";
 import { projects } from "@/content/projects";
 import { articles } from "@/content/articles";
+import { liveTools, toolShellCopy } from "@/content/tools";
 
 /**
  * `/llms.txt`.
@@ -87,7 +88,12 @@ ${articles
 
 ## Tools
 
-- Headline check: ${absolute("/tools/headline-check")}. Paste a URL and see how its h1 extracts for a crawler that reads HTML without running it. Free, no sign-up.
+${liveTools
+  .map(
+    (t) =>
+      `- ${t.name}: ${absolute(toolPath(t.slug))}. ${t.blurb} Free, no sign-up. ${toolShellCopy.privacy[t.privacy]}`,
+  )
+  .join("\n")}
 
 ## Machine access
 
