@@ -1,3 +1,4 @@
+import type { BudgetScope } from "@/lib/budget";
 import type { HeadingReport, Verdict } from "@/lib/headline";
 
 /**
@@ -18,6 +19,18 @@ export const URL_FIELD = "url";
 
 /** Longer than any real URL. Refused before anything is fetched. */
 export const MAX_URL_LENGTH = 2048;
+
+/**
+ * What one check may spend, per address, per site and for everyone. The
+ * numbers are pinned in `state.test.ts`, with the arithmetic that keeps them
+ * inside the Redis meter. Type-only import: this module is read by the client
+ * form and must not pull `lib/budget.ts` (and `node:crypto`) into its bundle.
+ */
+export const HEADLINE_BUDGETS: Record<BudgetScope, { limit: number; windowSec: number }> = {
+  ip: { limit: 20, windowSec: 3600 },
+  target: { limit: 60, windowSec: 3600 },
+  global: { limit: 300, windowSec: 86_400 },
+};
 
 export type ToolState =
   | { status: "idle"; seq: number }
@@ -57,8 +70,8 @@ export const headlineCopy = {
 
   emptyUrl: "Type a URL first. Something like example.com/page.",
   tooLong: "That is longer than any URL I am willing to fetch.",
-  limited:
-    "That is a few too many checks in a row from this address. Give it a minute and try again.",
+  storeDown:
+    "The counter that keeps this tool fair is not answering, so the check did not run. Try again in a minute.",
 
   browserLabel: "What a person sees",
   crawlerLabel: "What a tag stripper gets",
