@@ -288,13 +288,12 @@ const MIN_GROUND_PIXELS = 64;
  * panel, a modal left open. So the allowance sits just above what a page with
  * a single odd element produces and well under what a covering overlay does.
  *
- * Measured on 2026-09-03 against a production build of this tree: `/tools` and
- * `/tools/headline-check` skipped 0 on five of the six route-profile pairs and
- * 1 on the sixth (`iphone-320` puts the status bar's working directory partly
- * under a machine button, so `elementFromPoint` calls it occluded), and the
- * good fixture skips exactly 1, the paragraph under the panel it plants on
- * purpose. Two is one clear of the worst clean reading and still fails a third
- * skip.
+ * Measured on 2026-09-03 against a production build of this tree: `/tools`
+ * skipped 0 on all three profiles and `/tools/headline-check` skipped 1 on all
+ * three (the status bar's working directory runs partly under a machine
+ * button, so `elementFromPoint` calls it occluded), and the good fixture skips
+ * exactly 1, the paragraph under the panel it plants on purpose. Two is one
+ * clear of the worst clean reading and still fails a third skip.
  *
  * Text that was never in the photograph at all is a different number and is
  * not counted here: see `offscreen` in `auditInPage`.
