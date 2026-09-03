@@ -207,9 +207,9 @@ export default function Terminal() {
                 <span className="promptline__user">
                   {profile.user}@{profile.host}
                 </span>
-                <span className="promptline__sep">:</span>
+                <span className="promptline__sep" />
                 <span className="promptline__path">~</span>
-                <span className="promptline__dollar">$</span>
+                <span className="promptline__dollar" />
                 <span className="promptline__cmd">{entry.cmd}</span>
               </p>
             )}
@@ -227,9 +227,9 @@ export default function Terminal() {
           <span className="promptline__user">
             {profile.user}@{profile.host}
           </span>
-          <span className="promptline__sep">:</span>
+          <span className="promptline__sep" />
           <span className="promptline__path">~</span>
-          <span className="promptline__dollar">$</span>
+          <span className="promptline__dollar" />
         </label>
         <span className="term__field">
           {/* The typed half is rendered transparent purely to position the
