@@ -506,6 +506,38 @@ const MUTATIONS = [
     pattern: /if \(!groups\) return true;/,
     replace: "if (!groups) return false;",
   },
+
+  // ── budgets (2026-09-03) ──
+  {
+    name: "the budget allows one extra run",
+    file: "lib/budget.ts",
+    pattern: /if \(count <= req\.limit\) return/,
+    replace: "if (count <= req.limit + 1) return",
+  },
+  {
+    name: "production silently falls back to memory",
+    file: "lib/budget.ts",
+    pattern: /error instanceof StoreUnavailableError && process\.env\.NODE_ENV !== "production"/,
+    replace: "error instanceof StoreUnavailableError",
+  },
+  {
+    name: "the raw address goes into the budget key",
+    file: "lib/budget.ts",
+    pattern: /createHash\("sha256"\)\.update\(`\$\{ip\}:\$\{day\}`\)\.digest\("hex"\)\.slice\(0, 16\)/,
+    replace: "ip",
+  },
+  {
+    name: "the in-memory window never expires",
+    file: "lib/budget.ts",
+    pattern: /existing && existing\.expiresAt > now \? existing/,
+    replace: "existing ? existing",
+  },
+  {
+    name: "the counter is created without a TTL",
+    file: "lib/budget.ts",
+    pattern: /\{ ex: req\.windowSec, nx: true \}/,
+    replace: "{ nx: true } as { ex: number; nx: true }",
+  },
 ];
 
 let caught = 0;
