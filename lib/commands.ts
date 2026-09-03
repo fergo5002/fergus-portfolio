@@ -3,55 +3,11 @@ import { projects } from "@/content/projects";
 import { experience } from "@/content/experience";
 import { articles } from "@/content/articles";
 import { formatUptime, isTheme } from "@/lib/system";
-import type { Theme } from "@/lib/system";
+import { SECTIONS, ok } from "./commands/shared";
+import type { CommandContext, CommandResult } from "./commands/shared";
 
-/**
- * Side effects a command can ask the host page to perform. `runCommand` stays a
- * pure function of its inputs: it describes what should happen to the machine
- * and the Terminal component is the only thing that actually touches it. That is
- * what keeps commands like `theme` and `matrix`, which visibly rewrite the whole
- * site, unit-testable.
- */
-export type SystemEffect =
-  | { kind: "theme"; theme: Theme }
-  | { kind: "crt"; on: boolean }
-  | { kind: "scanlines"; value: number }
-  | { kind: "matrix"; ms: number }
-  | { kind: "degauss" }
-  | { kind: "gravity"; on: boolean }
-  | { kind: "eject"; on: boolean }
-  | { kind: "sound"; on: boolean }
-  | { kind: "reboot" };
-
-export type CommandResult =
-  | { type: "output"; lines: string[] }
-  | { type: "navigate"; href: string }
-  | { type: "clear" }
-  | { type: "effect"; effect: SystemEffect; lines: string[] };
-
-/** Everything a command may need to know about the running machine. */
-export type CommandContext = {
-  history?: string[];
-  now?: Date;
-  uptimeMs?: number;
-  theme?: Theme;
-  /**
-   * Whether the visitor has asked for reduced motion. The commands that take
-   * over the viewport refuse in that case, and say so rather than printing a
-   * confident line about something that is not going to happen.
-   */
-  reducedMotion?: boolean;
-};
-
-/** Sections reachable from the terminal. */
-export const SECTIONS = [
-  "about",
-  "skills",
-  "experience",
-  "projects",
-  "writing",
-  "contact",
-] as const;
+export type { SystemEffect, CommandResult, CommandContext } from "./commands/shared";
+export { SECTIONS } from "./commands/shared";
 
 /** Every command name, for `help` and for tab completion. */
 export const COMMANDS = [
@@ -117,8 +73,6 @@ export const HELP_LINES: string[] = [
   "  and one more thing",
   "    sudo hire-me      ;)",
 ];
-
-const ok = (lines: string[]): CommandResult => ({ type: "output", lines });
 
 function neofetch(ctx: CommandContext): string[] {
   const art = [
