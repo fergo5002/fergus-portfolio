@@ -15,7 +15,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | F4 | State layer | **plan** (Tasks 1 to 4 written, rest in progress) | `toolshed/f4-state-layer` (cut, idle) | | |
 | S1 | Spike: WebSocket on Hobby | **plan** (brief written, runner not started) | | | |
 | S2 | Spike: WebKit in a function | **plan** (brief written, runner not started) | | | |
-| S3 | Spike: DuckDB in the tab | **decided** | `toolshed/f5-spikes` | record on main | 0 mismatches at 1e-9; macros; 8.1 MB gzip, 82 s median at Slow 4G: bundle decision for Fergus |
+| S3 | Spike: DuckDB in the tab | **decided** | `toolshed/f5-spikes` | record on main | 0 mismatches at 1e-9; 8.1 MB gzip and 82 s at Slow 4G, so DuckDB does not ship: port to TypeScript, keep the macros as the oracle |
 | S4 | Spike: the .ie seed | **decided** | `toolshed/f5-spikes` | record on main | 126,214 registered .ie domains, 17 MB, under a minute, reproduced twice; 38% of the registry figure |
 | T1 | Drift | **queued** | | | |
 | T2 | Relief | **queued** | | | |
@@ -62,5 +62,5 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-03: three implementers (F1, F3, F4) and the spike runner each stopped once while waiting on a backgrounded long run; a stopped subagent is not woken by its own monitor. Each was resumed with an instruction to poll the output file. Lesson logged in the playbook.
 - 2026-09-03 18:20: F1 review (ledger-aware code-reviewer): parity confirmed, door clean, purity clean, interfaces exact; one medium finding, `help` had lost its five curated sections to a flat sorted list (my brief asked for "sorted", so the regression was mine). Fixed with `group` and `rank` on each command and a line-for-line parity test against the old text. PR #2, CI green (check 1m05s, mutation 6m28s), squash-merged as a269a1e, production `dpl_Cp4p19RHXiafBDMzh3PJjG4mwuNm` READY. Live check by real browser: `help`, `cd arcade`, `top` as above; console errors 0. Not verified: the parity Docker image (low-risk tier, skipped by policy), reduced-motion behaviour (unchanged code).
 - 2026-09-03: PR #3 opened for the CRLF-fragile contact test (normalise line endings before the guard), found by the F1 implementer, reproduced by the reviewer, green on this checkout after the change.
-- 2026-09-03: spikes S4 and S3 decided, records on main under `docs/superpowers/spikes/`. S3's 8 MB DuckDB bundle is a decision for Fergus before T4 starts: ship it on demand with a progress line, or port the three macros to plain JS with the Postgres comparison as the oracle (recommended, and it keeps the "same model" claim because the numbers match to 1e-13).
+- 2026-09-03: spikes S4 and S3 decided, records on main under `docs/superpowers/spikes/`. S3's 8 MB DuckDB bundle was ruled on rather than parked: DuckDB does not ship, the macros are ported to TypeScript, and the DuckDB-versus-Postgres comparison becomes T4's regression test at 1e-9. Reasoning appended to the S3 record. The design's dependency list loses `@duckdb/duckdb-wasm`.
 - 2026-09-03: S2 and S1 runner dispatched (preview deployments only). F2 worktree cut from main after F1 merged.

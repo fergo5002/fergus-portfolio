@@ -85,3 +85,20 @@ Same single worktree as S4 (the coordinator's instruction), Node v24.16.0, Docke
 ## Meters moved
 
 None. Nothing deployed, so Provisioned Memory, Active CPU and invocations are untouched by design. Not read.
+
+## Coordinator's ruling on the bundle, 2026-09-03
+
+The spike was right to stop. Taking the decision here so T4 is not blocked, with the reasoning, because it is reversible until T4 starts and the numbers only allow one answer.
+
+**Option (b), and DuckDB does not ship in Second Visit.** The three macros and the query around them are ported to TypeScript, and `compare.mjs` becomes the regression test: the TypeScript output, the DuckDB output and the Postgres output over the same fixture, required equal at 1e-9.
+
+Why, in order:
+
+1. **The phone rule decides it.** "The phone is the product surface, not a breakpoint." A first visit that costs 82 seconds of download before the tool draws anything is not a tool on a phone, it is a bounce. Option (a), an honest progress bar, makes the wait visible rather than shorter.
+2. **The claim survives, and gets stronger.** The point of shipping the production model was that the tool cannot drift from the product. A port with a row-for-row equality test against the production SQL is a stronger guarantee than a shared engine with no test, because the test fails when either side moves. The page says: the same model, ported, and proven equal to the SQL that runs in production, to thirteen decimal places, by a test that runs in CI.
+3. **The work is small.** The spike measured what the query actually is: one window function, two medians, three one-line macros, over rows already parsed in the tab. That is an afternoon in TypeScript and it is testable in vitest with no WebAssembly, no worker, and no 8 MB.
+4. **Nothing leaves the tab.** Option (c) was the only one that broke the privacy line, and it is not chosen.
+
+What this costs: no ad-hoc SQL console in the tool, and no DuckDB for a visitor who wanted to write their own query. Neither was ever in the design.
+
+What is still true from the spike: the macros are the reference implementation, kept in the repo as the oracle, and `season_factor`, `retention_verdict` and `reachability` are ported the same way and tested the same way.
