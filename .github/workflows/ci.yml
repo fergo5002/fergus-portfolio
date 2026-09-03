@@ -1,6 +1,6 @@
 # Three jobs. `check` is the gate every pull request waits on: types, tests,
 # build. `mutation` runs scripts/mutation-check.mjs, which breaks each guard
-# on purpose and reruns the suite once per mutation (74 at the time of
+# on purpose and reruns the suite once per mutation (75 at the time of
 # writing; count them with `grep -c '^\s*name: "' scripts/mutation-check.mjs`
 # rather than trusting this comment), so it gets its own job and its own
 # timeout rather than slowing the gate. `phone` builds the site, serves it,
