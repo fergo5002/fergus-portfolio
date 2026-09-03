@@ -6,6 +6,35 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-03: the shell everywhere
+
+F2 of the toolshed programme. The terminal is a drawer on every route (backtick, the status bar
+prompt, or a tap on it), with one history held in `lib/history.ts`, so a command typed in the
+drawer and `history` typed on the home page agree. Two commands: `forget`, which removes every key
+the site owns from local storage and prints them, and `who`, which says "just you" until Burn
+exists. `saveSettings` no longer writes the defaults, so a visitor who changed nothing has nothing
+stored, which is the new clause in AGENTS.md made true rather than asserted. The drawer is mounted
+in `components/CrtShell.tsx` beside the status bar rather than in `app/layout.tsx` as the plan
+first had it: `.crt__screen` is a stacking context and, ejected, a transformed containing block,
+so a fixed drawer inside it could neither rise above the glass nor stay on the display.
+
+Checked on a real WebKit iPhone engine at 390 and 320 against the production build, on `/writing`:
+no horizontal overflow with the drawer open, the prompt 44 by 44 with its bottom edge on the
+viewport bottom, the drawer's bottom edge exactly on the status bar's top edge once the rise
+animation settles, a 16px input so iOS does not zoom, the caret in the drawer after the tap,
+`cd arcade` printing "arcade: no runtime yet", every hint pill inside the viewport, Escape closing
+it and focus landing back on the `$` in the bar. On `/` the backtick opens no drawer and puts the
+caret in the inline terminal instead, and a backtick typed into the contact form stays a backtick.
+
+Not verified: the real iOS keyboard over the drawer, which headless WebKit does not have; the
+phosphor shader's frame cost with the drawer open on a phone GPU; the live site, which this branch
+has not been pushed to. Two things found and left alone because they predate this branch and are
+not the drawer's: `.promptline__*::before` renders the costume text from CSS while `Terminal.tsx`
+still puts the same text in the spans, so every terminal prompt line reads
+"fergus@portfoliofergus@portfolio::~~ $$" on the home page as well as in the drawer; and a
+backtick pressed while `html.booting` is still set scrolls to the inline terminal but cannot focus
+it, because the boot overlay holds focus.
+
 ## 2026-09-03: the command registry
 
 F1 of the toolshed programme. `lib/commands.ts` is a dispatcher over `lib/commands/*.ts`, each
