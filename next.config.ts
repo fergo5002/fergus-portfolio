@@ -48,10 +48,19 @@ const nextConfig: NextConfig = {
   // S2 spike only. Keeps the two browser packages out of the webpack bundle so
   // they resolve their binaries from node_modules by __dirname, and tells the
   // tracer to carry the binaries into the function.
+  //
+  // Phase B change (2026-09-03 23:4x UTC). Phase A is finished: WebKit's Linux
+  // build is in the bundle on dpl_GnVkrWKmdvWE1YvcmNwCJFHypcG6 and it will not
+  // load (libatk-1.0.so.0). Carrying it on costs 298 MB, pushed the function to
+  // 374.72 MB uncompressed, and got dpl_3uMDk3fXxsd1hj6FiBUAEB78NBWX refused at
+  // the 250 MB limit. Phase B therefore ships Chromium only, which is also the
+  // bundle T5 would actually ship, so the cold start measured here is the one
+  // the tool would pay. `webkit` stays imported in the route; on this build its
+  // binary is absent, so engine=webkit now fails on a missing executable rather
+  // than a missing library, and the library evidence stays with deployment 1.
   serverExternalPackages: ["playwright-core", "@sparticuz/chromium"],
   outputFileTracingIncludes: {
     "/api/spike-render": [
-      "./node_modules/playwright-core/.local-browsers/**/*",
       "./node_modules/@sparticuz/chromium/bin/**/*",
     ],
   },
