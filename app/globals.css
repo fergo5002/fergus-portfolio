@@ -90,8 +90,17 @@ body {
   padding: 0;
 }
 
-html {
-  scroll-behavior: smooth;
+/* Gated like every other animation here, and this one is worth spelling out.
+   Under `reduce` Lenis is never mounted, so the rule below that hands scrolling
+   to Lenis never applies and this is the declaration that actually runs. That
+   makes the skip link, every heading anchor, and `summonShell`'s scrollIntoView
+   on the home page animate for the one visitor who asked them not to. Gating
+   the rule fixes all of them at once; passing `behavior: "auto"` at a single
+   call site would have fixed only that one. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 /* Lenis owns scrolling when it is mounted; native smooth scrolling would fight
