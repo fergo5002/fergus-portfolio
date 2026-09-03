@@ -593,6 +593,18 @@ const MUTATIONS = [
       "  return { ...(payload as unknown as Record<string, unknown>), tool, outcome, ms } as { tool: string; outcome: ToolOutcome; ms: number };",
   },
   {
+    name: "the touch bar hides the memory readout on any touchscreen, however wide",
+    file: "app/globals.css",
+    pattern: /@media \(hover: none\) and \(max-width: 768px\) \{/,
+    replace: "@media (hover: none) {",
+  },
+  {
+    name: "the headline checker records ok before the report exists, so a parser throw reads as a success",
+    file: "app/tools/headline-check/actions.ts",
+    pattern: /  let report;[\s\S]*?  record\("ok", started\);/,
+    replace: '  record("ok", started);\n  const report = checkHtml(page.html);',
+  },
+  {
     name: "the headline checker stops recording a refused run, so refusals read as silence",
     file: "app/tools/headline-check/actions.ts",
     pattern: /    record\("refused", started\);\r?\n    return \{ status: "invalid", seq, url: "", message: headlineCopy\.emptyUrl \};/,

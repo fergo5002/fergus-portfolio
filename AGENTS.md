@@ -252,8 +252,16 @@ for the phone check. Nothing else without an argument.
   frame, and reveals apply instantly. Keep text contrast ≥ 4.5:1, alt text on images, visible
   focus. Every live tool route is driven through WebKit at 390 and 320 and a throttled
   Chromium in CI by `scripts/phone-check.mjs`, which fails on overflow, inputs under 16px,
-  tap targets under 44px and sampled contrast under 4.5:1. A resized desktop window does
-  not count.
+  tap targets under 44px and sampled contrast under 4.5:1, and also on a route that leaves
+  more than two text runs unread or whose photograph is not the layout its rectangles were
+  measured in. A resized desktop window does not count. Its self-test pins every floor from
+  both sides and asserts three hand-computed contrast ratios, so loosening one is red rather
+  than quiet; read that file's header before changing a number in it.
+  **A `(hover: none)` rule is about the finger and applies on a 27" touchscreen too.** Pair it
+  with a width when the rule is really about running out of room: the touch status bar block
+  in `globals.css` was one block doing both and dropped a readout on any touchscreen, which
+  the phone check cannot see because it only drives 320 and 390. `app/globals.test.ts` guards
+  the split.
 - **No backticks inside the GLSL.** The shaders are template literals, so a backtick in a
   comment terminates the string and the build fails with a syntax error hundreds of lines from
   the real cause. This has now bitten twice.
