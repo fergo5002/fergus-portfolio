@@ -48,8 +48,12 @@ export type CommandContext = {
    * Every key in the visitor's local storage, read by the Terminal at run time.
    * `forget` filters them down to the ones the site owns; nothing else reads
    * them, and nothing is ever written here.
+   *
+   * A function rather than an array, so the storage is enumerated only by the
+   * one command that wants it. As a value it was read on every command, which
+   * meant `help` touched the visitor's storage for nothing.
    */
-  storageKeys?: string[];
+  storageKeys?: () => string[];
   /** What the presence provider last said. Absent until it has answered once. */
   presence?: number;
 };

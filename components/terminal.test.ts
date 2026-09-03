@@ -55,7 +55,9 @@ describe("Terminal reads the shared history", () => {
 
 describe("Terminal applies forget and feeds the session commands", () => {
   it("hands the command the storage keys and the presence count", () => {
-    expect(terminal).toMatch(/storageKeys: readStorageKeys\(\)/);
+    // Uncalled on purpose: `session.ts` invokes it, so a command that does not
+    // ask about storage never enumerates it.
+    expect(terminal).toMatch(/storageKeys: readStorageKeys,/);
     expect(terminal).toMatch(/presence,/);
     expect(terminal).toMatch(/localPresence\.count\(\)/);
   });

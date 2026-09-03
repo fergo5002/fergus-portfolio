@@ -20,7 +20,11 @@ describe("forget", () => {
   });
 
   it("asks the Terminal to remove exactly the owned keys, and prints them", () => {
-    const res = def("forget").run([], { storageKeys: ["theirs", SETTINGS_KEY, `${OWNED_PREFIX}drift`] }, "forget");
+    const res = def("forget").run(
+      [],
+      { storageKeys: () => ["theirs", SETTINGS_KEY, `${OWNED_PREFIX}drift`] },
+      "forget",
+    );
     expect(res).toEqual({
       type: "effect",
       effect: { kind: "forget", keys: [SETTINGS_KEY, `${OWNED_PREFIX}drift`] },
@@ -29,11 +33,25 @@ describe("forget", () => {
   });
 
   it("says when there is nothing to forget, and fires no effect", () => {
-    expect(def("forget").run([], { storageKeys: ["theirs"] }, "forget")).toEqual({
+    expect(def("forget").run([], { storageKeys: () => ["theirs"] }, "forget")).toEqual({
       type: "output",
       lines: ["nothing to forget"],
     });
     expect(def("forget").run([], {}, "forget")).toEqual({ type: "output", lines: ["nothing to forget"] });
+  });
+
+  it("is the only thing that reads the storage, and reads it once", () => {
+    // The context used to hold the keys as a value, so every command paid for
+    // an enumeration of the visitor's local storage whether it cared or not.
+    let reads = 0;
+    const storageKeys = () => {
+      reads++;
+      return [SETTINGS_KEY];
+    };
+    def("who").run([], { storageKeys, presence: 1 }, "who");
+    expect(reads).toBe(0);
+    def("forget").run([], { storageKeys }, "forget");
+    expect(reads).toBe(1);
   });
 });
 

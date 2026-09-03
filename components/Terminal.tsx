@@ -157,7 +157,8 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
       uptimeMs: frame.current.uptimeMs,
       theme: settings.theme,
       reducedMotion,
-      storageKeys: readStorageKeys(),
+      // Passed uncalled: only `forget` asks, so only `forget` reads storage.
+      storageKeys: readStorageKeys,
       presence,
     });
 

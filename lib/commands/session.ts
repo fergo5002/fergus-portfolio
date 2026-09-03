@@ -20,7 +20,7 @@ export const session = [
     group: "shell",
     rank: 1,
     run: (_args, ctx) => {
-      const keys = ownedKeys(ctx.storageKeys ?? []);
+      const keys = ownedKeys(ctx.storageKeys?.() ?? []);
       if (keys.length === 0) return ok(["nothing to forget"]);
       return {
         type: "effect",
