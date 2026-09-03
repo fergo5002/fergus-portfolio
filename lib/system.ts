@@ -201,10 +201,36 @@ export function loadSettings(): SystemSettings {
   }
 }
 
-export function saveSettings(settings: SystemSettings): void {
-  if (typeof window === "undefined") return;
+/** The two members `saveSettings` uses, so a test can hand it a Map. */
+export type SettingsStorage = Pick<Storage, "setItem" | "removeItem">;
+
+/**
+ * True when nothing differs from `DEFAULT_SETTINGS`, field by field.
+ *
+ * The fields are read off `DEFAULT_SETTINGS` rather than typed out. This
+ * function decides whether `saveSettings` writes the key or removes it, so a
+ * hand-written list that fell one field behind would tell a visitor who had
+ * changed only the new field that they had changed nothing, and delete what
+ * they saved. A list cannot fall behind if there is no list.
+ */
+export function isDefaultSettings(s: SystemSettings): boolean {
+  const keys = Object.keys(DEFAULT_SETTINGS) as (keyof SystemSettings)[];
+  return keys.every((k) => s[k] === DEFAULT_SETTINGS[k]);
+}
+
+/**
+ * Persist the settings, or unpersist them. A visitor who has changed nothing
+ * has saved nothing, and the site writes nothing for them: the key exists only
+ * while something differs from the defaults. That is what lets `forget` mean
+ * what it says across a reload, and it is the rule in AGENTS.md ("What the
+ * site may keep").
+ */
+export function saveSettings(settings: SystemSettings, storage?: SettingsStorage): void {
+  const target = storage ?? (typeof window === "undefined" ? undefined : window.localStorage);
+  if (!target) return;
   try {
-    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    if (isDefaultSettings(settings)) target.removeItem(SETTINGS_KEY);
+    else target.setItem(SETTINGS_KEY, JSON.stringify(settings));
   } catch {
     /* private mode / quota: the site works fine unpersisted */
   }

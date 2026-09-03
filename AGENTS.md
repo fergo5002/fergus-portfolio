@@ -69,6 +69,16 @@ now passes its parts as CSS custom properties and `app/globals.css` draws them w
 the spans stay so the per-part colours stay with them. The heading anchor is drawn the same way.
 `components/chrome.test.ts` is the guard.
 
+**It has come back twice since, both times as a `$`,** which is why the guard now covers three
+files rather than one. `Terminal.tsx` wrote the separator and the dollar as text while the
+stylesheet was already drawing them, so the live home page read `fergus@portfolio::~ $$` until
+2026-09-03. Then the status bar's prompt button shipped a `<span aria-hidden="true">$</span>`,
+which put a `$` in front of every page's words on every route. A one-character string still feels
+too small to be content, and that instinct is the bug. The test for it: if the string is there to
+set a mood, it goes in `content`, whatever its length, and whether or not it is server-rendered
+decides only how much it costs. Client-only costume is fine as text, which is why `.shell__title`
+("fsh") stays: the drawer renders nothing until somebody opens it.
+
 The nav is the deliberate exception. Its links read `cd experience` rather than `Experience`,
 which is weak anchor text, but they are real navigation and a crawler needs to follow them.
 That is a design call, not a bug, and it is Fergus's to change if he ever wants to.
@@ -183,6 +193,33 @@ could not express, and each one is now a subsystem:
   bezel around, and they have to agree to the pixel.
 
 Spec: `docs/superpowers/specs/2026-08-04-mass-memory-voice-design.md`.
+
+## What the site may keep, and where (amended 2026-09-03 for the toolshed)
+
+Three rules moved when the toolshed programme started. They are the constitution for every tool
+that follows, and a reviewer checks a tool against them, not against the spec that proposed it.
+
+**1. State the visitor asked for.** "No cookies, no local storage" was written about analytics and
+it stays true for analytics: PostHog is cookieless and nothing identifies a visitor. Beyond
+analytics, the site may keep on the visitor's own machine only what the visitor explicitly saved
+(a Drift voice profile, arcade initials, a saved report), never anything used to recognise them.
+Every such key is either `fergusos_settings` or starts with `fergusos:`, so the `forget` command
+can wipe all of it without knowing their names, and it prints what it wiped. Settings equal to the
+defaults are not written at all (`saveSettings` removes the key), so a visitor who changed nothing
+has nothing stored. Session storage holds one flag, the boot marker, which dies with the tab.
+Server-side, the site holds anonymous aggregates only: a heat map of pointer wear, three-letter
+initials with a score, per-IP budgets that expire within a day. Nothing keyed to a person.
+
+**2. Styling.** `app/globals.css` stays the shell's stylesheet. A tool may own
+`app/tools/<slug>/tool.css`, imported by its own page and nowhere else. Ten tools appending to
+one file would spend the programme resolving merge conflicts.
+
+**3. Dependencies.** The "reach for CSS first, earn every dependency" rule holds. The dependencies
+this programme earns, each with the reason on its own PR: `@duckdb/duckdb-wasm` (Second Visit),
+`@upstash/redis` (budgets, Burn, boards), `@neondatabase/serverless` (census, Tide cache),
+`@vercel/blob` (reports), `@vercel/functions` (WebSocket upgrade, if the spike passes),
+`playwright-core` plus `@sparticuz/chromium` (On the glass), and `playwright` as a devDependency
+for the phone check. Nothing else without an argument.
 
 ## Stack & conventions
 
@@ -336,6 +373,16 @@ that way: it is why the whole command surface is unit-testable without a DOM. To
 add a `defineCommand` to the right module (or a new module with its registration line) and a test
 beside it. Run `node scripts/mutation-check.mjs` if you touch a guard: the reduced-motion
 refusals, the scanlines range, the theme check, the hidden flag and the door are all mutated by it.
+
+The terminal is on every route. `app/page.tsx` renders it inline; everywhere else
+`components/ShellDrawer.tsx`, mounted once in `components/CrtShell.tsx` beside the status bar,
+hosts the same component in a drawer opened by the backtick (when focus is not in a field), by the
+`$ prompt` button in the status bar, or by a tap on that button on a phone, and closed by Escape.
+There is one scrollback and one recall list, in `lib/history.ts`, module-level and never persisted,
+so `cd projects` typed in the drawer and `history` typed on the home page agree. `lib/shell.ts` is
+the drawer's state machine, pure and tested, and it never opens on the route that hosts the
+terminal inline. `forget` returns an effect like every other command that touches the machine; the
+Terminal removes the keys.
 
 ## How to work on this project
 

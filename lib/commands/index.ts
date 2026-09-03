@@ -4,6 +4,7 @@ import { effects } from "./effects";
 import { hidden } from "./hidden";
 import { info } from "./info";
 import { nav } from "./nav";
+import { session } from "./session";
 import { sudo } from "./sudo";
 
 /**
@@ -16,6 +17,6 @@ import { sudo } from "./sudo";
  * `./commands/index`, with the `/index` written out, so it can never be
  * mistaken for `lib/commands.ts` itself.
  */
-export const MODULES: CommandDef[][] = [effects, hidden, info, nav, sudo];
+export const MODULES: CommandDef[][] = [effects, hidden, info, nav, session, sudo];
 
 for (const defs of MODULES) registerCommands(defs);

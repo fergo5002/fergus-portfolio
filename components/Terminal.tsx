@@ -1,38 +1,83 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { complete, runCommand } from "@/lib/commands";
 import type { SystemEffect } from "@/lib/commands";
+import { historyStore, initialHistory } from "@/lib/history";
+import { listKeys, removeKeys } from "@/lib/forget";
+import { localPresence } from "@/lib/presence";
 import { profile } from "@/content/profile";
 import Magnetic from "@/components/motion/Magnetic";
 import { useSystem } from "@/components/system/SystemProvider";
 
-type Entry = { cmd: string; lines: string[] };
-
 const HINTS = ["gravity", "eject", "sound on", "neofetch", "sudo hire-me"];
 
-const WELCOME: string[] = [
-  "FergusOS 5.0 'Mass' · interactive shell ready.",
-  "tab completes · up/down recalls · try 'help', or 'gravity' if you are brave.",
-];
+/**
+ * The server never dispatches, so its snapshot is the welcome line, built once
+ * and handed back by reference: `useSyncExternalStore` requires a stable
+ * server snapshot.
+ */
+const SERVER_HISTORY = initialHistory();
+const getServerHistory = () => SERVER_HISTORY;
+
+/** Never throws: a browser that refuses storage reads as an empty store. */
+function readStorageKeys(): string[] {
+  try {
+    return listKeys(window.localStorage);
+  } catch {
+    return [];
+  }
+}
+
+type Props = {
+  /** `inline` on the home page, `drawer` everywhere else. Only the class differs. */
+  variant?: "inline" | "drawer";
+  /** Put the caret in the input on mount. The drawer wants this; the page does not. */
+  autoFocus?: boolean;
+};
 
 /**
  * A real (if playful) command line, and the only place in the app allowed to
- * apply a `SystemEffect`. Commands like `theme` and `crt` genuinely rewrite the
- * running site: the parser decides what should happen, this decides how.
+ * apply a `SystemEffect` or act on a `program` result. Commands like `theme`
+ * and `crt` genuinely rewrite the running site: the parser decides what should
+ * happen, this decides how.
+ *
+ * Its memory is not its own. `lib/history.ts` holds the scrollback and the
+ * recall list at module level, so the inline terminal on the home page and the
+ * drawer on every other route are one shell with one history.
  */
-export default function Terminal() {
-  const [history, setHistory] = useState<Entry[]>([{ cmd: "", lines: WELCOME }]);
+export default function Terminal({ variant = "inline", autoFocus = false }: Props) {
+  const { entries, commands } = useSyncExternalStore(historyStore.subscribe, historyStore.get, getServerHistory);
   const [value, setValue] = useState("");
-  const [commands, setCommands] = useState<string[]>([]);
   const [cursor, setCursor] = useState<number | null>(null);
   const [wiping, setWiping] = useState(false);
+  const [presence, setPresence] = useState<number | undefined>(undefined);
 
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Two terminals never mount at once today, but ids are document-global and a
+  // duplicate would break every label and describedby on the second one.
+  const uid = useId();
+  const inputId = `term-input-${uid}`;
+  const helpId = `term-help-${uid}`;
+
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus();
+  }, [autoFocus]);
+
+  useEffect(() => {
+    let live = true;
+    void localPresence.count().then((n) => {
+      if (live) setPresence(n);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   const {
     frame,
@@ -49,7 +94,9 @@ export default function Terminal() {
     reducedMotion,
   } = useSystem();
 
-  const applyEffect = (effect: SystemEffect) => {
+  /** Applies an effect and returns any lines the application itself has to add. */
+  const applyEffect = (effect: SystemEffect): string[] => {
+    const extra: string[] = [];
     switch (effect.kind) {
       case "theme":
         setTheme(effect.theme);
@@ -76,6 +123,15 @@ export default function Terminal() {
       case "sound":
         setAudioEnabled(effect.on);
         break;
+      case "forget":
+        // Ownership is re-checked inside removeKeys, so a descriptor cannot
+        // reach a key the site does not own however it was built.
+        try {
+          removeKeys(window.localStorage, effect.keys);
+        } catch {
+          extra.push("storage refused the change. nothing was removed.");
+        }
+        break;
       case "reboot":
         degauss();
         setWiping(true);
@@ -89,11 +145,11 @@ export default function Terminal() {
         window.setTimeout(() => window.location.reload(), 1600);
         break;
     }
+    return extra;
   };
 
   const run = (raw: string) => {
-    const trimmed = raw.trim();
-    if (trimmed) setCommands((c) => [...c, trimmed]);
+    historyStore.dispatch({ type: "typed", cmd: raw });
     setCursor(null);
 
     const res = runCommand(raw, {
@@ -101,26 +157,28 @@ export default function Terminal() {
       uptimeMs: frame.current.uptimeMs,
       theme: settings.theme,
       reducedMotion,
+      // Passed uncalled: only `forget` asks, so only `forget` reads storage.
+      storageKeys: readStorageKeys,
+      presence,
     });
 
     if (res.type === "navigate") {
-      setHistory((h) => [...h, { cmd: raw, lines: [`-> ${res.href}`] }]);
+      historyStore.dispatch({ type: "print", cmd: raw, lines: [`-> ${res.href}`] });
       router.push(res.href);
       return;
     }
     if (res.type === "clear") {
-      setHistory([]);
+      historyStore.dispatch({ type: "clear" });
       return;
     }
     if (res.type === "program") {
       // G0 replaces this with the arcade runtime. Until then the door opens
       // onto a note and the prompt comes straight back.
-      setHistory((h) => [...h, { cmd: raw, lines: [res.program.title, "no runtime yet"] }]);
+      historyStore.dispatch({ type: "print", cmd: raw, lines: [res.program.title, "no runtime yet"] });
       return;
     }
-    if (res.type === "effect") applyEffect(res.effect);
-
-    setHistory((h) => [...h, { cmd: raw, lines: res.lines }]);
+    const extra = res.type === "effect" ? applyEffect(res.effect) : [];
+    historyStore.dispatch({ type: "print", cmd: raw, lines: [...res.lines, ...extra] });
     requestAnimationFrame(() => {
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     });
@@ -140,7 +198,8 @@ export default function Terminal() {
       audio.key();
     }
 
-    // Escape always releases the field, whatever else is going on.
+    // Escape always releases the field, whatever else is going on. In the
+    // drawer, the same keydown reaches the window and closes it.
     if (e.key === "Escape") {
       e.currentTarget.blur();
       return;
@@ -162,7 +221,7 @@ export default function Terminal() {
 
     if (e.key === "l" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      setHistory([]);
+      historyStore.dispatch({ type: "clear" });
       return;
     }
 
@@ -198,9 +257,12 @@ export default function Terminal() {
   }, [value]);
 
   return (
-    <div className={`term${wiping ? " is-wiping" : ""}`} onClick={() => inputRef.current?.focus()}>
+    <div
+      className={`term term--${variant}${wiping ? " is-wiping" : ""}`}
+      onClick={() => inputRef.current?.focus()}
+    >
       <div className="term__scroll" ref={scrollRef}>
-        {history.map((entry, i) => (
+        {entries.map((entry, i) => (
           <div key={i} className="term__entry">
             {entry.cmd !== "" && (
               <p className="promptline">
@@ -223,7 +285,7 @@ export default function Terminal() {
       </div>
 
       <form className="term__form" onSubmit={onSubmit}>
-        <label htmlFor="term-input" className="term__label">
+        <label htmlFor={inputId} className="term__label">
           <span className="promptline__user">
             {profile.user}@{profile.host}
           </span>
@@ -239,7 +301,7 @@ export default function Terminal() {
             <span className="term__ghost-rest">{ghost}</span>
           </span>
           <input
-            id="term-input"
+            id={inputId}
             ref={inputRef}
             className="term__input"
             value={value}
@@ -249,13 +311,13 @@ export default function Terminal() {
             autoCapitalize="off"
             spellCheck={false}
             aria-label="Terminal command input"
-            aria-describedby="term-help"
+            aria-describedby={helpId}
             placeholder="type 'help'..."
           />
         </span>
       </form>
 
-      <p id="term-help" className="term__srhint">
+      <p id={helpId} className="term__srhint">
         Press Tab to complete a command, Up and Down arrows to recall previous commands, and
         Control plus L to clear the screen.
       </p>
