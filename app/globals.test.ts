@@ -109,6 +109,8 @@ describe("the prose rules use the token that passes", () => {
     ".page__lede",
     ".cform__panel-body",
     ".cform__input",
+    ".tools__blurb",
+    ".tools__meta",
   ])("%s does not use --green-faint for body text", (selector) => {
     expect(rule(selector)).not.toMatch(/color:\s*var\(--green-faint\)/);
   });

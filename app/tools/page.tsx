@@ -5,7 +5,9 @@ import PromptLine from "@/components/PromptLine";
 import Scramble from "@/components/Scramble";
 import Talk from "@/components/Talk";
 import { profile } from "@/content/profile";
-import { OG_IMAGE, breadcrumbSchema, canonical, collectionPageSchema } from "@/lib/seo";
+import { liveTools, toolShellCopy, tools } from "@/content/tools";
+import { OG_IMAGE, breadcrumbSchema, canonical, collectionPageSchema, toolPath } from "@/lib/seo";
+import { toolListing } from "@/lib/tools/listing";
 
 const DESCRIPTION =
   "Small free tools, each one built because something went wrong here first and the fix was worth handing over.";
@@ -26,24 +28,16 @@ export const metadata: Metadata = {
 };
 
 /**
- * The list. One entry at the time of writing, and a list of one is still the
- * right shape: `/tools/headline-check` would otherwise be a page with no parent,
- * which means `/tools` is a 404 that a breadcrumb points at.
+ * The index, read from `content/tools/`. Adding a tool is one file in that
+ * folder and one import line; this page has no list of its own any more.
  *
- * Hard-coded here rather than read from `content/`, only because this change was
- * scoped to `app/tools/`. The second tool is the moment to move it.
+ * A `soon` entry gets its name and its blurb and no link, because a link to a
+ * page that is not there is a 404 with a nice label. The decision is made in
+ * `lib/tools/listing.ts`, where it can be tested.
  */
-const tools = [
-  {
-    href: "/tools/headline-check",
-    name: "Headline check",
-    blurb:
-      "Paste a URL and see how its h1 comes out for something that reads HTML without running it. Catches split-text animations that turn a headline into loose letters.",
-    meta: "No sign-up, no JavaScript required, nothing stored.",
-  },
-];
-
 export default function ToolsPage() {
+  const rows = toolListing(tools);
+
   return (
     <div className="stack">
       <JsonLd
@@ -52,7 +46,12 @@ export default function ToolsPage() {
             path: "/tools",
             name: `Tools · ${profile.shortName}`,
             description: DESCRIPTION,
-            items: tools.map((t) => ({ name: t.name, url: t.href, description: t.blurb })),
+            itemType: "WebApplication",
+            items: liveTools.map((t) => ({
+              name: t.name,
+              url: toolPath(t.slug),
+              description: t.blurb,
+            })),
           }),
           breadcrumbSchema([
             { name: "Home", path: "/" },
@@ -60,20 +59,27 @@ export default function ToolsPage() {
           ]),
         ]}
       />
-      <PromptLine command="ls -la ./tools" path="~/tools" />
+      <PromptLine command={toolShellCopy.indexCommand} path={toolShellCopy.indexPath} />
       <h1 className="page__title">
         <Scramble text="tools" speed={34} />
       </h1>
       <p className="page__lede">{DESCRIPTION}</p>
 
       <ul className="tools__list">
-        {tools.map((tool) => (
-          <li key={tool.href} className="tools__item">
-            <Link href={tool.href} className="tools__link">
-              <h2 className="tools__title">{tool.name}</h2>
-            </Link>
-            <p className="tools__blurb">{tool.blurb}</p>
-            <p className="tools__meta">{tool.meta}</p>
+        {rows.map((row) => (
+          <li key={row.slug} className="tools__item">
+            {row.href ? (
+              <Link href={row.href} className="tools__link">
+                <h2 className="tools__title">{row.name}</h2>
+              </Link>
+            ) : (
+              <h2 className="tools__title is-soon">
+                {row.name}
+                <span className="tools__soon">{toolShellCopy.soonLabel}</span>
+              </h2>
+            )}
+            <p className="tools__blurb">{row.blurb}</p>
+            <p className="tools__meta">{row.privacyLine}</p>
           </li>
         ))}
       </ul>

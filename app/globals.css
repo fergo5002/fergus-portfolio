@@ -3065,6 +3065,21 @@ textarea.cform__input {
   margin: 0;
 }
 
+/* A tool that is promised and not built. Same row, no link, and the label is
+   real text rather than CSS content because it is information, not costume:
+   a visitor needs to read "soon" to know why the name does nothing. */
+.tools__title.is-soon {
+  color: var(--green);
+}
+
+.tools__soon {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: var(--amber);
+  margin-left: var(--sp-2);
+  vertical-align: middle;
+}
+
 /* ── the checker ────────────────────────────────────────────────────────── */
 
 .hcheck {
