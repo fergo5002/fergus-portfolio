@@ -27,7 +27,7 @@ function pngSize(buf: Buffer): { width: number; height: number } {
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
-async function launch(engine: Engine): Promise<{ browser: Browser; executablePath: string; args: string[] }> {
+async function launch(engine: Engine, singleProcess: boolean): Promise<{ browser: Browser; executablePath: string; args: string[] }> {
   if (engine === "webkit") {
     const executablePath = webkit.executablePath();
     const browser = await webkit.launch({ headless: true, executablePath });
@@ -37,12 +37,14 @@ async function launch(engine: Engine): Promise<{ browser: Browser; executablePat
   const sparticuz = (await import("@sparticuz/chromium")).default;
   const executablePath = await sparticuz.executablePath();
   // `--single-process` is in sparticuz's default args for Lambda and is a
-  // known cause of hangs under Playwright. First try with the full list; if
-  // launch() hangs past 20 s, set DROP_SINGLE_PROCESS=1 on the preview and
-  // redeploy. Both outcomes go in the record.
-  const args = process.env.DROP_SINGLE_PROCESS === "1"
-    ? sparticuz.args.filter((a) => a !== "--single-process")
-    : sparticuz.args;
+  // known cause of hangs under Playwright. The brief drove this from an env
+  // var; a query flag does the same job without a branch-scoped preview
+  // variable (the branch is never pushed, so branch scoping is refused) and
+  // lets one deployment measure both. Default is to drop it, because the
+  // 2026-09-03 18:27 probe on dpl_GnVk... failed at newPage with it in.
+  const args = singleProcess
+    ? sparticuz.args
+    : sparticuz.args.filter((a) => a !== "--single-process");
   const browser = await playwrightChromium.launch({ headless: true, executablePath, args });
   return { browser, executablePath, args };
 }
@@ -51,6 +53,7 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const engine = (url.searchParams.get("engine") === "webkit" ? "webkit" : "chromium") as Engine;
   const widths = (url.searchParams.get("widths") ?? "390,320").split(",").map((w) => Number(w));
+  const singleProcess = url.searchParams.get("single") === "1";
 
   requestsOnThisInstance += 1;
   const sinceBootMs = Date.now() - BOOT;
@@ -62,10 +65,10 @@ export async function GET(request: Request): Promise<Response> {
   let executablePath = "";
   let browser: Browser | null = null;
 
-  log("start", { engine, widths, coldStart, sinceBootMs, requestsOnThisInstance });
+  log("start", { engine, widths, singleProcess, coldStart, sinceBootMs, requestsOnThisInstance });
 
   try {
-    const launched = await launch(engine);
+    const launched = await launch(engine, singleProcess);
     browser = launched.browser;
     executablePath = launched.executablePath;
     timings.launchMs = Math.round(performance.now() - t0);
@@ -91,13 +94,13 @@ export async function GET(request: Request): Promise<Response> {
     const body = {
       ok: false,
       engine,
+      singleProcess,
       coldStart,
       executablePath,
       // Spike change (2026-09-03): the sparticuz launch args alone are over
       // 2,000 characters, so the brief's slice hid the browser's stderr. Elide
       // the args line and keep more of the tail.
-      error: String(error).replace(/<launching> [^
-]*/g, "<launching> [args elided]").slice(0, 6000),
+      error: String(error).replace(/<launching> [^\n]*/g, "<launching> [args elided]").slice(0, 6000),
       totalMs: Math.round(performance.now() - t0),
       nodeCpuMs: Math.round((cpu.user + cpu.system) / 1000),
     };
@@ -111,6 +114,7 @@ export async function GET(request: Request): Promise<Response> {
   const body = {
     ok: true,
     engine,
+    singleProcess,
     coldStart,
     sinceBootMs,
     requestsOnThisInstance,
