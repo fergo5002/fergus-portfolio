@@ -2,11 +2,14 @@ import { describe, it, expect } from "vitest";
 import {
   DEFAULT_SETTINGS,
   MAX_FRAME_IMPACTS,
+  SETTINGS_KEY,
   createSystemFrame,
   formatUptime,
+  isDefaultSettings,
   isTheme,
   memoryAddress,
   pushImpact,
+  saveSettings,
   THEME_PHOSPHOR,
   THEMES,
 } from "@/lib/system";
@@ -93,5 +96,44 @@ describe("pushImpact", () => {
     for (let i = 0; i < MAX_FRAME_IMPACTS; i++) pushImpact(f, impact(0.5));
     pushImpact(f, impact(0.01));
     expect(f.impacts.every((p) => p.energy === 0.5)).toBe(true);
+  });
+});
+
+describe("saveSettings keeps only what the visitor chose", () => {
+  const fake = () => {
+    const map = new Map<string, string>();
+    return {
+      map,
+      setItem: (k: string, v: string) => {
+        map.set(k, v);
+      },
+      removeItem: (k: string) => {
+        map.delete(k);
+      },
+    };
+  };
+
+  it("writes nothing for the defaults, and removes a stale record of them", () => {
+    const s = fake();
+    s.map.set(SETTINGS_KEY, "stale");
+    saveSettings(DEFAULT_SETTINGS, s);
+    expect(s.map.has(SETTINGS_KEY)).toBe(false);
+  });
+
+  it("writes a setting the visitor changed", () => {
+    const s = fake();
+    saveSettings({ ...DEFAULT_SETTINGS, theme: "amber" }, s);
+    expect(JSON.parse(s.map.get(SETTINGS_KEY) ?? "null")).toMatchObject({ theme: "amber" });
+  });
+
+  it("compares every field, not just the theme", () => {
+    expect(isDefaultSettings(DEFAULT_SETTINGS)).toBe(true);
+    expect(isDefaultSettings({ ...DEFAULT_SETTINGS, audio: true })).toBe(false);
+    expect(isDefaultSettings({ ...DEFAULT_SETTINGS, crtEnabled: false })).toBe(false);
+    expect(isDefaultSettings({ ...DEFAULT_SETTINGS, scanlines: 0.4 })).toBe(false);
+  });
+
+  it("does nothing on the server", () => {
+    expect(() => saveSettings(DEFAULT_SETTINGS)).not.toThrow();
   });
 });
