@@ -337,7 +337,7 @@ with the commit SHA attached. The temp-directory CLI shipping that carried the s
 private is retired; if a git deployment ever comes back `BLOCKED`, that is a finding to report, not
 a reason to reach for it.
 
-`main` requires the `check` and `mutation` GitHub Actions jobs from `.github/workflows/ci.yml`
+`main` requires the `check`, `mutation` and `phone` GitHub Actions jobs from `.github/workflows/ci.yml`
 (types, tests, build; then the mutation check). Code goes through pull requests. Docs-only commits
 may land on `main` directly. **Confirm every deployment the same way regardless**: read `readyState`
 and `aliasAssigned` from `https://api.vercel.com/v13/deployments/<id>?teamId=<team>`, or list them
