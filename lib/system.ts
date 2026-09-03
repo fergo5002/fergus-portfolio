@@ -204,14 +204,18 @@ export function loadSettings(): SystemSettings {
 /** The two members `saveSettings` uses, so a test can hand it a Map. */
 export type SettingsStorage = Pick<Storage, "setItem" | "removeItem">;
 
-/** True when nothing differs from `DEFAULT_SETTINGS`, field by field. */
+/**
+ * True when nothing differs from `DEFAULT_SETTINGS`, field by field.
+ *
+ * The fields are read off `DEFAULT_SETTINGS` rather than typed out. This
+ * function decides whether `saveSettings` writes the key or removes it, so a
+ * hand-written list that fell one field behind would tell a visitor who had
+ * changed only the new field that they had changed nothing, and delete what
+ * they saved. A list cannot fall behind if there is no list.
+ */
 export function isDefaultSettings(s: SystemSettings): boolean {
-  return (
-    s.theme === DEFAULT_SETTINGS.theme &&
-    s.crtEnabled === DEFAULT_SETTINGS.crtEnabled &&
-    s.scanlines === DEFAULT_SETTINGS.scanlines &&
-    s.audio === DEFAULT_SETTINGS.audio
-  );
+  const keys = Object.keys(DEFAULT_SETTINGS) as (keyof SystemSettings)[];
+  return keys.every((k) => s[k] === DEFAULT_SETTINGS[k]);
 }
 
 /**
