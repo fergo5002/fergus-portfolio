@@ -10,11 +10,11 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 |---|---|---|---|---|---|
 | F0 | Ship path | **live** | `toolshed/f0-ship-path` (in the main checkout, F0 only; every later sub-project gets its own worktree) | [#1](https://github.com/fergo5002/fergus-portfolio/pull/1) merged 4b968c0 | `dpl_4DPMWyNeL3FKBmYfcuTqJwibyc2F` READY, aliased, /tools 200 |
 | F1 | Command registry | **live** | `toolshed/f1-command-registry` | [#2](https://github.com/fergo5002/fergus-portfolio/pull/2) merged a269a1e | `dpl_Cp4p19RHXiafBDMzh3PJjG4mwuNm` READY; live `help` prints the five sections, `cd arcade` prints "arcade: no runtime yet", `top` lists arcade, console clean |
-| F2 | The shell everywhere | **plan** | | | |
+| F2 | The shell everywhere | **building** | `toolshed/f2-shell-everywhere` (7 commits, drawer in flight) | | |
 | F3 | Tool registry and page shell | **building** | `toolshed/f3-tool-registry` | | |
-| F4 | State layer | **plan** (Tasks 1 to 4 written, rest in progress) | `toolshed/f4-state-layer` (cut, idle) | | |
-| S1 | Spike: WebSocket on Hobby | **plan** (brief written, runner not started) | | | |
-| S2 | Spike: WebKit in a function | **plan** (brief written, runner not started) | | | |
+| F4 | State layer | **building, blocked on terms** | `toolshed/f4-state-layer` (14 commits) | | Blob provisioned; Redis and Neon wait on Fergus |
+| S1 | Spike: WebSocket on Hobby | **building** | `toolshed/s1-websocket` | | |
+| S2 | Spike: WebKit in a function | **building** | `toolshed/s2-webkit` | | |
 | S3 | Spike: DuckDB in the tab | **decided** | `toolshed/f5-spikes` | record on main | 0 mismatches at 1e-9; 8.1 MB gzip and 82 s at Slow 4G, so DuckDB does not ship: port to TypeScript, keep the macros as the oracle |
 | S4 | Spike: the .ie seed | **decided** | `toolshed/f5-spikes` | record on main | 126,214 registered .ie domains, 17 MB, under a minute, reproduced twice; 38% of the registry figure |
 | T1 | Drift | **queued** | | | |
@@ -66,3 +66,10 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-03: S2 and S1 runner dispatched (preview deployments only). F2 worktree cut from main after F1 merged.
 - 2026-09-03 19:00: PR #3 (CRLF contact test) green and merged as 56affc9, production `dpl_GHGRwoTS1eXmcn8KGPK7JiQnvBRi` READY, and the file's 42 tests now pass on this Windows checkout where they were red before. Test-only change, so no user-facing flow was exercised beyond a 200 on the home page, and that is all that claim covers.
 - 2026-09-03 19:00: plan-writers dispatched for T1 Drift and T2 Relief, both on Opus 5. Every agent from here runs on Opus; the four started earlier (F2, F3, F4, the S2 and S1 spikes) keep Fable until their task ends, because a model is fixed when an agent spawns and killing them would discard finished work.
+
+## Waiting on Fergus
+
+- **2026-09-03: two Vercel Marketplace terms acceptances, and nothing else.** Provisioning Upstash Redis and Neon Postgres on the free plan stopped with `integration_terms_acceptance_required`. No resource was created for either, so `UPSTASH_REDIS_REST_URL` and `DATABASE_URL` do not exist and every budget, board, census and cache proof is running against fakes. Vercel Blob provisioned without a prompt and is real. Accept as the `larry-pm` owner at `https://vercel.com/larry-pm/~/integrations/accept-terms/upstash?source=cli` and `.../neon?source=cli`, then the two retry commands in `docs/superpowers/programme/f4-stores-2026-09-03.md` create both on the free plan. Not automated on purpose: accepting terms is a signature, and it is his to give.
+
+## Log
+- 2026-09-03 19:40: the Fable quota ran out and killed all four remaining Fable agents (F2, F3, F4, the S2 and S1 spikes) within a few minutes of each other. Nothing was lost: every one had committed its work, and each was re-dispatched on Opus with a brief naming its exact branch state, its uncommitted files and its predecessor's last action, so none of it is redone. F2 was mid-drawer, F3 mid phone-check triage, F4 at 64 of 82 mutation rows, S2 reading the usage page.
