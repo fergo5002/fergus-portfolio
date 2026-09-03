@@ -45,6 +45,40 @@
   }
   #shift { margin: 0; padding: 8px 0; color: #111; background: #fff; }
   #tall { height: 900px; background: #dfe7df; }
+
+  /* ── near the floor, on the passing side ──────────────────────────────
+     Each of these clears a floor by a hair, so raising that floor turns this
+     page red. Their opposite numbers sit just under the same floors on the
+     bad fixture, which is what makes lowering one red too. Before these
+     existed the floors could be moved to 15px, 42px and 2.0:1 with the
+     self-test staying green, which made all three decoration. */
+  #edge-input { font-size: 16px; min-height: 48px; box-sizing: border-box; }
+  #edge-tap { width: 44px; height: 44px; padding: 0; }
+  /* #757575 on #ffffff is 4.61:1 by the WCAG formula. */
+  #edge-contrast { color: #757575; background: #fff; font-size: 20px; font-weight: 700; }
+
+  /* ── the control swatches ─────────────────────────────────────────────
+     Three grounds whose contrast can be worked out by hand, so the self-test
+     can assert the number the sampler returns rather than only its verdict.
+     A sampler that flatters everything passes a pass/fail assertion. */
+  .swatch { padding: 10px; margin: 8px 0; font-size: 20px; font-weight: 700; }
+  /* #ffffff on #000000: (1.0 + 0.05) / (0.0 + 0.05) = 21.00 */
+  #swatch-max { color: #fff; background: #000; }
+  /* #767676 on #ffffff: L(118) = 0.18119, so 1.05 / 0.23119 = 4.54 */
+  #swatch-edge { color: #767676; background: #fff; }
+  /* #000000 on rgba(0,0,0,0.4) over white. The panel composites to
+     rgb(153,153,153), L = 0.31849, so 0.36849 / 0.05 = 7.37. Declared as an
+     alpha, so a sampler reading tokens rather than pixels gets 21.00 here. */
+  #swatch-alpha { color: #000; background: rgba(0, 0, 0, 0.4); }
+
+  /* ── the occlusion case ───────────────────────────────────────────────
+     An opaque sibling laid over a paragraph. The text rectangle is exactly
+     where it was, and every pixel in it belongs to the panel on top. Without
+     the elementFromPoint pass this reads as white ink on white paper, 1.00:1,
+     and fails a page that is fine. */
+  #cover { position: relative; }
+  #covered { margin: 0; color: #111; background: #fff; }
+  #occluder { position: absolute; inset: 0; background: #fff; }
 </style>
 </head>
 <body>
@@ -67,6 +101,18 @@
   <label id="vhlabel" for="vhinput">Site address, hidden from the eye and kept for the ear</label>
   <input id="vhinput" type="text" value="hidden label">
 </p>
+<p>
+  <label for="edge-input">Edge</label> <input id="edge-input" type="text" value="16px, exactly the floor">
+  <button id="edge-tap" type="button">44</button>
+</p>
+<p id="edge-contrast">Grey on white at 4.61 to 1, a hair over the floor.</p>
+<p id="swatch-max" class="swatch">White on black, which is 21.00 to 1.</p>
+<p id="swatch-edge" class="swatch">Grey 767676 on white, which is 4.54 to 1.</p>
+<p id="swatch-alpha" class="swatch">Black on a 40 per cent black panel, which is 7.37 to 1.</p>
+<div id="cover">
+  <p id="covered">Under an opaque panel, so nobody reads this and nothing should measure it.</p>
+  <div id="occluder"></div>
+</div>
 <div id="hero"></div>
 <p id="shift">Under a band only a coarse pointer sees, and read where it is drawn.</p>
 <div id="tall"></div>

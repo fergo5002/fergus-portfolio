@@ -12,6 +12,15 @@
  *   contrast      text whose composited contrast, sampled from the screenshot,
  *                 is under 4.5:1
  *
+ * Plus two about the run itself, because a check that quietly measures nothing
+ * reads exactly like a check that passed:
+ *
+ *   skipped       more text runs than the allowance produced no contrast
+ *                 reading at all (see MAX_SKIPPED_TEXTS)
+ *   layout-moved  the document's height changed between reading the rectangles
+ *                 and taking the photograph, so the two do not describe the
+ *                 same page
+ *
  * ## Why contrast is sampled from pixels rather than read from tokens
  *
  * `app/globals.test.ts` proves the colour tokens clear 4.5:1 against their
@@ -42,22 +51,130 @@
  * four checks are about layout and colour, which do not depend on motion;
  * motion is On the glass's job, not this script's.
  *
+ * ## Paper is scored twice, and the worse reading wins
+ *
+ * A per-channel median is the right estimate of a flat ground and a flattering
+ * one of a gradient, a photograph or a striped overlay: half the ground can be
+ * dark enough to swallow the text and the median never says so. So the ground
+ * is also scored on its darkest quartile, and the ratio reported is the lower
+ * of the two. The luminance standard deviation of the ground is carried with
+ * it and printed, because that is the number that says whether the two
+ * readings are allowed to differ: on a flat ground it is zero and they agree
+ * exactly.
+ *
+ * The darkest quartile cannot be taken off the raw pixels in the rectangle.
+ * Only 2% of them are called ink, so the rest still holds the whole
+ * antialiasing ramp and most of the glyph interiors, and a quartile of that is
+ * ink measured against ink, which reads about 1:1 for every element on any
+ * page. The ground is therefore eroded first: every pixel is assigned to
+ * whichever of ink and paper it is nearer, and a pixel counts as ground only
+ * if no ink-side pixel sits within INK_HALO_PX of it. That is a spatial test,
+ * and it is the only thing that separates an antialiased edge (which hugs the
+ * glyph) from a dark band in the background (which does not).
+ *
+ * On this site the pair currently never bites, and that is worth knowing
+ * rather than a reason to drop it. Every route here is light text on a dark
+ * tube, so the darkest quartile of the ground is the more generous reading and
+ * the median wins the `min`. Measured on 2026-09-03: ground standard
+ * deviations of 0.008 to 0.021 across both tool routes, with the quartile
+ * ratio between 0.1 and 1.8 higher than the median every time. It is there for
+ * the first dark word on a light panel, or the first line over an image.
+ *
+ * ## Text nobody can see is not text this can read
+ *
+ * An absolutely positioned sibling laid over a paragraph does not move its
+ * rectangle, so the sampler reads the panel on top and calls the result the
+ * paragraph's contrast. Which way that lands is luck: an opaque panel the
+ * colour of the ink reads about 1:1 and fails a page that is fine, one the
+ * colour of the paper reads whatever the panel's own contrast is and passes
+ * text nobody can read.
+ *
+ * `auditInPage` therefore asks `document.elementFromPoint` what is actually on
+ * top at a few points across each rectangle, and a run whose points land on
+ * something that is neither the element, its ancestor nor its descendant is
+ * marked occluded and **skipped with a reason**, not failed. Skipped rather
+ * than failed because this script cannot tell a bug from a deliberate overlay,
+ * and a contrast number for a surface nobody sees is not evidence either way.
+ * It is not silent, though: the element and its occluder are named, and the
+ * skip counts against the route's allowance, so a page that covers a lot of
+ * its own text still fails. The gap: an opaque overlay carrying
+ * `pointer-events: none` is invisible to `elementFromPoint` and will still be
+ * sampled. Every full-viewport overlay on this site is deliberately
+ * `pointer-events: none`, which is why they are seen through rather than
+ * treated as occluders, and that is the behaviour wanted: they are part of the
+ * composited pixel a visitor reads.
+ *
+ * ## Nothing may be skipped quietly
+ *
+ * `sampleContrast` returns no reading for a transparent colour, for a
+ * rectangle with fewer than 32 pixels inside the image, for one that has been
+ * clipped away entirely, and for an occluded run. Every one of those used to
+ * be a bare `continue`, so a route could report "12 sampled" while forty more
+ * runs went unread and the table said `ok`. Each skip is now recorded with its
+ * reason, printed on every route, and failed past MAX_SKIPPED_TEXTS.
+ *
+ * Adding the count found three unread runs per route on the live pages the
+ * moment it was switched on: the skip link, which sits above the top of the
+ * document until it is focused, and the two nav links past the right edge of a
+ * nav that scrolls sideways at 390px. They were being dropped by the sampler
+ * with nothing said, and the summary read `ok`. They are a separate number now
+ * (`offscreen`) rather than a skip, because there was nothing in the
+ * photograph to read rather than something the sampler failed on, and they are
+ * printed on every route either way.
+ *
  * ## One layout for the rectangles and the pixels
  *
  * The page is measured and photographed in the same layout: the viewport is
  * resized to the document's height first, and then the rectangles are read
  * and a plain screenshot of that viewport is taken. Playwright's `fullPage`
- * option was the first version, and on Chromium the capture drops the
- * emulated media state, which relays the page out under the rectangles.
- * Measured on `/tools/headline-check`, Pixel 5: the document was 1929px tall
- * before the capture and 1876px after, and the 41 elements that changed were
- * the ones a `@media (hover: none)` rule touches. `.hcheck__label` is 44px
- * tall when it is measured, because the touch floor applies, and 20px in the
- * photograph, because it no longer does. Everything below each of those rules
- * rides up with it: 11 CSS px at the label, 18 by the bottom of the page. So
- * the sample read the panel behind the text and called a label 1.8:1 that
- * WebKit, whose capture keeps the emulation, read at 12.8:1. Same CSS, same
- * pixels on a phone; the instrument was looking in the wrong place.
+ * option was the first version and it produced a false failure on Chromium.
+ *
+ * What was observed, on `/tools/headline-check`, Pixel 5, with `fullPage`:
+ * the document was 1929px tall before the capture and 1876px after; 41
+ * elements had different boxes across it, and each of the 41 is an element a
+ * `@media (hover: none)` rule touches; `.hcheck__label` measured 44px tall,
+ * which is the touch floor, and photographed 20px, which is its height
+ * without it; everything below rode up, 11 CSS px at the label and 18 by the
+ * foot of the page; the sampler then read the panel behind the label and
+ * called it 1.8:1, where WebKit read the same CSS at 12.8:1.
+ *
+ * The story that fits is that Chromium's full-page capture drops the emulated
+ * media state. That is a **guess**. It has never been isolated, and it is not
+ * the only story that fits: Chromium stitches a full-page shot by changing the
+ * viewport, and a viewport change re-runs layout against every rule and every
+ * box that depends on the viewport. Whether the touch rules stopped matching,
+ * or something above them moved and those 41 elements are simply what a
+ * `(hover: none)` rule happens to have touched below it, was never separated.
+ * The check that would separate them is small and was not run: read
+ * `matchMedia("(hover: none)").matches` and the label's height from inside the
+ * capture, and see whether the media query or the box is what changed.
+ *
+ * So this does not depend on knowing which. It depends on the part both
+ * stories share, that the rectangles and the pixels stopped describing the
+ * same page, and the `layout-moved` check tests exactly that in two legs:
+ * `scrollWidth` and `scrollHeight` are read again immediately after the
+ * screenshot and compared with what the audit saw, and the photograph's own
+ * size is compared with the viewport the rectangles were measured in. When it
+ * fires it prints the numbers rather than a reason.
+ *
+ * The second leg is there because the first one, on its own, could not fail.
+ * Putting `fullPage: true` back and rerunning the self-test on 2026-09-03
+ * scrambled the bad fixture (2 contrast failures became 8, and 6 of 11 text
+ * runs went unread on iphone-320) with `layout-moved` reading 0 on all three
+ * profiles: Playwright restores the viewport before it hands back the buffer,
+ * so nothing read afterwards can see what the capture did. The size of the
+ * image it returns is the part that cannot be put back, and on the bad
+ * fixture, whose document is wider than the phone, `fullPage` returns a 616px
+ * shot for a 390px viewport. A check that has never been seen to fail is a
+ * ritual; this is the second time that rule has changed something in this
+ * file.
+ *
+ * One consequence to know about while reading the self-test: the good
+ * fixture's `p#shift` case is a no-op pin on `iphone-390` and `iphone-320`.
+ * WebKit's full-page capture keeps the emulation, so reverting this correction
+ * leaves the good page passing on both WebKit profiles and the case can only
+ * ever go red on `pixel-slow`. It is asserted on all three because the
+ * assertion is written per profile, not because it bites on all three.
  *
  * ## Tap targets and inline links
  *
@@ -89,15 +206,36 @@
  * first in CI, before any real route, because a check that has never been
  * seen to fail is a ritual (CLAIMS.md, rule 1: prove the instrument first).
  *
- * The good fixture also carries one case for each of the three corrections
+ * The good fixture also carries one case for each of the four corrections
  * above: a thin glyph in a roomy box, a line under a band only a coarse
- * pointer sees, and the visually hidden idiom. All three are fine for a
- * reader, all three were reported as faults before, and reverting any one
- * correction brings its false failure back on the good page: the wide slice
- * reads the glyph at 1.5:1, the full-page capture reads the line at 1.00:1 on
- * the tail band below it, and the old visibility test measures a label nobody
- * can see. A checker that cries wolf is worse than no checker, so the fixture
- * pins all three.
+ * pointer sees, the visually hidden idiom, and a paragraph under an opaque
+ * panel. All four are fine for a reader, all four were reported as faults
+ * before, and reverting any one correction brings its false failure back on
+ * the good page: the wide slice reads the glyph at 1.5:1, the full-page
+ * capture reads the line at 1.00:1 on the tail band below it, the old
+ * visibility test measures a label nobody can see, and the covered paragraph
+ * reads as white ink on white paper.
+ *
+ * Two more things the fixtures pin, both added because the first version of
+ * this self-test could not have failed on them.
+ *
+ * **The floors are pinned from both sides.** A fault far under a floor proves
+ * nothing about where the floor is. `bad.html` planted 14px against 16, 30 by
+ * 30 against 44 and 1.28:1 against 4.5, and the nearest value on the good page
+ * was 16px, 48px and 12.6:1, so the floors could be moved to 15px, 42px and
+ * 2.0:1 and every assertion here stayed green. Measured, one at a time, on
+ * 2026-09-03. Each floor now has a fault a hair under it on the bad page and a
+ * pass a hair over it on the good one, so it is red in both directions.
+ *
+ * **Three swatches assert a number, not a verdict.** Every other contrast
+ * assertion here is "failed", "did not fail" or "was sampled", all of which a
+ * sampler that systematically flatters would satisfy. `#swatch-max` (white on
+ * black, 21.00), `#swatch-edge` (#767676 on white, 4.54) and `#swatch-alpha`
+ * (black on a 40% black panel over white, which composites to rgb(153,153,153)
+ * for 7.37) are worked out by hand from the WCAG formula, and the measured
+ * ratio has to land within 10% of each. The alpha one is the one that proves
+ * the pixels are being read: anything reading the declared `background` gets
+ * 21.00 for it.
  *
  * Usage:
  *   node scripts/phone-check.mjs --self-test
@@ -118,6 +256,48 @@ const FIXTURES = join(ROOT, "scripts", "phone-check-fixtures");
 const MIN_INPUT_FONT_PX = 16;
 const MIN_TAP_PX = 44;
 const MIN_CONTRAST = 4.5;
+
+/** Fewer pixels than this inside the image and there is nothing to estimate from. */
+const MIN_SAMPLE_PIXELS = 32;
+
+/**
+ * How far the ground is eroded away from the ink, in device pixels, before its
+ * darkest quartile is taken. An antialiased edge is one to two device pixels
+ * wide at these scale factors; two is the width that clears it at DSF 3
+ * without eating a small rect's ground entirely.
+ */
+const INK_HALO_PX = 2;
+
+/** Below this many ground pixels the quartile is noise, so only the median is used. */
+const MIN_GROUND_PIXELS = 64;
+
+/**
+ * How many text runs a route may leave unread before the route fails.
+ *
+ * Two, and the number is an argument rather than a round figure. A skip is one
+ * of four things: a transparent colour, a rectangle with almost nothing of it
+ * left inside the image, a rectangle under 32 pixels, or a run something
+ * opaque is sitting on. The first three are properties of one odd element and
+ * a page can honestly have one. The fourth is the one worth failing on,
+ * because a page that covers its own text covers it in quantity: an overlay, a
+ * panel, a modal left open. So the allowance sits just above what a page with
+ * a single odd element produces and well under what a covering overlay does.
+ *
+ * Measured on 2026-09-03 against a production build of this tree: `/tools` and
+ * `/tools/headline-check` skipped 0 on five of the six route-profile pairs and
+ * 1 on the sixth (`iphone-320` puts the status bar's working directory partly
+ * under a machine button, so `elementFromPoint` calls it occluded), and the
+ * good fixture skips exactly 1, the paragraph under the panel it plants on
+ * purpose. Two is one clear of the worst clean reading and still fails a third
+ * skip.
+ *
+ * Text that was never in the photograph at all is a different number and is
+ * not counted here: see `offscreen` in `auditInPage`.
+ *
+ * It is deliberately an absolute number and not a fraction. A fraction lets a
+ * long page hide more, and the pages here are long.
+ */
+const MAX_SKIPPED_TEXTS = 2;
 
 const SLOW_4G = { offline: false, downloadThroughput: 50_000, uploadThroughput: 50_000, latency: 2000 };
 const CPU_THROTTLE_RATE = 4;
@@ -197,6 +377,32 @@ function auditInPage({ minInput, minTap }) {
     return r.width >= 2 && r.height >= 2;
   };
 
+  /**
+   * What is actually on top of a text rectangle, or null.
+   *
+   * Five points across each rectangle (the middle band, at 15/35/50/65/85% of
+   * the width) rather than one, because a panel that covers half a paragraph
+   * is still a paragraph nobody reads. The first point that lands on something
+   * outside the element's own line wins. An ancestor is not an occluder: a
+   * point that falls in a gap between glyphs resolves to the block the text
+   * sits in, which is the page working normally.
+   */
+  const occluderFor = (el, rects) => {
+    const vw = document.documentElement.clientWidth;
+    const vh = document.documentElement.clientHeight;
+    for (const r of rects) {
+      for (const fraction of [0.15, 0.35, 0.5, 0.65, 0.85]) {
+        const x = r.x + r.w * fraction - window.scrollX;
+        const y = r.y + r.h * 0.5 - window.scrollY;
+        if (x < 0 || y < 0 || x >= vw || y >= vh) continue;
+        const hit = document.elementFromPoint(x, y);
+        if (!hit || hit === el || el.contains(hit) || hit.contains(el)) continue;
+        return path(hit);
+      }
+    }
+    return null;
+  };
+
   const failures = [];
   const inline = [];
   const exempt = [];
@@ -257,7 +463,22 @@ function auditInPage({ minInput, minTap }) {
   }
 
   // 4. Text runs, for the contrast pass outside the page.
+  //
+  // A rectangle outside the photographed viewport is dropped here and the
+  // element is listed under `offscreen` instead. Three things land in it on
+  // this site and all three are honest: the skip link, which lives above the
+  // top of the page until it is focused, and the last two nav links, which sit
+  // past the right edge of a nav that scrolls sideways on a phone. There is
+  // nothing in the photograph to read for any of them.
+  //
+  // They are kept out of the skip count on purpose. A skip is the sampler
+  // failing on something that was there; this is nothing being there, and the
+  // two want different numbers. Where a run being off the page IS the bug the
+  // overflow check has already failed the route by name.
   const texts = [];
+  const offscreen = [];
+  const viewportHeight = document.documentElement.clientHeight;
+  const onScreen = (r) => r.x < viewportWidth && r.y < viewportHeight && r.x + r.w > 0 && r.y + r.h > 0;
   const seen = new Set();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -268,13 +489,16 @@ function auditInPage({ minInput, minTap }) {
     seen.add(el);
     const cs = getComputedStyle(el);
     const rects = [];
+    let dropped = 0;
     for (const child of el.childNodes) {
       if (child.nodeType !== Node.TEXT_NODE || !child.nodeValue.trim()) continue;
       const range = document.createRange();
       range.selectNodeContents(child);
       for (const r of range.getClientRects()) {
         if (r.width < 2 || r.height < 2) continue;
-        rects.push({ x: r.left + window.scrollX, y: r.top + window.scrollY, w: r.width, h: r.height });
+        const rect = { x: r.left + window.scrollX, y: r.top + window.scrollY, w: r.width, h: r.height };
+        if (onScreen(rect)) rects.push(rect);
+        else dropped++;
       }
     }
     if (rects.length) {
@@ -284,6 +508,13 @@ function auditInPage({ minInput, minTap }) {
         fontSize: parseFloat(cs.fontSize),
         text: (el.textContent || "").trim().slice(0, 40),
         rects,
+        occludedBy: occluderFor(el, rects),
+      });
+    } else if (dropped) {
+      offscreen.push({
+        el: path(el),
+        text: (el.textContent || "").trim().slice(0, 40),
+        detail: `${dropped} rect(s) outside the ${viewportWidth}x${viewportHeight} viewport`,
       });
     }
   }
@@ -293,6 +524,7 @@ function auditInPage({ minInput, minTap }) {
     inline,
     exempt,
     texts,
+    offscreen,
     viewportWidth,
     scrollWidth: doc.scrollWidth,
     scrollHeight: doc.scrollHeight,
@@ -336,34 +568,115 @@ async function decode(png) {
   return { data, width: info.width, height: info.height, channels: info.channels };
 }
 
+/** Population standard deviation. Zero for anything with fewer than two values. */
+function stdDev(values) {
+  if (values.length < 2) return 0;
+  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+  return Math.sqrt(values.reduce((sum, v) => sum + (v - mean) ** 2, 0) / values.length);
+}
+
 /**
- * The estimate. Ink is the mean of the 2% of pixels nearest the computed
- * colour (at least eight); paper is the per-channel median of everything
- * else. The header says why the slice is that thin. Returns null when there
- * is too little to sample or the text is transparent.
+ * The estimate.
+ *
+ * Ink is the mean of the 2% of pixels nearest the computed colour (at least
+ * eight); paper is the per-channel median of everything else. The header says
+ * why the slice is that thin.
+ *
+ * The ground is then eroded away from the ink by INK_HALO_PX and its darkest
+ * quartile scored as well, and the lower of the two ratios is the answer. On a
+ * flat ground the two agree exactly and the standard deviation returned beside
+ * them is zero; the point of the pair is a gradient, a photograph or a striped
+ * overlay, where the median is the flattering half of the story.
+ *
+ * Returns `{ ok: false, reason }` rather than null for every case it cannot
+ * read, because a skipped run has to be counted and named upstream.
  */
 function sampleContrast(image, entry, scale) {
+  if (entry.occludedBy) return { ok: false, reason: `occluded by ${entry.occludedBy}` };
   const fg = parseColor(entry.color);
-  if (!fg) return null;
-  const pixels = [];
+  if (!fg) return { ok: false, reason: `unreadable colour ${entry.color}` };
+
+  // Kept as patches rather than one flat list: the erosion below is spatial,
+  // so it needs to know which pixel is next to which.
+  const patches = [];
+  let total = 0;
   for (const r of entry.rects) {
     const x0 = Math.max(0, Math.floor(r.x * scale));
     const y0 = Math.max(0, Math.floor(r.y * scale));
     const x1 = Math.min(image.width, Math.ceil((r.x + r.w) * scale));
     const y1 = Math.min(image.height, Math.ceil((r.y + r.h) * scale));
-    for (let y = y0; y < y1; y++) {
-      for (let x = x0; x < x1; x++) {
-        const i = (y * image.width + x) * image.channels;
-        pixels.push([image.data[i], image.data[i + 1], image.data[i + 2]]);
+    const w = x1 - x0;
+    const h = y1 - y0;
+    if (w <= 0 || h <= 0) continue;
+    const px = new Array(w * h);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = ((y0 + y) * image.width + (x0 + x)) * image.channels;
+        px[y * w + x] = [image.data[i], image.data[i + 1], image.data[i + 2]];
       }
     }
+    patches.push({ w, h, px });
+    total += w * h;
   }
-  if (pixels.length < 32) return null;
-  const ranked = pixels.map((p) => ({ p, d: dist2(p, fg) })).sort((a, b) => a.d - b.d);
+  if (total === 0) return { ok: false, reason: "rectangle is off the image" };
+  if (total < MIN_SAMPLE_PIXELS) return { ok: false, reason: `only ${total} pixels to sample` };
+
+  const all = patches.flatMap((patch) => patch.px);
+  const ranked = all.map((p) => ({ p, d: dist2(p, fg) })).sort((a, b) => a.d - b.d);
   const n = Math.max(8, Math.floor(ranked.length * 0.02));
   const ink = meanColour(ranked.slice(0, n).map((x) => x.p));
   const paper = medianColour(ranked.slice(n).map((x) => x.p));
-  return { ratio: contrast(ink, paper), ink, paper };
+
+  // The ground: paper-side pixels with no ink-side pixel within INK_HALO_PX.
+  // Nearest-of-the-two assignment splits the antialiasing ramp down the middle
+  // and the halo removes the half that stayed on the paper side.
+  const ground = [];
+  for (const { w, h, px } of patches) {
+    const inkSide = new Uint8Array(w * h);
+    for (let i = 0; i < w * h; i++) inkSide[i] = dist2(px[i], ink) <= dist2(px[i], paper) ? 1 : 0;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (inkSide[y * w + x]) continue;
+        let touchesInk = false;
+        for (let dy = -INK_HALO_PX; dy <= INK_HALO_PX && !touchesInk; dy++) {
+          const ny = y + dy;
+          if (ny < 0 || ny >= h) continue;
+          for (let dx = -INK_HALO_PX; dx <= INK_HALO_PX; dx++) {
+            const nx = x + dx;
+            if (nx < 0 || nx >= w) continue;
+            if (inkSide[ny * w + nx]) {
+              touchesInk = true;
+              break;
+            }
+          }
+        }
+        if (!touchesInk) ground.push(px[y * w + x]);
+      }
+    }
+  }
+
+  const lums = ground.map(luminance);
+  const sd = stdDev(lums);
+  let dark = null;
+  if (ground.length >= MIN_GROUND_PIXELS) {
+    const byLuminance = ground.map((p, i) => ({ p, l: lums[i] })).sort((a, b) => a.l - b.l);
+    const quartile = Math.max(8, Math.floor(byLuminance.length * 0.25));
+    dark = medianColour(byLuminance.slice(0, quartile).map((x) => x.p));
+  }
+
+  const viaMedian = contrast(ink, paper);
+  const viaDark = dark ? contrast(ink, dark) : viaMedian;
+  return {
+    ok: true,
+    ratio: Math.min(viaMedian, viaDark),
+    viaMedian,
+    viaDark,
+    ink,
+    paper,
+    dark: dark ?? paper,
+    sd,
+    groundPixels: ground.length,
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -397,6 +710,11 @@ async function checkRoute(browser, profile, url, outDir, label) {
 
   const audit = await page.evaluate(auditInPage, { minInput: MIN_INPUT_FONT_PX, minTap: MIN_TAP_PX });
   const png = await page.screenshot({ fullPage: false, animations: "disabled", caret: "hide" });
+  const after = await page.evaluate(() => ({
+    height: document.documentElement.scrollHeight,
+    width: (document.scrollingElement || document.documentElement).scrollWidth,
+  }));
+
   mkdirSync(outDir, { recursive: true });
   writeFileSync(join(outDir, `${label}.${profile.id}.png`), png);
 
@@ -409,34 +727,104 @@ async function checkRoute(browser, profile, url, outDir, label) {
   // that page by name.
   const scale = image.width / audit.viewportWidth;
 
+  /**
+   * The rectangles and the pixels have to describe the same page, and there
+   * are two ways for them not to.
+   *
+   * One, the document moved across the shutter: `scrollHeight` or
+   * `scrollWidth` is not what the audit read. Two, the photograph is not of
+   * the viewport the rectangles were measured in, which makes `scale` above a
+   * wrong number and lands every rectangle somewhere else on the image.
+   *
+   * The second leg is the one that catches `fullPage: true`, and it is here
+   * because the first leg on its own did not: putting `fullPage` back and
+   * rerunning the self-test scrambled the bad fixture's contrast readings (2
+   * failures became 8, and 6 runs went unread on iphone-320) while
+   * `scrollHeight` after the capture matched `scrollHeight` before it on every
+   * profile. Playwright restores the viewport before handing the buffer back,
+   * so a height read afterwards cannot see what the capture did. What it
+   * cannot hide is the size of the image it returns.
+   *
+   * A CSS pixel of slack on the geometry: the Pixel 5's scale factor is 2.75,
+   * so a 393px viewport photographs 1080 device pixels wide rather than
+   * 1080.75, and that rounding is not a finding.
+   */
+  const dsf = profile.device.deviceScaleFactor ?? 1;
+  const layoutFailures = [];
+  if (after.height !== audit.scrollHeight || after.width !== audit.scrollWidth) {
+    layoutFailures.push({
+      check: "layout-moved",
+      el: "document",
+      detail:
+        `document was ${audit.scrollWidth}x${audit.scrollHeight} at the rectangle read and ` +
+        `${after.width}x${after.height} after the shutter`,
+    });
+  }
+  const shotWidth = image.width / dsf;
+  const shotHeight = image.height / dsf;
+  const viewportHeight = page.viewportSize()?.height ?? shotHeight;
+  if (Math.abs(shotWidth - audit.viewportWidth) > 1 || Math.abs(shotHeight - viewportHeight) > 1) {
+    layoutFailures.push({
+      check: "layout-moved",
+      el: "screenshot",
+      detail:
+        `the photograph is ${shotWidth.toFixed(1)}x${shotHeight.toFixed(1)} CSS px and the rectangles were ` +
+        `measured in a ${audit.viewportWidth}x${viewportHeight} viewport`,
+    });
+  }
+
   const contrastFailures = [];
-  // Kept by name, not just counted: the self-test asserts that its pinned
-  // cases were measured. An element the sampler quietly skips is an element
-  // nobody is checking, and a count cannot tell you which one it was.
-  const sampledEls = [];
+  // Kept by name and by number, not just counted. The self-test asserts that
+  // its pinned cases were measured and that three of them came back with the
+  // ratio arithmetic says they have; an element the sampler quietly skips is
+  // an element nobody is checking, and a count cannot tell you which one.
+  const samples = [];
+  const skipped = [];
   for (const entry of audit.texts) {
     const s = sampleContrast(image, entry, scale);
-    if (!s) continue;
-    sampledEls.push(entry.el);
+    if (!s.ok) {
+      skipped.push({ el: entry.el, reason: s.reason, text: entry.text });
+      continue;
+    }
+    samples.push({ el: entry.el, ratio: s.ratio, viaMedian: s.viaMedian, viaDark: s.viaDark, sd: s.sd });
     if (s.ratio < MIN_CONTRAST) {
+      const worst = s.viaDark < s.viaMedian ? "darkest quartile" : "median";
       contrastFailures.push({
         check: "contrast",
         el: entry.el,
-        detail: `${s.ratio.toFixed(2)}:1, ink rgb(${s.ink.join(",")}) on rgb(${s.paper.join(",")}), "${entry.text}"`,
+        detail:
+          `${s.ratio.toFixed(2)}:1 (${worst}; median ${s.viaMedian.toFixed(2)}, quartile ${s.viaDark.toFixed(2)}, ` +
+          `ground sd ${s.sd.toFixed(3)}), ink rgb(${s.ink.join(",")}) on rgb(${s.paper.join(",")}), "${entry.text}"`,
       });
     }
   }
+
+  // Silent exclusion reads as a clean run, so past the allowance it is a
+  // failure in its own right and every skip is printed either way.
+  const skipFailures =
+    skipped.length > MAX_SKIPPED_TEXTS
+      ? [
+          {
+            check: "skipped",
+            el: "(route)",
+            detail: `${skipped.length} of ${audit.texts.length} text runs unread, allowance ${MAX_SKIPPED_TEXTS}`,
+          },
+        ]
+      : [];
 
   await context.close();
   return {
     profile: profile.id,
     url,
     label,
-    failures: [...audit.failures, ...contrastFailures],
+    failures: [...audit.failures, ...layoutFailures, ...contrastFailures, ...skipFailures],
     inline: audit.inline,
     exempt: audit.exempt,
-    sampled: sampledEls.length,
-    sampledEls,
+    texts: audit.texts.length,
+    sampled: samples.length,
+    samples,
+    skipped,
+    offscreen: audit.offscreen,
   };
 }
 
@@ -459,15 +847,22 @@ async function runAll(targets, outDir) {
 /* Reporting                                                            */
 /* ------------------------------------------------------------------ */
 
-const CHECKS = ["overflow", "input-font", "tap-target", "contrast"];
+const CHECKS = ["overflow", "input-font", "tap-target", "contrast", "layout-moved", "skipped"];
 
 /** Prints the table and the failure lines. Returns true if anything failed. */
 function printSummary(results) {
   const rows = results.map((r) => {
     const counts = CHECKS.map((c) => r.failures.filter((f) => f.check === c).length);
-    return [r.label, r.profile, ...counts.map(String), String(r.sampled), counts.some((n) => n > 0) ? "FAIL" : "ok"];
+    return [
+      r.label,
+      r.profile,
+      ...counts.map(String),
+      `${r.sampled}/${r.texts}`,
+      String(r.skipped.length),
+      counts.some((n) => n > 0) ? "FAIL" : "ok",
+    ];
   });
-  const head = ["route", "profile", ...CHECKS, "sampled", "verdict"];
+  const head = ["route", "profile", ...CHECKS, "sampled", "unread", "verdict"];
   const widths = head.map((h, i) => Math.max(h.length, ...rows.map((r) => r[i].length)));
   const line = (cells) => cells.map((c, i) => c.padEnd(widths[i])).join("  ");
   console.log(line(head));
@@ -479,6 +874,24 @@ function printSummary(results) {
     for (const f of r.failures) {
       failed = true;
       console.log(`FAIL ${r.profile} ${r.label} ${f.check} ${f.el} ${f.detail}`);
+    }
+    // Every skip, always, whether or not the count cleared the allowance, and
+    // every run that was never on the photographed page either.
+    for (const s of r.skipped) {
+      console.log(`skipped ${r.profile} ${r.label} contrast ${s.el} ${s.reason} "${s.text}"`);
+    }
+    for (const o of r.offscreen) {
+      console.log(`offscreen ${r.profile} ${r.label} contrast ${o.el} ${o.detail} "${o.text}"`);
+    }
+    // The roughest ground on the route. A high standard deviation is what says
+    // the median and the quartile were reading different things, so it is
+    // printed on a clean run too rather than only when something failed.
+    const roughest = [...r.samples].sort((a, b) => b.sd - a.sd)[0];
+    if (roughest) {
+      console.log(
+        `ground ${r.profile} ${r.label} roughest ${roughest.el} sd ${roughest.sd.toFixed(3)} ` +
+          `(median ${roughest.viaMedian.toFixed(2)}:1, darkest quartile ${roughest.viaDark.toFixed(2)}:1)`,
+      );
     }
     for (const e of r.exempt) console.log(`exempt ${r.profile} ${r.label} tap-target ${e.el} ${e.size} (${e.reason})`);
     for (const i of r.inline) console.log(`inline ${r.profile} ${r.label} tap-target ${i.el} ${i.size}`);
@@ -539,6 +952,11 @@ async function selfTest(args) {
         ["input-font", "input#small"],
         ["tap-target", "button#tiny"],
         ["contrast", "p#dim"],
+        // The three near-boundary faults. Each one is the smallest failure its
+        // floor can have, so losing any of these means the floor moved down.
+        ["input-font", "input#edge-input"],
+        ["tap-target", "button#edge-tap"],
+        ["contrast", "p#edge-contrast"],
       ]) {
         if (!caught(r, check, el)) problems.push(`${r.profile} bad: ${check} on ${el} was not caught`);
       }
@@ -584,20 +1002,69 @@ async function selfTest(args) {
        *                its text overflowing. Nobody sees it, so it has no
        *                contrast to read and no target to tap.
        */
-      if (!r.sampledEls.some((e) => e.includes("span#arrow"))) {
+      const sampledEls = r.samples.map((s) => s.el);
+      if (!sampledEls.some((e) => e.includes("span#arrow"))) {
         problems.push(`${r.profile} good: the thin glyph was never sampled`);
       }
-      if (!r.sampledEls.some((e) => e.includes("p#shift"))) {
+      if (!sampledEls.some((e) => e.includes("p#shift"))) {
         problems.push(`${r.profile} good: the line under the viewport-tall band was never sampled`);
       }
       const mentions = [
-        ...r.sampledEls,
+        ...sampledEls,
         ...r.failures.map((f) => f.el),
         ...r.exempt.map((e) => e.el),
         ...r.inline.map((i) => i.el),
       ];
       if (mentions.some((e) => e.includes("label#vhlabel"))) {
         problems.push(`${r.profile} good: the visually hidden label was measured and must not be`);
+      }
+
+      /**
+       * The fourth correction: an opaque sibling over a paragraph. It must be
+       * skipped, the skip must name the panel that caused it, and the ratio
+       * must never be reported, because the pixels in that rectangle belong to
+       * the panel and not to the words underneath.
+       */
+      const covered = r.skipped.find((s) => s.el.includes("p#covered"));
+      if (!covered) {
+        problems.push(`${r.profile} good: the covered paragraph was measured instead of skipped`);
+      } else if (!covered.reason.includes("occluded by")) {
+        problems.push(`${r.profile} good: the covered paragraph was skipped for the wrong reason: ${covered.reason}`);
+      }
+      if (r.skipped.length !== 1) {
+        problems.push(
+          `${r.profile} good: ${r.skipped.length} skipped runs, expected exactly the covered paragraph: ` +
+            r.skipped.map((s) => `${s.el} (${s.reason})`).join("; "),
+        );
+      }
+
+      /**
+       * The control swatches. Every other contrast assertion in this file is a
+       * verdict, and a sampler that flatters everything satisfies all of them.
+       * These are worked out by hand from the WCAG formula and the measured
+       * number has to land within a tenth of the answer.
+       *
+       * The alpha one is the one that proves the pixels are being read rather
+       * than the stylesheet: its declared background is `rgba(0,0,0,0.4)`, so
+       * anything reading tokens gets black and reports 21.00 for it.
+       */
+      for (const [el, expected] of [
+        ["p#swatch-max", 21.0],
+        ["p#swatch-edge", 4.54],
+        ["p#swatch-alpha", 7.37],
+      ]) {
+        const hit = r.samples.find((s) => s.el.includes(el));
+        if (!hit) {
+          problems.push(`${r.profile} good: the ${el} control swatch was never sampled`);
+          continue;
+        }
+        const drift = Math.abs(hit.ratio - expected) / expected;
+        if (drift > 0.1) {
+          problems.push(
+            `${r.profile} good: ${el} measured ${hit.ratio.toFixed(2)}:1, hand-computed ${expected.toFixed(2)}:1, ` +
+              `${(drift * 100).toFixed(1)}% out`,
+          );
+        }
       }
     }
 

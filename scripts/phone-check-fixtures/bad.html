@@ -17,6 +17,16 @@
   #fine { color: #111; background: #fff; }
   #ok { font-size: 16px; }
   #big { min-width: 48px; min-height: 48px; }
+
+  /* ── near the floor, on the failing side ─────────────────────────────────
+     One under each floor by the smallest amount that still fails it, so
+     lowering a floor stops these being caught and the self-test goes red.
+     The faults above are far enough under to be caught by a floor set almost
+     anywhere, which is why they cannot pin one. */
+  #edge-input { font-size: 15px; min-height: 48px; box-sizing: border-box; }
+  #edge-tap { width: 43px; height: 43px; padding: 0; }
+  /* #7a7a7a on #ffffff is 4.29:1: under 4.5 and over anything looser. */
+  #edge-contrast { color: #7a7a7a; background: #fff; font-size: 20px; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -33,5 +43,10 @@
   <button id="optout" type="button" data-small-target="fixture: proves the opt-out is honoured">o</button>
   <button id="big" type="button">Big enough</button>
 </p>
+<p>
+  <label for="edge-input">Edge</label> <input id="edge-input" type="text" value="15px, one under the floor">
+  <button id="edge-tap" type="button">43</button>
+</p>
+<p id="edge-contrast">Grey on white at 4.29 to 1, a hair under the floor.</p>
 </body>
 </html>
