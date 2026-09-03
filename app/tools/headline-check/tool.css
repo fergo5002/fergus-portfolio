@@ -425,4 +425,16 @@
     align-items: center;
     justify-content: center;
   }
+  /* Same floor as the buttons beside it. An input is tapped too, and so is
+     the label that focuses it: the phone check found the input at 43px and
+     the label at 20px on every profile. The label keeps its text on the
+     baseline it had and takes the room above. */
+  .hcheck__input {
+    min-height: 44px;
+  }
+  .hcheck__label {
+    min-height: 44px;
+    display: flex;
+    align-items: flex-end;
+  }
 }

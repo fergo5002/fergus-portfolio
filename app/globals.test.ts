@@ -180,6 +180,20 @@ describe("the prose rules use the token that passes", () => {
     }
   });
 
+  /**
+   * The Talk block's two small lines, the prompt above the title and the
+   * address under the button, were `--green-dim` on `--bg-panel`. The panel is
+   * lighter than the page, and the phone check's first real run read them at
+   * 3.7 and 3.8:1 from the pixels on every profile. `--green` is the token the
+   * block's own body line already uses on the same panel.
+   */
+  it("keeps the Talk block's small print on the token that passes on the panel", () => {
+    for (const selector of [".talk__prompt", ".talk__alt"]) {
+      expect(rule(selector), selector).toMatch(/color:\s*var\(--green\)/);
+      expect(rule(selector), selector).not.toMatch(/color:\s*var\(--green-(dim|faint)\)/);
+    }
+  });
+
   it("keeps the glow off long-form prose", () => {
     // A text-shadow halo on every character is correct for a ten word terminal
     // readout and genuinely tiring across two thousand words.

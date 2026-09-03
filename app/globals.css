@@ -1690,7 +1690,7 @@ html.js .exp__spine {
     --sp-4: 18px;
     --sp-5: 24px;
     --sp-6: 32px;
-    --nav-h: 40px;
+    --nav-h: 44px;
     --status-h: 22px;
   }
 
@@ -1743,11 +1743,15 @@ html.js .exp__spine {
     gap: var(--sp-2);
   }
   /* Real touch targets. 44px is the floor Apple and WCAG 2.2 both land on, and
-     these were 20px tall links in a 44px bar. */
+     these were 20px tall links in a 44px bar. 40 was still four short of the
+     floor this comment names, and the bar centres its links, so the last four
+     pixels were dead space above and below rather than anything to press.
+     Measured at 47x40 on all three profiles by scripts/phone-check.mjs. The
+     bar is `--nav-h`, 44px on this breakpoint, so the links now fill it. */
   .nav__link {
     display: flex;
     align-items: center;
-    min-height: 40px;
+    min-height: 44px;
     padding: 0 var(--sp-2);
   }
 
@@ -2146,13 +2150,58 @@ html.is-gravity .statusbar {
    the tree. Branching JSX on a client-only media query is a hydration mismatch
    for exactly the visitors the preference protects; `display: none` also takes
    them out of the focus order, which visual hiding would not. */
+.machine__motion {
+  display: contents;
+}
+/* After the rule above, never before it. Same specificity, so the later one
+   wins, and until 2026-09-03 the `contents` rule came second: gravity and
+   eject were offered under `reduce` after all, in a 21 by 16 box. The phone
+   check, which drives every route under `reduce`, is what found them. */
 @media (prefers-reduced-motion: reduce) {
   .machine__motion {
     display: none;
   }
 }
-.machine__motion {
-  display: contents;
+
+/* ── touch: the bar is a touch bar ────────────────────────────────────────
+   Found by scripts/phone-check.mjs on its first run, 2026-09-03. On a phone
+   the machine controls were 21 by 16, and the readouts pushed the last of
+   them past the right edge of a 390px bar. 44px is the floor Apple and WCAG
+   2.2 both land on, so on a touch device the bar is 44px tall, every control
+   is at least 44 by 44, the costume readout that carries no information (the
+   memory address) goes, and the working directory truncates rather than
+   pushing the controls out of reach. `--status-h` is the one token the page
+   padding and the shader's bezel both read, so the change stays coherent.
+   The skip link and the call to action are the two shell links the same run
+   found three pixels short. */
+@media (hover: none) {
+  :root {
+    --status-h: 44px;
+  }
+  .statusbar__mem {
+    display: none;
+  }
+  .statusbar__pwd {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .machine {
+    flex: none;
+    gap: 0;
+  }
+  .machine__btn {
+    min-width: 44px;
+    min-height: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+  .skiplink,
+  .talk__cta {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
@@ -2727,7 +2776,7 @@ h4.prose__h {
 }
 
 .talk__prompt {
-  color: var(--green-dim);
+  color: var(--green);
   font-size: 0.78rem;
   margin: 0 0 var(--sp-2);
 }
@@ -2767,7 +2816,7 @@ h4.prose__h {
 .talk__alt {
   margin: var(--sp-3) 0 0;
   font-size: 0.8rem;
-  color: var(--green-dim);
+  color: var(--green);
 }
 
 /* The pre-hydration copy of the hero name. HeroName renders this on the server
@@ -3035,6 +3084,9 @@ textarea.cform__input {
 }
 
 .tools__link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   border-bottom: none;
   text-shadow: none;
 }
