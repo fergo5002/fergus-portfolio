@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phone-check fixture: good</title>
+<style>
+  body { margin: 16px; font: 16px/1.5 system-ui, sans-serif; color: #111; background: #fff; }
+  label { display: inline-block; min-width: 44px; min-height: 44px; line-height: 44px; }
+  #wide { width: 100%; height: 20px; background: #eee; }
+  #small, #ok { font-size: 16px; min-height: 48px; box-sizing: border-box; }
+  #tiny, #optout, #big { min-width: 48px; min-height: 48px; }
+  #dim { color: #333; background: #fff; }
+  #fine { color: #111; background: #fff; }
+  #block { display: block; min-height: 48px; line-height: 48px; }
+</style>
+</head>
+<body>
+<h1>Good fixture</h1>
+<p id="fine">Readable control paragraph, near-black on white.</p>
+<p id="dim">Formerly dim paragraph, now dark grey on white, with <a id="inline" href="#fine">an inline link in a sentence</a> that is exempt from the tap-target rule.</p>
+<div id="wide"></div>
+<p>
+  <label for="small">Small</label> <input id="small" type="text" value="16px">
+  <label for="ok">Fine</label> <input id="ok" type="text" value="16px">
+</p>
+<p>
+  <button id="tiny" type="button">t</button>
+  <button id="optout" type="button">o</button>
+  <button id="big" type="button">Big enough</button>
+</p>
+<a id="block" href="#fine">A block link, tall enough for a thumb</a>
+</body>
+</html>
