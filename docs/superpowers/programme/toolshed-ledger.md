@@ -9,14 +9,14 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | ID | Sub-project | State | Branch | PR | Live check |
 |---|---|---|---|---|---|
 | F0 | Ship path | **live** | `toolshed/f0-ship-path` (in the main checkout, F0 only; every later sub-project gets its own worktree) | [#1](https://github.com/fergo5002/fergus-portfolio/pull/1) merged 4b968c0 | `dpl_4DPMWyNeL3FKBmYfcuTqJwibyc2F` READY, aliased, /tools 200 |
-| F1 | Command registry | **review** | `toolshed/f1-command-registry` (10 commits, rebased on a0f916c) | | |
+| F1 | Command registry | **live** | `toolshed/f1-command-registry` | [#2](https://github.com/fergo5002/fergus-portfolio/pull/2) merged a269a1e | `dpl_Cp4p19RHXiafBDMzh3PJjG4mwuNm` READY; live `help` prints the five sections, `cd arcade` prints "arcade: no runtime yet", `top` lists arcade, console clean |
 | F2 | The shell everywhere | **plan** | | | |
 | F3 | Tool registry and page shell | **building** | `toolshed/f3-tool-registry` | | |
 | F4 | State layer | **plan** (Tasks 1 to 4 written, rest in progress) | `toolshed/f4-state-layer` (cut, idle) | | |
 | S1 | Spike: WebSocket on Hobby | **plan** (brief written, runner not started) | | | |
 | S2 | Spike: WebKit in a function | **plan** (brief written, runner not started) | | | |
-| S3 | Spike: DuckDB in the tab | **building** | `toolshed/f5-spikes` | | |
-| S4 | Spike: the .ie seed | **building** | `toolshed/f5-spikes` | | |
+| S3 | Spike: DuckDB in the tab | **decided** | `toolshed/f5-spikes` | record on main | 0 mismatches at 1e-9; macros; 8.1 MB gzip, 82 s median at Slow 4G: bundle decision for Fergus |
+| S4 | Spike: the .ie seed | **decided** | `toolshed/f5-spikes` | record on main | 126,214 registered .ie domains, 17 MB, under a minute, reproduced twice; 38% of the registry figure |
 | T1 | Drift | **queued** | | | |
 | T2 | Relief | **queued** | | | |
 | T3 | Overlap | **queued** | | | |
@@ -60,3 +60,7 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-03 18:30: F1 built. Implementer observed: tsc exit 0; 41 of 42 test files green, 1,066 of 1,067 tests; the one red is `lib/contact.test.ts` "puts the click on the fields themselves", red at baseline on this CRLF checkout (`indexOf("<form
 ")` against a CRLF file) and green in CI on Linux, so it is a Windows-checkout fragility, not F1's. Mutation check with that file temporarily LF: 71 of 71 caught, all seven F1 rows red. Not verified by the implementer: build, parity image, phone check, CI, live. Rebased onto main; reviewer dispatched.
 - 2026-09-03: three implementers (F1, F3, F4) and the spike runner each stopped once while waiting on a backgrounded long run; a stopped subagent is not woken by its own monitor. Each was resumed with an instruction to poll the output file. Lesson logged in the playbook.
+- 2026-09-03 18:20: F1 review (ledger-aware code-reviewer): parity confirmed, door clean, purity clean, interfaces exact; one medium finding, `help` had lost its five curated sections to a flat sorted list (my brief asked for "sorted", so the regression was mine). Fixed with `group` and `rank` on each command and a line-for-line parity test against the old text. PR #2, CI green (check 1m05s, mutation 6m28s), squash-merged as a269a1e, production `dpl_Cp4p19RHXiafBDMzh3PJjG4mwuNm` READY. Live check by real browser: `help`, `cd arcade`, `top` as above; console errors 0. Not verified: the parity Docker image (low-risk tier, skipped by policy), reduced-motion behaviour (unchanged code).
+- 2026-09-03: PR #3 opened for the CRLF-fragile contact test (normalise line endings before the guard), found by the F1 implementer, reproduced by the reviewer, green on this checkout after the change.
+- 2026-09-03: spikes S4 and S3 decided, records on main under `docs/superpowers/spikes/`. S3's 8 MB DuckDB bundle is a decision for Fergus before T4 starts: ship it on demand with a progress line, or port the three macros to plain JS with the Postgres comparison as the oracle (recommended, and it keeps the "same model" claim because the numbers match to 1e-13).
+- 2026-09-03: S2 and S1 runner dispatched (preview deployments only). F2 worktree cut from main after F1 merged.
