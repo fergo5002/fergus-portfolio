@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
-import { absolute, articlePath } from "@/lib/seo";
+import { absolute, articlePath, toolPath } from "@/lib/seo";
 import { articles } from "@/content/articles";
+import { liveTools } from "@/content/tools";
 
 /**
  * `/sitemap.xml`, generated from `content/`.
@@ -40,7 +41,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // world that the nav change in the same push had already made false. See the
     // entry in [[coding-mistakes]].
     { url: absolute("/tools"), changeFrequency: "monthly", priority: 0.6 },
-    { url: absolute("/tools/headline-check"), changeFrequency: "monthly", priority: 0.7 },
     { url: absolute("/mcp"), changeFrequency: "monthly", priority: 0.6 },
   ];
 
@@ -51,5 +51,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
   }));
 
-  return [...staticRoutes, ...articleRoutes];
+  // Live tools only, from the registry. A `soon` entry is listed on `/tools`
+  // and has no page, and a sitemap that names a route which 404s is the exact
+  // failure the docblock above is about.
+  const toolRoutes: MetadataRoute.Sitemap = liveTools.map((t) => ({
+    url: absolute(toolPath(t.slug)),
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
+
+  return [...staticRoutes, ...toolRoutes, ...articleRoutes];
 }

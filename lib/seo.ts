@@ -25,6 +25,7 @@ import { experience } from "@/content/experience";
 import { projects } from "@/content/projects";
 import type { Article } from "@/content/articles";
 import type { QuestionPair } from "@/lib/faq";
+import type { ToolEntry } from "@/content/tools/types";
 
 export const SITE_URL = "https://fergusoreilly.dev";
 export const SITE_NAME = `${profile.shortName} · Terminal`;
@@ -411,6 +412,39 @@ export function faqPageSchema(article: Article, pairs: QuestionPair[]): JsonLdOb
 
 export function articlePath(slug: string): string {
   return `/writing/${slug}`;
+}
+export function toolPath(slug: string): string {
+  return `/tools/${slug}`;
+}
+
+/**
+ * A tool, declared as a thing somebody can use rather than as a page about
+ * one. `WebApplication` is what an answer engine looks for when the question
+ * is "is there a tool that checks X".
+ *
+ * Built from the registry entry so the graph cannot say something the index
+ * does not. `extra` is spread **first** and the registry fields after it: a
+ * page may add an edge the registry has no field for (`isBasedOn`, for the
+ * headline checker's article), and may not rename the tool in the graph.
+ */
+export function toolPageSchema(
+  tool: Pick<ToolEntry, "slug" | "name" | "blurb">,
+  extra: JsonLdObject = {},
+): JsonLdObject {
+  const url = absolute(toolPath(tool.slug));
+  return prune({
+    ...extra,
+    "@type": "WebApplication",
+    "@id": `${url}#app`,
+    name: tool.name,
+    url,
+    description: tool.blurb,
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Any",
+    isPartOf: { "@id": WEBSITE_ID },
+    author: { "@id": PERSON_ID },
+    offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },
+  });
 }
 
 /**
