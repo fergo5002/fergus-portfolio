@@ -68,6 +68,29 @@ describe("the drawer", () => {
   });
 });
 
+describe("summonShell", () => {
+  // The home page's half of the backtick rule, and until now the untested
+  // half. `lib/shell.ts` refuses to open a drawer on the inline route, so
+  // deleting this early return broke nothing any test could see: the backtick
+  // on `/` would have gone quietly dead, the store dispatching a toggle that
+  // the reducer then declined.
+  it("puts the caret in the inline terminal rather than dispatching a toggle", () => {
+    expect(drawer).toMatch(
+      /if \(shellStore\.get\(\)\.inline\) \{[\s\S]{0,400}?\.term__input[\s\S]{0,200}?\.focus\(\);[\s\S]{0,40}?return;/,
+    );
+  });
+
+  it("selects the input the Terminal actually renders", () => {
+    // A coupling check on a string that lives in two files and is checked by
+    // neither compiler. Rename the class in `Terminal.tsx` and the selector
+    // here matches nothing, `input` is null, and every optional call silently
+    // does nothing: the backtick on the home page stops working with no error.
+    const terminal = code(read("components", "Terminal.tsx"));
+    expect(drawer).toContain('querySelector<HTMLInputElement>(".term__input")');
+    expect(terminal).toContain('className="term__input"');
+  });
+});
+
 describe("the stylesheet", () => {
   /** True when `decl` sits inside some block opened by `media`. */
   const insideMedia = (media: string, decl: string): boolean => {
@@ -99,6 +122,16 @@ describe("the stylesheet", () => {
     expect(css).toMatch(/@keyframes shell-rise/);
     expect(insideMedia("@media (prefers-reduced-motion: no-preference)", "animation: shell-rise")).toBe(true);
     expect(css.split("animation: shell-rise").length - 1).toBe(1);
+  });
+
+  it("scrolls instantly for them too, which is the drawer's other animation", () => {
+    // `summonShell` calls scrollIntoView with no `behavior`, so it inherits
+    // `html { scroll-behavior }`. Under `reduce` Lenis is never mounted, so the
+    // rule that hands scrolling to Lenis never applies and this one does.
+    expect(insideMedia("@media (prefers-reduced-motion: no-preference)", "scroll-behavior: smooth")).toBe(
+      true,
+    );
+    expect(css.split("scroll-behavior: smooth").length - 1).toBe(1);
   });
 
   it("shrinks with the display when ejected, like the status bar", () => {
