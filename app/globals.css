@@ -423,6 +423,19 @@ html.crt-off body {
   font-size: 0.9rem;
   word-break: break-word;
 }
+/* The terminal echoes what a person actually typed, so its prompt is real
+   text in the document, not costume: `Terminal.tsx` writes the user and the
+   path as children. The fallbacks above are set on `.promptline` itself and
+   custom properties inherit, so without this the `::before` drew a second copy
+   and every echoed line read "fergus@portfoliofergus@portfolio:~~". Live from
+   2026-08-21 until 2026-09-03. The separator and the dollar had the same fault
+   from unconditional literals and were fixed by emptying their spans; these two
+   cannot be, because their text is real. Guarded in components/chrome.test.ts. */
+.promptline--echo {
+  --promptline-user: "";
+  --promptline-path: "";
+
+}
 .promptline__user {
   color: var(--green-dim);
 }

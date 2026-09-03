@@ -265,7 +265,7 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
         {entries.map((entry, i) => (
           <div key={i} className="term__entry">
             {entry.cmd !== "" && (
-              <p className="promptline">
+              <p className="promptline promptline--echo">
                 <span className="promptline__user">
                   {profile.user}@{profile.host}
                 </span>
