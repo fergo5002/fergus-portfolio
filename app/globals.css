@@ -3455,3 +3455,175 @@ textarea.cform__input {
     justify-content: center;
   }
 }
+
+/* ==========================================================================
+   THE SHELL DRAWER
+   The terminal on every route that does not host it inline. Bottom-anchored
+   on the status bar. Mounted beside the bar in CrtShell, so while docked its
+   z-index counts in the root stacking context: above the glass layers (9000)
+   and below the status bar and nav (9100), so the prompt that opens it stays
+   clickable. Ejected, the assembly becomes the stacking context and the same
+   numbers hold inside it. Opened by the backtick, the status bar prompt, or a
+   tap on that prompt; closed by Escape or the esc button. `lib/shell.ts` owns
+   whether it is open, `lib/history.ts` what it shows, so it unmounts when
+   closed and loses nothing.
+   ========================================================================== */
+.shell {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--status-h);
+  z-index: 9050;
+  display: flex;
+  flex-direction: column;
+  max-height: min(60vh, 520px);
+  background: rgba(7, 11, 7, 0.97);
+  border-top: 1px solid var(--green-line);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+}
+.shell__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  padding: 0 var(--sp-3);
+  font-size: 0.7rem;
+  color: var(--green-dim);
+  border-bottom: 1px solid var(--green-line);
+}
+.shell__title {
+  color: var(--green);
+}
+.shell__close {
+  font: inherit;
+  font-size: 0.7rem;
+  line-height: 1;
+  color: var(--green-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.shell__close:hover {
+  color: var(--green-bright);
+  border-color: var(--green-line);
+}
+.shell__close:focus-visible {
+  outline: 1px solid var(--green);
+  outline-offset: 1px;
+  color: var(--green-bright);
+}
+/* The same Terminal, without the framed card look: the drawer is the frame. */
+.shell .term {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 0;
+  overflow: hidden;
+}
+.shell .term__scroll {
+  max-height: 38vh;
+}
+
+/* Slide only for people who have not asked for stillness. Closing is an
+   unmount, so it is instant for everyone. */
+@keyframes shell-rise {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .shell {
+    animation: shell-rise 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+}
+
+/* Ejected, the drawer is part of the display and shrinks with it. */
+html.is-ejecting .shell {
+  position: absolute;
+}
+
+/* ----- the status bar prompt ----------------------------------------------
+   A real button in the status strip: the drawer's handle on every route, and
+   on the home page a jump to the inline terminal. */
+.statusbar__prompt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--amber);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.statusbar__prompt:hover,
+.statusbar__prompt[aria-expanded="true"] {
+  color: var(--green-bright);
+  border-color: var(--green-line);
+}
+.statusbar__prompt:focus-visible {
+  outline: 1px solid var(--green);
+  outline-offset: 1px;
+  color: var(--green-bright);
+}
+
+@media (max-width: 560px) {
+  /* Like the machine labels: the glyph carries it on a narrow strip. */
+  .statusbar__prompt-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 768px) {
+  /* ── the shell on a phone ────────────────────────────────────────────────
+     The prompt is the tap target for the drawer, so it must be 44px both ways
+     while the bar stays 22px tall. The bar's clipping moves onto the readouts
+     (which lose `display: contents` here, and this block sits after that rule
+     on purpose), and the button hangs its bottom edge on the bar's bottom
+     edge, so the extra height sits above the bar over the page, never below
+     the viewport where nobody can tap it. */
+  .statusbar {
+    overflow: visible;
+  }
+  .statusbar__readouts {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .statusbar__prompt {
+    align-self: flex-end;
+    align-items: flex-end;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 8px 4px;
+  }
+  .shell {
+    max-height: 70vh;
+  }
+  .shell .term__scroll {
+    max-height: 30vh;
+  }
+  .shell__close {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
