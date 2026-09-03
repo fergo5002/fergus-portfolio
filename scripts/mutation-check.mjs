@@ -468,6 +468,44 @@ const MUTATIONS = [
     pattern: /  if \(pending\.length < PENDING_LIMIT\) pending\.push\(\{ event, properties \}\);/,
     replace: "  // dropped",
   },
+
+  // ── the shared fence (2026-09-03) ──
+  {
+    name: "the metadata address is allowed back in",
+    file: "lib/fence.ts",
+    pattern: /if \(a === 169 && b === 254\) return true;/,
+    replace: "if (false) return true;",
+  },
+  {
+    name: "only the first DNS answer is checked",
+    file: "lib/fence.ts",
+    pattern: /for \(const answer of answers\) \{/,
+    replace: "for (const answer of answers.slice(0, 1)) {",
+  },
+  {
+    name: "v4-mapped v6 stops being unwrapped",
+    file: "lib/fence.ts",
+    pattern: /\(groups\[5\] === 0xffff \|\| groups\[5\] === 0\)/,
+    replace: "(false)",
+  },
+  {
+    name: "the port fence opens",
+    file: "lib/fence.ts",
+    pattern: /url\.port !== "" && url\.port !== "80" && url\.port !== "443"/,
+    replace: "false",
+  },
+  {
+    name: "credentials are forwarded",
+    file: "lib/fence.ts",
+    pattern: /url\.username !== "" \|\| url\.password !== ""/,
+    replace: "false",
+  },
+  {
+    name: "an unparseable address fails open",
+    file: "lib/fence.ts",
+    pattern: /if \(!groups\) return true;/,
+    replace: "if (!groups) return false;",
+  },
 ];
 
 let caught = 0;

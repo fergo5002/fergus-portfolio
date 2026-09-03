@@ -429,3 +429,28 @@ describe("fetchPage: the response", () => {
     if (!result.ok) expect(result.detail.length).toBeGreaterThan(0);
   });
 });
+
+describe("fetchPage: the two rules the shared fence added", () => {
+  it("refuses a port other than 80 and 443 before fetching", async () => {
+    const d = deps();
+    const result = await fetchPage("http://example.com:8080/", d);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("blocked-port");
+      expect(result.detail).toContain("8080");
+    }
+    expect(d.fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("refuses a URL carrying credentials before fetching", async () => {
+    const d = deps();
+    const result = await fetchPage("https://user:secret@example.com/", d);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("blocked-credentials");
+      // The refusal must not echo the secret back onto the page.
+      expect(result.detail).not.toContain("secret");
+    }
+    expect(d.fetchImpl).not.toHaveBeenCalled();
+  });
+});

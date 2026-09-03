@@ -9,16 +9,13 @@
  * to loopback, or something on the same private network as the box doing the
  * fetching. So the guard is the feature and the fetch is the easy part.
  *
- * **What is actually checked, in order, and every one of them on every hop:**
- *
- *  1. The scheme is `http:` or `https:` and nothing else.
- *  2. If the host is an IP literal, it is checked directly and the resolver is
- *     never consulted.
- *  3. Otherwise every address the resolver returns must be public. Every one,
- *     not the first: a host with one public and one private answer is still a
- *     way in.
- *  4. Redirects are read, not followed (`redirect: "manual"`), capped at three
- *     hops, and steps 1 to 3 run again on each `Location` before it is fetched.
+ * **What is checked, and every one of them on every hop**, lives in
+ * `lib/fence.ts` since 2026-09-03: scheme, credentials, local names, private
+ * or reserved address literals, ports other than 80 and 443, and every DNS
+ * answer rather than the first. This module adds what is specific to fetching
+ * a page: redirects are read, not followed (`redirect: "manual"`), capped at
+ * three hops, and the fence runs again on each `Location` before it is
+ * fetched.
  *
  * **The limit, stated plainly rather than left for somebody to find.** This
  * resolves the hostname, decides, and then hands the hostname to `fetch`, which
@@ -49,7 +46,15 @@
  * page away.
  */
 
-import { lookup } from "node:dns/promises";
+import { checkParsedUrl, normaliseUrl, resolveAndCheck, type FenceCode, type Resolver } from "./fence";
+
+/**
+ * Kept for the existing test contract and for any reader who learnt these
+ * names here. The fence is their home now; `lib/fence.test.ts` is where the
+ * address tables live and grow.
+ */
+export { isPrivateAddress as isBlockedAddress, normaliseUrl } from "./fence";
+export type { Resolved } from "./fence";
 
 export const FETCH_TIMEOUT_MS = 8000;
 /** Two megabytes. Long enough for any real document, short enough to bound us. */
@@ -63,6 +68,8 @@ export type FetchReason =
   | "invalid-url"
   | "blocked-scheme"
   | "private-address"
+  | "blocked-port"
+  | "blocked-credentials"
   | "dns"
   | "too-many-redirects"
   | "timeout"
@@ -84,167 +91,13 @@ export type FetchedPage =
     }
   | { ok: false; url: string; reason: FetchReason; detail: string };
 
-export type Resolved = { address: string; family: number };
-
 export type FetchDeps = {
   fetchImpl?: typeof fetch;
-  lookupImpl?: (hostname: string) => Promise<Resolved[]>;
+  lookupImpl?: Resolver;
   timeoutMs?: number;
   maxBytes?: number;
   maxRedirects?: number;
 };
-
-/* ── addresses ───────────────────────────────────────────────────────────── */
-
-function parseIPv4(address: string): number[] | null {
-  const parts = address.split(".");
-  if (parts.length !== 4) return null;
-  const octets: number[] = [];
-  for (const part of parts) {
-    if (!/^\d{1,3}$/.test(part)) return null;
-    const n = Number(part);
-    if (n > 255) return null;
-    octets.push(n);
-  }
-  return octets;
-}
-
-/** Eight 16-bit groups, or null. Handles `::` and a trailing dotted quad. */
-function parseIPv6(address: string): number[] | null {
-  if (!address.includes(":")) return null;
-  let head = address;
-  let tail4: number[] | null = null;
-
-  const lastColon = head.lastIndexOf(":");
-  const maybeV4 = head.slice(lastColon + 1);
-  if (maybeV4.includes(".")) {
-    tail4 = parseIPv4(maybeV4);
-    if (!tail4) return null;
-    head = head.slice(0, lastColon + 1) + "0";
-  }
-
-  const halves = head.split("::");
-  if (halves.length > 2) return null;
-
-  const toGroups = (part: string): number[] | null => {
-    if (part === "") return [];
-    const out: number[] = [];
-    for (const piece of part.split(":")) {
-      if (!/^[0-9a-fA-F]{1,4}$/.test(piece)) return null;
-      out.push(Number.parseInt(piece, 16));
-    }
-    return out;
-  };
-
-  const left = toGroups(halves[0]);
-  const right = halves.length === 2 ? toGroups(halves[1]) : [];
-  if (!left || !right) return null;
-
-  let groups: number[];
-  if (halves.length === 2) {
-    const gap = 8 - left.length - right.length - (tail4 ? 1 : 0);
-    if (gap < 0) return null;
-    groups = [...left, ...new Array<number>(gap).fill(0), ...right];
-  } else {
-    groups = [...left, ...right];
-  }
-
-  if (tail4) {
-    // The placeholder group added above stands in for the two the quad fills.
-    groups = groups.slice(0, groups.length - 1);
-    groups.push((tail4[0] << 8) | tail4[1], (tail4[2] << 8) | tail4[3]);
-  }
-
-  return groups.length === 8 ? groups : null;
-}
-
-function blockedIPv4(octets: number[]): boolean {
-  const [a, b] = octets;
-  if (a === 0) return true; // 0.0.0.0/8, "this network", and 0.0.0.0 itself
-  if (a === 10) return true; // 10.0.0.0/8
-  if (a === 100 && b >= 64 && b <= 127) return true; // 100.64.0.0/10, carrier NAT
-  if (a === 127) return true; // 127.0.0.0/8, loopback
-  if (a === 169 && b === 254) return true; // 169.254.0.0/16, link local + metadata
-  if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
-  if (a === 192 && b === 168) return true; // 192.168.0.0/16
-  if (a === 192 && octets[1] === 0 && (octets[2] === 0 || octets[2] === 2)) return true;
-  if (a === 198 && (b === 18 || b === 19)) return true; // 198.18.0.0/15, benchmarking
-  if (a === 198 && b === 51 && octets[2] === 100) return true; // TEST-NET-2
-  if (a === 203 && b === 0 && octets[2] === 113) return true; // TEST-NET-3
-  if (a >= 224) return true; // multicast, reserved, and 255.255.255.255
-  return false;
-}
-
-/**
- * Whether an address is one this server must not be talked into reaching.
- *
- * **Fails closed.** Anything unparseable is blocked, because an address that
- * cannot be read is one that cannot be vouched for, and the two wrong answers
- * do not cost remotely the same.
- */
-export function isBlockedAddress(address: string): boolean {
-  const trimmed = address.trim().replace(/^\[|\]$/g, "");
-  if (trimmed === "") return true;
-
-  const v4 = parseIPv4(trimmed);
-  if (v4) return blockedIPv4(v4);
-
-  // A zone index (`fe80::1%eth0`) is not part of the address.
-  const groups = parseIPv6(trimmed.split("%")[0]);
-  if (!groups) return true;
-
-  if ((groups[0] & 0xfe00) === 0xfc00) return true; // fc00::/7, unique local
-  if ((groups[0] & 0xffc0) === 0xfe80) return true; // fe80::/10, link local
-  if ((groups[0] & 0xff00) === 0xff00) return true; // ff00::/8, multicast
-
-  const embedded = (): string =>
-    [groups[6] >> 8, groups[6] & 0xff, groups[7] >> 8, groups[7] & 0xff].join(".");
-
-  /*
-    One rule for the whole of ::/96 and ::ffff:0:0/96, rather than a separate
-    line each for `::` and `::1`.
-
-    Those two are inside ::/96 and the v4 address they carry is 0.0.0.0 and
-    0.0.0.1, both of which 0.0.0.0/8 already refuses. Writing them out again
-    above would read as two more guards and behave as none: deleting either one
-    changed nothing, which is how a line ends up being decoration.
-  */
-  if (groups.slice(0, 5).every((g) => g === 0) && (groups[5] === 0xffff || groups[5] === 0)) {
-    return isBlockedAddress(embedded());
-  }
-  // 64:ff9b::/96, the well-known NAT64 prefix.
-  if (groups[0] === 0x0064 && groups[1] === 0xff9b && groups.slice(2, 6).every((g) => g === 0)) {
-    return isBlockedAddress(embedded());
-  }
-
-  return false;
-}
-
-/** True when the host is written as an address rather than as a name. */
-function isAddressLiteral(hostname: string): boolean {
-  const bare = hostname.replace(/^\[|\]$/g, "");
-  return parseIPv4(bare) !== null || bare.includes(":");
-}
-
-/* ── the URL ─────────────────────────────────────────────────────────────── */
-
-/**
- * Reads what somebody typed into the box.
- *
- * `https://` is assumed only when there is no scheme at all, because everybody
- * types `example.com`. Prefixing something that already has one would turn
- * `javascript:alert(1)` into a fetchable host, which is the opposite of the job.
- */
-export function normaliseUrl(raw: string): URL | null {
-  const text = typeof raw === "string" ? raw.trim() : "";
-  if (text === "") return null;
-  const candidate = /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(text) ? text : `https://${text}`;
-  try {
-    return new URL(candidate);
-  } catch {
-    return null;
-  }
-}
 
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
 
@@ -253,6 +106,8 @@ const MESSAGES: Record<FetchReason, string> = {
   "blocked-scheme": "I can only fetch http and https addresses.",
   "private-address":
     "That address is on a private, loopback or reserved network, so this server will not fetch it.",
+  "blocked-port": "I only fetch from ports 80 and 443.",
+  "blocked-credentials": "I will not fetch a URL that carries a username or password.",
   dns: "That hostname does not resolve to anything I can reach.",
   "too-many-redirects": `That URL redirects more than ${MAX_REDIRECTS} times, so I stopped following it.`,
   timeout: `The page took longer than ${FETCH_TIMEOUT_MS / 1000} seconds to answer, so I gave up.`,
@@ -267,10 +122,6 @@ function fail(url: string, reason: FetchReason, detail?: string): FetchedPage {
 }
 
 /* ── the fetch ───────────────────────────────────────────────────────────── */
-
-async function defaultLookup(hostname: string): Promise<Resolved[]> {
-  return lookup(hostname, { all: true, verbatim: true });
-}
 
 /** Decodes the body, honouring a charset the server declared. */
 function decodeBody(bytes: Uint8Array, contentType: string): string {
@@ -318,53 +169,28 @@ async function readCapped(response: Response, maxBytes: number): Promise<Uint8Ar
   return out;
 }
 
-/** The scheme and address check, run on the URL and again on every redirect. */
-async function guard(
-  raw: string,
-  target: URL,
-  lookupImpl: (hostname: string) => Promise<Resolved[]>,
-): Promise<FetchedPage | null> {
-  if (target.protocol !== "http:" && target.protocol !== "https:") {
-    return fail(raw, "blocked-scheme", `${target.protocol} is not a scheme I will fetch.`);
-  }
+/** How the fence's codes read as this module's reasons. */
+const FENCE_TO_REASON: Record<FenceCode, FetchReason> = {
+  "invalid-url": "invalid-url",
+  scheme: "blocked-scheme",
+  credentials: "blocked-credentials",
+  "blocked-host": "private-address",
+  port: "blocked-port",
+  "private-address": "private-address",
+  dns: "dns",
+};
 
-  const hostname = target.hostname;
-  if (hostname === "") return fail(raw, "invalid-url");
-
-  if (isAddressLiteral(hostname)) {
-    return isBlockedAddress(hostname)
-      ? fail(raw, "private-address", `${hostname} ${MESSAGES["private-address"].slice(17)}`)
-      : null;
-  }
-
-  // A resolver that throws and a resolver that answers with nothing are the
-  // same fact, and giving each its own return meant neither could be shown to
-  // matter: removing either one left the suite green.
-  let answers: Resolved[] = [];
-  try {
-    answers = (await lookupImpl(hostname)) ?? [];
-  } catch {
-    answers = [];
-  }
-  if (answers.length === 0) return fail(raw, "dns", `${hostname} does not resolve.`);
-
-  // Every answer, not the first. One private record among public ones is still
-  // a route in, and checking only answers[0] is exactly how that gets missed.
-  for (const answer of answers) {
-    if (isBlockedAddress(answer.address)) {
-      return fail(
-        raw,
-        "private-address",
-        `${hostname} resolves to ${answer.address}, which is on a private, loopback or reserved network.`,
-      );
-    }
-  }
+/** The fence, run on the URL and again on every redirect. */
+async function guard(raw: string, target: URL, lookupImpl?: Resolver): Promise<FetchedPage | null> {
+  const syntax = checkParsedUrl(target);
+  if (!syntax.ok) return fail(raw, FENCE_TO_REASON[syntax.code], syntax.reason);
+  const resolved = await resolveAndCheck(target, lookupImpl);
+  if (!resolved.ok) return fail(raw, FENCE_TO_REASON[resolved.code], resolved.reason);
   return null;
 }
 
 export async function fetchPage(rawUrl: string, deps: FetchDeps = {}): Promise<FetchedPage> {
   const send = deps.fetchImpl ?? fetch;
-  const resolve = deps.lookupImpl ?? defaultLookup;
   const timeoutMs = deps.timeoutMs ?? FETCH_TIMEOUT_MS;
   const maxBytes = deps.maxBytes ?? MAX_BYTES;
   const maxRedirects = deps.maxRedirects ?? MAX_REDIRECTS;
@@ -381,7 +207,7 @@ export async function fetchPage(rawUrl: string, deps: FetchDeps = {}): Promise<F
     let redirects = 0;
 
     for (;;) {
-      const refusal = await guard(raw, target, resolve);
+      const refusal = await guard(raw, target, deps.lookupImpl);
       if (refusal) return refusal;
 
       let response: Response;
