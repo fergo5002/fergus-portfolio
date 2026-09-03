@@ -13,7 +13,7 @@
 - Programme design: `docs/superpowers/specs/2026-09-03-toolshed-programme-design.md`, section 6, F0.
 - The repository goes public only after the sweep in Task 1 is clean or every finding is rotated. A found secret is rotated **before** the flip, never after.
 - Public repository from Task 3 onward: code changes go through pull requests; docs-only commits may go straight to `main`. Never force-push, never rewrite history.
-- CI must run `vitest`, `tsc --noEmit`, `next build` and `node scripts/mutation-check.mjs`. The suite is 33 files, 1,008 tests, about 5 seconds; the mutation check runs the suite about 40 times, so it gets its own job with a 20-minute timeout.
+- CI must run `vitest`, `tsc --noEmit`, `next build` and `node scripts/mutation-check.mjs`. The suite is 33 files, 1,008 tests, about 5 seconds; the mutation check reruns the suite once per mutation (64 when counted on 2026-09-03, not the 40 an earlier summary said), so it gets its own job with a 30-minute timeout.
 - `next build` needs no secrets: `NEXT_PUBLIC_POSTHOG_KEY` missing compiles analytics to a no-op, and `RESEND_API_KEY` is read at request time only.
 - Do not add a repo-wide `.npmrc`. If `npm ci` fails on the `@vercel/analytics` optional peer, use `npm ci --legacy-peer-deps` in the workflow and say why in a comment.
 - Vercel CLI 54.x and 58.x render `BLOCKED` as `UNKNOWN`. Read deployment state from `https://api.vercel.com/v6/deployments?projectId=...&teamId=...` only.

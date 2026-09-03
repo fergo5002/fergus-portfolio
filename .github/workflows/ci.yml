@@ -1,0 +1,56 @@
+# Two jobs. `check` is the gate every pull request waits on: types, tests,
+# build. `mutation` runs scripts/mutation-check.mjs, which breaks each guard
+# on purpose and reruns the suite once per mutation (64 at the time of
+# writing; count them with `grep -c '^\s*name: "' scripts/mutation-check.mjs`
+# rather than trusting this comment), so it gets its own job and its own
+# timeout rather than slowing the gate.
+#
+# The build needs no secrets. NEXT_PUBLIC_POSTHOG_KEY absent compiles
+# analytics to a no-op (see lib/analytics.ts), and RESEND_API_KEY is read at
+# request time only.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Superseded runs on the same pull request are cancelled. Pushes to main are
+# never cancelled: two merges landing close together must each keep their own
+# required checks, or a merged commit reads as `cancelled` to anything that
+# polls its SHA.
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_POSTHOG_KEY: ""
+
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: node scripts/mutation-check.mjs
