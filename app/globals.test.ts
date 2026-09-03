@@ -111,6 +111,8 @@ describe("the prose rules use the token that passes", () => {
     ".cform__input",
     ".tools__blurb",
     ".tools__meta",
+    ".tool__cantsee-item",
+    ".tool__privacy",
   ])("%s does not use --green-faint for body text", (selector) => {
     expect(rule(selector)).not.toMatch(/color:\s*var\(--green-faint\)/);
   });
@@ -160,6 +162,21 @@ describe("the prose rules use the token that passes", () => {
       // every theme reads the same literal against its own background.
       const red = vars["--red"] ?? tokens(":root")["--red"];
       expect(ratio(hex(red), hex(vars["--bg"])), name).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  /**
+   * The privacy line is the first amber *sentence* on the site. Amber has
+   * only ever been used for headings and single words, so nothing proved it
+   * clears the floor as body text on every theme. Measured from the tokens.
+   * If a theme fails here, the fix is `--green` on `.tool__privacy`, not a
+   * looser number.
+   */
+  it("keeps the privacy line readable on every theme", () => {
+    expect(rule(".tool__privacy")).toMatch(/color:\s*var\(--amber\)/);
+    for (const [name, vars] of THEMES) {
+      const amber = vars["--amber"] ?? tokens(":root")["--amber"];
+      expect(ratio(hex(amber), hex(vars["--bg"])), name).toBeGreaterThanOrEqual(4.5);
     }
   });
 

@@ -3080,6 +3080,47 @@ textarea.cform__input {
   vertical-align: middle;
 }
 
+/* ── the tool shell (components/tools/ToolPage.tsx) ────────────────────── */
+
+/* Where the tool runs, said before anything is pasted into it. Amber, the
+   weight of a panel title, because it is the one line a cautious visitor is
+   looking for. The negative top margin cancels the lede's own bottom margin
+   so this sits one stack gap under it rather than two. */
+.tool__privacy {
+  margin: calc(-1 * var(--sp-5)) 0 0;
+  font-size: 0.82rem;
+  color: var(--amber);
+  text-shadow: none;
+  max-width: 62ch;
+}
+
+/* What the tool cannot see, at the foot, where the answer is. Real text, not
+   costume: a reviewer checks these lines against the code. */
+.tool__cantsee {
+  border-top: 1px solid var(--green-line);
+  padding-top: var(--sp-4);
+  max-width: 62ch;
+}
+
+.tool__cantsee-title {
+  font-family: var(--font-screen);
+  font-size: 1rem;
+  color: var(--amber);
+  margin: 0 0 var(--sp-3);
+}
+
+.tool__cantsee-list {
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.tool__cantsee-item {
+  color: var(--green);
+  text-shadow: none;
+}
+
 /* ── the checker ────────────────────────────────────────────────────────── */
 
 .hcheck {
