@@ -1,0 +1,47 @@
+# Two jobs. `check` is the gate every pull request waits on: types, tests,
+# build. `mutation` runs scripts/mutation-check.mjs, which breaks each guard
+# on purpose and runs the suite about forty times, so it gets its own job and
+# its own timeout rather than slowing the gate.
+#
+# The build needs no secrets. NEXT_PUBLIC_POSTHOG_KEY absent compiles
+# analytics to a no-op (see lib/analytics.ts), and RESEND_API_KEY is read at
+# request time only.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_POSTHOG_KEY: ""
+
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: node scripts/mutation-check.mjs
