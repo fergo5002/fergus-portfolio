@@ -162,3 +162,27 @@ describe("the status bar prompt writes no costume into the document", () => {
     expect(css).toMatch(/\.statusbar__prompt::before\s*\{[^}]*content:\s*"\$"/);
   });
 });
+
+describe("the echoed prompt is drawn once", () => {
+  // `.promptline` carries fallback values for `--promptline-user` and
+  // `--promptline-path` so `PromptLine` renders even without its inline style.
+  // Custom properties inherit, so a `.promptline` that also holds real text
+  // draws both. `Terminal` echoes a real command, so its line opts out through
+  // `.promptline--echo`. Two halves, and this fails if either goes missing.
+  const terminal = readFileSync(join(process.cwd(), "components", "Terminal.tsx"), "utf8").replace(
+    /\r\n/g,
+    "\n",
+  );
+  const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8").replace(/\r\n/g, "\n");
+
+  it("marks the terminal's own prompt line as an echo", () => {
+    expect(terminal).toContain('className="promptline promptline--echo"');
+    expect(terminal).not.toContain('<p className="promptline">');
+  });
+
+  it("blanks both inherited costume properties for an echo", () => {
+    const block = css.slice(css.indexOf(".promptline--echo {"));
+    expect(block).toContain('--promptline-user: "";');
+    expect(block).toContain('--promptline-path: "";');
+  });
+});
