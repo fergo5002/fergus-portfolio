@@ -44,6 +44,17 @@ const nextConfig: NextConfig = {
    * Do not remove one without removing the other.
    */
   skipTrailingSlashRedirect: true,
+
+  // S2 spike only. Keeps the two browser packages out of the webpack bundle so
+  // they resolve their binaries from node_modules by __dirname, and tells the
+  // tracer to carry the binaries into the function.
+  serverExternalPackages: ["playwright-core", "@sparticuz/chromium"],
+  outputFileTracingIncludes: {
+    "/api/spike-render": [
+      "./node_modules/playwright-core/.local-browsers/**/*",
+      "./node_modules/@sparticuz/chromium/bin/**/*",
+    ],
+  },
 };
 
 export default nextConfig;

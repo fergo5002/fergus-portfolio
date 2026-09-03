@@ -1,0 +1,3 @@
+{
+  "buildCommand": "PLAYWRIGHT_BROWSERS_PATH=0 npx playwright-core install webkit && du -sh node_modules/playwright-core/.local-browsers && next build"
+}
