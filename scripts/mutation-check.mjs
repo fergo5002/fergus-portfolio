@@ -585,6 +585,19 @@ const MUTATIONS = [
     pattern: /(export const localPresence)/,
     replace: 'export function leak(): void {\r\n  window.localStorage.setItem("not-ours", "1");\r\n}\r\n\r\n$1',
   },
+  {
+    name: "PRIVACY: tool_run starts spreading its payload, so a careless caller ships the visitor's URL",
+    file: "lib/analytics.ts",
+    pattern: /  return \{ tool, outcome, ms \};/,
+    replace:
+      "  return { ...(payload as unknown as Record<string, unknown>), tool, outcome, ms } as { tool: string; outcome: ToolOutcome; ms: number };",
+  },
+  {
+    name: "the headline checker stops recording a refused run, so refusals read as silence",
+    file: "app/tools/headline-check/actions.ts",
+    pattern: /    record\("refused", started\);\r?\n    return \{ status: "invalid", seq, url: "", message: headlineCopy\.emptyUrl \};/,
+    replace: '    return { status: "invalid", seq, url: "", message: headlineCopy.emptyUrl };',
+  },
 ];
 
 let caught = 0;

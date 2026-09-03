@@ -122,4 +122,15 @@ describe("PostHogAnalytics keeps the SDK out of the critical path", () => {
     expect(mountBlock).toMatch(/detectAiEngine/);
     expect(mountBlock).toMatch(/document\.referrer/);
   });
+
+  /**
+   * The client half of `tool_run`. `lib/tools/events.test.ts` proves a
+   * registered sink receives the event; this proves this component is the
+   * thing that registers one, and that it keeps the development gate.
+   */
+  it("hands browser-side tool runs to the same queue, behind the same gate", () => {
+    expect(source).toMatch(
+      /registerToolRunSink\(\(event, properties\) => \{\s*if \(!KEY\) return;\s*capture\(event, properties\);\s*\}\);/,
+    );
+  });
 });

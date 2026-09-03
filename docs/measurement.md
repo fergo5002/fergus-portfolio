@@ -40,6 +40,7 @@ single number, which is why there are three.
 | `web_vital` | `useReportWebVitals` | server-side hash | `metric`, `value`, `rating`, `path` |
 | `mcp_tool_call` | `app/api/mcp/route.ts` | `mcp:<client>` | `tool`, `status`, `ok`, `client` |
 | `mcp_request` | same | same | Everything that is not a `tools/call` |
+| `tool_run` | `lib/tools/events.ts`, from a tool's server action inside `after()`, or from a browser-only tool through the PostHog queue | `tool:<slug>` on the server, server-side hash in the browser | `tool`, `outcome` (`ok`, `refused`, `error`), `ms`. Never the input: the properties are whitelisted in `lib/analytics.ts` and the mutation check breaks that whitelist on purpose. |
 | `share_of_model` | `publish.mjs`, by hand | `share-of-model:<surface>` | `citation_share`, `bands`, `instrument_verdict` |
 
 ## The one that will waste your afternoon
