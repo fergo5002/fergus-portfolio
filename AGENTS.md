@@ -21,12 +21,20 @@ per-request metadata, so anything written from memory ships the wrong protocol. 
 eras on purpose: modern statelessly, and the old handshake because that is what shipped clients
 still open with.
 
-**`/tools/headline-check` fetches a URL a stranger typed**, which makes it the only thing on this
-site with a real attack surface. `lib/headline-fetch.ts` refuses private, loopback, link-local and
-reserved addresses on the typed URL and again on every redirect hop, checks every DNS answer
-rather than the first, and caps time and size. Its docblock states the gap it does not close (DNS
-rebinding) and the thing that bounds it (the content type is checked before any body is read).
-Do not weaken either without reading that first.
+**`/tools/headline-check` fetches a URL a stranger typed**, which made it the first thing on this
+site with a real attack surface, and the toolshed programme is adding more. The guard is
+`lib/fence.ts`, shared by everything that takes a URL from a visitor: `checkUrl` refuses bad
+syntax, schemes other than http and https, credentials, local names, private or reserved address
+literals (including the decimal, octal and v4-mapped-v6 spellings) and ports other than 80 and
+443; `resolveAndCheck` refuses a name whose DNS answers include a private address, every answer
+and not the first. `lib/headline-fetch.ts` runs both on the typed URL and again on every redirect
+hop, caps time and size, and checks the content type before any body is read. Its docblock states
+the gap neither closes (DNS rebinding). Do not weaken any of it without reading both files first.
+
+The courtesy limiter that used to sit in a module `Map` is `lib/budget.ts` now, on Upstash Redis
+so every replica agrees: per address (hashed with a daily salt, never the raw IP), per target
+site, and for everyone together, each refusal a sentence the page prints. Outside production it
+falls back to memory when Redis is not configured; in production it throws, never runs unlimited.
 
 **The site is also a search and answer-engine surface**, which is a second set of constraints on
 top of the CRT premise and does not bend to it. Every route carries a canonical URL and JSON-LD;
@@ -121,8 +129,8 @@ of building that page:
   autofilled two fields and pasted a prepared message was told "Sent." while it went nowhere.
   Never give a soft signal the power to delete.
 
-Sending goes through Resend over plain `fetch`, no SDK. `RESEND_API_KEY` is the only required
-variable and it **is set** on the Vercel project (production, preview and development), with a copy
+Sending goes through Resend over plain `fetch`, no SDK. `RESEND_API_KEY` is the only variable the
+contact form needs, and it **is set** on the Vercel project (production, preview and development), with a copy
 in the DPAPI vault. `CONTACT_TO_EMAIL` and `CONTACT_FROM_EMAIL` are optional overrides and neither
 is set.
 
@@ -264,6 +272,22 @@ Spec: `docs/superpowers/specs/2026-08-04-mass-memory-voice-design.md`.
   `next.config.mjs` became `next.config.ts` in the same change, so the proxy rules could be
   imported rather than retyped. Nothing else about the config moved.
 
+## Environment variables
+
+`.env.example` is the list: every variable, what reads it, whether it is a secret, and the free
+tier behind each store. Copy it to `.env.local` or pull from Vercel the way its header says
+(`vercel env pull` overwrites its target, so pull to a scratch file and merge). Three rules the
+code keeps, with tests: nothing reads `process.env` at import time, every store client is built
+on first use; a missing store variable throws `StoreUnavailableError` naming the variable, so a
+misconfigured deploy fails on its first request rather than degrading; and `lib/budget.ts` is the
+one exception, falling back to memory outside production only, so `npm run dev` works on a
+laptop with no Redis. `node scripts/store-check.mjs` proves the three stores answer and prints
+nothing secret. The provisioning record, with plan names, regions and the quota figures read on
+the day, is `docs/superpowers/programme/f4-stores-2026-09-03.md`.
+
+Preview and production share one Redis and one key space (the budget key does not carry the
+environment), so a preview test spends the same counters production does.
+
 ## Commands
 
 ```bash
@@ -310,7 +334,10 @@ components/
 content/        profile.ts, experience.ts, projects.ts, skills.ts   <-- edit content here
 lib/            commands.ts (pure terminal parser + tab completion), system.ts (bus types,
                 themes, formatters), scramble.ts, physics.ts (rigid-body solver), audio.ts
-                (runtime synth), eject.ts (pull-back geometry)  : all have .test.ts siblings
+                (runtime synth), eject.ts (pull-back geometry), fence.ts (the SSRF fence),
+                budget.ts (per-address, per-target and global budgets on Redis),
+                store/ (redis, neon, blob: thin, env-guarded, built on first use)
+                : all have .test.ts siblings
 public/img/     user-supplied images (portrait + screenshots)
 docs/
   superpowers/specs/    design spec(s)
