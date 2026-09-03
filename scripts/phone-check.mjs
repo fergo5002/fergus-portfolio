@@ -12,14 +12,27 @@
  *   contrast      text whose composited contrast, sampled from the screenshot,
  *                 is under 4.5:1
  *
- * Plus two about the run itself, because a check that quietly measures nothing
- * reads exactly like a check that passed:
+ * Plus three about the run itself, because a check that measures the wrong
+ * thing reads exactly like a check that passed:
  *
  *   skipped       more text runs than the allowance produced no contrast
  *                 reading at all (see MAX_SKIPPED_TEXTS)
  *   layout-moved  the document changed size across the shutter, or the
  *                 photograph is not the viewport the rectangles were measured
  *                 in, so the two do not describe the same page
+ *   assets        a stylesheet, script or document the page asked for came
+ *                 back 4xx or 5xx, so the page under the camera is not the
+ *                 page. It is the only finding reported on such a route: the
+ *                 other four would all be true of an unstyled document and
+ *                 none of them would be about the site.
+ *
+ * That last one was added on 2026-09-04 after it happened. A `next start` from
+ * an earlier build still held port 3000, the new one died with EADDRINUSE, and
+ * `.next` had been rebuilt underneath the old process, so every stylesheet
+ * came back 400. This script then reported sixty tap-target failures across
+ * two routes, all of them perfectly real facts about a page with no CSS, and
+ * read as a regression in the site. Prove the instrument before accusing the
+ * object; `broken.html` is the fixture that pins it.
  *
  * ## Why contrast is sampled from pixels rather than read from tokens
  *
@@ -200,11 +213,13 @@
  *
  * ## Self-test
  *
- * `--self-test` serves two bundled fixtures and asserts that every planted
+ * `--self-test` serves three bundled fixtures and asserts that every planted
  * fault on the bad one is caught, on every profile, that the opt-out and the
- * controls are not reported, and that the good one passes clean. It runs
- * first in CI, before any real route, because a check that has never been
- * seen to fail is a ritual (CLAIMS.md, rule 1: prove the instrument first).
+ * controls are not reported, that the good one passes clean, and that the
+ * broken one is reported as a page that never got its stylesheet rather than
+ * as a page full of faults. It runs first in CI, before any real route,
+ * because a check that has never been seen to fail is a ritual (CLAIMS.md,
+ * rule 1: prove the instrument first).
  *
  * The good fixture also carries one case for each of the four corrections
  * above: a thin glyph in a roomy box, a line under a band only a coarse
@@ -696,6 +711,29 @@ async function checkRoute(browser, profile, url, outDir, label) {
     await cdp.send("Network.enable");
     await cdp.send("Network.emulateNetworkConditions", SLOW_4G);
   }
+  // A page that did not get its stylesheet is not the page. Collected before
+  // the navigation so nothing is missed, and reported as a failure of its own
+  // rather than left to surface as fifty tap targets that are only small
+  // because nothing styled them. See the header.
+  //
+  // A stylesheet or a document counts wherever it came from. A script counts
+  // only under `/_next/`, which is this app's own code, and the reason is the
+  // rule AGENTS.md already carries: `/_vercel/insights/script.js` is the
+  // analytics package's fallback string, a real deploy serves the loader from
+  // a per-deploy hashed path, and the pretty path 404s while analytics works
+  // perfectly. It 404s on `next start` too, on both WebKit profiles, and this
+  // check found it the first time it ran. A checker that cries wolf about a
+  // documented non-problem is worse than no checker.
+  const brokenAssets = [];
+  page.on("response", (res) => {
+    if (res.status() < 400) return;
+    const type = res.request().resourceType();
+    const path = new URL(res.url()).pathname;
+    const counts =
+      type === "stylesheet" || type === "document" || (type === "script" && path.startsWith("/_next/"));
+    if (counts) brokenAssets.push(`${res.status()} ${type} ${path}`);
+  });
+
   const timeout = profile.throttle ? 120_000 : 45_000;
   await page.goto(url, { waitUntil: "networkidle", timeout });
   await page.waitForTimeout(500);
@@ -754,7 +792,15 @@ async function checkRoute(browser, profile, url, outDir, label) {
    * 1080.75, and that rounding is not a finding.
    */
   const dsf = profile.device.deviceScaleFactor ?? 1;
-  const layoutFailures = [];
+  const layoutFailures = brokenAssets.length
+    ? [
+        {
+          check: "assets",
+          el: "(page)",
+          detail: `${brokenAssets.length} request(s) the page needed did not arrive: ${[...new Set(brokenAssets)].join("; ")}`,
+        },
+      ]
+    : [];
   if (after.height !== audit.scrollHeight || after.width !== audit.scrollWidth) {
     layoutFailures.push({
       check: "layout-moved",
@@ -821,11 +867,20 @@ async function checkRoute(browser, profile, url, outDir, label) {
       : [];
 
   await context.close();
+
+  // When the page did not get its rules, `assets` is the only finding worth
+  // making. Everything else on this route is a fact about an unstyled
+  // document: unpadded links really are 17px tall and a token really did not
+  // paint, and reporting fifty of those buries the one line that says why.
+  const failures = brokenAssets.length
+    ? layoutFailures.filter((f) => f.check === "assets")
+    : [...audit.failures, ...layoutFailures, ...contrastFailures, ...skipFailures];
+
   return {
     profile: profile.id,
     url,
     label,
-    failures: [...audit.failures, ...layoutFailures, ...contrastFailures, ...skipFailures],
+    failures,
     inline: audit.inline,
     exempt: audit.exempt,
     texts: audit.texts.length,
@@ -855,7 +910,7 @@ async function runAll(targets, outDir) {
 /* Reporting                                                            */
 /* ------------------------------------------------------------------ */
 
-const CHECKS = ["overflow", "input-font", "tap-target", "contrast", "layout-moved", "skipped"];
+const CHECKS = ["overflow", "input-font", "tap-target", "contrast", "assets", "layout-moved", "skipped"];
 
 /** Prints the table and the failure lines. Returns true if anything failed. */
 function printSummary(results) {
@@ -930,8 +985,11 @@ async function routesFromSitemap(base) {
 /* ------------------------------------------------------------------ */
 
 async function selfTest(args) {
+  // `/missing.css` is deliberately not served: it is the whole of the broken
+  // fixture, and everything else 404s the same way it always did.
+  const PAGES = { "/good": "good.html", "/bad": "bad.html", "/broken": "broken.html" };
   const server = createServer((req, res) => {
-    const name = req.url === "/good" ? "good.html" : req.url === "/bad" ? "bad.html" : null;
+    const name = PAGES[req.url];
     if (!name) {
       res.writeHead(404);
       res.end();
@@ -948,6 +1006,7 @@ async function selfTest(args) {
       [
         { label: "bad", url: `${base}/bad` },
         { label: "good", url: `${base}/good` },
+        { label: "broken", url: `${base}/broken` },
       ],
       join(args.out, "self-test"),
     );
@@ -978,6 +1037,33 @@ async function selfTest(args) {
       }
       if (!r.exempt.some((e) => e.el.includes("button#optout"))) {
         problems.push(`${r.profile} bad: the opt-out was not listed as exempt`);
+      }
+    }
+
+    /**
+     * The stylesheet that never arrived.
+     *
+     * This case exists because the check read one. On 2026-09-04 a `next start`
+     * from an earlier build was still holding port 3000, the new one died with
+     * EADDRINUSE, and `.next` had been rebuilt underneath the old process, so
+     * every stylesheet came back 400. The phone check reported sixty
+     * tap-target failures across both routes with total confidence, and every
+     * one of them was a fact about an unstyled page. The ledger already
+     * carried this trap once, from the other direction (a green run against a
+     * stale build), which by this repo's rule makes the second time a guard
+     * rather than a note.
+     *
+     * The two live checks must stay clean here, because a page missing its
+     * rules is not evidence about its layout or its colour.
+     */
+    for (const r of results.filter((r) => r.label === "broken")) {
+      if (!r.failures.some((f) => f.check === "assets")) {
+        problems.push(`${r.profile} broken: the stylesheet 404 was not reported`);
+      }
+      for (const check of ["tap-target", "contrast"]) {
+        if (r.failures.some((f) => f.check === check)) {
+          problems.push(`${r.profile} broken: ${check} was judged on a page that never got its rules`);
+        }
       }
     }
 
@@ -1096,7 +1182,8 @@ async function selfTest(args) {
       process.exitCode = 1;
     } else {
       console.log(
-        `\nSELF-TEST OK: every planted fault caught on ${PROFILES.length} profiles, the clean page passed on all of them.`,
+        `\nSELF-TEST OK: every planted fault caught on ${PROFILES.length} profiles, the clean page passed on all of` +
+          " them, and the page whose stylesheet never arrived was reported as that rather than as fifty faults.",
       );
       process.exitCode = 0;
     }

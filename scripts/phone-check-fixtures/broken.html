@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>phone-check fixture: broken</title>
+<!-- The whole fixture. The self-test's server answers 404 for this, so the page
+     arrives with none of its rules and the run has to say so rather than
+     reporting the consequences as page faults. -->
+<link rel="stylesheet" href="/missing.css">
+</head>
+<body>
+<h1>Broken fixture</h1>
+<p>Its stylesheet never arrived, so nothing here is the size or the colour it is meant to be.</p>
+<p><a href="#top">A link that would be a tap target if anything had styled it</a></p>
+</body>
+</html>
