@@ -320,11 +320,22 @@ docs/
 
 ## The terminal is a real subsystem
 
-`lib/commands.ts` stays **pure**. Commands that change the running site (`theme`, `crt`,
-`scanlines`, `matrix`, `degauss`, `sudo rm -rf /`) return an `effect` descriptor; `Terminal.tsx`
-is the only place allowed to apply one. Keep it that way: it is why the whole command surface
-is unit-testable without a DOM. Add new commands to `COMMANDS`, `HELP_LINES`, the `switch`, and
-`complete()`'s argument pools, and add a test.
+`lib/commands.ts` stays **pure**, and since 2026-09-03 it is a thin dispatcher over a registry.
+Every command is a `defineCommand({ name, aliases, help, hidden, argPool, run })` in one of the
+modules under `lib/commands/` (`nav`, `info`, `effects`, `sudo`, `hidden`, and whatever a later
+sub-project adds), registered from `lib/commands/index.ts`, where the lines stay alphabetical so
+two pull requests rarely collide. `COMMANDS`, `HELP_LINES` and `complete()` are derived from the
+registry, so a command is listed by being visible, not by being added to three lists. A
+`hidden: true` command is absent from help, completion and `ls`, and is reachable only by name or
+through `cd <name>`: that is the door to the arcade, and the `arcade` row in `top` is the one hint.
+
+Commands that change the running site (`theme`, `crt`, `scanlines`, `matrix`, `degauss`,
+`sudo rm -rf /`) return an `effect` descriptor, and a program (a game) returns
+`{ type: "program", program }`. `Terminal.tsx` is the only place allowed to act on either. Keep it
+that way: it is why the whole command surface is unit-testable without a DOM. To add a command,
+add a `defineCommand` to the right module (or a new module with its registration line) and a test
+beside it. Run `node scripts/mutation-check.mjs` if you touch a guard: the reduced-motion
+refusals, the scanlines range, the theme check, the hidden flag and the door are all mutated by it.
 
 ## How to work on this project
 
