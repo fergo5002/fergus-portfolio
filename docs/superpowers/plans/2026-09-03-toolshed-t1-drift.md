@@ -4,7 +4,7 @@
 
 **Goal:** Ship `/tools/drift`: a visitor pastes samples of their own writing, the tab builds a voice profile, and a draft is measured against it with Burrows's Delta, sentence rhythm, punctuation habits, join rates and substitutions drawn from their own corpus. Everything runs in the browser, nothing is uploaded, and the profile is saved only if they press save.
 
-**Architecture:** All the maths lives in `lib/tools/drift/*.ts` as pure functions with tests beside them, taking the reference statistics as an argument so every one of them is testable against a small synthetic corpus. The reference population for the z-scores is the site's own eleven articles: `lib/tools/drift/corpus.ts` turns them into plain text and computes the marker words with their means and standard deviations, once, on the server, and the page passes that table to the client component as a prop so the article bodies never enter the browser bundle. `app/tools/drift/page.tsx` renders through F3's `ToolPage` and hands `DriftTool.tsx` a worked example computed at build time, so the page is never an empty form. `check_voice(profile, draft)` joins the existing MCP server in `lib/mcp.ts` and returns the same numbers from the same functions.
+**Architecture:** All the maths lives in `lib/tools/drift/*.ts` as pure functions with tests beside them, taking the reference statistics as an argument so every one of them is testable against a small synthetic corpus. **The reference population for the z-scores is the visitor's own pieces.** `lib/tools/drift/reference.ts` takes any set of documents and returns the marker words with their means and standard deviations, and the browser runs it over whatever the visitor pasted, so the Delta comes out in units of how much their own writing varies from one piece to the next, on a marker set of their own commonest words. `lib/tools/drift/corpus.ts` still turns this site's eleven articles into plain text, but only to compute the worked example at build time, so the page arrives with a real report on it instead of an empty form. `app/tools/drift/page.tsx` renders through F3's `ToolPage` and passes that example down. `check_voice(profile, draft)` joins the existing MCP server in `lib/mcp.ts` and reads the reference table out of the saved profile, because a set of z-scores without the table that produced them is a column of numbers with no units.
 
 **Tech Stack:** Next.js 15.5 App Router, React 19, TypeScript 5.7, vitest 2 (node environment, no jsdom), hand-written CSS, Playwright through `scripts/phone-check.mjs` (F3). **No new dependencies.**
 
@@ -18,7 +18,7 @@
 - From `AGENTS.md`, verbatim: **"Styling: hand-written CSS in `app/globals.css`. No Tailwind, no CSS-in-JS."** Amended by design section 2, rule 2: a tool may own `app/tools/<slug>/tool.css`, imported by its own `page.tsx`. Drift owns `app/tools/drift/tool.css` and touches `app/globals.css` not at all.
 - From `AGENTS.md`, verbatim: **"Accessibility is non-negotiable: every animation must be gated behind `@media (prefers-reduced-motion: no-preference)` (CSS) or a `matchMedia` check (JS) with a static/instant fallback. Keep text contrast >= 4.5:1, alt text on images, visible focus."**
 - From `AGENTS.md`, verbatim: **"Never pre-hide a scroll-revealed element with `clip-path`."** Hide with `opacity` and keep the clip inside the keyframes.
-- From `AGENTS.md`, verbatim: **"Run `node scripts/mutation-check.mjs` if you touch a guard."** This plan adds six guards and six mutation rows, and Task 12 proves the suite can go red before it claims any of them work.
+- From `AGENTS.md`, verbatim: **"Run `node scripts/mutation-check.mjs` if you touch a guard."** This plan adds seven guards and seven mutation rows, and Task 12 proves the suite can go red before it claims any of them work.
 - From `AGENTS.md`, Commands, verbatim: **"Deploy: Vercel. The project is git-linked (`fergo5002/fergus-portfolio`, production branch `main`), so a push ships."** and **"Confirm every deployment the same way regardless: read `readyState` and `aliasAssigned` from `https://api.vercel.com/v13/deployments/<id>?teamId=<team>` ... Do not trust the CLI's exit code, and do not trust `vercel ls`, which renders `BLOCKED` as `UNKNOWN`."** Every Vercel CLI call passes `--token "$VERCEL_TOKEN_PERSONAL" --scope larry-pm`. Live host `https://fergusoreilly.dev`. `main` requires the `check` and `mutation` jobs, so this ships as a pull request.
 - `content/voice.test.ts` scans **every** `.ts` and `.tsx` outside tests for a literal em dash, comments included. The demo draft in `content/tools/drift.ts` deliberately contains two em dashes, so they are written as `\u2014` escapes: the escape is not the character, the scan passes, and `content/tools/drift.test.ts` pins that the draft really does carry them so the demo cannot quietly lose its point.
 - Tests are vitest only, `environment: "node"`, `include: ["**/*.test.ts"]`, beside the source. **No jsdom, so React cannot be mounted.** Component wiring is checked with source-grep coupling tests in the style of `lib/boot.test.ts` and `components/chrome.test.ts`, with comments stripped before matching so prose about a call cannot satisfy a check for the call. Every coupling test says in its docblock that it is one.
@@ -33,7 +33,7 @@
 
 Written here once so no task has to guess, and so a reviewer can fail a task against it.
 
-**Burrows's Delta.** The standard authorship-attribution distance. Take the most frequent words of a reference corpus, express each text as the relative frequency of each of those words, turn each frequency into a z-score using that word's mean and standard deviation **across the reference corpus's documents**, and take the mean absolute difference between two texts' z-score vectors. Formally, for marker set `M`, reference mean `mu(w)` and standard deviation `sigma(w)` over the `D` reference documents:
+**Burrows's Delta.** The standard authorship-attribution distance. Take the most frequent words of a reference population, express each text as the relative frequency of each of those words, turn each frequency into a z-score using that word's mean and standard deviation **across the reference population's documents**, and take the mean absolute difference between two texts' z-score vectors. Formally, for marker set `M`, reference mean `mu(w)` and standard deviation `sigma(w)` over the `D` reference documents:
 
 ```
 f(w, t)     = count of w in t / total words in t
@@ -43,15 +43,25 @@ Delta(a, b) = (1 / |M|) * sum over w in M of |z(w, a) - z(w, b)|
 
 It is a **distance, not a verdict**. A low Delta says two texts use the commonest words at similar rates. It does not say the writing is good, it does not say who wrote it, and it says nothing at all about meaning.
 
-**N, the marker count: 100, and here is why.** Burrows's usual starting point is the 150 most frequent words, and 150 is right for a corpus of novels. This reference corpus is eleven articles, so the standard deviation of a word is computed from eleven numbers, and a word that appears in only two of them has a standard deviation that is mostly an accident. Two rules follow, both enforced in code: a word must appear in **at least 6 of the 11 documents** (over half) to be a marker, and the list stops at **100** because past roughly the hundredth rank in a corpus this size the words stop being function words and start being subject words (`postgres`, `shopify`, `vercel`), which would measure what a text is about rather than how it is written. Both numbers are choices, not measurements. `MARKER_COUNT` and `MIN_DOCUMENT_SHARE` are exported constants so changing them is one line and one test.
+**Whose population, and why it is theirs.** The reference is **the visitor's own pieces**, every time. Not this site's articles. The sentence the tool prints is "how far this draft sits from the way *you* write", and a Delta built on my eleven articles would answer a different question: how far this draft sits from the middle of my writing, measured in units of how much my articles vary between themselves, scored on a list of my commonest words. A visitor writing about anything unlike this site would then be graded on markers that barely occur in their prose. Nothing would look broken, the distance would still be monotone, and the number would still belong to the wrong person. So `buildReference` takes documents as an argument and the browser hands it whatever the visitor pasted, and the site's own articles are demoted to what they honestly are: the worked example.
+
+**N, the marker count: 100, and here is why.** Burrows's usual starting point is the 150 most frequent words, and 150 is right for a corpus of novels. Ten pasted pieces is not that, so the standard deviation of a word is computed from ten numbers and a word appearing in two of them has a standard deviation that is mostly an accident. Two rules follow, both enforced in code: a word must appear in **over half the documents** to be a marker, and the list stops at **100** because past roughly the hundredth rank in a set this size the words stop being function words and start being subject words, which would measure what a text is about rather than how it is written. Both are choices, not measurements. `MARKER_COUNT` and `MIN_DOCUMENT_SHARE` are exported constants so changing either is one line and one test.
+
+**The document filter is a share, not a count.** `MIN_DOCUMENT_SHARE = 0.5`, and the threshold is `Math.ceil(documents * MIN_DOCUMENT_SHARE)`. It has to scale, because the visitor decides how many pieces they paste. On eleven documents it lands on six, which is exactly the count the earlier draft of this plan hard-coded, so the worked example's marker set does not move.
+
+**The document floor: 5 pieces.** Every sigma in the table is computed from as many numbers as there are pieces, so below some count the standard deviations are too thin to be units of anything and one odd piece sets the scale for the rest. The tool refuses to print a Delta under this floor and says why, exactly as it refuses under 150 words. Five is the pick because `Math.ceil(5 * 0.5)` is 3, strictly more than half of five, while `Math.ceil(4 * 0.5)` is 2, exactly half: five is the smallest count where "over half the documents" means anything at all, and it leaves five leave-one-out folds of four pieces each behind the self-spread. Guessed, not measured, and one line to change.
 
 **The floor: 150 words.** Under 150 words a Delta is noise, because most markers have a count of zero or one and the z-score is then reporting whether a word happened to occur at all. The tool refuses to print a distance below the floor and says why. What it still prints below the floor is only what is a plain count rather than a statistic: em dashes found, and substitution hits. A count of two em dashes is two em dashes at any length.
 
-**The profile floor: 1,000 words.** Same argument pointed at the other text. Guessed, not measured. The tool prints the profile's word count either way so the visitor can weigh it themselves.
+**Two refusals, and what survives each.** They are not the same refusal. Under the word floor the *draft* is too short, so every rate over its length goes with the distance and only the counts survive. Under the document floor the *population* is too thin, so the z-scores go and with them the Delta, the self-spread and the sentence attribution, but the rhythm, punctuation and join rows all survive: none of them ever needed a reference population. The word floor is checked first, because a draft under it has nothing statistical to say either way.
 
-**Pooling.** A profile is built from the visitor's samples **concatenated**, not averaged piece by piece, because the pooled frequencies of ten short pieces are steadier than the mean of ten noisy vectors.
+**The profile floor: 1,000 words.** Same argument pointed at the other text, and a warning rather than a refusal. Guessed, not measured. The tool prints the profile's word count either way so the visitor can weigh it themselves. Note the gap between this and the self-spread: ten pieces of a hundred words each clear the profile floor and none of them clears the 150-word bar the spread needs, so that visitor gets a Delta and no yardstick to read it against. The page says which pieces took part.
 
-**Self-spread, instead of invented bands.** There are no thresholds in this tool, because a calibrated threshold would need a measurement nobody here has taken. Instead, when the visitor gives two or more samples that each clear the floor, the tool computes leave-one-out Deltas across their own samples: each piece against a profile built from the rest. That gives the range their own writing sits in, and the draft's Delta is reported beside it. "Your own pieces sit between 0.61 and 0.94 of each other. This draft is at 1.83" is a sentence the numbers actually support.
+**Pooling.** A profile is built from the visitor's samples **concatenated**, not averaged piece by piece, because the pooled frequencies of ten short pieces are steadier than the mean of ten noisy vectors. One consequence is worth stating, because it makes the number readable: with the reference built from the same pieces, the profile sits near the centre of its own population, so every `z(w, profile)` is near zero and the Delta reads as roughly the mean absolute z-score of the draft. Near zero, not zero, because pooling weights each piece by its length and the reference mean does not.
+
+**Self-spread, instead of invented bands.** There are no thresholds in this tool, because a calibrated threshold would need a measurement nobody here has taken. Instead, when the visitor gives two or more samples that each clear the 150-word floor, the tool computes leave-one-out Deltas across their own samples: each piece against a profile built from the rest, **all measured against the one reference table built from all of them**. The table is deliberately not rebuilt per fold: a different marker set and a different sigma per fold would make the folds incomparable, and min, median and max of incomparable numbers is not a range. It does mean each held-out piece contributed to the yardstick it is measured against, so the spread runs slightly tight, and that is written into the module and into the ledger's "not verified" list rather than smoothed over. What comes out is the range their own writing already occupies, printed beside the draft's Delta: "your own ten pieces sit 0.62 apart on average, and this draft sits 1.94 away" is a sentence the numbers actually support.
+
+**What the site's articles are for.** The worked example, and nothing else. `app/tools/drift/page.tsx` builds a reference from the eleven articles at build time, profiles them, computes their self-spread, and measures a sample draft against them, so the page always loads showing a real Delta over a corpus the reader can go and read. It is labelled as the example. The moment the visitor presses build, every one of those numbers is replaced by one computed from their pieces.
 
 **Rhythm.** Sentence lengths in words: mean, population standard deviation, and the shape as five buckets (1 to 8, 9 to 16, 17 to 24, 25 to 32, 33 or more) held as shares so profile and draft compare directly. The sentence splitter is naive about abbreviations and the page says so.
 
@@ -73,26 +83,28 @@ It is a **distance, not a verdict**. A low Delta says two texts use the commones
 |---|---|
 | `lib/tools/drift/text.ts` | Tokenising: `words`, `sentences`, `wordCount`, `splitPieces`. Nothing else knows how a word is defined. |
 | `lib/tools/drift/text.test.ts` | Tokeniser tests, including the apostrophe and the naive-abbreviation limit. |
-| `lib/tools/drift/corpus.ts` | The reference population: `buildReference`, `referenceDocuments`, the memoised `reference()`, `MARKER_COUNT`, `MIN_DOCUMENT_SHARE`. Server side only. |
-| `lib/tools/drift/corpus.test.ts` | Marker selection, the two filters, and the real corpus's shape. |
+| `lib/tools/drift/reference.ts` | The reference population, from any documents: `buildReference`, `MARKER_COUNT`, `MIN_DOCUMENT_SHARE`, `MIN_REFERENCE_DOCUMENTS`, `type Reference`. Pure, and runs in the browser over the visitor's own pieces. |
+| `lib/tools/drift/reference.test.ts` | Marker selection, the two filters, the share scaling with the document count, and the floor. |
+| `lib/tools/drift/corpus.ts` | The site's eleven articles as a reference, for the worked example only: `referenceDocuments`, the memoised `siteReference()`. Server side only, imported by `page.tsx` and nothing else. |
+| `lib/tools/drift/corpus.test.ts` | That the articles load as plain text and fill a marker set. |
 | `lib/tools/drift/signals.ts` | Rhythm, punctuation and joins. Pure, no reference needed. |
 | `lib/tools/drift/signals.test.ts` | Tests for the three. |
 | `lib/tools/drift/substitutions.ts` | `PAIRS`, `countForms`, `countPairs`, `substitutions`. |
 | `lib/tools/drift/substitutions.test.ts` | The three-condition rule, the forms, and the table's own shape. |
 | `lib/tools/drift/profile.ts` | `VoiceProfile`, `relativeFrequencies`, `zScores`, `profileOf`, `MIN_PROFILE_WORDS`. |
-| `lib/tools/drift/profile.test.ts` | Frequencies, z-scores, pooling. |
+| `lib/tools/drift/profile.test.ts` | Frequencies, z-scores, pooling, and sitting at the centre of a reference built from the same pieces. |
 | `lib/tools/drift/delta.ts` | `MIN_DELTA_WORDS`, `delta`, `deltaOf`, `selfSpread`. |
-| `lib/tools/drift/delta.test.ts` | Identity, symmetry, the reference-population property, leave-one-out spread. |
-| `lib/tools/drift/report.ts` | `analyse`, `sentencePulls`, `METRIC_KEYS`, `BUCKET_KEYS`, `DriftReport`. |
-| `lib/tools/drift/report.test.ts` | The floor refusal, what survives it, the metric rows, the pull attribution. |
-| `lib/tools/drift/storage.ts` | `DRIFT_PROFILE_KEY`, `serialiseProfile`, `parseProfile`. |
-| `lib/tools/drift/storage.test.ts` | Round trip, every rejection, and the "no free text is stored" guard. |
+| `lib/tools/drift/delta.test.ts` | Identity, symmetry, the reference-population property, leave-one-out spread on one fixed table. |
+| `lib/tools/drift/report.ts` | `analyse`, `sentencePulls`, `METRIC_KEYS`, `BUCKET_KEYS`, `ReferenceSummary`, `DriftReport`. Both refusals live here. |
+| `lib/tools/drift/report.test.ts` | Both refusals and what survives each, the metric rows, the pull attribution. |
+| `lib/tools/drift/storage.ts` | `DRIFT_PROFILE_KEY`, `SAVED_VERSION`, `serialiseProfile`, `parseProfile`. The reference travels with the profile. |
+| `lib/tools/drift/storage.test.ts` | Round trip including the reference, every rejection, and the "no sentence is stored" guard. |
 | `content/tools/drift.ts` | The `ToolEntry`, every string on the page, and the demo draft. |
 | `content/tools/drift.test.ts` | Copy guards: the first line, the metric labels, the demo's em dashes. |
-| `app/tools/drift/page.tsx` | Server component. Builds the reference and the worked example, renders through `ToolPage`. |
-| `app/tools/drift/DriftTool.tsx` | The client component. Two text areas, four buttons, the report. |
+| `app/tools/drift/page.tsx` | Server component. Builds the worked example from the site's articles, renders through `ToolPage`. The only module in the app that imports `corpus.ts`. |
+| `app/tools/drift/DriftTool.tsx` | The client component. Two text areas, five buttons, the visitor's own reference built in the tab, the report. |
 | `app/tools/drift/tool.css` | The route's own stylesheet. |
-| `app/tools/drift/page.test.ts` | Coupling checks: the shell, the stylesheet, the corpus staying server side, one `setItem`. |
+| `app/tools/drift/page.test.ts` | Coupling checks: the shell, the stylesheet, the corpus staying server side, the visitor's reference being built in the tab, one `setItem`. |
 
 **Modified**
 
@@ -101,9 +113,9 @@ It is a **distance, not a verdict**. A low Delta says two texts use the commones
 | `content/tools/index.ts` | One alphabetical import line and one array entry. |
 | `content/voice.test.ts` | `driftCopy`'s prose joins the `prose` array. The demo draft deliberately does not, with the reason written in. |
 | `lib/mcp.ts` | The `check_voice` tool. |
-| `lib/mcp.test.ts` | A `describe` for it: the round trip, the floor, a rejected profile. |
-| `scripts/mutation-check.mjs` | Six rows for the six new guards. |
-| `AGENTS.md` | Two sentences: where the reference corpus comes from, and the storage key. |
+| `lib/mcp.test.ts` | A `describe` for it: the round trip, the caller's own reference, both floors, a rejected profile, and one with the reference stripped out. |
+| `scripts/mutation-check.mjs` | Seven rows for the seven new guards. |
+| `AGENTS.md` | Two sentences: where the reference population comes from, and the storage key. |
 | `docs/superpowers/programme/toolshed-ledger.md`, `docs/PROGRESS.md` | State and evidence. |
 
 **Not touched:** `app/globals.css`, `app/sitemap.ts`, `app/llms.txt/route.ts`. The sitemap and `/llms.txt` pick the route up on their own because F3 made them read `liveTools`, and Task 14 proves that rather than assuming it.
@@ -281,10 +293,11 @@ Expected: FAIL, cannot resolve `./text`.
  * a Delta, a rhythm and a substitution count that quietly disagree, and nothing
  * would fail.
  *
- * Numbers are dropped on purpose. The reference corpus is this site's articles,
- * several of which carry tables and charts, and a run of figures would push
- * every relative frequency down without saying anything about how anyone
- * writes.
+ * Numbers are dropped on purpose. People paste whatever they have to hand, and
+ * a piece carrying a table, a changelog or a run of figures would push every
+ * relative frequency down without saying anything about how anybody writes.
+ * Same reasoning for the worked example's corpus, several of this site's
+ * articles being mostly tables.
  *
  * Each function builds its own regular expression rather than sharing a
  * module-level one. A regex literal evaluated inside a function body is a fresh
@@ -367,41 +380,66 @@ git commit -m "feat(drift): tokenise words, sentences and pasted pieces"
 
 ---
 
-### Task 2: The reference corpus and the marker set
+### Task 2: The reference population, and the site's corpus as the worked example
 
 **Files:**
+- Create: `lib/tools/drift/reference.ts`
+- Test: `lib/tools/drift/reference.test.ts`
 - Create: `lib/tools/drift/corpus.ts`
 - Test: `lib/tools/drift/corpus.test.ts`
 
 **Interfaces:**
-- Consumes: `words` from `./text`; `articles` from `@/content/articles`; `toPlainText` from `@/lib/markdown`
-- Produces: `MARKER_COUNT = 100`, `MIN_DOCUMENT_SHARE = 6`, `type Reference = { markers: string[]; mean: Record<string, number>; sd: Record<string, number>; documents: number; totalWords: number }`, `buildReference(documents: string[]): Reference`, `referenceDocuments(): string[]`, `reference(): Reference`
+- Consumes: `words` from `./text`. In `corpus.ts` only: `articles` from `@/content/articles`, `toPlainText` from `@/lib/markdown`.
+- Produces from `./reference`: `MARKER_COUNT = 100`, `MIN_DOCUMENT_SHARE = 0.5`, `MIN_REFERENCE_DOCUMENTS = 5`, `type Reference = { markers: string[]; mean: Record<string, number>; sd: Record<string, number>; documents: number; totalWords: number }`, `buildReference(documents: string[]): Reference`
+- Produces from `./corpus`: `referenceDocuments(): string[]`, `siteReference(): Reference`
 
-A Delta needs a reference population, and the honest thing is to name it: this one is the eleven articles in `content/articles/`. `referenceDocuments` and `reference` import the corpus, so this module is server side. Every other module in `lib/tools/drift/` takes a `Reference` as an argument and imports nothing from here except the type, which is what lets the client component work from a table passed down as a prop.
+A Delta is measured in standard deviations, so it needs a population whose standard deviations they are, and the honest thing is to name it. **It is the visitor's own pieces.** It has to be, because the sentence the tool prints is "how far this draft sits from the way *you* write". Build the population out of this site's eleven articles instead and the number comes back in units of how much my articles vary between themselves, scored on a list of my commonest words, and a visitor writing about anything unlike this site gets markers that barely occur in their prose. Nothing would look broken and the distance would still be monotone. The units and the words would belong to the wrong person, and the sentence on the page would be false.
 
-**Two guards live here and both get a mutation row in Task 13.** A marker must appear in at least `MIN_DOCUMENT_SHARE` documents, and a word whose standard deviation is zero is dropped rather than divided by.
+So the maths and the corpus live in two modules. `reference.ts` is generic and pure: hand it documents, get back a table. It imports the tokeniser and nothing else, which is what lets the browser build the visitor's own table in the tab out of what they pasted. `corpus.ts` is the only module under `lib/tools/drift/` that imports `content/articles`, and it exists for one job: the worked example the page renders at build time, a demonstration over a corpus the reader can go and read. Nothing on the visitor's own path imports it, and `app/tools/drift/page.test.ts` fails if the client component ever does.
 
-- [ ] **Step 1: Write the failing tests**
+**Two guards live in `reference.ts` and both get a mutation row in Task 12.** A marker must appear in over half the documents, and a word whose standard deviation is zero is dropped rather than divided by. `MIN_REFERENCE_DOCUMENTS` is declared here too, but the refusal it drives is assembled in Task 7, so its mutation row points at `report.ts`.
+
+**Why the document filter became a share, and why the floor is five.** The old rule was "at least 6 of the 11 documents", a count written for one fixed corpus, and it is meaningless against five pasted pieces. So the rule is `Math.ceil(documents * MIN_DOCUMENT_SHARE)` with `MIN_DOCUMENT_SHARE = 0.5`: over half, whatever half happens to be. On eleven documents that lands on six, the same number as before, so the worked example's marker set does not move. The floor is five because `Math.ceil(5 * 0.5)` is 3, which is strictly more than half of five, while `Math.ceil(4 * 0.5)` is 2, which is exactly half. Five is the smallest number of pieces where "over half the documents" filters anything, and it leaves five leave-one-out folds of four pieces each behind the self-spread.
+
+- [ ] **Step 1: Write the failing tests for the reference builder**
 
 ```ts
-// lib/tools/drift/corpus.test.ts
+// lib/tools/drift/reference.test.ts
 import { describe, it, expect } from "vitest";
 import {
   MARKER_COUNT,
   MIN_DOCUMENT_SHARE,
+  MIN_REFERENCE_DOCUMENTS,
   buildReference,
-  reference,
-  referenceDocuments,
-} from "./corpus";
-import { words } from "./text";
+} from "./reference";
 
-/** Six documents, so a word in five of them is over the share and one in four is under. */
+/** Six documents, so the over-half threshold is three and a word in two is under it. */
 function docs(...bodies: string[]): string[] {
   return bodies;
 }
 
+describe("the constants", () => {
+  it("filters on a share of the documents, not a fixed count", () => {
+    // A count written for eleven articles would keep nothing at all from five
+    // pasted pieces. The threshold has to scale with what the visitor gave.
+    expect(MIN_DOCUMENT_SHARE).toBe(0.5);
+    expect(Math.ceil(11 * MIN_DOCUMENT_SHARE)).toBe(6);
+    expect(Math.ceil(5 * MIN_DOCUMENT_SHARE)).toBe(3);
+  });
+
+  it("floors the population at five, the smallest count where over-half bites", () => {
+    expect(MIN_REFERENCE_DOCUMENTS).toBe(5);
+    expect(Math.ceil(MIN_REFERENCE_DOCUMENTS * MIN_DOCUMENT_SHARE)).toBeGreaterThan(
+      MIN_REFERENCE_DOCUMENTS / 2,
+    );
+    // Four documents: the threshold is two, which is exactly half and filters
+    // nothing. That is the argument for five, written as an assertion.
+    expect(Math.ceil(4 * MIN_DOCUMENT_SHARE)).toBe(4 / 2);
+  });
+});
+
 describe("buildReference", () => {
-  it("ranks markers by total frequency across the corpus", () => {
+  it("ranks markers by total frequency across the documents", () => {
     // "the" appears 10 times and "a" 8, both in all six documents and both
     // varying between them. "cat", "dog" and "bird" appear exactly once in
     // every document, so their standard deviation is zero and they are dropped
@@ -422,7 +460,7 @@ describe("buildReference", () => {
     expect(ref.totalWords).toBe(36);
   });
 
-  it("drops a word that appears in fewer than MIN_DOCUMENT_SHARE documents", () => {
+  it("drops a word that appears in fewer than half the documents", () => {
     // "zeugma" is frequent, but only in one document. A standard deviation from
     // one non-zero reading is an accident, not a habit.
     const ref = buildReference(
@@ -437,6 +475,24 @@ describe("buildReference", () => {
     );
     expect(ref.markers).not.toContain("zeugma");
     expect(ref.markers).toContain("the");
+  });
+
+  it("scales that filter to the number of documents it was given", () => {
+    // Five pieces, so the threshold is three. "here" is in three of them and
+    // survives; "zeugma" is in two and does not. On eleven documents the same
+    // rule asks for six, which is what the site's corpus test checks.
+    const ref = buildReference(
+      docs(
+        "the cat and a dog here",
+        "the cat and a dog here",
+        "the cat and a bird here",
+        "the cat and a fish zeugma",
+        "the cat and a fish zeugma",
+      ),
+    );
+    expect(ref.documents).toBe(5);
+    expect(ref.markers).toContain("here");
+    expect(ref.markers).not.toContain("zeugma");
   });
 
   it("drops a word whose frequency never varies, because its z-score is a division by zero", () => {
@@ -471,91 +527,92 @@ describe("buildReference", () => {
     }
   });
 
-  it("returns an empty marker set for an empty corpus rather than throwing", () => {
+  it("returns an empty marker set for an empty population rather than throwing", () => {
+    // A visitor who pastes nothing must not crash the tab. The report's own
+    // guard is what stops an empty marker set being printed as a distance of
+    // zero, which would read as "identical" and mean nothing at all.
     expect(buildReference([]).markers).toEqual([]);
+    expect(buildReference([]).documents).toBe(0);
     expect(buildReference(["", "", "", "", "", ""]).markers).toEqual([]);
   });
-});
 
-describe("the site's own corpus", () => {
-  it("is every published article, as plain text", () => {
-    const documents = referenceDocuments();
-    expect(documents.length).toBeGreaterThanOrEqual(11);
-    for (const d of documents) expect(words(d).length).toBeGreaterThan(300);
-    // toPlainText drops fenced code, so no article body reaches the corpus with
-    // a listing in it. If this starts failing, the markdown parser changed.
-    expect(documents.join(" ")).not.toContain("```");
-  });
-
-  it("produces a full marker set from it", () => {
-    const ref = reference();
-    expect(ref.markers.length).toBe(MARKER_COUNT);
-    expect(ref.documents).toBe(referenceDocuments().length);
-    expect(ref.totalWords).toBeGreaterThan(5000);
-    // The commonest words of English prose. If the top of this list stops
-    // looking like function words, the tokeniser or the corpus has changed.
-    expect(ref.markers.slice(0, 10)).toContain("the");
-    expect(ref.markers.slice(0, 10)).toContain("and");
-  });
-
-  it("is memoised, so the page pays for it once", () => {
-    expect(reference()).toBe(reference());
-  });
-
-  it("keeps every marker in at least MIN_DOCUMENT_SHARE of the articles", () => {
-    const ref = reference();
-    const documents = referenceDocuments().map((d) => new Set(words(d)));
-    for (const w of ref.markers) {
-      const seen = documents.filter((set) => set.has(w)).length;
-      expect(seen, `${w} appears in ${seen} documents`).toBeGreaterThanOrEqual(MIN_DOCUMENT_SHARE);
-    }
+  it("is a pure function of its argument, so two callers never share a table", () => {
+    const a = buildReference(docs("the cat and a dog here", "the cat and a dog", "the cat and a bird here"));
+    const b = buildReference(docs("one two three", "one two four", "one two five"));
+    expect(a.markers).not.toEqual(b.markers);
   });
 });
 ```
 
 - [ ] **Step 2: Run it to see it fail**
 
-Run: `cd "$WT" && npx vitest run lib/tools/drift/corpus.test.ts`
-Expected: FAIL, cannot resolve `./corpus`.
+Run: `cd "$WT" && npx vitest run lib/tools/drift/reference.test.ts`
+Expected: FAIL, cannot resolve `./reference`.
 
-- [ ] **Step 3: Write the module**
+- [ ] **Step 3: Write the reference builder**
 
 ```ts
-// lib/tools/drift/corpus.ts
-import { articles } from "@/content/articles";
-import { toPlainText } from "@/lib/markdown";
+// lib/tools/drift/reference.ts
 import { words } from "./text";
 
 /**
- * The reference population for the z-scores.
+ * The reference population for the z-scores, built from whatever documents you
+ * hand it.
  *
  * Burrows's Delta is a distance measured in standard deviations, and a standard
- * deviation has to be a standard deviation of something. That something is this
- * site's own articles, and the page says so, because a Delta whose reference
- * population is unnamed is a number with no units.
+ * deviation has to be a standard deviation of something. In this tool that
+ * something is the visitor's own pieces, which is the only choice that matches
+ * what the page claims: "how far this draft sits from the way you write". A
+ * table built from somebody else's writing would still produce a monotone
+ * distance, in units of how much that other person's documents vary between
+ * themselves, on a list of that other person's commonest words. It would look
+ * exactly as convincing and it would be about the wrong writer.
  *
- * This module is the only one under `lib/tools/drift/` that imports the corpus.
- * Everything else takes a `Reference` as an argument, which is what lets the
- * page compute this once on the server and hand the resulting table to the
- * browser as a prop: about a hundred words and two hundred numbers, instead of
- * sixty kilobytes of article bodies in the client bundle.
+ * So this module takes documents as an argument and imports nothing but the
+ * tokeniser. That is what lets it run in the browser tab over what the visitor
+ * pasted, with no corpus, no articles and no server call anywhere near it.
  */
 
 /**
  * How many markers. Burrows's own starting point is 150, which suits a corpus
- * of novels. Eleven articles is not that: past roughly the hundredth rank the
- * words here stop being function words and start being subject words, and a
- * subject word measures what a text is about rather than how it is written.
- * A choice, not a measurement.
+ * of novels. Ten pasted pieces is not that: past roughly the hundredth rank the
+ * words stop being function words and start being subject words, and a subject
+ * word measures what a text is about rather than how it is written. The cap
+ * also means a visitor with ten short pieces and this site's eleven articles
+ * are scored on lists of the same length. A choice, not a measurement.
  */
 export const MARKER_COUNT = 100;
 
 /**
- * A marker must appear in at least this many reference documents. With eleven
- * documents, six is over half. Below that the word's standard deviation is
- * computed mostly from zeroes and reports an accident of topic.
+ * A marker must appear in over half the documents it was built from. Below that
+ * the word's standard deviation is computed mostly from zeroes and reports an
+ * accident of topic rather than a habit.
+ *
+ * A share rather than a count, because the visitor decides how many pieces they
+ * paste and a count written for one corpus size is nonsense at another.
+ * `Math.ceil(n * 0.5)` is six on eleven documents, which is what an earlier
+ * draft of this tool hard-coded, and three on five.
  */
-export const MIN_DOCUMENT_SHARE = 6;
+export const MIN_DOCUMENT_SHARE = 0.5;
+
+/**
+ * The fewest documents a reference may be built from before the report refuses
+ * to print a Delta.
+ *
+ * The same argument as the 150-word floor, pointed at the population instead of
+ * the text. Every sigma here is computed from exactly this many numbers, and
+ * with three of them one unusual piece sets the scale for everything else, so
+ * the distance would be printed in units of that accident.
+ *
+ * Five, because `Math.ceil(5 * MIN_DOCUMENT_SHARE)` is 3, strictly more than
+ * half of five, while the same sum on four documents is 2, exactly half, which
+ * filters nothing: five is the smallest count where the document rule above
+ * does any work. It also leaves five leave-one-out folds behind the self-spread
+ * instead of four. Guessed, not measured, and the report says the number out
+ * loud when it refuses. The refusal itself lives in `report.ts`, because that
+ * is where a caller reads a status.
+ */
+export const MIN_REFERENCE_DOCUMENTS = 5;
 
 export type Reference = {
   /** Marker words, most frequent first. Length is at most `MARKER_COUNT`. */
@@ -571,8 +628,8 @@ export type Reference = {
 /**
  * Build the table from a set of documents.
  *
- * Exported separately from `reference()` so every test can build one from six
- * short strings instead of reasoning about the real corpus.
+ * Pure and memo-free on purpose: the visitor rebuilds this every time they
+ * press build, and two profiles in one session must never share a table.
  */
 export function buildReference(documents: string[]): Reference {
   const perDoc = documents.map((doc) => {
@@ -591,8 +648,12 @@ export function buildReference(documents: string[]): Reference {
     }
   }
 
+  // Over half of however many documents there are. `Math.max(1, ...)` only
+  // matters for the empty case, where there is nothing to filter anyway.
+  const minDocuments = Math.max(1, Math.ceil(documents.length * MIN_DOCUMENT_SHARE));
+
   const ranked = [...totals.entries()]
-    .filter(([word]) => (seenIn.get(word) ?? 0) >= MIN_DOCUMENT_SHARE)
+    .filter(([word]) => (seenIn.get(word) ?? 0) >= minDocuments)
     // Ties broken alphabetically so the marker set is deterministic. A set that
     // depended on Map insertion order would make every stored profile a
     // different shape from one build to the next.
@@ -627,6 +688,107 @@ export function buildReference(documents: string[]): Reference {
     totalWords: perDoc.reduce((total, doc) => total + doc.length, 0),
   };
 }
+```
+
+- [ ] **Step 4: Run the tests to see them pass**
+
+Run: `cd "$WT" && npx vitest run lib/tools/drift/reference.test.ts`
+Expected: PASS, 10 tests.
+
+What this proves: the marker set is deterministic, both filters bite, and the document filter scales with the population it was handed. What it cannot see: whether a hundred markers, half the documents or five pieces are the right numbers for a real visitor's writing. Nothing here measures any of the three, and all three are one line each.
+
+- [ ] **Step 5: Write the failing tests for the worked example's corpus**
+
+```ts
+// lib/tools/drift/corpus.test.ts
+import { describe, it, expect } from "vitest";
+import { MARKER_COUNT, MIN_DOCUMENT_SHARE } from "./reference";
+import { referenceDocuments, siteReference } from "./corpus";
+import { words } from "./text";
+
+/**
+ * This corpus is the worked example and nothing else.
+ *
+ * A visitor's Delta is never measured against it: their reference is built in
+ * their own tab from their own pieces. What these tests hold is that the demo
+ * on the page has something real behind it, which is the only claim this module
+ * makes.
+ */
+describe("the site's own corpus", () => {
+  it("is every published article, as plain text", () => {
+    const documents = referenceDocuments();
+    expect(documents.length).toBeGreaterThanOrEqual(11);
+    for (const d of documents) expect(words(d).length).toBeGreaterThan(300);
+    // toPlainText drops fenced code, so no article body reaches the corpus with
+    // a listing in it. If this starts failing, the markdown parser changed.
+    expect(documents.join(" ")).not.toContain("```");
+  });
+
+  it("produces a full marker set from it", () => {
+    const ref = siteReference();
+    expect(ref.markers.length).toBe(MARKER_COUNT);
+    expect(ref.documents).toBe(referenceDocuments().length);
+    expect(ref.totalWords).toBeGreaterThan(5000);
+    // The commonest words of English prose. If the top of this list stops
+    // looking like function words, the tokeniser or the corpus has changed.
+    expect(ref.markers.slice(0, 10)).toContain("the");
+    expect(ref.markers.slice(0, 10)).toContain("and");
+  });
+
+  it("is memoised, so the build pays for it once", () => {
+    expect(siteReference()).toBe(siteReference());
+  });
+
+  it("keeps every marker in over half the articles", () => {
+    // With eleven documents the share rule asks for six, which is the number an
+    // earlier draft of this plan hard-coded. So moving to a share did not move
+    // the worked example's marker set.
+    const documents = referenceDocuments();
+    const needed = Math.ceil(documents.length * MIN_DOCUMENT_SHARE);
+    expect(needed).toBe(6);
+    const sets = documents.map((d) => new Set(words(d)));
+    for (const w of siteReference().markers) {
+      const seen = sets.filter((set) => set.has(w)).length;
+      expect(seen, `${w} appears in ${seen} documents`).toBeGreaterThanOrEqual(needed);
+    }
+  });
+
+  it("clears the document floor, so the demo is not itself a refusal", () => {
+    expect(siteReference().documents).toBeGreaterThanOrEqual(5);
+  });
+});
+```
+
+- [ ] **Step 6: Run it to see it fail**
+
+Run: `cd "$WT" && npx vitest run lib/tools/drift/corpus.test.ts`
+Expected: FAIL, cannot resolve `./corpus`.
+
+- [ ] **Step 7: Write the corpus module**
+
+```ts
+// lib/tools/drift/corpus.ts
+import { articles } from "@/content/articles";
+import { toPlainText } from "@/lib/markdown";
+import { buildReference, type Reference } from "./reference";
+
+/**
+ * This site's own articles as a reference population, for one purpose: the
+ * worked example on `/tools/drift`.
+ *
+ * A visitor's Delta is never measured against this. Theirs is built in their
+ * own tab from their own pieces, because a distance in units of how much my
+ * articles vary between themselves would be a number about me printed under a
+ * sentence about them.
+ *
+ * What this is good for is a demonstration over a corpus the reader can go and
+ * read: eleven articles at /writing, one of my paragraphs rewritten the way a
+ * model rewrites things, and a real Delta computed at build time so the page is
+ * never an empty form. `app/tools/drift/page.tsx` is the only module that
+ * imports this one, and `app/tools/drift/page.test.ts` fails if the client
+ * component ever does, because a value import from there would drag every
+ * article body into the browser bundle.
+ */
 
 /** Every published article, as plain text. Code blocks are already dropped by `toPlainText`. */
 export function referenceDocuments(): string[] {
@@ -636,40 +798,39 @@ export function referenceDocuments(): string[] {
 let memo: Reference | null = null;
 
 /**
- * The table, built once. Called at module scope by the page (so it runs at
- * build time, the route being static) and by the MCP tool.
+ * The worked example's table, built once. Called at module scope by the page,
+ * so it runs at build time, the route being static.
  */
-export function reference(): Reference {
+export function siteReference(): Reference {
   if (memo === null) memo = buildReference(referenceDocuments());
   return memo;
 }
 ```
 
-- [ ] **Step 4: Run the tests to see them pass**
+- [ ] **Step 8: Run the tests to see them pass**
 
 Run: `cd "$WT" && npx vitest run lib/tools/drift/corpus.test.ts`
-Expected: PASS, 10 tests.
+Expected: PASS, 5 tests.
 
-**Three of those assertions are predictions, not measurements, and this run is what settles them.** Written down first so the run can prove them wrong (CLAIMS.md, rule 2): that eleven articles yield at least 100 words appearing in six or more of them with a non-zero standard deviation; that the corpus totals more than 5,000 words; and that "the" and "and" land in the top ten markers. If the first is wrong, do **not** delete the assertion: record the real number in the ledger, set `MARKER_COUNT` to it, and write one line in the module's docblock saying the corpus, not the theory, chose the number. If the third is wrong, stop and read the tokeniser, because something is eating function words.
+**Three of those assertions are predictions, not measurements, and this run is what settles them.** Written down first so the run can prove them wrong (CLAIMS.md, rule 2): that eleven articles yield at least 100 words appearing in six or more of them with a non-zero standard deviation; that the corpus totals more than 5,000 words; and that "the" and "and" land in the top ten markers. If the first is wrong, do **not** delete the assertion: record the real number in the ledger and relax the assertion to the observed length, because `MARKER_COUNT` is now shared with the visitor's path and must not be tuned to my articles. If the third is wrong, stop and read the tokeniser, because something is eating function words.
 
-What this proves once green: the marker set is deterministic, both filters bite, and the real corpus fills the marker list. What it cannot see: whether a hundred is the right number for a corpus this size. Nothing here measures that.
+What this proves once green: the worked example has a real corpus behind it and the share rule lands on six for eleven documents. What it cannot see: anything about a visitor's own pieces, which is the path that matters and which Task 10 wires up.
 
-- [ ] **Step 5: Record the corpus size, since the page will state it**
+- [ ] **Step 9: Record the corpus size, since the page will state it**
 
 ```bash
 cd "$WT"
 npx vitest run lib/tools/drift/corpus.test.ts --reporter=verbose 2>&1 | tail -20
-node -e "process.stdout.write('measured in the test above\n')"
 ```
 
-Add one line to the ledger log with the observed `documents` and `totalWords` from `reference()`. The page prints those two numbers from the live object rather than from a hard-coded string, so the ledger line is a record of what was true on this date, not a source of truth.
+Add one line to the ledger log with the observed `documents` and `totalWords` from `siteReference()`, labelled as the worked example's corpus rather than as the tool's reference population. The page prints those two numbers from the live object rather than from a hard-coded string, so the ledger line is a record of what was true on this date, not a source of truth.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 cd "$WT"
-git add lib/tools/drift/corpus.ts lib/tools/drift/corpus.test.ts
-git commit -m "feat(drift): build the reference marker set from the site's own articles"
+git add lib/tools/drift/reference.ts lib/tools/drift/reference.test.ts lib/tools/drift/corpus.ts lib/tools/drift/corpus.test.ts
+git commit -m "feat(drift): build the reference population from any documents, and keep the site's corpus for the demo"
 ```
 
 ---
@@ -925,7 +1086,7 @@ git commit -m "feat(drift): measure sentence rhythm, punctuation habits and join
 
 **How near-synonyms are known without a network call.** They are not inferred and there is no thesaurus. There is a fixed table of twenty-two pairs written into this file, each side as explicit word forms, because the alternative is a stemmer (a dependency, and a guess about morphology) or an API call (which would break "nothing leaves this tab"). The frequency evidence is the visitor's own: a row is emitted only when the draft uses the formal form, the corpus uses it zero times, **and** the corpus uses the plain form at least once. That last condition is the one that turns the line from an opinion into a fact about their writing.
 
-`countPairs` is what a saved profile stores, and it is deliberately the only vocabulary the profile keeps: forty-four counters, no words of the visitor's own. A saved profile therefore cannot be read back into anything they wrote.
+`countPairs` is what a saved profile stores for this table: forty-four counters keyed by the fixed pair ids, so nothing here depends on what the visitor writes about. It is not the whole vocabulary of a saved profile any more, because the marker words are now the visitor's own hundred commonest words rather than mine. Task 8 states what a saved profile really holds and has the test that walks it.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -1048,9 +1209,10 @@ import { words } from "./text";
  * word, their corpus uses it zero times, and their corpus uses the plain word
  * at least once. All three, every time.
  *
- * This is also the whole vocabulary a saved profile keeps: forty-four counters
- * and not one word of the visitor's own text, so a saved profile cannot be read
- * back into anything they wrote.
+ * The table is fixed, so these forty-four counters are the one part of a saved
+ * profile that does not depend on what the visitor writes about. The rest of it
+ * is keyed by their own marker words; `lib/tools/drift/storage.ts` says exactly
+ * what that means and tests it.
  *
  * Adding a pair is one entry here and one row in the test. It cannot find a
  * substitution that is not in this list, and the page says so.
@@ -1194,7 +1356,7 @@ git commit -m "feat(drift): suggest substitutions from the visitor's own frequen
 - Test: `lib/tools/drift/profile.test.ts`
 
 **Interfaces:**
-- Consumes: `type Reference` from `./corpus` (a **type-only** import, so no corpus code reaches the browser), `words` from `./text`, `rhythmOf`/`punctuationOf`/`joinsOf` and their types from `./signals`, `countPairs` and `type PairCounts` from `./substitutions`
+- Consumes: `type Reference` from `./reference` (a **type-only** import, so nothing about how a table is built reaches this module), `words` from `./text`, `rhythmOf`/`punctuationOf`/`joinsOf` and their types from `./signals`, `countPairs` and `type PairCounts` from `./substitutions`
 - Produces: `PROFILE_VERSION = 1`, `MIN_PROFILE_WORDS = 1000`, `type VoiceProfile`, `relativeFrequencies(tokens: string[], markers: string[]): Record<string, number>`, `zScores(freq: Record<string, number>, ref: Reference): Record<string, number>`, `profileOf(pieces: string[], ref: Reference): VoiceProfile`
 
 - [ ] **Step 1: Write the failing tests**
@@ -1202,7 +1364,7 @@ git commit -m "feat(drift): suggest substitutions from the visitor's own frequen
 ```ts
 // lib/tools/drift/profile.test.ts
 import { describe, it, expect } from "vitest";
-import { buildReference } from "./corpus";
+import { buildReference } from "./reference";
 import { MIN_PROFILE_WORDS, profileOf, relativeFrequencies, zScores } from "./profile";
 import { words } from "./text";
 
@@ -1284,6 +1446,29 @@ describe("profileOf", () => {
   it("states a floor for a profile worth trusting", () => {
     expect(MIN_PROFILE_WORDS).toBe(1000);
   });
+
+  it("sits at the centre of a reference built from its own pieces", () => {
+    // The real flow: the same pieces build the table and the profile. Every
+    // z-score is then zero or near it by construction, which is what makes the
+    // Delta readable as roughly the draft's mean absolute z-score. These
+    // fixture pieces are all 240 words, so pooling and the reference mean agree
+    // exactly and the answer is 0. Real pieces differ in length, pooling
+    // weights by that length, and the profile lands near the centre instead of
+    // on it, which is why the assertion below is a closeness and not an
+    // equality.
+    const pieces = [doc(1), doc(2), doc(3), doc(4), doc(5), doc(6)];
+    const own = buildReference(pieces);
+    const p = profileOf(pieces, own);
+    for (const marker of own.markers) expect(p.z[marker], marker).toBeCloseTo(0, 10);
+  });
+
+  it("moves off that centre when the pieces are different lengths", () => {
+    const pieces = [doc(1), doc(6), `${doc(6)} ${doc(6)}`, doc(2), doc(3), doc(4)];
+    const own = buildReference(pieces);
+    const p = profileOf(pieces, own);
+    const away = own.markers.some((marker) => Math.abs(p.z[marker]) > 0.01);
+    expect(away).toBe(true);
+  });
 });
 ```
 
@@ -1296,7 +1481,7 @@ Expected: FAIL, cannot resolve `./profile`.
 
 ```ts
 // lib/tools/drift/profile.ts
-import type { Reference } from "./corpus";
+import type { Reference } from "./reference";
 import { joinsOf, punctuationOf, rhythmOf, type Joins, type Punctuation, type Rhythm } from "./signals";
 import { countPairs, type PairCounts } from "./substitutions";
 import { words } from "./text";
@@ -1304,15 +1489,19 @@ import { words } from "./text";
 /**
  * A voice profile: everything the tool knows about how somebody writes.
  *
- * `import type { Reference }` and nothing else from `./corpus`, deliberately. A
- * type import is erased at compile time, so this module can run in the browser
- * with the reference table arriving as a plain object from the server. A value
- * import here would drag every article body into the client bundle.
+ * The reference table arrives as an argument and this module never asks where
+ * it came from. In the tool it came from the visitor's own pieces, built in
+ * their tab a few lines earlier; in the worked example it came from this site's
+ * articles at build time. Same function either way, and that is the whole point
+ * of taking it as a parameter.
  *
- * The only vocabulary a profile keeps is `pairs`, forty-four counters over the
- * fixed substitution table. There is no field in this type that holds a word
- * the visitor wrote, which is what makes saving one to local storage a small
- * thing rather than a promise to keep their prose safe.
+ * A profile holds no prose. `freq` and `z` are keyed by the marker words, which
+ * are the visitor's own hundred commonest words, and `pairs` is forty-four
+ * counters over the fixed substitution table. So there are words in a saved
+ * profile: single words, each with a number beside it, in frequency order and
+ * never in the order anybody wrote them. There is no sentence in it and no way
+ * back to one, and `lib/tools/drift/storage.test.ts` walks the serialised
+ * object and proves it rather than asserting it in a comment.
  */
 
 export const PROFILE_VERSION = 1;
@@ -1389,7 +1578,7 @@ export function profileOf(pieces: string[], ref: Reference): VoiceProfile {
 - [ ] **Step 4: Run the tests to see them pass**
 
 Run: `cd "$WT" && npx vitest run lib/tools/drift/profile.test.ts`
-Expected: PASS, 10 tests.
+Expected: PASS, 14 tests.
 
 - [ ] **Step 5: Commit**
 
@@ -1408,7 +1597,7 @@ git commit -m "feat(drift): build a pooled voice profile against the reference m
 - Test: `lib/tools/drift/delta.test.ts`
 
 **Interfaces:**
-- Consumes: `type Reference` from `./corpus`, `profileOf`/`relativeFrequencies`/`zScores`/`type VoiceProfile` from `./profile`, `words` from `./text`
+- Consumes: `type Reference` from `./reference`, `profileOf`/`relativeFrequencies`/`zScores`/`type VoiceProfile` from `./profile`, `words` from `./text`
 - Produces: `MIN_DELTA_WORDS = 150`, `delta(a: Record<string, number>, b: Record<string, number>, markers: string[]): number`, `deltaOf(profile: VoiceProfile, draft: string, ref: Reference): number`, `type SelfSpread = { pieces: number; min: number; median: number; max: number }`, `selfSpread(pieces: string[], ref: Reference): SelfSpread | null`
 
 - [ ] **Step 1: Write the failing tests**
@@ -1416,7 +1605,7 @@ git commit -m "feat(drift): build a pooled voice profile against the reference m
 ```ts
 // lib/tools/drift/delta.test.ts
 import { describe, it, expect } from "vitest";
-import { buildReference } from "./corpus";
+import { buildReference } from "./reference";
 import { MIN_DELTA_WORDS, delta, deltaOf, selfSpread } from "./delta";
 import { profileOf } from "./profile";
 import { wordCount } from "./text";
@@ -1499,6 +1688,26 @@ describe("selfSpread", () => {
     const loose = selfSpread([doc(1), doc(3), doc(6)], ref);
     expect(tight?.max ?? 1).toBeLessThan(loose?.max ?? 0);
   });
+
+  it("uses one table for every fold, so the folds are comparable", () => {
+    // Rebuilding the reference per fold would give each fold its own marker
+    // set and its own sigma, and a min, a median and a max of numbers measured
+    // on different yardsticks is not a range. Same table, same units, every
+    // time: passing the same reference twice must give the same answer.
+    const pieces = [doc(1), doc(3), doc(6)];
+    expect(selfSpread(pieces, ref)).toEqual(selfSpread(pieces, ref));
+  });
+
+  it("gives the visitor's own reference a spread in units of itself", () => {
+    // The real flow, end to end: their pieces build the table, their pieces are
+    // measured against it. Every fold is a real number and none is NaN.
+    const pieces = [doc(1), doc(2), doc(4), doc(5), doc(6)];
+    const own = buildReference(pieces);
+    const spread = selfSpread(pieces, own);
+    expect(spread?.pieces).toBe(5);
+    expect(Number.isFinite(spread?.min ?? NaN)).toBe(true);
+    expect(Number.isFinite(spread?.max ?? NaN)).toBe(true);
+  });
 });
 ```
 
@@ -1511,7 +1720,7 @@ Expected: FAIL, cannot resolve `./delta`.
 
 ```ts
 // lib/tools/drift/delta.ts
-import type { Reference } from "./corpus";
+import type { Reference } from "./reference";
 import { profileOf, relativeFrequencies, zScores, type VoiceProfile } from "./profile";
 import { words } from "./text";
 
@@ -1519,7 +1728,8 @@ import { words } from "./text";
  * Burrows's Delta.
  *
  * For a marker set M with reference mean mu(w) and standard deviation sigma(w)
- * taken across the reference corpus's documents:
+ * taken across the reference population's documents, which in this tool are the
+ * visitor's own pieces:
  *
  *     f(w, t)     = count of w in t / total words in t
  *     z(w, t)     = (f(w, t) - mu(w)) / sigma(w)
@@ -1529,6 +1739,13 @@ import { words } from "./text";
  * commonest words at similar rates. That is the whole claim. It says nothing
  * about who wrote either one, nothing about whether either is any good, and
  * nothing whatsoever about meaning.
+ *
+ * The unit matters as much as the number. Because the reference is built from
+ * the visitor's own pieces, a Delta of 1.9 means "1.9 of your own between-piece
+ * standard deviations", and the self-spread below prints what their own pieces
+ * score so the 1.9 has something to sit beside. Feed this the same draft with a
+ * table built from somebody else's writing and the arithmetic still runs, still
+ * looks convincing, and answers a question nobody asked.
  */
 
 /**
@@ -1577,9 +1794,23 @@ export type SelfSpread = {
  * tool argues against. Instead: leave one piece out, build a profile from the
  * rest, measure the piece against it, and repeat. The result is the range their
  * own writing already occupies, and the draft's Delta is printed beside it.
+ * That comparison is the whole reason the reference is theirs: "your own ten
+ * pieces sit 0.62 apart on average and this draft sits 1.94 away" is a sentence
+ * about one person, in one set of units, and it stops being one the moment the
+ * yardstick comes from somewhere else.
+ *
+ * `ref` is passed in and used for every fold rather than rebuilt from the
+ * remaining pieces each time. Rebuilding would give each fold its own marker
+ * set and its own sigma, and a min, a median and a max taken across different
+ * yardsticks is not a range of anything. The cost is that each held-out piece
+ * helped build the table it is then measured against, so the spread runs a
+ * little tight, and a draft will look slightly further out than it is. Stated
+ * here, and in the ledger's "not verified" list, rather than smoothed over.
  *
  * Samples under the floor are dropped rather than measured, and fewer than two
- * survivors returns null, because a range needs two points.
+ * survivors returns null, because a range needs two points. This function does
+ * not check `MIN_REFERENCE_DOCUMENTS`: it answers a question about the pieces
+ * it was handed, and whether that answer is fit to print is `analyse`'s call.
  */
 export function selfSpread(pieces: string[], ref: Reference): SelfSpread | null {
   const usable = pieces.filter((piece) => words(piece).length >= MIN_DELTA_WORDS);
@@ -1601,9 +1832,9 @@ export function selfSpread(pieces: string[], ref: Reference): SelfSpread | null 
 - [ ] **Step 4: Run the tests to see them pass**
 
 Run: `cd "$WT" && npx vitest run lib/tools/drift/delta.test.ts`
-Expected: PASS, 12 tests.
+Expected: PASS, 14 tests.
 
-One assertion is a prediction: `spread?.min` greater than zero on three different fixture documents. If it comes back exactly zero, the fixtures are not varying the way the reference thinks they are, and the corpus fixture is the thing to read, not the Delta.
+One assertion is a prediction: `spread?.min` greater than zero on three different fixture documents. If it comes back exactly zero, the fixtures are not varying the way the reference thinks they are, and the reference fixture is the thing to read, not the Delta.
 
 - [ ] **Step 5: Commit**
 
@@ -1615,24 +1846,37 @@ git commit -m "feat(drift): measure Burrows's Delta and the writer's own spread"
 
 ---
 
-### Task 7: The report, the floor refusal and the sentences that pull
+### Task 7: The report, the two refusals and the sentences that pull
 
 **Files:**
 - Create: `lib/tools/drift/report.ts`
 - Test: `lib/tools/drift/report.test.ts`
 
 **Interfaces:**
-- Consumes: `type Reference` from `./corpus`, `MIN_DELTA_WORDS`/`deltaOf`/`type SelfSpread` from `./delta`, `relativeFrequencies`/`zScores`/`type VoiceProfile` from `./profile`, `BUCKET_EDGES`/`countEmDashes` from `./signals`, `PAIRS`/`substitutionsFrom`/`type Substitution` from `./substitutions`, `sentences`/`wordCount`/`words` from `./text`
-- Produces: `METRIC_KEYS`, `BUCKET_KEYS`, `type MetricKey`, `type MetricRow`, `type ShapeRow`, `type PullReason`, `type SentencePull`, `type DriftReport`, `sentencePulls(profile, draft, ref, limit?)`, `analyse(profile, draft, ref, spread?)`
+- Consumes: `type Reference` and `MIN_REFERENCE_DOCUMENTS` from `./reference`, `MIN_DELTA_WORDS`/`deltaOf`/`type SelfSpread` from `./delta`, `relativeFrequencies`/`zScores`/`type VoiceProfile` from `./profile`, `BUCKET_EDGES`/`countEmDashes` from `./signals`, `PAIRS`/`substitutionsFrom`/`type Substitution` from `./substitutions`, `sentences`/`wordCount`/`words` from `./text`
+- Produces: `METRIC_KEYS`, `BUCKET_KEYS`, `type MetricKey`, `type MetricRow`, `type ShapeRow`, `type PullReason`, `type SentencePull`, `type ReferenceSummary`, `type DriftReport`, `sentencePulls(profile, draft, ref, limit?)`, `analyse(profile, draft, ref, spread?)`
 
-**What survives the floor and what does not.** Under 150 words `analyse` returns `status: "too-short"` with `delta`, `selfSpread`, `metrics`, `shape` and `pulls` all empty or null. What it still returns is `emDashes` and `substitutions`, because those are counts rather than statistics: two em dashes are two em dashes in a text of any length. Everything that divides by a length is refused.
+**Two refusals, and what survives each.** They are different refusals about different things, so they drop different halves of the report.
+
+| Condition | Status | Gone | Kept |
+|---|---|---|---|
+| Draft under `MIN_DELTA_WORDS` (150 words) | `too-short` | `delta`, `selfSpread`, `metrics`, `shape`, `pulls` | `emDashes`, `substitutions` |
+| Reference under `MIN_REFERENCE_DOCUMENTS` (5 pieces), or no markers at all | `thin-reference` | `delta`, `selfSpread`, `pulls` | `metrics`, `shape`, `emDashes`, `substitutions` |
+
+The word floor is checked first, because a draft under it has nothing statistical to say either way. Under it, everything that divides by a length goes and only the counts stay: two em dashes are two em dashes in a text of any length, and refusing to say so would be pedantry rather than rigour.
+
+The document floor is narrower on purpose. What is thin there is the **population**, so what goes is everything computed through a z-score: the Delta, the leave-one-out spread, and the sentence attribution. The rhythm, punctuation and join rows never needed a reference population at all, so they stay. A visitor with three pieces still gets their habits beside the draft's; what they do not get is a number pretending to be in units of their own variation when it is really in units of one piece's accident.
+
+`ref.markers.length === 0` is folded into the same status because it produces the same wrong answer by a different route: `delta` over an empty marker set is 0, and a distance of zero printed on a page reads as "identical". That is the exact "consistent with" collapse this tool exists to argue against, so it is refused, not printed.
+
+`reference` on the report carries the population's own shape, so the page and the MCP twin can both say what the yardstick was made of without either of them holding the table.
 
 - [ ] **Step 1: Write the failing tests**
 
 ```ts
 // lib/tools/drift/report.test.ts
 import { describe, it, expect } from "vitest";
-import { buildReference } from "./corpus";
+import { MIN_REFERENCE_DOCUMENTS, buildReference } from "./reference";
 import { MIN_DELTA_WORDS } from "./delta";
 import { profileOf } from "./profile";
 import { BUCKET_KEYS, METRIC_KEYS, analyse, sentencePulls } from "./report";
@@ -1661,7 +1905,7 @@ describe("the bucket labels", () => {
   });
 });
 
-describe("analyse under the floor", () => {
+describe("analyse under the word floor", () => {
   const short = "We utilise the thing \u2014 briefly.";
 
   it("refuses every statistic and says which floor it refused against", () => {
@@ -1682,9 +1926,51 @@ describe("analyse under the floor", () => {
     expect(report.emDashes).toBe(1);
     expect(report.substitutions.map((s) => s.id)).toEqual(["utilise"]);
   });
+
+  it("is checked before the population's thinness, because it refuses more", () => {
+    const thin = buildReference([doc(1), doc(3), doc(6)]);
+    expect(analyse(profileOf([doc(1)], thin), short, thin).status).toBe("too-short");
+  });
 });
 
-describe("analyse over the floor", () => {
+describe("analyse under the document floor", () => {
+  const pieces = [doc(1), doc(3), doc(6)];
+  const thin = buildReference(pieces);
+  const thinProfile = profileOf(pieces, thin);
+
+  it("refuses a distance built on fewer than MIN_REFERENCE_DOCUMENTS pieces", () => {
+    const report = analyse(thinProfile, draft, thin, { pieces: 3, min: 0.2, median: 0.4, max: 0.9 });
+    expect(report.status).toBe("thin-reference");
+    expect(report.documentFloor).toBe(MIN_REFERENCE_DOCUMENTS);
+    expect(report.reference.documents).toBe(3);
+    expect(report.delta).toBeNull();
+    // The spread is dropped even though one was handed in: it is leave-one-out
+    // Deltas, so it is measured in the same units the refusal just rejected.
+    expect(report.selfSpread).toBeNull();
+    expect(report.pulls).toEqual([]);
+  });
+
+  it("keeps the habits, because none of them ever needed a reference population", () => {
+    const report = analyse(thinProfile, draft, thin);
+    expect(report.metrics.map((m) => m.key)).toEqual([...METRIC_KEYS]);
+    expect(report.shape.map((s) => s.key)).toEqual([...BUCKET_KEYS]);
+    expect(report.emDashes).toBe(0);
+  });
+
+  it("refuses an empty marker set too, so a Delta of zero is never printed", () => {
+    // Every word in these documents has the same rate in all of them, so every
+    // one is dropped by the sd guard and the marker set comes back empty. The
+    // Delta would be 0, which on a page reads as "identical".
+    const flat = buildReference(["the cat", "the cat", "the cat", "the cat", "the cat"]);
+    expect(flat.markers).toEqual([]);
+    expect(flat.documents).toBeGreaterThanOrEqual(MIN_REFERENCE_DOCUMENTS);
+    const report = analyse(profileOf(["the cat"], flat), draft, flat);
+    expect(report.status).toBe("thin-reference");
+    expect(report.delta).toBeNull();
+  });
+});
+
+describe("analyse over both floors", () => {
   it("prints a distance and every metric row exactly once, in order", () => {
     const report = analyse(profile, draft, ref);
     expect(report.status).toBe("ok");
@@ -1693,6 +1979,13 @@ describe("analyse over the floor", () => {
     expect(Number.isFinite(report.delta ?? NaN)).toBe(true);
     expect(report.metrics.map((m) => m.key)).toEqual([...METRIC_KEYS]);
     expect(report.shape.map((s) => s.key)).toEqual([...BUCKET_KEYS]);
+  });
+
+  it("says what the population it measured against was made of", () => {
+    const report = analyse(profile, draft, ref);
+    expect(report.reference.documents).toBe(6);
+    expect(report.reference.markers).toBe(ref.markers.length);
+    expect(report.reference.totalWords).toBe(ref.totalWords);
   });
 
   it("puts the profile and the draft side by side in every row", () => {
@@ -1751,7 +2044,7 @@ Expected: FAIL, cannot resolve `./report`.
 
 ```ts
 // lib/tools/drift/report.ts
-import type { Reference } from "./corpus";
+import { MIN_REFERENCE_DOCUMENTS, type Reference } from "./reference";
 import { MIN_DELTA_WORDS, deltaOf, type SelfSpread } from "./delta";
 import { relativeFrequencies, zScores, type VoiceProfile } from "./profile";
 import { BUCKET_EDGES, countEmDashes, joinsOf, punctuationOf, rhythmOf } from "./signals";
@@ -1761,17 +2054,33 @@ import { sentences, wordCount, words } from "./text";
 /**
  * One measurement of one draft against one voice profile.
  *
- * The floor is the important part. Under `MIN_DELTA_WORDS` this returns
- * `status: "too-short"` and every statistic is null or empty: no distance, no
- * rates, no attribution. What it still returns is the two things that are
- * counts rather than statistics, em dashes and substitution hits, because two
- * em dashes are two em dashes in a text of any length and refusing to say so
- * would be pedantry rather than rigour.
+ * The two floors are the important part, and they are not the same refusal.
+ *
+ * Under `MIN_DELTA_WORDS` the DRAFT is too short, so everything that divides by
+ * its length goes with the distance and `status` is "too-short". What still
+ * comes back is the two things that are counts rather than statistics, em
+ * dashes and substitution hits, because two em dashes are two em dashes in a
+ * text of any length and refusing to say so would be pedantry rather than
+ * rigour.
+ *
+ * Under `MIN_REFERENCE_DOCUMENTS` the POPULATION is too thin, so what goes is
+ * everything computed through a z-score: the Delta, the leave-one-out spread
+ * and the sentence attribution. `status` is "thin-reference". The rhythm,
+ * punctuation and join rows survive, because none of them ever needed a
+ * reference population, and a visitor with three pieces should still see their
+ * own habits beside the draft's. What they must not see is a number claiming to
+ * be in units of their own variation when three numbers went into that sigma.
+ *
+ * The word floor is checked first, because it refuses strictly more.
+ *
+ * An empty marker set gets the same "thin-reference" status, because `delta`
+ * over no markers returns 0 and a distance of zero on a page reads as
+ * "identical". A number that cannot fail is not a measurement.
  *
  * The shape is nullable fields rather than a discriminated union so that one
  * object serialises to JSON for the MCP twin and renders in one component
  * without a branch per field. `status` is still the thing to read first, and
- * the tests pin that every statistic is empty when it says "too-short".
+ * the tests pin what is empty under each of the two refusals.
  */
 
 /** Every metric row the report can emit, in the order it prints them. */
@@ -1813,10 +2122,26 @@ export type SentencePull = {
   reasons: PullReason[];
 };
 
+/**
+ * What the yardstick was made of, so the page and the MCP twin can both say it
+ * without either of them carrying the table.
+ */
+export type ReferenceSummary = {
+  /** How many separate pieces the population was built from. */
+  documents: number;
+  /** How many marker words survived both filters. */
+  markers: number;
+  totalWords: number;
+};
+
 export type DriftReport = {
-  status: "ok" | "too-short";
+  status: "ok" | "too-short" | "thin-reference";
   words: number;
+  /** The word floor for the draft. */
   floor: number;
+  /** The document floor for the population. */
+  documentFloor: number;
+  reference: ReferenceSummary;
   /** A count, printed at any length. */
   emDashes: number;
   /** Counts, printed at any length. */
@@ -1889,6 +2214,12 @@ export function analyse(
   const base = {
     words: count,
     floor: MIN_DELTA_WORDS,
+    documentFloor: MIN_REFERENCE_DOCUMENTS,
+    reference: {
+      documents: ref.documents,
+      markers: ref.markers.length,
+      totalWords: ref.totalWords,
+    },
     emDashes: countEmDashes(draft),
     substitutions: substitutionsFrom(profile.pairs, draft),
   };
@@ -1927,17 +2258,34 @@ export function analyse(
     { key: "join-so", profile: profile.joins.so, draft: joins.so },
   ];
 
+  const shape: ShapeRow[] = BUCKET_KEYS.map((key, i) => ({
+    key,
+    profile: profile.rhythm.buckets[i] ?? 0,
+    draft: rhythm.buckets[i] ?? 0,
+  }));
+
+  // The population, not the draft. Everything above this line is a rate over a
+  // length and stands on its own; everything below it is a z-score, and a
+  // z-score from four documents is a number about one of those four.
+  if (ref.documents < MIN_REFERENCE_DOCUMENTS || ref.markers.length === 0) {
+    return {
+      ...base,
+      status: "thin-reference",
+      delta: null,
+      selfSpread: null,
+      metrics,
+      shape,
+      pulls: [],
+    };
+  }
+
   return {
     ...base,
     status: "ok",
     delta: deltaOf(profile, draft, ref),
     selfSpread: spread,
     metrics,
-    shape: BUCKET_KEYS.map((key, i) => ({
-      key,
-      profile: profile.rhythm.buckets[i] ?? 0,
-      draft: rhythm.buckets[i] ?? 0,
-    })),
+    shape,
     pulls: sentencePulls(profile, draft, ref),
   };
 }
@@ -1946,14 +2294,16 @@ export function analyse(
 - [ ] **Step 4: Run the tests to see them pass**
 
 Run: `cd "$WT" && npx vitest run lib/tools/drift/report.test.ts`
-Expected: PASS, 10 tests.
+Expected: PASS, 15 tests.
+
+One assertion is a prediction: that five documents of `"the cat"` produce an empty marker set, so the empty-marker branch is reachable at all. If the marker set comes back non-empty, read `buildReference`'s standard-deviation guard before touching the test, because a word with the same rate in every document is exactly what that guard exists to drop.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 cd "$WT"
 git add lib/tools/drift/report.ts lib/tools/drift/report.test.ts
-git commit -m "feat(drift): assemble the report and refuse a distance under the floor"
+git commit -m "feat(drift): assemble the report and refuse under both the word and document floors"
 ```
 
 ---
@@ -1965,8 +2315,12 @@ git commit -m "feat(drift): assemble the report and refuse a distance under the 
 - Test: `lib/tools/drift/storage.test.ts`
 
 **Interfaces:**
-- Consumes: `OWNED_PREFIX` from `@/lib/forget` (F2), `PROFILE_VERSION`/`type VoiceProfile` from `./profile`, `type SelfSpread` from `./delta`
-- Produces: `DRIFT_PROFILE_KEY = "fergusos:drift-profile"`, `SAVED_VERSION = 1`, `type SavedProfile = { version: 1; savedAt: string; profile: VoiceProfile; spread: SelfSpread | null }`, `serialiseProfile(profile, spread, savedAt): string`, `parseProfile(value: unknown): SavedProfile | null`
+- Consumes: `OWNED_PREFIX` from `@/lib/forget` (F2), `PROFILE_VERSION`/`type VoiceProfile` from `./profile`, `type Reference` from `./reference`, `type SelfSpread` from `./delta`
+- Produces: `DRIFT_PROFILE_KEY = "fergusos:drift-profile"`, `SAVED_VERSION = 1`, `type SavedProfile = { version: 1; savedAt: string; reference: Reference; profile: VoiceProfile; spread: SelfSpread | null }`, `serialiseProfile(reference, profile, spread, savedAt): string`, `parseProfile(value: unknown): SavedProfile | null`
+
+**The reference travels with the profile, and it has to.** A `VoiceProfile` is a set of z-scores, and a z-score is a distance from a mean in units of a standard deviation. Strip the table that supplied those two and what is left is a column of numbers with no units, which the next draft would then be compared against using somebody else's table. That is the same error this whole revision exists to remove, one layer down. So `SavedProfile` carries the `Reference`, `parseProfile` refuses a record without one, and `check_voice` reads it from there rather than building its own.
+
+**What a saved profile actually holds, said plainly.** It is a frequency table: the visitor's hundred commonest words with two numbers beside each, the reference's mean and standard deviation for each of the same words, the rhythm and punctuation rates, and forty-four counters over the fixed substitution table. So there are words in it, their own words, single ones, in frequency order and never in the order anybody wrote them. There is no sentence in it and no way to recover one. The test at the end of this task walks the serialised object and proves exactly that rather than asserting it in a comment, and the page says it in the same words instead of claiming "no words at all", which stopped being true the moment the markers became the visitor's own.
 
 `parseProfile` takes `unknown` and accepts either the JSON string local storage holds or the object the MCP tool is handed, so the browser and the server validate identically. Anything it does not fully recognise is `null`, never a partly-built object: a half-valid profile would produce numbers that look fine and mean nothing.
 
@@ -1976,7 +2330,7 @@ git commit -m "feat(drift): assemble the report and refuse a distance under the 
 // lib/tools/drift/storage.test.ts
 import { describe, it, expect } from "vitest";
 import { OWNED_PREFIX, isOwnedKey } from "@/lib/forget";
-import { buildReference } from "./corpus";
+import { buildReference } from "./reference";
 import { profileOf } from "./profile";
 import { DRIFT_PROFILE_KEY, parseProfile, serialiseProfile } from "./storage";
 
@@ -1986,10 +2340,11 @@ function doc(joins: number): string {
   ).join(" ");
 }
 
-const ref = buildReference([doc(1), doc(2), doc(3), doc(4), doc(5), doc(6)]);
-const profile = profileOf([doc(3)], ref);
+const pieces = [doc(1), doc(2), doc(3), doc(4), doc(5), doc(6)];
+const ref = buildReference(pieces);
+const profile = profileOf(pieces, ref);
 const spread = { pieces: 2, min: 0.1, median: 0.2, max: 0.3 };
-const saved = serialiseProfile(profile, spread, "2026-09-03T12:00:00.000Z");
+const saved = serialiseProfile(ref, profile, spread, "2026-09-03T12:00:00.000Z");
 
 describe("the key", () => {
   it("is the one forget already knows about", () => {
@@ -2007,12 +2362,22 @@ describe("round trip", () => {
     expect(back?.savedAt).toBe("2026-09-03T12:00:00.000Z");
   });
 
+  it("carries the reference the z-scores were computed against", () => {
+    // Without this the saved z-scores have no units and the next draft would be
+    // scored against whatever table happened to be to hand.
+    const back = parseProfile(saved);
+    expect(back?.reference.markers).toEqual(ref.markers);
+    expect(back?.reference.mean).toEqual(ref.mean);
+    expect(back?.reference.sd).toEqual(ref.sd);
+    expect(back?.reference.documents).toBe(6);
+  });
+
   it("parses an already-decoded object, which is how the MCP tool is handed one", () => {
     expect(parseProfile(JSON.parse(saved))?.profile.words).toBe(profile.words);
   });
 
   it("accepts a profile with no spread", () => {
-    expect(parseProfile(serialiseProfile(profile, null, "2026-09-03T12:00:00.000Z"))?.spread).toBeNull();
+    expect(parseProfile(serialiseProfile(ref, profile, null, "2026-09-03T12:00:00.000Z"))?.spread).toBeNull();
   });
 });
 
@@ -2029,6 +2394,13 @@ describe("refusals", () => {
     ["a missing rhythm", { ...JSON.parse(saved), profile: { ...profile, rhythm: undefined } }],
     ["buckets that are not numbers", { ...JSON.parse(saved), profile: { ...profile, rhythm: { ...profile.rhythm, buckets: ["a"] } } }],
     ["a malformed pair count", { ...JSON.parse(saved), profile: { ...profile, pairs: { utilise: { formal: 1 } } } }],
+    ["no reference at all", { ...JSON.parse(saved), reference: undefined }],
+    ["a reference with no marker list", { ...JSON.parse(saved), reference: { ...ref, markers: "the and" } }],
+    ["a reference missing a marker's sd", { ...JSON.parse(saved), reference: { ...ref, sd: {} } }],
+    ["a reference with a zero sd, which is a division by zero downstream", {
+      ...JSON.parse(saved),
+      reference: { ...ref, sd: Object.fromEntries(ref.markers.map((m) => [m, 0])) },
+    }],
   ];
 
   it.each(cases)("returns null for %s", (_name, value) => {
@@ -2038,10 +2410,12 @@ describe("refusals", () => {
 
 describe("what a saved profile contains", () => {
   /**
-   * The page promises the saved profile is counts, not prose. This walks the
-   * serialised object and asserts the only string VALUE in it is the timestamp.
-   * Object keys are marker words from this site's own corpus and the fixed pair
-   * ids, so no word the visitor wrote is stored on either side of the colon.
+   * The page promises a saved profile is single words with numbers beside them
+   * and never prose. This walks the serialised object and asserts that every
+   * string VALUE in it is either the timestamp or a marker word, and that every
+   * marker is one word. Object keys are marker words and the fixed pair ids for
+   * the same reason. So the record is a frequency list in frequency order: no
+   * sentence in it, and no order to rebuild one from.
    */
   function stringPaths(value: unknown, path = ""): string[] {
     if (typeof value === "string") return [path];
@@ -2052,10 +2426,23 @@ describe("what a saved profile contains", () => {
     return [];
   }
 
-  it("stores no free text at all", () => {
-    const withProse = profileOf(["My private notes about a thing nobody should read. " + doc(2)], ref);
-    const json = JSON.parse(serialiseProfile(withProse, null, "2026-09-03T12:00:00.000Z"));
-    expect(stringPaths(json)).toEqual(["savedAt"]);
+  it("stores no sentence, only single words with numbers beside them", () => {
+    const own = [`My private notes about a thing nobody should read. ${doc(2)}`, doc(3), doc(4), doc(5), doc(6)];
+    const ownRef = buildReference(own);
+    const json = JSON.parse(serialiseProfile(ownRef, profileOf(own, ownRef), null, "2026-09-03T12:00:00.000Z"));
+    const paths = stringPaths(json);
+    expect(paths).toContain("savedAt");
+    for (const path of paths) {
+      if (path === "savedAt") continue;
+      expect(path, path).toMatch(/^reference\.markers\[\d+\]$/);
+    }
+    // One word each. A marker with a space in it would mean the tokeniser had
+    // let a phrase through, and a phrase is the start of a sentence.
+    for (const marker of json.reference.markers) expect(marker, marker).toMatch(/^[\p{L}']+$/u);
+    // The private sentence's distinctive words are in one document out of five,
+    // so the share filter dropped them before anything was saved.
+    expect(json.reference.markers).not.toContain("private");
+    expect(json.reference.markers).not.toContain("nobody");
   });
 
   it("is small enough to sit in local storage without thinking about it", () => {
@@ -2076,6 +2463,7 @@ Expected: FAIL, cannot resolve `./storage`.
 import { OWNED_PREFIX } from "@/lib/forget";
 import type { SelfSpread } from "./delta";
 import { PROFILE_VERSION, type VoiceProfile } from "./profile";
+import type { Reference } from "./reference";
 
 /**
  * Saving a profile, and the promise that goes with it.
@@ -2084,6 +2472,21 @@ import { PROFILE_VERSION, type VoiceProfile } from "./profile";
  * what it wipes by that prefix and a hand-typed literal that drifted by one
  * character would leave a key on somebody's machine that the site claims to
  * have removed. `lib/forget.test.ts` already asserts this exact key is owned.
+ *
+ * The reference table is saved with the profile and is not optional. A profile
+ * is a set of z-scores, and a z-score is a distance from a mean in units of a
+ * standard deviation: without the table that supplied both it is a column of
+ * numbers with no units, and the next draft would be scored against whatever
+ * table happened to be to hand. That is the same mistake as measuring a
+ * stranger's draft against my articles, one layer down and harder to see.
+ *
+ * What this record holds, stated so the page can say the same thing: the
+ * visitor's hundred commonest words with numbers beside each, the mean and
+ * standard deviation of those same words across their pieces, their rhythm and
+ * punctuation rates, and forty-four counters over the fixed substitution table.
+ * Their own words, then, but single ones, in frequency order, never in the
+ * order they were written. No sentence, and nothing to rebuild one from.
+ * `storage.test.ts` walks the serialised object and holds that.
  *
  * Nothing here writes. The component writes, once, in the handler behind the
  * save button, because the constitution now says the site keeps only what the
@@ -2103,16 +2506,19 @@ export type SavedProfile = {
   version: typeof SAVED_VERSION;
   /** ISO timestamp, the only free-form string in the whole record. */
   savedAt: string;
+  /** The population the profile's z-scores were computed against. Not optional. */
+  reference: Reference;
   profile: VoiceProfile;
   spread: SelfSpread | null;
 };
 
 export function serialiseProfile(
+  reference: Reference,
   profile: VoiceProfile,
   spread: SelfSpread | null,
   savedAt: string,
 ): string {
-  const record: SavedProfile = { version: SAVED_VERSION, savedAt, profile, spread };
+  const record: SavedProfile = { version: SAVED_VERSION, savedAt, reference, profile, spread };
   return JSON.stringify(record);
 }
 
@@ -2130,6 +2536,22 @@ function isNumberRecord(value: unknown): value is Record<string, number> {
 
 function hasNumbers(value: unknown, keys: string[]): boolean {
   return isObject(value) && keys.every((key) => isFiniteNumber(value[key]));
+}
+
+function isReference(value: unknown): value is Reference {
+  if (!isObject(value)) return false;
+  if (!hasNumbers(value, ["documents", "totalWords"])) return false;
+  if (!Array.isArray(value.markers)) return false;
+  if (!value.markers.every((m) => typeof m === "string" && m.length > 0)) return false;
+  if (!isNumberRecord(value.mean) || !isNumberRecord(value.sd)) return false;
+  const mean = value.mean as Record<string, number>;
+  const sd = value.sd as Record<string, number>;
+  // Every marker needs both statistics, and a standard deviation of zero is a
+  // division by zero in every z-score downstream. `buildReference` drops those,
+  // so a table carrying one did not come out of it and is not to be trusted.
+  return (value.markers as string[]).every(
+    (marker) => isFiniteNumber(mean[marker]) && isFiniteNumber(sd[marker]) && sd[marker] > 0,
+  );
 }
 
 function isProfile(value: unknown): value is VoiceProfile {
@@ -2165,6 +2587,7 @@ export function parseProfile(value: unknown): SavedProfile | null {
   if (!isObject(decoded)) return null;
   if (decoded.version !== SAVED_VERSION) return null;
   if (typeof decoded.savedAt !== "string" || decoded.savedAt.length === 0) return null;
+  if (!isReference(decoded.reference)) return null;
   if (!isProfile(decoded.profile)) return null;
   if (decoded.spread !== null && decoded.spread !== undefined && !isSpread(decoded.spread)) {
     return null;
@@ -2172,6 +2595,7 @@ export function parseProfile(value: unknown): SavedProfile | null {
   return {
     version: SAVED_VERSION,
     savedAt: decoded.savedAt,
+    reference: decoded.reference,
     profile: decoded.profile,
     spread: isSpread(decoded.spread) ? decoded.spread : null,
   };
@@ -2181,7 +2605,9 @@ export function parseProfile(value: unknown): SavedProfile | null {
 - [ ] **Step 4: Run the tests to see them pass**
 
 Run: `cd "$WT" && npx vitest run lib/tools/drift/storage.test.ts`
-Expected: PASS, 17 tests (six named cases plus the eleven refusals).
+Expected: PASS, 22 tests (seven named cases plus the fifteen refusals).
+
+One assertion is a prediction: that "private" and "nobody" do not survive into the marker list. They appear in one of five documents and the share filter asks for three, so they should not, but the run is what settles it. If either does survive, do not weaken the assertion: read `buildReference`'s filter, because a word from one document reaching the saved record is the exact failure the filter exists to prevent.
 
 - [ ] **Step 5: Run the whole suite and the type checker**
 
@@ -2190,14 +2616,14 @@ cd "$WT"
 npx tsc --noEmit && npm test -- --reporter=dot 2>&1 | tail -3
 ```
 
-Expected: `tsc` silent, and the baseline count from Task 0 plus everything added since. What this proves: the seven pure modules type-check together and nothing already in the repo broke. What it cannot see: anything about React, the page, or the browser.
+Expected: `tsc` silent, and the baseline count from Task 0 plus everything added since. What this proves: the eight pure modules type-check together and nothing already in the repo broke. What it cannot see: anything about React, the page, or the browser.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 cd "$WT"
 git add lib/tools/drift/storage.ts lib/tools/drift/storage.test.ts
-git commit -m "feat(drift): save a profile as counts under the forget-owned key"
+git commit -m "feat(drift): save the profile with its reference under the forget-owned key"
 ```
 
 ---
@@ -2216,6 +2642,8 @@ git commit -m "feat(drift): save a profile as counts under the forget-owned key"
 
 Everything in this folder is one file per tool, because F3's registry test reads the directory and fails on a file it did not register. So the entry, the copy and the demo specimen all live in `content/tools/drift.ts`.
 
+**Two strings carry the whole revision and are worth reading twice.** `referenceNote` has to say that the population is the visitor's own pieces, in their own units, because that is the claim the maths now actually supports. `demoNote` has to say that what is on screen before they paste anything is my writing, measured against my own eleven articles, and is an example. Getting those two the wrong way round would put an honest number under a dishonest sentence, which is worse than the flaw this replaced.
+
 - [ ] **Step 1: Write the failing tests**
 
 ```ts
@@ -2224,6 +2652,7 @@ import { describe, it, expect } from "vitest";
 import { METRIC_KEYS } from "@/lib/tools/drift/report";
 import { PAIRS } from "@/lib/tools/drift/substitutions";
 import { MIN_DELTA_WORDS } from "@/lib/tools/drift/delta";
+import { MIN_REFERENCE_DOCUMENTS } from "@/lib/tools/drift/reference";
 import { wordCount } from "@/lib/tools/drift/text";
 import { toolBySlug } from "./index";
 import { drift, driftCopy, driftDemo } from "./drift";
@@ -2241,11 +2670,12 @@ describe("the registry entry", () => {
     expect(drift.blurb.startsWith("This is not an AI detector.")).toBe(true);
   });
 
-  it("names the four things it cannot see", () => {
+  it("names the things it cannot see", () => {
     const joined = drift.cantSee.join(" ").toLowerCase();
     expect(joined).toContain("meaning");
     expect(joined).toContain("register");
     expect(joined).toContain("150 words");
+    expect(joined).toContain("five pieces");
     expect(joined).toContain("praise");
   });
 });
@@ -2259,16 +2689,33 @@ describe("the copy", () => {
     expect(Object.keys(driftCopy.reasonLabels).sort()).toEqual(["em-dash", "long", "substitution"]);
   });
 
-  it("names the reference population, because a Delta without one is not a distance", () => {
-    expect(driftCopy.referenceNote).toContain("/writing");
+  it("names the visitor's own pieces as the reference population, not this site's", () => {
+    // The distance is in units of how much THEIR writing varies. A note
+    // pointing at /writing here would be describing a measurement the tool does
+    // not make, and it would read as though the yardstick were mine.
+    expect(driftCopy.referenceNote.toLowerCase()).toContain("your");
+    expect(driftCopy.referenceNote).not.toContain("/writing");
+  });
+
+  it("keeps this site's articles in the demo note, where they belong", () => {
+    expect(driftCopy.demoNote).toContain("/writing");
+    expect(driftCopy.demoNote.toLowerCase()).toContain("example");
   });
 
   it("says the substitution list is fixed and how long it is", () => {
     expect(driftCopy.substitutionNote).toContain(String(PAIRS.length));
   });
 
-  it("quotes the floor from the constant rather than retyping it", () => {
+  it("quotes both floors from their constants rather than retyping them", () => {
     expect(driftCopy.tooShort).toContain(String(MIN_DELTA_WORDS));
+    expect(driftCopy.tooFewPieces).toContain(String(MIN_REFERENCE_DOCUMENTS));
+  });
+
+  it("says what a saved profile holds, in words that survived the marker change", () => {
+    // It used to be true that a saved profile held none of the visitor's words.
+    // The markers are theirs now, so the promise is narrower and has to say so.
+    expect(driftCopy.savedContents.toLowerCase()).toContain("word");
+    expect(driftCopy.savedContents.toLowerCase()).toContain("no sentence");
   });
 });
 
@@ -2327,7 +2774,8 @@ export const drift: ToolEntry = {
     "Meaning. Every number here counts how often words and marks turn up, and none of them knows what any of it says.",
     "Register shifts inside one writer. A note to a friend and a note to a bank are two voices from the same person, and this would call the second one drift.",
     "Anything under 150 words. Below that the distance is reporting whether a word happened to occur at all, so the tool refuses to print one and says why.",
-    "Whether the writing is any good. A low distance means the commonest words turn up at similar rates. That is not praise, and it is not a verdict on the draft.",
+    "Anything from fewer than five pieces. The distance is measured in how much your own writing varies from one piece to the next, and with four or fewer that variation is mostly one piece's accident, so the tool refuses and says so.",
+    "Whether the writing is any good. A low distance means your commonest words turn up at similar rates. That is not praise, and it is not a verdict on the draft.",
     "A substitution that is not on its list. The near-synonyms come from a fixed table written into this page, not from a dictionary and not from a model.",
   ],
   status: "live",
@@ -2337,7 +2785,7 @@ export const drift: ToolEntry = {
 export const driftCopy = {
   samplesLabel: "Things you wrote",
   samplesHint:
-    "Ten pieces is plenty. Paste them one after another with a line of three dashes between them. A thousand words in total is where the numbers start to settle.",
+    "Ten pieces is plenty and five is the minimum. Paste them one after another with a line of three dashes between them. A thousand words in total is where the numbers start to settle.",
   samplesPlaceholder: "Paste something you wrote\n---\nAnd another one",
   draftLabel: "The draft",
   draftHint: "The thing you want measured. Under 150 words it will refuse, and say so.",
@@ -2356,6 +2804,7 @@ export const driftCopy = {
   shapeHeading: "Sentence lengths",
   pullsHeading: "The sentences pulling hardest",
   substitutionsHeading: "Words your own writing does not use",
+  builtFrom: "Built from",
 
   profileColumn: "You",
   draftColumn: "This draft",
@@ -2363,20 +2812,24 @@ export const driftCopy = {
   noProfile: "Build a profile first, or use the worked example below.",
   noSamples: "Nothing to build a profile from yet. Paste something you wrote.",
   thinProfile:
-    "That is a thin profile. Under a thousand words the rarer half of the marker words appear once or not at all, and the distance moves around on nothing.",
+    "That is a thin profile. Under a thousand words the rarer half of your marker words appear once or not at all, and the distance moves around on nothing.",
   tooShort:
     "Under 150 words, a distance is noise: most of the marker words appear once or not at all, so the number would be reporting chance. Counts still hold, and they are below.",
+  tooFewPieces:
+    "Fewer than 5 separate pieces. The distance is measured in how far your own pieces sit from each other, so with four or fewer there is not enough of your own variation to measure it in, and printing a number would be inventing the units. Your habits are still below, and so are the counts.",
   noPulls: "No sentence stands out. The draft is spread evenly against your profile.",
   noSubstitutions: "Nothing on the list. Every word it checks for, you use yourself.",
 
   savedNote: "Saved on this machine only. The terminal's forget command wipes it.",
+  savedContents:
+    "What gets saved is a frequency table: your hundred commonest words, a number beside each, and the rates. Your own words, then, but single ones, in frequency order, never in the order you wrote them. No sentence goes in and none can be got back out.",
   droppedNote: "Deleted. Nothing of yours is left in this browser.",
   neverSaved: "Nothing is saved unless you press save.",
 
   demoNote:
-    "A worked example, so this page is not an empty form. The profile is my own writing, the articles at /writing. The draft is one of my paragraphs rewritten the way a model tends to rewrite things.",
+    "A worked example, so this page is not an empty form. Everything on screen is my writing measured against my own writing: the profile and the reference are the eleven articles at /writing, and the draft is one of my paragraphs rewritten the way a model tends to rewrite things. Paste your own pieces and every number here is rebuilt from them.",
   referenceNote:
-    "The distance is Burrows's Delta. It needs a reference population to be a distance from, and this one is my own writing: the articles at /writing, as plain text. Naming it is the honest part.",
+    "The distance is Burrows's Delta, and a Delta is measured in standard deviations, so it needs a population whose standard deviations they are. That population is your pieces: your own commonest words, and your own variation from one piece to the next. Which is why the number reads in units of your writing and not mine, and why the spread of your own pieces is printed beside it.",
   substitutionNote:
     "The near-synonyms come from a fixed table of 22 pairs written into this tool. It is not a thesaurus and it cannot find a pair that is not on the list. What makes a row worth printing is your own frequency: the word is in your draft, never in your samples, and the plain one is.",
   splitterNote:
@@ -2492,7 +2945,9 @@ git commit -m "feat(drift): register the tool and write its copy and worked exam
 - Consumes: `ToolPage` (F3), `drift`/`driftCopy`/`driftDemo`, every `lib/tools/drift/*` module, `trackToolRun` from `@/lib/tools/events` (F3), `useSystem` from `@/components/system/SystemProvider`
 - Produces: the route `/tools/drift`, which the sitemap and `/llms.txt` pick up on their own through `liveTools`
 
-**The split, and why it is where it is.** `page.tsx` is a server component and the only thing that touches `lib/tools/drift/corpus.ts`. It builds the reference table once (at build time, the route being static) and passes it down as a prop: about a hundred words and two hundred numbers in the RSC payload, instead of sixty kilobytes of article bodies in the client bundle. It also computes the worked example there, so the first paint already has a filled-in report and the page is never an empty shell. `DriftTool.tsx` imports the reference **as a type only**, and the coupling test in this task fails if that ever becomes a value import.
+**The split, and why it is where it is.** `page.tsx` is a server component and the only module on the route, or anywhere in the app, that touches `lib/tools/drift/corpus.ts`. It builds the worked example there: a reference from the eleven articles, a profile of them, their self-spread, and a report of the demo draft against all three, computed at build time because the route is static. The whole example arrives as props, so the first paint already carries a filled-in report and the page is never an empty shell.
+
+`DriftTool.tsx` does the visitor's half, and it does it in the tab. It imports `buildReference` from `lib/tools/drift/reference.ts` as a **value**, because the visitor's reference has to be built from what they pasted and there is nowhere else to build it: sending their writing to a server to compute a table would break the one promise on the page. That module is pure and imports only the tokeniser, so the value import costs a few hundred bytes and drags no article bodies with it. The coupling test in this task fails if `corpus` ever appears in the client component, which is the import that would.
 
 - [ ] **Step 1: Write the failing coupling tests**
 
@@ -2530,10 +2985,17 @@ describe("the page", () => {
     expect(css).toMatch(/\.drift__/);
   });
 
-  it("builds the reference and the worked example once, at module scope", () => {
-    expect(page).toMatch(/^const reference = /m);
+  it("builds the worked example once, at module scope", () => {
+    expect(page).toMatch(/^const demoReference = /m);
     expect(page).toMatch(/^const demoReport = /m);
     expect(page).toContain("analyse(");
+  });
+
+  it("is the only place the site's corpus is read", () => {
+    // The articles are the worked example and nothing else. A visitor's
+    // reference is built from their own pieces, in their own tab.
+    expect(page).toContain('from "@/lib/tools/drift/corpus"');
+    expect(tool).not.toContain("drift/corpus");
   });
 
   it("is listed as a live tool, so the sitemap and llms.txt pick it up", () => {
@@ -2546,12 +3008,22 @@ describe("the client component", () => {
     expect(tool.startsWith('"use client"')).toBe(true);
   });
 
-  it("never pulls the corpus into the browser bundle", () => {
-    // A value import here would drag every article body into the client chunk.
-    // The reference arrives as a prop; the type is erased at compile time.
-    expect(tool).toContain('import type { Reference } from "@/lib/tools/drift/corpus"');
-    expect(tool).not.toMatch(/import \{[^}]*\} from "@\/lib\/tools\/drift\/corpus"/);
+  it("builds the visitor's own reference in the tab", () => {
+    // A value import, deliberately: `reference.ts` imports only the tokeniser,
+    // so it costs a few hundred bytes and carries no article bodies. Sending
+    // the visitor's writing to a server to build the table instead would break
+    // the line on the page that says nothing leaves the tab.
+    expect(tool).toMatch(/import \{[^}]*buildReference[^}]*\} from "@\/lib\/tools\/drift\/reference"/);
+    expect(tool).toMatch(/setReference\(/);
     expect(tool).not.toContain('from "@/content/articles"');
+  });
+
+  it("measures against the reference in state, never the demo one", () => {
+    // The demo reference is a prop and the initial state. Once the visitor has
+    // pressed build, every call has to use theirs, and a stale `demoReference`
+    // here would silently score their draft against my articles.
+    expect(tool).toContain("analyse(profile, draft, reference, spread)");
+    expect(tool).not.toMatch(/analyse\([^)]*demoReference/);
   });
 
   it("writes to local storage exactly once, in the save handler", () => {
@@ -2559,6 +3031,10 @@ describe("the client component", () => {
     // One setItem, and it is inside onSave, is the whole enforcement.
     expect([...tool.matchAll(/localStorage\.setItem/g)]).toHaveLength(1);
     expect(tool).toMatch(/function onSave\(\)[\s\S]*?localStorage\.setItem\(DRIFT_PROFILE_KEY/);
+  });
+
+  it("saves the reference with the profile, because z-scores without it have no units", () => {
+    expect(tool).toContain("serialiseProfile(reference, profile, spread");
   });
 
   it("reads and clears the same key it writes", () => {
@@ -2622,7 +3098,7 @@ import { profile } from "@/content/profile";
 import { drift, driftDemo } from "@/content/tools/drift";
 import { OG_IMAGE, canonical } from "@/lib/seo";
 import { selfSpread } from "@/lib/tools/drift/delta";
-import { reference as buildReferenceTable, referenceDocuments } from "@/lib/tools/drift/corpus";
+import { referenceDocuments, siteReference } from "@/lib/tools/drift/corpus";
 import { profileOf } from "@/lib/tools/drift/profile";
 import { analyse } from "@/lib/tools/drift/report";
 import DriftTool from "./DriftTool";
@@ -2647,28 +3123,30 @@ export const metadata: Metadata = {
 /**
  * `/tools/drift`.
  *
- * This is the only module on the route that touches the corpus. It builds the
- * reference table once, here, which happens at build time because the route is
- * static, and hands it to the client as a prop: a hundred words and two hundred
- * numbers, rather than sixty kilobytes of article bodies in the browser bundle.
+ * This is the only module in the app that touches the corpus, and it touches it
+ * for one reason: the worked example. The eleven articles build a reference, a
+ * profile and a self-spread, and the demo draft is measured against them, all
+ * at build time because the route is static. So the first paint carries a real
+ * report over a corpus the reader can go and read, instead of an empty form.
  *
- * The worked example is computed here too, so the first paint carries a filled
- * report instead of an empty form. Its profile is this site's own writing,
- * which is also the reference population, so the demo shows both halves of the
- * measurement at once: what a writer's own spread looks like, and what a
- * rewrite of one of their paragraphs does to it.
+ * The visitor's own measurement is nothing to do with any of this. Their
+ * reference is built in their tab from their pieces, in `DriftTool`, and the
+ * moment they press build every number below is replaced by one in their units.
+ * That is why the demo arrives as props with `demo` in every name: a prop that
+ * quietly became the default yardstick is exactly the bug this route was
+ * rewritten to remove.
  */
-const reference = buildReferenceTable();
+const demoReference = siteReference();
 const demoDocuments = referenceDocuments();
-const demoProfile = profileOf(demoDocuments, reference);
-const demoSpread = selfSpread(demoDocuments, reference);
-const demoReport = analyse(demoProfile, driftDemo.draft, reference, demoSpread);
+const demoProfile = profileOf(demoDocuments, demoReference);
+const demoSpread = selfSpread(demoDocuments, demoReference);
+const demoReport = analyse(demoProfile, driftDemo.draft, demoReference, demoSpread);
 
 export default function DriftPage() {
   return (
     <ToolPage tool={drift}>
       <DriftTool
-        reference={reference}
+        demoReference={demoReference}
         demoProfile={demoProfile}
         demoSpread={demoSpread}
         demoReport={demoReport}
@@ -2687,7 +3165,7 @@ export default function DriftPage() {
 import { useEffect, useId, useState } from "react";
 import { useSystem } from "@/components/system/SystemProvider";
 import { driftCopy, driftDemo } from "@/content/tools/drift";
-import type { Reference } from "@/lib/tools/drift/corpus";
+import { buildReference, type Reference } from "@/lib/tools/drift/reference";
 import { selfSpread, type SelfSpread } from "@/lib/tools/drift/delta";
 import { MIN_PROFILE_WORDS, profileOf, type VoiceProfile } from "@/lib/tools/drift/profile";
 import { analyse, type DriftReport } from "@/lib/tools/drift/report";
@@ -2699,26 +3177,36 @@ import { trackToolRun } from "@/lib/tools/events";
  * The tool.
  *
  * Everything here is arithmetic in this tab. There is no action, no fetch and
- * no server call: the reference table arrived as a prop and every function it
- * feeds is pure. That is what lets the privacy line say what it says.
+ * no server call: the visitor's pieces build their own reference table a few
+ * lines below, and every function it feeds is pure. That is what lets the
+ * privacy line say what it says.
+ *
+ * `reference` is state, not a prop. It starts as the worked example's table,
+ * built from my eleven articles on the server, and `onBuild` replaces it with
+ * one built from the visitor's pieces. Everything downstream reads the state,
+ * so once they have pressed build there is no path left that scores their draft
+ * against my writing. That was the bug: a Delta is measured in the reference
+ * population's standard deviations, so a stranger measured against my articles
+ * gets a real number in somebody else's units, on somebody else's words, under
+ * a sentence about their own voice.
  *
  * Local storage is touched in exactly three places and never on a timer: read
- * once on mount (a profile the visitor saved on a previous visit), written in
- * `onSave`, removed in `onDrop`. `app/tools/drift/page.test.ts` counts the
- * writes, because "saved only if they press save" is a promise and a promise
- * needs a test.
+ * once on mount (a profile the visitor saved on a previous visit, reference and
+ * all), written in `onSave`, removed in `onDrop`. `app/tools/drift/page.test.ts`
+ * counts the writes, because "saved only if they press save" is a promise and a
+ * promise needs a test.
  *
  * Every storage call sits in a try/catch. Safari in private mode throws on
  * `setItem` rather than failing quietly, and a tool that dies on a browser
  * setting is worse than one that cannot remember anything.
  */
 export default function DriftTool({
-  reference,
+  demoReference,
   demoProfile,
   demoSpread,
   demoReport,
 }: {
-  reference: Reference;
+  demoReference: Reference;
   demoProfile: VoiceProfile;
   demoSpread: SelfSpread | null;
   demoReport: DriftReport;
@@ -2728,6 +3216,7 @@ export default function DriftTool({
 
   const [samples, setSamples] = useState("");
   const [draft, setDraft] = useState(driftDemo.draft);
+  const [reference, setReference] = useState<Reference>(demoReference);
   const [profile, setProfile] = useState<VoiceProfile>(demoProfile);
   const [spread, setSpread] = useState<SelfSpread | null>(demoSpread);
   const [report, setReport] = useState<DriftReport>(demoReport);
@@ -2739,6 +3228,7 @@ export default function DriftTool({
     try {
       const stored = parseProfile(window.localStorage.getItem(DRIFT_PROFILE_KEY));
       if (!stored) return;
+      setReference(stored.reference);
       setProfile(stored.profile);
       setSpread(stored.spread);
       setSavedAt(stored.savedAt);
@@ -2755,12 +3245,21 @@ export default function DriftTool({
       setNote(driftCopy.noSamples);
       return;
     }
-    const built = profileOf(pieces, reference);
-    setProfile(built);
-    setSpread(selfSpread(pieces, reference));
+    // Their pieces, their table. Built before the profile, because the profile
+    // is a set of z-scores against exactly this.
+    const built = buildReference(pieces);
+    const made = profileOf(pieces, built);
+    const range = selfSpread(pieces, built);
+    setReference(built);
+    setProfile(made);
+    setSpread(range);
+    // Re-measure straight away, so the demo's numbers never sit under a profile
+    // that has just been replaced. Not a `tool_run`: nothing was measured on a
+    // draft the visitor chose to measure.
+    setReport(analyse(made, draft, built, range));
     setMine(true);
     setSavedAt(null);
-    setNote(built.words < MIN_PROFILE_WORDS ? driftCopy.thinProfile : driftCopy.neverSaved);
+    setNote(made.words < MIN_PROFILE_WORDS ? driftCopy.thinProfile : driftCopy.neverSaved);
   }
 
   function onMeasure() {
@@ -2776,7 +3275,7 @@ export default function DriftTool({
 
   function onSave() {
     const now = new Date().toISOString();
-    const record = serialiseProfile(profile, spread, now);
+    const record = serialiseProfile(reference, profile, spread, now);
     try {
       window.localStorage.setItem(DRIFT_PROFILE_KEY, record);
       setSavedAt(now);
@@ -2797,6 +3296,7 @@ export default function DriftTool({
   }
 
   function onDemo() {
+    setReference(demoReference);
     setProfile(demoProfile);
     setSpread(demoSpread);
     setReport(demoReport);
@@ -2841,6 +3341,7 @@ export default function DriftTool({
               {driftCopy.drop}
             </button>
           </div>
+          <p className="drift__hint">{driftCopy.savedContents}</p>
         </div>
 
         <div className="drift__field">
@@ -2870,17 +3371,25 @@ export default function DriftTool({
 
       <section className="drift__report" aria-live="polite">
         <h2 className="drift__heading">{driftCopy.deltaHeading}</h2>
-        {report.status === "too-short" ? (
-          <p className="drift__refusal">{driftCopy.tooShort}</p>
-        ) : (
+        {report.status === "ok" ? (
           <p className="drift__delta">{number(report.delta ?? 0)}</p>
+        ) : (
+          <p className="drift__refusal">
+            {report.status === "too-short" ? driftCopy.tooShort : driftCopy.tooFewPieces}
+          </p>
         )}
         <p className="drift__hint">{driftCopy.referenceNote}</p>
+        <p className="drift__hint">
+          {driftCopy.builtFrom}: {report.reference.documents} pieces, {report.reference.totalWords}{" "}
+          words, {report.reference.markers} marker words.
+        </p>
 
-        {spread ? (
+        {report.selfSpread ? (
           <p className="drift__spread">
-            {driftCopy.spreadHeading}: {number(spread.min)} to {number(spread.max)}, median{" "}
-            {number(spread.median)}, over {spread.pieces} pieces.
+            {driftCopy.spreadHeading}: {number(report.selfSpread.min)} to{" "}
+            {number(report.selfSpread.max)}, median {number(report.selfSpread.median)}, across{" "}
+            {report.selfSpread.pieces} of your own pieces. This draft is at{" "}
+            {number(report.delta ?? 0)}.
           </p>
         ) : null}
 
@@ -2900,7 +3409,7 @@ export default function DriftTool({
         )}
         <p className="drift__hint">{driftCopy.substitutionNote}</p>
 
-        {report.status === "ok" ? (
+        {report.metrics.length > 0 ? (
           <>
             <h2 className="drift__heading">{driftCopy.metricsHeading}</h2>
             <div className="drift__scroll">
@@ -2946,7 +3455,11 @@ export default function DriftTool({
               </table>
             </div>
             <p className="drift__hint">{driftCopy.splitterNote}</p>
+          </>
+        ) : null}
 
+        {report.status === "ok" ? (
+          <>
             <h2 className="drift__heading">{driftCopy.pullsHeading}</h2>
             {report.pulls.length === 0 ? (
               <p className="drift__hint">{driftCopy.noPulls}</p>
@@ -3139,11 +3652,13 @@ npm run build 2>&1 | tail -8
 (npm start > .t1-server.log 2>&1 &)
 for i in $(seq 1 30); do curl -sf http://localhost:3000/tools/drift > /dev/null && break; done
 curl -s http://localhost:3000/tools/drift | grep -c "This is not an AI detector"
+curl -s http://localhost:3000/tools/drift | grep -o "Built from: [0-9]* pieces"
+curl -s http://localhost:3000/tools/drift | grep -c "A worked example"
 curl -s http://localhost:3000/sitemap.xml | grep -c "/tools/drift"
 curl -s http://localhost:3000/llms.txt | grep -ci "drift"
 ```
 
-Expected: the build succeeds, the first grep returns 1 or more (the lede is server-rendered), and the sitemap and `/llms.txt` both mention the route without either file being edited, which is F3's registry doing its job.
+Expected: the build succeeds, the first grep returns 1 or more (the lede is server-rendered), the second prints `Built from: 11 pieces` (the worked example really was computed at build time, from the articles, and shipped in the HTML), the third returns 1 or more (it is labelled as an example rather than passed off as the visitor's own), and the sitemap and `/llms.txt` both mention the route without either file being edited, which is F3's registry doing its job.
 
 - [ ] **Step 8: Commit**
 
@@ -3162,16 +3677,18 @@ git commit -m "feat(drift): add the tool page, its client component and its styl
 - Modify: `lib/mcp.test.ts` (one `describe`)
 
 **Interfaces:**
-- Consumes: `reference` from `@/lib/tools/drift/corpus`, `parseProfile` from `@/lib/tools/drift/storage`, `analyse` from `@/lib/tools/drift/report`, the existing `readString`, `toolError` and `structured` helpers in `lib/mcp.ts`
+- Consumes: `parseProfile` from `@/lib/tools/drift/storage`, `analyse` from `@/lib/tools/drift/report`, the existing `readString`, `toolError`, `text` and `structured` helpers in `lib/mcp.ts`
 - Produces: the MCP tool `check_voice`, which `TOOL_NAMES`, `toolDescriptors()`, `/mcp` and `/llms.txt` pick up with no further edits
 
-`lib/mcp.ts` stays pure: no `Request`, no `Response`, no clock, no filesystem. Everything `check_voice` calls is arithmetic over strings, so that holds. The request size is already bounded by `MAX_BODY_BYTES` (256,000), which is the honest bound on the draft; no second cap is added, because two limits with one reason between them is how the wrong one gets edited later.
+**It reads the reference out of the profile, and imports no corpus at all.** A caller's saved profile is a set of z-scores plus the table those z-scores were computed against, which is their own writing. Building a table here instead, from this site's articles, would compare a stranger's draft against my articles' variation and return a real-looking number in the wrong units. So `lib/tools/drift/corpus.ts` is not imported by this file, and after this task `page.tsx` is the only module in the repo that imports it.
+
+`lib/mcp.ts` stays pure: no `Request`, no `Response`, no clock, no filesystem. Everything `check_voice` calls is arithmetic over strings, so that holds, and dropping the corpus import makes it truer than before. The request size is already bounded by `MAX_BODY_BYTES` (256,000), which is the honest bound on the draft; no second cap is added, because two limits with one reason between them is how the wrong one gets edited later.
 
 - [ ] **Step 1: Write the failing tests**
 
 ```ts
 // appended to lib/mcp.test.ts, after the last tools/call describe
-import { buildReference } from "@/lib/tools/drift/corpus";
+import { buildReference } from "@/lib/tools/drift/reference";
 import { profileOf } from "@/lib/tools/drift/profile";
 import { serialiseProfile } from "@/lib/tools/drift/storage";
 
@@ -3182,9 +3699,10 @@ describe("check_voice", () => {
     ).join(" ");
   }
 
-  const localRef = buildReference([doc(1), doc(2), doc(3), doc(4), doc(5), doc(6)]);
+  const pieces = [doc(1), doc(2), doc(3), doc(4), doc(5), doc(6)];
+  const callerRef = buildReference(pieces);
   const saved = JSON.parse(
-    serialiseProfile(profileOf([doc(1)], localRef), null, "2026-09-03T12:00:00.000Z"),
+    serialiseProfile(callerRef, profileOf([doc(1)], callerRef), null, "2026-09-03T12:00:00.000Z"),
   );
 
   const draft = [
@@ -3204,7 +3722,18 @@ describe("check_voice", () => {
     expect(Array.isArray(payload.metrics)).toBe(true);
   });
 
-  it("refuses a distance under the floor and says so in words", () => {
+  it("measures against the caller's own reference, not this site's", () => {
+    // The whole point. The population in the answer is the six documents the
+    // caller's profile was built from, not the eleven articles at /writing.
+    const payload = call("check_voice", { profile: saved, draft }).structuredContent as {
+      reference: { documents: number; totalWords: number; markers: number };
+    };
+    expect(payload.reference.documents).toBe(6);
+    expect(payload.reference.markers).toBe(callerRef.markers.length);
+    expect(payload.reference.totalWords).toBe(callerRef.totalWords);
+  });
+
+  it("refuses a distance under the word floor and says so in words", () => {
     const result = call("check_voice", { profile: saved, draft: "Short. Far too short." });
     const payload = result.structuredContent as Record<string, unknown>;
     expect(payload.status).toBe("too-short");
@@ -3212,12 +3741,19 @@ describe("check_voice", () => {
     expect((result.content[0] as { text: string }).text.toLowerCase()).toContain("150");
   });
 
-  it("names the reference population in the result, because a Delta needs one", () => {
-    const payload = call("check_voice", { profile: saved, draft }).structuredContent as {
-      reference: { documents: number; totalWords: number; markers: number };
-    };
-    expect(payload.reference.documents).toBeGreaterThan(0);
-    expect(payload.reference.markers).toBeGreaterThan(0);
+  it("refuses a distance from a reference of three pieces and says so in words", () => {
+    const thinPieces = [doc(1), doc(3), doc(6)];
+    const thinRef = buildReference(thinPieces);
+    const thin = JSON.parse(
+      serialiseProfile(thinRef, profileOf(thinPieces, thinRef), null, "2026-09-03T12:00:00.000Z"),
+    );
+    const result = call("check_voice", { profile: thin, draft });
+    const payload = result.structuredContent as Record<string, unknown>;
+    expect(payload.status).toBe("thin-reference");
+    expect(payload.delta).toBeNull();
+    // The habits survive: none of them was ever measured in the population's units.
+    expect((payload.metrics as unknown[]).length).toBeGreaterThan(0);
+    expect((result.content[0] as { text: string }).text).toContain("5");
   });
 
   it("returns a tool error, not a protocol error, for a profile it does not recognise", () => {
@@ -3226,13 +3762,19 @@ describe("check_voice", () => {
     expect((result.content[0] as { text: string }).text).toContain("Drift profile");
   });
 
+  it("returns a tool error for a profile with its reference stripped out", () => {
+    // A z-score vector with no table behind it has no units. Measuring it
+    // against whatever table was to hand is the exact failure this tool was
+    // rewritten to remove, so it is refused rather than guessed at.
+    const { reference: _dropped, ...noRef } = saved;
+    expect(call("check_voice", { profile: noRef, draft }).isError).toBe(true);
+  });
+
   it("returns a tool error when the draft is missing", () => {
     expect(call("check_voice", { profile: saved }).isError).toBe(true);
   });
 });
 ```
-
-Note that the profile in these tests is built against a **fixture** reference while the tool measures against the **site's** reference. That is deliberate and is exactly what a real caller does: their saved profile carries z-scores computed against whatever reference the page gave them. The tool's own docblock has to say that the two must match, and the next step's description says it in words a model will read.
 
 - [ ] **Step 2: Run it to see it fail**
 
@@ -3244,7 +3786,6 @@ Expected: FAIL on `TOOL_NAMES` not containing `check_voice`, and on unknown tool
 Add to the imports at the top of `lib/mcp.ts`:
 
 ```ts
-import { reference as driftReference } from "@/lib/tools/drift/corpus";
 import { analyse as analyseDrift } from "@/lib/tools/drift/report";
 import { parseProfile as parseDriftProfile } from "@/lib/tools/drift/storage";
 ```
@@ -3256,13 +3797,13 @@ and append this entry to the `TOOLS` array, after `list_experience`:
     name: "check_voice",
     title: "Measure a draft against a voice profile",
     description:
-      "Burrows's Delta, sentence rhythm, punctuation rates, join rates and substitution hits for a draft against a voice profile saved from /tools/drift. Pass the profile object exactly as that tool exports it. A draft under 150 words gets the counts and no distance, because a Delta under that length reports chance rather than habit. This is not an AI detector: a low distance means the commonest words appear at similar rates, and nothing more. The profile's z-scores were computed against this site's own articles as the reference population, so a profile built anywhere else will not compare.",
+      "Burrows's Delta, sentence rhythm, punctuation rates, join rates and substitution hits for a draft against a voice profile saved from /tools/drift. Pass the profile object exactly as that tool exports it, reference table included: the z-scores in it were computed against the writer's own pieces, and without that table they have no units, so a profile with it stripped out is refused rather than guessed at. A draft under 150 words gets the counts and no distance, because a Delta under that length reports chance rather than habit. A profile built from fewer than 5 pieces gets the habits and no distance, because the standard deviations behind it come from too few numbers to be units of anything. This is not an AI detector: a low distance means the writer's own commonest words appear at similar rates, and nothing more.",
     inputSchema: {
       type: "object",
       properties: {
         profile: {
           type: "object",
-          description: "The saved profile object from /tools/drift, unchanged.",
+          description: "The saved profile object from /tools/drift, unchanged, reference included.",
         },
         draft: { type: "string", minLength: 1, description: "The draft to measure." },
       },
@@ -3276,31 +3817,32 @@ and append this entry to the `TOOLS` array, after `list_experience`:
       const saved = parseDriftProfile(args.profile);
       if (!saved) {
         return toolError(
-          "`profile` is not a Drift profile. Paste the JSON object that /tools/drift saves, unchanged.",
+          "`profile` is not a Drift profile. Paste the JSON object that /tools/drift saves, unchanged and with its reference table.",
         );
       }
 
-      const ref = driftReference();
-      const report = analyseDrift(saved.profile, draft.value, ref, saved.spread);
-      const payload = {
-        ...report,
-        reference: {
-          documents: ref.documents,
-          totalWords: ref.totalWords,
-          markers: ref.markers.length,
-          source: absolute("/writing"),
-        },
-      };
+      // The caller's own table, carried in the record. Nothing here builds one,
+      // and nothing here imports this site's corpus: a stranger's draft scored
+      // against my articles would be a real number in somebody else's units.
+      const report = analyseDrift(saved.profile, draft.value, saved.reference, saved.spread);
 
       if (report.status === "too-short") {
         return {
           content: text(
-            `${report.words} words, and the floor is ${report.floor}. Under 150 words a Delta reports whether a word happened to occur at all, so no distance is printed. The counts still hold: ${report.emDashes} em dash(es), ${report.substitutions.length} substitution(s).`,
+            `${report.words} words, and the floor is ${report.floor}. Under ${report.floor} words a Delta reports whether a word happened to occur at all, so no distance is printed. The counts still hold: ${report.emDashes} em dash(es), ${report.substitutions.length} substitution(s).`,
           ),
-          structuredContent: payload,
+          structuredContent: report,
         };
       }
-      return structured(payload);
+      if (report.status === "thin-reference") {
+        return {
+          content: text(
+            `The profile was built from ${report.reference.documents} piece(s) and ${report.reference.markers} marker word(s), and the floor is ${report.documentFloor} pieces. Every standard deviation behind the distance would come from that many numbers, so no distance is printed. The habits, the em dashes and the substitutions are all in the structured result.`,
+          ),
+          structuredContent: report,
+        };
+      }
+      return structured(report);
     },
   },
 ```
@@ -3314,23 +3856,24 @@ npx vitest run lib/mcp.test.ts
 
 Expected: PASS, including the pre-existing "exposes no tool that `tools/call` cannot dispatch" case, which calls every tool with no arguments and requires a tool error rather than a JSON-RPC error. `check_voice` with no arguments returns `toolError` from `readString`, so it satisfies that.
 
-- [ ] **Step 5: Confirm the documentation surfaces picked it up by themselves**
+- [ ] **Step 5: Confirm the documentation surfaces picked it up by themselves, and that the corpus stayed behind**
 
 ```bash
 cd "$WT"
 npx vitest run app/ lib/mcp.test.ts --reporter=dot 2>&1 | tail -3
 grep -n "TOOL_NAMES" app/llms.txt/route.ts
 grep -n "toolDescriptors" app/mcp/page.tsx
+grep -rn "drift/corpus" --include=*.ts --include=*.tsx . | grep -v node_modules
 ```
 
-Expected: green, and both greps hit. `/mcp` and `/llms.txt` list tools from `toolDescriptors()` and `TOOL_NAMES`, so neither file is edited and both gain the tool. Task 13 checks that on the live site rather than trusting the grep.
+Expected: green, both greps hit, and the last one names exactly two files: `app/tools/drift/page.tsx` and `lib/tools/drift/corpus.test.ts`. Anything else importing the corpus is a path by which somebody's draft could be measured against my articles, and it is a stop-and-read, not a note. `/mcp` and `/llms.txt` list tools from `toolDescriptors()` and `TOOL_NAMES`, so neither file is edited and both gain the tool. Task 14 checks that on the live site rather than trusting the grep.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 cd "$WT"
 git add lib/mcp.ts lib/mcp.test.ts
-git commit -m "feat(mcp): add check_voice, the MCP twin of the drift tool"
+git commit -m "feat(mcp): add check_voice, measuring against the profile's own reference"
 ```
 
 ---
@@ -3338,12 +3881,12 @@ git commit -m "feat(mcp): add check_voice, the MCP twin of the drift tool"
 ### Task 12: Prove the tests can fail, then wire the guards into the mutation check
 
 **Files:**
-- Modify: `scripts/mutation-check.mjs` (six entries)
+- Modify: `scripts/mutation-check.mjs` (seven entries)
 - Temporarily modify then restore: `lib/tools/drift/delta.ts`
 
 **Interfaces:**
 - Consumes: every module from Tasks 1 to 10
-- Produces: six mutation rows, and the evidence that the suite goes red when a guard is broken
+- Produces: seven mutation rows, and the evidence that the suite goes red when a guard is broken
 
 A guard that survives its own mutation is decoration, and a suite nobody has watched fail is a ritual rather than a check. This task does both, in that order, and neither claim in the ledger is allowed before the corresponding run.
 
@@ -3364,7 +3907,7 @@ npx vitest run lib/tools/drift/report.test.ts lib/tools/drift/delta.test.ts 2>&1
 
 Expected: **FAIL**, and specifically these, not something vague:
 - `the floor > is 150 words, the length below which a Delta is noise`, expected 150, received 1.
-- `analyse under the floor > refuses every statistic and says which floor it refused against`, because `status` is now `"ok"`.
+- `analyse under the word floor > refuses every statistic and says which floor it refused against`, because `status` is now `"ok"`.
 
 Write both failure lines into the ledger. That paste is the observation. If the suite goes green with the floor at 1, stop: the floor is not tested and every claim about it in this plan is unearned.
 
@@ -3376,14 +3919,14 @@ git checkout -- lib/tools/drift/delta.ts
 npx vitest run lib/tools/drift/report.test.ts lib/tools/drift/delta.test.ts 2>&1 | tail -5
 ```
 
-Expected: PASS. The pair of runs is the revert-to-confirm step from `CLAIMS.md` rule 3: the failure appeared when the guard was broken and disappeared when it was restored, which is what earns the word "tested" for the floor. It says nothing about the other five guards, which is what Step 3 is for.
+Expected: PASS. The pair of runs is the revert-to-confirm step from `CLAIMS.md` rule 3: the failure appeared when the guard was broken and disappeared when it was restored, which is what earns the word "tested" for the floor. It says nothing about the other six guards, which is what Step 3 is for.
 
-- [ ] **Step 3: Add the six mutation rows**
+- [ ] **Step 3: Add the seven mutation rows**
 
 In `scripts/mutation-check.mjs`, append to the `MUTATIONS` array, after the registry entries:
 
 ```js
-  // ── drift: the six guards, each with the test that catches it ──
+  // ── drift: the seven guards, each with the test that catches it ──
   {
     name: "drift prints a distance under the 150-word floor",
     file: "lib/tools/drift/report.ts",
@@ -3391,15 +3934,21 @@ In `scripts/mutation-check.mjs`, append to the `MUTATIONS` array, after the regi
     replace: "if (false) {",
   },
   {
+    name: "drift prints a distance from a reference of three pieces, in units of one piece's accident",
+    file: "lib/tools/drift/report.ts",
+    pattern: /if \(ref\.documents < MIN_REFERENCE_DOCUMENTS \|\| ref\.markers\.length === 0\) \{/,
+    replace: "if (false) {",
+  },
+  {
     name: "drift keeps a marker whose standard deviation is zero (every Delta becomes NaN)",
-    file: "lib/tools/drift/corpus.ts",
+    file: "lib/tools/drift/reference.ts",
     pattern: /    if \(s === 0\) continue;/,
     replace: "    if (false) continue;",
   },
   {
     name: "drift accepts a marker from a single document, so topic reads as voice",
-    file: "lib/tools/drift/corpus.ts",
-    pattern: />= MIN_DOCUMENT_SHARE\)/,
+    file: "lib/tools/drift/reference.ts",
+    pattern: />= minDocuments\)/,
     replace: ">= 0)",
   },
   {
@@ -3419,9 +3968,11 @@ In `scripts/mutation-check.mjs`, append to the `MUTATIONS` array, after the regi
     file: "app/tools/drift/DriftTool.tsx",
     pattern: /      const stored = parseProfile\(window\.localStorage\.getItem\(DRIFT_PROFILE_KEY\)\);/,
     replace:
-      "      const stored = parseProfile(window.localStorage.getItem(DRIFT_PROFILE_KEY));\n      window.localStorage.setItem(DRIFT_PROFILE_KEY, serialiseProfile(demoProfile, demoSpread, new Date().toISOString()));",
+      "      const stored = parseProfile(window.localStorage.getItem(DRIFT_PROFILE_KEY));\n      window.localStorage.setItem(DRIFT_PROFILE_KEY, serialiseProfile(demoReference, demoProfile, demoSpread, new Date().toISOString()));",
   },
 ```
+
+The second row is the one to watch. It is the guard that stops the tool printing a distance built on a handful of documents, and it is caught by `analyse under the document floor > refuses a distance built on fewer than MIN_REFERENCE_DOCUMENTS pieces`. The eighth guard a reader might expect, "the visitor's own pieces are what the reference is built from", has no mutation row because it is not a branch: it is `buildReference(pieces)` in `onBuild` with nothing else to fall back to, and the coupling tests in Task 10 hold it instead by refusing `drift/corpus` in the client component and pinning `analyse(profile, draft, reference, spread)`.
 
 - [ ] **Step 4: Run the mutation check**
 
@@ -3432,14 +3983,14 @@ node scripts/mutation-check.mjs 2>&1 | tail -20
 
 Expected: every drift row prints `RED`, and the final line reads `N/N mutations caught.` with no `Survived` block. An `ANCHOR-MISS` line is a failure, not a skip: it means the guard is not being mutated at all, and the anchor has to be fixed against the file as written, never the file loosened to fit the anchor.
 
-This run takes a while: each mutation runs the whole suite, and there are more than sixty rows before these six.
+This run takes a while: each mutation runs the whole suite, and there are more than sixty rows before these seven.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 cd "$WT"
 git add scripts/mutation-check.mjs
-git commit -m "test(drift): mutate the six guards and prove each one is load-bearing"
+git commit -m "test(drift): mutate the seven guards and prove each one is load-bearing"
 ```
 
 ---
@@ -3461,6 +4012,7 @@ The design's rule, and the one thing this site refuses to fudge: **a resized des
 2. No `input-font` failures. Both text areas are `.drift__input` at a literal `16px`.
 3. No `tap-target` failures on `.drift__button` (44px floor, set) but possibly one on the disabled buttons if the script measures a disabled control, which is unknown behaviour in the script and worth reading rather than guessing.
 4. Unknown, and the most likely place to find something: `contrast` on `.drift__reasons`, which is `--amber` on the page background, and on the table's bottom borders. `--amber` measured against `--bg` is comfortable on the green theme; the run is the first time it has been sampled through the scanline overlay and the phosphor shader on this route.
+5. Also unknown: the route now carries three long paragraphs of body copy that the first draft of it did not, `referenceNote`, `savedContents` and `tooFewPieces`. None of them can cause horizontal overflow on its own, since they are plain flowing text, but a long unbroken token inside one would, and `tooFewPieces` is the only string on the page a visitor reaches by doing something wrong. Read the 320 screenshot rather than assuming it wraps.
 
 - [ ] **Step 1: Build and serve**
 
@@ -3538,25 +4090,30 @@ If the run was clean and nothing changed, skip the commit and say so in the ledg
 In "Stack and conventions", at the end of the bullet F3 added about `content/tools/` and `ToolPage`, append:
 
 ```markdown
-  `/tools/drift` measures Burrows's Delta against a reference population, and that population is
-  this site's own articles: `lib/tools/drift/corpus.ts` is the only module allowed to import
-  `content/articles`, because a value import from a client component would put every article body
-  in the browser bundle. It saves a profile under `fergusos:drift-profile`, built from
-  `OWNED_PREFIX` so `forget` wipes it, and it writes that key in exactly one place, behind the save
-  button. `app/tools/drift/page.test.ts` counts the writes.
+  `/tools/drift` measures Burrows's Delta against a reference population built from the visitor's
+  own pieces, in the browser, by `lib/tools/drift/reference.ts`, which imports nothing but the
+  tokeniser. `lib/tools/drift/corpus.ts` is the only module allowed to import `content/articles`
+  and it exists only for the worked example the page renders at build time, so `page.tsx` is the
+  only file that may import it. It saves a profile, reference table included, under
+  `fergusos:drift-profile`, built from `OWNED_PREFIX` so `forget` wipes it, and it writes that key
+  in exactly one place, behind the save button. `app/tools/drift/page.test.ts` counts the writes.
 ```
+
+The old sentence claimed the reference population was this site's articles. It is not, and leaving that in would send the next agent to build a second tool the same wrong way, so the replacement is the whole point of this step rather than a tidy-up.
 
 - [ ] **Step 2: Update PROGRESS.md and the ledger**
 
-`docs/PROGRESS.md`: tick T1 and add a decision-log line naming the reference corpus, the marker count and the floor, with the numbers the corpus test actually observed.
+`docs/PROGRESS.md`: tick T1 and add a decision-log line naming the reference population (the visitor's own pieces), the marker count, and both floors, with the numbers the reference test actually observed.
 
-The ledger: set the T1 row to `**pr**`, and put the four observations in the Log, each labelled with its rung:
+The ledger: set the T1 row to `**pr**`, and put the observations in the Log, each labelled with its rung:
 
 ```markdown
 - 2026-09-03: T1 built. Observed: tsc clean; N tests passing (was M at baseline); mutation check
-  caught all six drift guards; the phone check passed on /tools/drift at 390, 320 and the throttled
-  Pixel after the fixes in Task 13 (or first time, if it did). Reference corpus measured at D
-  documents and W words with 100 markers. Not verified at this point: anything on the live site.
+  caught all seven drift guards; the phone check passed on /tools/drift at 390, 320 and the
+  throttled Pixel after the fixes in Task 13 (or first time, if it did). The worked example's
+  corpus measured at D documents and W words with 100 markers; that corpus is the demo only, and
+  a visitor's reference is built in their tab from their own pieces. Not verified at this point:
+  anything on the live site.
 ```
 
 - [ ] **Step 3: Push and open the pull request**
@@ -3565,7 +4122,7 @@ The ledger: set the T1 row to `**pr**`, and put the four observations in the Log
 cd "$WT"
 npx tsc --noEmit && npm test -- --reporter=dot 2>&1 | tail -3
 git add AGENTS.md docs/PROGRESS.md docs/superpowers/programme/toolshed-ledger.md
-git commit -m "docs(drift): record the corpus, the storage key and the T1 evidence"
+git commit -m "docs(drift): record the reference population, the storage key and the T1 evidence"
 git push -u origin toolshed/t1-drift
 gh pr create --title "T1: Drift, a voice-drift tool that is not an AI detector" --body "$(cat <<'BODY'
 Adds `/tools/drift`.
@@ -3575,16 +4132,25 @@ them, the sentences pulling hardest away, and the substitutions your own corpus 
 Everything runs in the browser. The profile is saved only if you press save, under
 `fergusos:drift-profile`, and `forget` wipes it.
 
-The reference population for the z-scores is this site's own articles, and the page says so,
-because a Delta needs a population to be a distance from.
+The reference population for the z-scores is your own pieces, built in your own tab. That is
+what makes the number readable: a Delta is measured in the population's standard deviations, so
+measuring a stranger's draft against my articles would return a real, monotone, convincing
+number in the wrong units, on a marker set of my commonest words. The tool prints the spread of
+your own pieces beside the draft's distance so the number has something to sit against.
 
-Under 150 words the tool refuses to print a distance and says why. Counts still print.
+This site's eleven articles are the worked example and nothing else: the page loads with a real
+Delta computed at build time over a corpus you can go and read, labelled as an example, so it is
+never an empty form.
 
-`check_voice(profile, draft)` joins the MCP server and returns the same numbers from the same
-functions.
+Two refusals. Under 150 words the draft is too short and only the counts print. Under 5 pieces
+the population is too thin, so the distance, the spread and the sentence attribution go and the
+habits stay, because none of those ever needed a population.
 
-Six new guards, six mutation rows, all caught. The phone check passes at 390 and 320 on WebKit
-and on a throttled Chromium Pixel.
+`check_voice(profile, draft)` joins the MCP server and reads the reference out of the saved
+profile, so it returns the same numbers from the same functions in the same units.
+
+Seven new guards, seven mutation rows, all caught. The phone check passes at 390 and 320 on
+WebKit and on a throttled Chromium Pixel.
 
 Not verified in this PR: anything on the live site. The post-deploy check follows the merge.
 BODY
@@ -3606,18 +4172,23 @@ Then read `readyState`, `aliasAssigned` and `meta.githubCommitSha` from `v13/dep
 
 - [ ] **Step 5: Exercise the exact flow on the live site, on a phone engine**
 
-A 200 on the route is not a pass. Drive the real thing:
+A 200 on the route is not a pass. Drive the real thing, including both floors and the thing this revision was for: that a built profile is measured against the visitor's own pieces and the saved record carries their table.
 
 ```bash
 cd "$WT"
 node --input-type=module -e "$(cat <<'JS'
 import { devices, webkit } from "playwright";
 
-const sample = Array.from({ length: 60 }, (_, i) =>
-  i % 3 === 0
-    ? "So I wrote it down and it turned out fine."
-    : "The thing works and I use it every day here.",
-).join(" ");
+/** Five pieces of about 365 words each, varying between them so the sigmas are real. */
+const piece = (n) =>
+  Array.from({ length: 30 }, (_, i) =>
+    (i + n) % 3 === 0
+      ? "So I wrote it down and it turned out fine in the end."
+      : "The thing works and I use it every day here without thinking.",
+  ).join(" ");
+
+const five = [1, 2, 3, 4, 5].map(piece).join("\n---\n");
+const four = [1, 2, 3, 4].map(piece).join("\n---\n");
 
 const browser = await webkit.launch();
 const context = await browser.newContext(devices["iPhone 13"]);
@@ -3626,19 +4197,32 @@ await page.goto("https://fergusoreilly.dev/tools/drift", { waitUntil: "networkid
 
 console.log("lede:", (await page.locator("p.page__lede").first().innerText()).slice(0, 40));
 console.log("demo delta:", await page.locator(".drift__delta").first().innerText());
+console.log("demo built from:", await page.locator(".drift__report .drift__hint").nth(1).innerText());
 
-await page.locator("textarea").first().fill(sample);
+await page.locator("textarea").first().fill(four);
 await page.getByRole("button", { name: "Build the profile" }).click();
 await page.getByRole("button", { name: "Measure the draft" }).click();
-console.log("after measure:", await page.locator(".drift__delta, .drift__refusal").first().innerText());
+console.log("four pieces:", await page.locator(".drift__refusal").first().innerText());
+
+await page.locator("textarea").first().fill(five);
+await page.getByRole("button", { name: "Build the profile" }).click();
+await page.getByRole("button", { name: "Measure the draft" }).click();
+console.log("five pieces:", await page.locator(".drift__delta, .drift__refusal").first().innerText());
+console.log("built from:", await page.locator(".drift__report .drift__hint").nth(1).innerText());
+console.log("spread:", await page.locator(".drift__spread").first().innerText());
 
 await page.locator("textarea").nth(1).fill("Far too short to measure.");
 await page.getByRole("button", { name: "Measure the draft" }).click();
-console.log("refusal:", await page.locator(".drift__refusal").first().innerText());
+console.log("short draft:", await page.locator(".drift__refusal").first().innerText());
 
 console.log("stored before save:", await page.evaluate(() => window.localStorage.getItem("fergusos:drift-profile")));
 await page.getByRole("button", { name: "Save this profile" }).click();
-console.log("stored after save:", (await page.evaluate(() => window.localStorage.getItem("fergusos:drift-profile")))?.slice(0, 40));
+const record = await page.evaluate(() => window.localStorage.getItem("fergusos:drift-profile"));
+console.log("stored after save:", record?.slice(0, 40));
+const parsed = JSON.parse(record ?? "{}");
+console.log("saved reference documents:", parsed?.reference?.documents);
+console.log("saved reference markers:", parsed?.reference?.markers?.length);
+console.log("longest saved marker:", (parsed?.reference?.markers ?? []).reduce((a, b) => (b.length > a.length ? b : a), ""));
 
 await browser.close();
 JS
@@ -3648,10 +4232,16 @@ JS
 Expected, and each line is the observation for one claim:
 - `lede:` starts `This is not an AI detector.`
 - `demo delta:` a number, so the page was not an empty form on arrival.
-- `after measure:` a number.
-- `refusal:` the under-the-floor sentence, containing `150`.
-- `stored before save:` `null`. **This is the one that matters most**: it is the constitution's clause, live. If it prints anything else, the tool is writing without being asked and that is a stop-and-fix, not a note.
+- `demo built from:` names 11 pieces, which is the worked example, not the visitor.
+- `four pieces:` the document-floor refusal, containing `5`. **This is the new floor, live.** If it prints a number instead, the refusal is not wired and that is a stop-and-fix.
+- `five pieces:` a number.
+- `built from:` now names 5 pieces and their word count, not 11. **This is the fix itself.** If it still says 11, the client is measuring against my articles and the whole revision did not land.
+- `spread:` a range and a median across 5 pieces, with the draft's distance after it.
+- `short draft:` the word-floor refusal, containing `150`.
+- `stored before save:` `null`. It is the constitution's clause, live. Anything else means the tool is writing without being asked, which is a stop-and-fix, not a note.
 - `stored after save:` a JSON prefix.
+- `saved reference documents:` `5`, so the profile carries the table its z-scores were computed against.
+- `longest saved marker:` a single word with no space in it, which is the "no sentence is stored" promise checked on the live record rather than only in the unit test.
 
 Then the phone check against production:
 
@@ -3684,16 +4274,23 @@ Set the T1 row to `**live**` with the deployment uid, and write the final log li
 
 ```markdown
 - 2026-09-03: T1 live. Verified on https://fergusoreilly.dev/tools/drift with a WebKit iPhone 13:
-  the lede reads "This is not an AI detector", the worked example rendered a distance on arrival,
-  a built profile measured a draft, a 5-word draft got the refusal naming 150, local storage was
-  null before save and held the record after it, the phone check passed at 390 and 320 and on the
-  throttled Pixel, tools/list carries check_voice, and the tool_run event arrived with slug,
-  outcome and milliseconds only.
-  Not verified: the marker count of 100 is a choice and nothing here measures whether it is the
-  right one; the Delta has not been compared against any published implementation, so "this is
-  Burrows's Delta" rests on the formula in the docblock and the tests, not on an external oracle;
-  the substitution table is 22 pairs chosen by hand and its coverage is unmeasured; and nothing
-  has been tried on a physical iPhone, only on the WebKit engine one ships.
+  the lede reads "This is not an AI detector", the worked example rendered a distance on arrival
+  built from 11 pieces, a four-piece profile got the document-floor refusal naming 5, a
+  five-piece profile measured a draft and the page then reported it was built from 5 pieces and
+  not 11, the spread printed across the visitor's own pieces, a 5-word draft got the word-floor
+  refusal naming 150, local storage was null before save and after it held a record whose
+  reference carried 5 documents and only single-word markers, the phone check passed at 390 and
+  320 and on the throttled Pixel, tools/list carries check_voice, and the tool_run event arrived
+  with slug, outcome and milliseconds only.
+  Not verified: the marker count of 100, the over-half document share and the five-piece floor
+  are all choices and nothing here measures whether any of the three is the right one; the
+  leave-one-out spread is computed against a table each held-out piece helped build, so it runs
+  slightly tight and by an unmeasured amount; the Delta has not been compared against any
+  published implementation, so "this is Burrows's Delta" rests on the formula in the docblock and
+  the tests, not on an external oracle; the substitution table is 22 pairs chosen by hand and its
+  coverage is unmeasured; nothing has been tried with a real visitor's writing, only with fixture
+  documents and my own articles; and nothing has been tried on a physical iPhone, only on the
+  WebKit engine one ships.
 ```
 
 - [ ] **Step 9: Commit the ledger straight to main**
@@ -3712,7 +4309,7 @@ Docs-only commits may land on `main` directly (AGENTS.md, Commands).
 
 ## Self-review
 
-Run against the spec with fresh eyes, per the writing-plans skill. Gaps found were fixed inline before this plan was saved; each is listed with what changed.
+Run against the spec with fresh eyes, per the writing-plans skill, and run again after the reference population moved from this site's articles to the visitor's own pieces. Gaps found were fixed inline before this plan was saved; each is listed with what changed.
 
 **1. Spec coverage.** Walking design section 6, T1, clause by clause:
 
@@ -3721,7 +4318,7 @@ Run against the spec with fresh eyes, per the writing-plans skill. Gaps found we
 | `/tools/drift` | 10 |
 | "Not an AI detector, and the first line says so" | 9 (the blurb, which `ToolPage` renders as the lede, pinned by a test) |
 | "Paste ten things you wrote" | 9 (copy), 10 (one text area, dash separator), 1 (`splitPieces`) |
-| "the tab builds a voice profile" | 5 |
+| "the tab builds a voice profile" | 2 (their reference), 5 (their profile) |
 | function-word frequencies | 2, 5 |
 | sentence-length rhythm | 3 |
 | punctuation | 3 |
@@ -3733,29 +4330,35 @@ Run against the spec with fresh eyes, per the writing-plans skill. Gaps found we
 | "wiped by `forget`" | 8 (the key is built from `OWNED_PREFIX`, which is what `forget` scans for) |
 | "Under 150 words the tool refuses to print a distance" | 6, 7, and proved failable in 12 |
 | "MCP twin `check_voice(profile, draft)`" | 11 |
-| "Can't see: meaning, register shifts within one writer" | 9, plus the two the prompt adds (under the floor, and a low Delta is not praise) |
+| "Can't see: meaning, register shifts within one writer" | 9, plus the three the tool adds (under the word floor, under the document floor, and a low Delta is not praise) |
 | Demo state, no empty shell (design section 6 preamble) | 9, 10 |
-| Everything in the browser, nothing uploaded | 10 (no action, no fetch; the reference arrives as a prop) |
-| The bundled reference corpus is named on the page | 2, 9 (`referenceNote`), 10 |
+| Everything in the browser, nothing uploaded | 10 (no action, no fetch; the visitor's reference is built in the tab) |
+| The reference population is named on the page, and it is the visitor's own | 2, 9 (`referenceNote`), 10 |
+| The site's articles are the worked example, labelled as one | 2 (`corpus.ts`), 9 (`demoNote`), 10 (`page.tsx`) |
 | Phone check at 390 and 320 on a real engine (section 9) | 13 |
 | Mutation check on every new guard (section 9) | 12 |
 | "can't see" list on the page, checked against the code | 9 (F3's `ToolPage` renders it; the reviewer checks it against `lib/tools/drift/*`) |
 | `tool_run` with slug and outcome, never the input | 10, checked live in 14 |
 
-Two gaps found and closed while writing this: the spec's "ten pieces" needed a way to separate them, which became `splitPieces` in Task 1 rather than a growing list of text areas (a list of ten text areas at 320px is a scroll marathon); and nothing in the spec said what happens under the floor to things that are counts rather than statistics, so Task 7 states the split and tests it.
+Three gaps found and closed while writing this. The spec's "ten pieces" needed a way to separate them, which became `splitPieces` in Task 1 rather than a growing list of text areas (a list of ten text areas at 320px is a scroll marathon). Nothing in the spec said what happens under the floor to things that are counts rather than statistics, so Task 7 states the split and tests it. And the largest: an earlier version of this plan built the reference population from this site's eleven articles and then measured a stranger's draft against it. The spec's own words are "how far the draft has moved from the way **you** write", and that version measured it in units of how much **my** articles vary between themselves, on a marker set of **my** commonest words, which is a different sentence with the same arithmetic. Task 2 now builds the population from the visitor's pieces, `corpus.ts` is demoted to the worked example, and the parts that had to move with it are listed under point 3.
 
-**2. Placeholder scan.** No "TBD", no "add error handling", no "similar to Task N", no "write tests for the above". Every code step carries the code. Three places name a thing that has not happened yet, and all three are labelled as predictions with the action to take if they are wrong: the real corpus yielding 100 markers (Task 2 Step 4), the self-spread minimum being above zero (Task 6 Step 4), and the four phone-check guesses (Task 13). That is the CLAIMS.md pattern, not a placeholder.
+**2. Placeholder scan.** No "TBD", no "add error handling", no "similar to Task N", no "write tests for the above". Every code step carries the code. Five places name a thing that has not happened yet, and all five are labelled as predictions with the action to take if they are wrong: the real corpus yielding 100 markers (Task 2 Step 8), five identical documents yielding an empty marker set (Task 7 Step 4), one-document words not surviving into a saved record (Task 8 Step 4), the self-spread minimum being above zero (Task 6 Step 4), and the five phone-check guesses (Task 13). That is the CLAIMS.md pattern, not a placeholder.
 
 **3. Type consistency.** Checked name by name across tasks:
 
-- `Reference` is produced in Task 2 and consumed as `type Reference` in Tasks 5, 6, 7 and 10. Every consumer takes it as an argument, so `corpus.ts` is imported for its value in exactly two places: `page.tsx` and `lib/mcp.ts`, both server side.
+- `Reference` is produced in Task 2 by `lib/tools/drift/reference.ts` and consumed as `type Reference` in Tasks 5, 6, 7 and 8. `buildReference` is called for its value in three places, and each is correct: `corpus.ts` (the worked example), `page.tsx` (through `siteReference()`), and `DriftTool.tsx` (the visitor's own, in the browser). `reference.ts` imports only `./text`, so the client value import carries no corpus.
+- `lib/tools/drift/corpus.ts` is imported for its value in exactly **one** place after Task 11, `app/tools/drift/page.tsx`, and Task 11 Step 5 greps for that rather than assuming it. `lib/mcp.ts` no longer imports it at all, which is what stops the MCP twin scoring a caller's draft against my articles.
 - `VoiceProfile` is produced in Task 5 and consumed in 6, 7, 8, 10, 11 with the same field names throughout: `version, pieces, words, freq, z, rhythm, punctuation, joins, pairs`.
 - `SelfSpread` is produced in Task 6 (`delta.ts`) and consumed in 7, 8, 10, 11. It lives in `delta.ts` rather than `report.ts` because `selfSpread` computes it; `report.ts` imports the type from there, and Task 7's Interfaces block says so.
 - `PairCounts` is produced in Task 4 and is the type of `VoiceProfile.pairs` in Task 5 and of `isProfile`'s check in Task 8.
 - `MetricKey` and `PullReason` are produced in Task 7 and consumed by `driftCopy.metricLabels` and `reasonLabels` in Task 9 with `satisfies`, so a new metric key breaks the content file at compile time rather than rendering `undefined`.
-- `analyse(profile, draft, ref, spread?)` has the same four-parameter shape in Task 7, Task 10 and Task 11.
+- `analyse(profile, draft, ref, spread?)` has the same four-parameter shape in Task 7, Task 10 and Task 11, and its return type gained `documentFloor` and `reference: ReferenceSummary` in Task 7, which Task 10 renders and Task 11 returns as the whole structured payload.
+- `serialiseProfile(reference, profile, spread, savedAt)` has the same four-parameter shape in Task 8, Task 10's `onSave`, Task 11's test fixtures and Task 12's mutation row. It gained the leading `reference` in this revision, and every one of those four call sites moved with it; a missed one is a compile error, not a silent wrong answer, because the first parameter's type changed.
 - `DRIFT_PROFILE_KEY` is one constant, built from `OWNED_PREFIX`, used in Task 10's three storage calls and asserted in Tasks 8 and 10.
+- `MIN_DOCUMENT_SHARE` changed meaning as well as value, from a count of 6 to a share of 0.5, so every reader of it changed with it: `buildReference` computes `Math.ceil(documents * MIN_DOCUMENT_SHARE)`, the tests in Task 2 assert the scaling at 11 and at 5, and the mutation row in Task 12 anchors on `>= minDocuments` rather than the old `>= MIN_DOCUMENT_SHARE`. A share left at the old constant name with the old value would have kept nothing at all from five pasted pieces, which is the sort of quiet zero this plan is meant to catch.
 - One inconsistency was found and fixed: an early draft had `substitutions(profile, draft)` taking a whole profile, which would have forced `lib/mcp.ts` to build a profile it already had. It is `substitutionsFrom(pairs, draft)` throughout now, taking only the counts, and Task 7's `analyse` passes `profile.pairs`.
 - A second was found and fixed: the coupling test in Task 10 originally matched `trackToolRun({ tool: "drift", outcome:` on one line while the component wrote the call across four. The test now matches the whole call and asserts on its contents, which is what it meant to check anyway.
+- A third was found and fixed while moving the reference: `DriftTool` originally held `reference` as a prop, so `onBuild` could set a new profile while every later `analyse` still used the demo table, and the numbers would have been in the wrong units with nothing failing. It is state now, seeded from `demoReference`, and Task 10's coupling test pins `analyse(profile, draft, reference, spread)` and refuses any `analyse(... demoReference ...)`.
+- A fourth: `SavedProfile` had no reference at all, so a profile reloaded from local storage on a later visit, or handed to `check_voice`, was a set of z-scores with no table behind it. `check_voice` papered over that by building its own from my articles, which is the same flaw one layer down and much harder to see. The reference is saved with the profile now, `parseProfile` refuses a record without one, and Task 11 has the test.
 
-**4. What this plan does not do, said plainly.** It does not compare the Delta implementation against a published one, so "this is Burrows's Delta" rests on the formula in the docblock and the tests around it. It does not measure whether 100 markers is better than 150 for a corpus of eleven articles; it argues for it and makes it one line to change. It does not let a visitor import a profile from a file, only build one or reload the saved one. And it adds no way to compare two people's voices, which would need the profile to travel and is a different tool with a different privacy line.
+**4. What this plan does not do, said plainly.** It does not compare the Delta implementation against a published one, so "this is Burrows's Delta" rests on the formula in the docblock and the tests around it. It does not measure whether 100 markers, half the documents, or a floor of five pieces are the right numbers; it argues for each and makes each one line to change. The leave-one-out spread is computed against a table the held-out piece helped build, so it runs slightly tight, by an amount nothing here measures. Nothing has been tried against a real visitor's writing, only against fixture documents and my own articles, so the prediction that ten ordinary pieces yield a full hundred markers is a prediction. It does not let a visitor import a profile from a file, only build one or reload the saved one. And it adds no way to compare two people's voices, which would need both the profile and its reference to travel and is a different tool with a different privacy line.
