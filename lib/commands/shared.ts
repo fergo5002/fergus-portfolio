@@ -17,7 +17,9 @@ export type SystemEffect =
   | { kind: "gravity"; on: boolean }
   | { kind: "eject"; on: boolean }
   | { kind: "sound"; on: boolean }
-  | { kind: "reboot" };
+  | { kind: "reboot" }
+  /** Remove these keys from local storage. `Terminal` re-checks ownership before touching any. */
+  | { kind: "forget"; keys: string[] };
 
 export type CommandResult =
   | { type: "output"; lines: string[] }
@@ -42,6 +44,14 @@ export type CommandContext = {
    * confident line about something that is not going to happen.
    */
   reducedMotion?: boolean;
+  /**
+   * Every key in the visitor's local storage, read by the Terminal at run time.
+   * `forget` filters them down to the ones the site owns; nothing else reads
+   * them, and nothing is ever written here.
+   */
+  storageKeys?: string[];
+  /** What the presence provider last said. Absent until it has answered once. */
+  presence?: number;
 };
 
 /** Sections reachable from the terminal. */

@@ -56,7 +56,7 @@ describe("derived lists", () => {
     expect([...COMMANDS]).toEqual([...COMMANDS].sort());
     for (const name of ["help", "whoami", "ls", "cd", "cat", "contact", "resume", "open", "neofetch",
       "uptime", "top", "theme", "crt", "scanlines", "matrix", "degauss", "gravity", "eject", "dock",
-      "sound", "history", "echo", "date", "pwd", "clear", "sudo"]) {
+      "sound", "history", "echo", "date", "pwd", "clear", "sudo", "forget", "who"]) {
       expect(COMMANDS, name).toContain(name);
     }
   });
@@ -98,6 +98,8 @@ describe("derived lists", () => {
       "    sound <on|off>    the tube has a voice",
       "",
       "  shell",
+      "    forget            wipe what this site saved on your machine",
+      "    who               who else is on the tube",
       "    history · echo · date · pwd · clear · help",
       "    tab completes · up/down recalls · ctrl+L clears",
       "",
