@@ -93,7 +93,11 @@ export async function GET(request: Request): Promise<Response> {
       engine,
       coldStart,
       executablePath,
-      error: String(error).slice(0, 2000),
+      // Spike change (2026-09-03): the sparticuz launch args alone are over
+      // 2,000 characters, so the brief's slice hid the browser's stderr. Elide
+      // the args line and keep more of the tail.
+      error: String(error).replace(/<launching> [^
+]*/g, "<launching> [args elided]").slice(0, 6000),
       totalMs: Math.round(performance.now() - t0),
       nodeCpuMs: Math.round((cpu.user + cpu.system) / 1000),
     };
