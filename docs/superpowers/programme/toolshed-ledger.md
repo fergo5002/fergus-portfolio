@@ -12,7 +12,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | F1 | Command registry | **queued** | | | |
 | F2 | The shell everywhere | **queued** | | | |
 | F3 | Tool registry and page shell | **queued** | | | |
-| F4 | State layer | **queued** | | | |
+| F4 | State layer | **building** | `toolshed/f4-state-layer` (worktree `C:/Dev/fergus-portfolio-toolshed-f4-state-layer`) | | |
 | S1 | Spike: WebSocket on Hobby | **queued** | | | |
 | S2 | Spike: WebKit in a function | **queued** | | | |
 | S3 | Spike: DuckDB in the tab | **queued** | | | |
@@ -55,3 +55,4 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-03: prediction before Task 4: the merge of PR #1 produces a production deployment with readyState READY and meta.githubCommitSha equal to the merge commit. If it is BLOCKED, the private-repo rule was not the whole cause and the Vercel account's GitHub connection is the next suspect.
 - 2026-09-03: F0 Task 4 observed, prediction held. PR #1 squash-merged as 4b968c0; production deployment `dpl_4DPMWyNeL3FKBmYfcuTqJwibyc2F` went BUILDING then READY with `meta.githubCommitSha` 4b968c0, `aliasAssigned` true, aliases fergusoreilly.dev and www; live /tools returned 200 with the headline-check entry. On the revert run the Vercel preview check also passed for the same git author, which is the second observation that the private-repo rule was the cause. Not verified: runtime logs (no runtime code changed in this PR; the only file was the workflow). Rung: explained (the mechanism predicted the preview pass and the READY deploy, and both checked out); not "fixed" in the revert-to-confirm sense, since flipping the repo back private to watch it block again is not worth doing.
 - 2026-09-03: F0 done. Wave 0 next: F1, F3, F4 and the four spikes in parallel, each in its own worktree from main at 4b968c0 or later.
+- 2026-09-03: F4 Task 1 partly done, from the worktree. Blob created from the CLI: `fergus-portfolio-blob` (`store_yp1P59AcWqlEFHMv`), `iad1`, public, linked, `BLOB_READ_WRITE_TOKEN` on all three environments. Upstash and Neon both stopped at `integration_terms_acceptance_required` in non-interactive mode, no resource created: needs Fergus at the two accept-terms URLs in `f4-stores-2026-09-03.md`, then the two retry commands written there. Two metadata defaults changed on purpose: Upstash `autoUpgrade=false` (its default is true and that is a path onto a paid plan) and Neon `auth=false`. Code tasks continue; every Redis proof waits for the database.
