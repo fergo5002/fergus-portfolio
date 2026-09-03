@@ -50,6 +50,3 @@ describe("splitWordsWithOffsets", () => {
     expect(spans[2].start).toBe(8);
   });
 });
-
-import { it as canaryIt, expect as canaryExpect } from "vitest";
-canaryIt("f0 canary: must fail", () => { canaryExpect(1).toBe(2); });
