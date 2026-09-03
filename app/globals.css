@@ -2167,28 +2167,21 @@ html.is-gravity .statusbar {
    Found by scripts/phone-check.mjs on its first run, 2026-09-03. On a phone
    the machine controls were 21 by 16, and the readouts pushed the last of
    them past the right edge of a 390px bar. 44px is the floor Apple and WCAG
-   2.2 both land on, so on a touch device the bar is 44px tall, every control
-   is at least 44 by 44, the costume readout that carries no information (the
-   memory address) goes, and the working directory truncates rather than
-   pushing the controls out of reach. `--status-h` is the one token the page
-   padding and the shader's bezel both read, so the change stays coherent.
-   The skip link and the call to action are the two shell links the same run
-   found three pixels short. */
+   2.2 both land on. `--status-h` is the one token the page padding and the
+   shader's bezel both read, so the change stays coherent. The skip link and
+   the call to action are the two shell links the same run found three pixels
+   short.
+
+   The fix was one `(hover: none)` block, and review split it, because it was
+   two findings wearing one media query. A thumb is 44px wide on any screen, so
+   the floors below follow from the input and belong on `(hover: none)` like
+   the rest of this file. Running out of room in the bar does not: that was a
+   390px bar, and a touchscreen till or a 27" all-in-one has a metre of it. In
+   one block, those machines lost the memory readout and had the working
+   directory truncated for space they were not short of. */
 @media (hover: none) {
   :root {
     --status-h: 44px;
-  }
-  .statusbar__mem {
-    display: none;
-  }
-  .statusbar__pwd {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .machine {
-    flex: none;
-    gap: 0;
   }
   .machine__btn {
     min-width: 44px;
@@ -2201,6 +2194,34 @@ html.is-gravity .statusbar {
     min-height: 44px;
     display: inline-flex;
     align-items: center;
+  }
+}
+
+/* The other half: space, not thumbs. The costume readout that carries no
+   information (the memory address) goes, the working directory truncates
+   rather than pushing the controls out of reach, and the control row stops
+   claiming flex space. 768px rather than a new number, because that is where
+   this file already shrinks the bar (`--status-h: 22px`, `.statusbar` down to
+   0.62rem, `.statusbar__hide-sm` gone), so the readouts leave with the rest of
+   the narrow-screen budget instead of at a breakpoint of their own.
+
+   Measured on a WebKit touch context at 820, 900 and 1280 CSS px, against a
+   production build on 2026-09-03: the bar is 44px tall, the machine buttons
+   are 49 by 44, the memory readout is in it, the widest thing in the bar ends
+   16px inside the viewport, and `scrollWidth` equals `clientWidth` on all
+   three. */
+@media (hover: none) and (max-width: 768px) {
+  .statusbar__mem {
+    display: none;
+  }
+  .statusbar__pwd {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .machine {
+    flex: none;
+    gap: 0;
   }
 }
 

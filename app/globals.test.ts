@@ -308,3 +308,59 @@ describe("prose tables clear 4.5:1 on every theme", () => {
     expect(block).not.toMatch(/(?:^|[\s;])color:\s*var\(--green-(faint|dim)\)/);
   });
 });
+
+/**
+ * The touch bar's two halves stay apart.
+ *
+ * `scripts/phone-check.mjs` found the machine controls at 21 by 16 on a phone
+ * and the readouts pushing them off a 390px bar, and the fix was one
+ * `@media (hover: none)` block holding both answers. Review split it, because a
+ * thumb is 44px wide on any screen and a bar only runs out of room on a narrow
+ * one: in one block, a touchscreen till or a 27" all-in-one lost the memory
+ * readout and had its working directory truncated for space it was not short
+ * of.
+ *
+ * The phone check cannot catch this coming back. It drives 320 and 390 only, so
+ * the merged version passes it perfectly. This is the guard instead.
+ */
+describe("the touch bar separates thumb size from screen space", () => {
+  /** Every block with exactly this prelude, matched by counting braces. */
+  function mediaBlocks(prelude: string): string {
+    const needle = `@media ${prelude} {`;
+    const found: string[] = [];
+    for (let from = 0; ; ) {
+      const at = css.indexOf(needle, from);
+      if (at < 0) break;
+      const open = at + needle.length - 1;
+      let depth = 0;
+      let i = open;
+      for (; i < css.length; i++) {
+        if (css[i] === "{") depth++;
+        else if (css[i] === "}" && --depth === 0) break;
+      }
+      found.push(css.slice(open + 1, i));
+      from = i + 1;
+    }
+    if (found.length === 0) throw new Error(`no @media ${prelude} block`);
+    return found.join("\n");
+  }
+
+  const touch = mediaBlocks("(hover: none)");
+  const touchAndNarrow = mediaBlocks("(hover: none) and (max-width: 768px)");
+
+  it("keeps the 44px floors on the input, so a wide touchscreen gets them too", () => {
+    expect(touch).toContain("--status-h: 44px");
+    expect(touch).toContain(".machine__btn");
+    expect(touch).toContain(".skiplink");
+  });
+
+  it("hides the memory readout for room rather than for thumbs", () => {
+    expect(touchAndNarrow).toContain(".statusbar__mem");
+    expect(touch).not.toContain(".statusbar__mem");
+  });
+
+  it("truncates the working directory for room rather than for thumbs", () => {
+    expect(touchAndNarrow).toContain(".statusbar__pwd");
+    expect(touch).not.toContain(".statusbar__pwd");
+  });
+});
