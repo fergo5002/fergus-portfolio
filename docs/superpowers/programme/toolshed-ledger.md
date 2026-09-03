@@ -9,14 +9,14 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | ID | Sub-project | State | Branch | PR | Live check |
 |---|---|---|---|---|---|
 | F0 | Ship path | **live** | `toolshed/f0-ship-path` (in the main checkout, F0 only; every later sub-project gets its own worktree) | [#1](https://github.com/fergo5002/fergus-portfolio/pull/1) merged 4b968c0 | `dpl_4DPMWyNeL3FKBmYfcuTqJwibyc2F` READY, aliased, /tools 200 |
-| F1 | Command registry | **queued** | | | |
-| F2 | The shell everywhere | **queued** | | | |
-| F3 | Tool registry and page shell | **queued** | | | |
-| F4 | State layer | **queued** | | | |
-| S1 | Spike: WebSocket on Hobby | **queued** | | | |
-| S2 | Spike: WebKit in a function | **queued** | | | |
-| S3 | Spike: DuckDB in the tab | **queued** | | | |
-| S4 | Spike: the .ie seed | **queued** | | | |
+| F1 | Command registry | **building** | `toolshed/f1-command-registry` | | |
+| F2 | The shell everywhere | **plan** | | | |
+| F3 | Tool registry and page shell | **building** | `toolshed/f3-tool-registry` | | |
+| F4 | State layer | **plan** (Tasks 1 to 4 written, rest in progress) | `toolshed/f4-state-layer` (cut, idle) | | |
+| S1 | Spike: WebSocket on Hobby | **plan** (brief written, runner not started) | | | |
+| S2 | Spike: WebKit in a function | **plan** (brief written, runner not started) | | | |
+| S3 | Spike: DuckDB in the tab | **building** | `toolshed/f5-spikes` | | |
+| S4 | Spike: the .ie seed | **building** | `toolshed/f5-spikes` | | |
 | T1 | Drift | **queued** | | | |
 | T2 | Relief | **queued** | | | |
 | T3 | Overlap | **queued** | | | |
@@ -55,3 +55,5 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-03: prediction before Task 4: the merge of PR #1 produces a production deployment with readyState READY and meta.githubCommitSha equal to the merge commit. If it is BLOCKED, the private-repo rule was not the whole cause and the Vercel account's GitHub connection is the next suspect.
 - 2026-09-03: F0 Task 4 observed, prediction held. PR #1 squash-merged as 4b968c0; production deployment `dpl_4DPMWyNeL3FKBmYfcuTqJwibyc2F` went BUILDING then READY with `meta.githubCommitSha` 4b968c0, `aliasAssigned` true, aliases fergusoreilly.dev and www; live /tools returned 200 with the headline-check entry. On the revert run the Vercel preview check also passed for the same git author, which is the second observation that the private-repo rule was the cause. Not verified: runtime logs (no runtime code changed in this PR; the only file was the workflow). Rung: explained (the mechanism predicted the preview pass and the READY deploy, and both checked out); not "fixed" in the revert-to-confirm sense, since flipping the repo back private to watch it block again is not worth doing.
 - 2026-09-03: F0 done. Wave 0 next: F1, F3, F4 and the four spikes in parallel, each in its own worktree from main at 4b968c0 or later.
+- 2026-09-03 17:20: plans for F1, F2, F3 and the four spikes are on main; F4's plan has Tasks 1 to 4 and the rest is being written. Implementers running: F1, F3, and one spike runner doing S4 then S3. Four agents at once, not six: an earlier burst of six exhausted the session's usage limit at about 14:30 and every agent died with it (nothing was lost on disk; the worktrees had no commits). S2 and S1 start when a slot frees.
+- 2026-09-03: a pre-existing worktree `C:\Devergus-portfolio-mobile-motion` on `feat/mobile-motion` (one month old, with changes) is not part of this programme and is left alone.
