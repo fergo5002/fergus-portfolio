@@ -8,7 +8,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 
 | ID | Sub-project | State | Branch | PR | Live check |
 |---|---|---|---|---|---|
-| F0 | Ship path | **queued** | | | |
+| F0 | Ship path | **building** | `toolshed/f0-ship-path` (in the main checkout, F0 only; every later sub-project gets its own worktree) | | |
 | F1 | Command registry | **queued** | | | |
 | F2 | The shell everywhere | **queued** | | | |
 | F3 | Tool registry and page shell | **queued** | | | |
@@ -48,3 +48,5 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 ## Log
 
 - 2026-09-03: programme designed, decisions taken, ledger opened. Nothing built yet.
+- 2026-09-03: F0 Task 1 done. gitleaks over 82 commits: one finding, the IndexNow key, public by design. Verdict clean, record in `f0-sweep-2026-09-03.md`.
+- 2026-09-03: found pre-existing uncommitted work in the checkout dated 2026-08-22: an `analytics` script line in `package.json` and an untracked `scripts/analytics.mjs`. Not part of F0, left untouched and unstaged. Fergus to decide whether it ships.
