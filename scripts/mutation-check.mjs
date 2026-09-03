@@ -468,6 +468,50 @@ const MUTATIONS = [
     pattern: /  if \(pending\.length < PENDING_LIMIT\) pending\.push\(\{ event, properties \}\);/,
     replace: "  // dropped",
   },
+
+  // ── the command registry (F1): guards that moved out of one switch ──
+  {
+    name: "gravity stops declining under reduced motion",
+    file: "lib/commands/effects.ts",
+    pattern: /if \(on && ctx\.reducedMotion\) return ok\(GRAVITY_DECLINED\);/,
+    replace: "if (false) return ok(GRAVITY_DECLINED);",
+  },
+  {
+    name: "eject stops declining under reduced motion",
+    file: "lib/commands/effects.ts",
+    pattern: /if \(on && ctx\.reducedMotion\) return ok\(EJECT_DECLINED\);/,
+    replace: "if (false) return ok(EJECT_DECLINED);",
+  },
+  {
+    name: "scanlines accepts values above 100",
+    file: "lib/commands/effects.ts",
+    pattern: /n < 0 \|\| n > 100\)/,
+    replace: "n < 0 || n > 1000)",
+  },
+  {
+    name: "theme fires an effect for a phosphor that does not exist",
+    file: "lib/commands/effects.ts",
+    pattern: /if \(!isTheme\(arg\)\)/,
+    replace: "if (false)",
+  },
+  {
+    name: "the arcade door is no longer hidden",
+    file: "lib/commands/hidden.ts",
+    pattern: /hidden: true,/,
+    replace: "hidden: false,",
+  },
+  {
+    name: "cd stops opening doors",
+    file: "lib/commands/nav.ts",
+    pattern: /if \(door\?\.hidden\) return door\.run/,
+    replace: "if (false) return door.run",
+  },
+  {
+    name: "the registry stops sorting, so help follows registration order",
+    file: "lib/commands/registry.ts",
+    pattern: /\.filter\(\(d\) => !d\.hidden\)\.sort\(byNameAsc\)/,
+    replace: ".filter((d) => !d.hidden)",
+  },
 ];
 
 let caught = 0;
