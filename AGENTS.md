@@ -275,22 +275,25 @@ npm start          # serve the production build
 ```
 
 Deploy: Vercel. The project is git-linked (`fergo5002/fergus-portfolio`, production branch `main`),
-so **a push ships**, and as of 2026-08-21 that is true again rather than aspirational.
+so **a push ships**. The repository is **public** since 2026-09-03, and that is what makes the
+sentence true: on the Hobby plan a private repository's git deployments were landing in `BLOCKED`
+("Git author fergo5002 must have access to the project on Vercel to create deployments"), with no
+alias, production untouched, git exiting 0. Observed as late as 2026-09-02 on commits authored as
+the account's own address. After the flip the same author's preview check passed and the merge of
+PR #1 produced production deployment `dpl_4DPMWyNeL3FKBmYfcuTqJwibyc2F` as `readyState: READY`
+with the commit SHA attached. The temp-directory CLI shipping that carried the site while it was
+private is retired; if a git deployment ever comes back `BLOCKED`, that is a finding to report, not
+a reason to reach for it.
 
-This file said the opposite until then, and the correction is worth stating precisely because the
-old warning was expensive. Every deployment carries the commit author; for a long stretch Vercel
-could not verify that address against the account owning `larry-pm`, so deployments landed in
-`BLOCKED` with no alias, production untouched, git exiting 0 and the CLI polling forever. Checked
-on 2026-08-21 over the API: the six most recent deployments are all `readyState: READY` with
-`source: git`, the oldest of them from 2026-08-20. The account-side fix landed.
-
-That is six runs, not a guarantee. **Confirm every deploy the same way regardless**: read
-`readyState` and `aliasAssigned` from
-`https://api.vercel.com/v13/deployments/<id>?teamId=<team>`. Do not trust the CLI's exit code, and
-do not trust `vercel ls`, which renders `BLOCKED` as `UNKNOWN` and reads like "still building".
-If a deployment is ever `BLOCKED` again, the `git archive` staging-tree workaround is still
-documented in the deploy section at the top of `docs/PROGRESS.md`. Live host is
-`https://fergusoreilly.dev`.
+`main` requires the `check` and `mutation` GitHub Actions jobs from `.github/workflows/ci.yml`
+(types, tests, build; then the mutation check). Code goes through pull requests. Docs-only commits
+may land on `main` directly. **Confirm every deployment the same way regardless**: read `readyState`
+and `aliasAssigned` from `https://api.vercel.com/v13/deployments/<id>?teamId=<team>`, or list them
+with `v6/deployments?projectId=...&teamId=...&target=production`. Do not trust the CLI's exit code,
+and do not trust `vercel ls`, which renders `BLOCKED` as `UNKNOWN` and reads like "still building".
+Every Vercel CLI call passes `--token "$VERCEL_TOKEN_PERSONAL" --scope larry-pm`; without the
+token flag the CLI reads the wrong account's `VERCEL_TOKEN` and reports "The specified scope does
+not exist". Live host is `https://fergusoreilly.dev`.
 
 ## Layout of the repo
 

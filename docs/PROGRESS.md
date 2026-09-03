@@ -4,9 +4,18 @@
 > Keep the status line current, tick task boxes, and append to the decision log.
 
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
-**GitHub:** https://github.com/fergo5002/fergus-portfolio (private)
+**GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
-**Status (2026-08-21, latest): the site can now see itself.** PostHog is in, cookieless, and the
+**Status (2026-09-03, latest): the ship path is git again, and the toolshed programme has started.**
+F0 of `docs/superpowers/specs/2026-09-03-toolshed-programme-design.md`: the history was swept
+(record in `docs/superpowers/programme/`), the repository went public, `main` requires the two CI
+jobs in `.github/workflows/ci.yml`, and the merge of PR #1 produced production deployment
+`dpl_4DPMWyNeL3FKBmYfcuTqJwibyc2F` as `READY` with its commit SHA attached, which every git push
+since August had failed to do. Not verified: no app code changed, so no live feature beyond a 200 on
+`/tools` was exercised. State of every sub-project lives in
+`docs/superpowers/programme/toolshed-ledger.md`. The previous status entry follows.
+
+**Status (2026-08-21): the site can now see itself.** PostHog is in, cookieless, and the
 GEO work has instruments rather than opinions.
 
 Everything before this was building things and arguing they would help. This is the part that
