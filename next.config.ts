@@ -11,6 +11,12 @@ import { ingestRewrites } from "./lib/analytics";
  * loads `next.config.ts` natively; there is no build step to add.
  */
 const nextConfig: NextConfig = {
+  // S1 spike only. `ws` is a CommonJS package that @vercel/functions loads with
+  // a dynamic import at runtime. Bundled by webpack the namespace shape can
+  // come back without a callable WebSocketServer, which is one of the two
+  // candidate causes of the 2026-09-03 failure. Externalising it removes that
+  // candidate so the remaining error, if any, is the platform's.
+  serverExternalPackages: ["ws"],
   // ESLint is not configured in this project; skip it during builds.
   eslint: { ignoreDuringBuilds: true },
   // OGL publishes raw ES modules from `src/` rather than a built bundle, so Next

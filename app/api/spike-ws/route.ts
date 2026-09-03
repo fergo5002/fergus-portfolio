@@ -116,9 +116,42 @@ async function subscribe(): Promise<void> {
   }
 }
 
+/**
+ * Spike addition (2026-09-03). The 18:35 to 18:49 probes on
+ * dpl_6bXiFfoQXs52p6MXz8bWXusQmo6B produced two different errors from this
+ * one route, and they mean opposite things:
+ *
+ *   "experimental_upgradeWebSocket is not available in the current runtime
+ *    environment"  -> the platform did not inject ctx.upgradeWebSocket.
+ *   "TypeError: d is not a constructor"  -> it DID, and the failure is later,
+ *    at `new WebSocketServer(...)`, which would be our own bundling.
+ *
+ * Guessing between them is exactly the move CLAIMS.md forbids, so the route
+ * now reads both conditions itself and logs them before it calls anything.
+ */
+function upgradeAvailable(): string {
+  const ctx = (globalThis as Record<symbol, { get?: () => Record<string, unknown> }>)[
+    Symbol.for("@vercel/request-context")
+  ];
+  return typeof ctx?.get?.().upgradeWebSocket;
+}
+
+async function wsServerCtor(): Promise<string> {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mod: Record<string, unknown> = await import("ws" as string);
+    const direct = typeof mod.WebSocketServer;
+    const viaDefault = typeof (mod.default as { WebSocketServer?: unknown } | undefined)?.WebSocketServer;
+    return `direct=${direct} viaDefault=${viaDefault} keys=${Object.keys(mod).slice(0, 8).join("|")}`;
+  } catch (error) {
+    return `import_failed:${String(error).slice(0, 120)}`;
+  }
+}
+
 export async function GET(): Promise<Response> {
   const sinceBoot = Date.now() - BOOT;
   log("upgrade_attempt", { sinceBoot, coldStart: sinceBoot < 250, open: sockets.size });
+  log("diag", { upgradeWebSocket: upgradeAvailable(), ws: await wsServerCtor() });
 
   return experimental_upgradeWebSocket((ws) => {
     const openedAt = Date.now();
