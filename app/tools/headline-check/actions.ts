@@ -46,7 +46,8 @@ function record(outcome: ToolOutcome, started: number): void {
  * **Every path out of here carries a message.** There is no branch that returns
  * a bare failure, because "nothing happened" is the exact bug the rest of this
  * site has a rule about. And every path out records one `tool_run`: `refused`
- * when nothing was attempted, `error` when the fetch failed, `ok` otherwise.
+ * when nothing was attempted, `error` when the fetch failed or the parser threw
+ * on what came back, `ok` only once a report exists.
  */
 export async function headlineCheckAction(
   prev: ToolState,
@@ -100,6 +101,27 @@ export async function headlineCheckAction(
     return { status: "failed", seq, url: raw, message: page.detail };
   }
 
+  // The report is built BEFORE the run is recorded, and the order is the whole
+  // point. `record("ok")` used to sit above this object literal, so a throw out
+  // of `checkHtml` recorded a success and then served the visitor a 500: the
+  // one outcome where the numbers and the visitor's experience disagreed
+  // completely. Nothing in the suite noticed, because every test fed it HTML
+  // the parser is happy with.
+  //
+  // The throw is re-thrown rather than dressed as a `failed` state. A fetch
+  // that fails is an ordinary thing a stranger's URL does and it gets a
+  // message; `checkHtml` throwing is a defect in our own parser on HTML we
+  // already hold, and there is nothing true to tell a visitor about it. If that
+  // is ever the wrong call, the change is a copy string in `state.ts` and a
+  // `failed` return here, not a quieter recording.
+  let report;
+  try {
+    report = checkHtml(page.html);
+  } catch (thrown) {
+    record("error", started);
+    throw thrown;
+  }
+
   record("ok", started);
   return {
     status: "done",
@@ -107,6 +129,6 @@ export async function headlineCheckAction(
     url: raw,
     finalUrl: page.finalUrl,
     redirects: page.redirects,
-    report: checkHtml(page.html),
+    report,
   };
 }

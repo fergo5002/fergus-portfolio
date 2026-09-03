@@ -22,9 +22,19 @@ vi.mock("next/headers", () => ({ headers: async () => new Headers(requestHeaders
 
 vi.mock("@/lib/headline-fetch", () => ({ fetchPage: vi.fn() }));
 
+// The parser is mocked so one test can make it throw. Every other test in this
+// file lets the real `checkHtml` run: `vi.importActual` is what the factory
+// returns by default, so mocking it here changes nothing except in the test
+// that reaches for `mockImplementationOnce`.
+vi.mock("@/lib/headline", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/headline")>();
+  return { ...actual, checkHtml: vi.fn(actual.checkHtml) };
+});
+
 const { headlineCheckAction } = await import("./actions");
 const { INITIAL_TOOL_STATE } = await import("./state");
 const { fetchPage } = await import("@/lib/headline-fetch");
+const { checkHtml } = await import("@/lib/headline");
 
 const GOOD_PAGE = {
   ok: true as const,
@@ -81,6 +91,20 @@ describe("headline-check records a tool_run", () => {
     vi.mocked(fetchPage).mockResolvedValue({ ok: false, detail: "That address is private." } as never);
     const state = await headlineCheckAction(INITIAL_TOOL_STATE, form("http://10.0.0.1/"));
     expect(state.status).toBe("failed");
+    expect(sent(fetchMock).map((e) => e.properties.outcome)).toEqual(["error"]);
+  });
+
+  it("error: the page came back and the parser threw on it", async () => {
+    // The recording used to happen above the object literal that calls
+    // `checkHtml`, so this path recorded `ok` and then served a 500. The
+    // outcome has to be the one the visitor got.
+    requestHeaders = { "x-real-ip": "10.1.0.7" };
+    vi.mocked(checkHtml).mockImplementationOnce(() => {
+      throw new Error("the parser fell over");
+    });
+    await expect(headlineCheckAction(INITIAL_TOOL_STATE, form("example.com"))).rejects.toThrow(
+      "the parser fell over",
+    );
     expect(sent(fetchMock).map((e) => e.properties.outcome)).toEqual(["error"]);
   });
 
