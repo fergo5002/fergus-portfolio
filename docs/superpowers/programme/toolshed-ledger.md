@@ -9,7 +9,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | ID | Sub-project | State | Branch | PR | Live check |
 |---|---|---|---|---|---|
 | F0 | Ship path | **live** | `toolshed/f0-ship-path` (in the main checkout, F0 only; every later sub-project gets its own worktree) | [#1](https://github.com/fergo5002/fergus-portfolio/pull/1) merged 4b968c0 | `dpl_4DPMWyNeL3FKBmYfcuTqJwibyc2F` READY, aliased, /tools 200 |
-| F1 | Command registry | **building** | `toolshed/f1-command-registry` | | |
+| F1 | Command registry | **review** | `toolshed/f1-command-registry` (10 commits, rebased on a0f916c) | | |
 | F2 | The shell everywhere | **plan** | | | |
 | F3 | Tool registry and page shell | **building** | `toolshed/f3-tool-registry` | | |
 | F4 | State layer | **plan** (Tasks 1 to 4 written, rest in progress) | `toolshed/f4-state-layer` (cut, idle) | | |
@@ -57,3 +57,6 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-03: F0 done. Wave 0 next: F1, F3, F4 and the four spikes in parallel, each in its own worktree from main at 4b968c0 or later.
 - 2026-09-03 17:20: plans for F1, F2, F3 and the four spikes are on main; F4's plan has Tasks 1 to 4 and the rest is being written. Implementers running: F1, F3, and one spike runner doing S4 then S3. Four agents at once, not six: an earlier burst of six exhausted the session's usage limit at about 14:30 and every agent died with it (nothing was lost on disk; the worktrees had no commits). S2 and S1 start when a slot frees.
 - 2026-09-03: a pre-existing worktree `C:\Devergus-portfolio-mobile-motion` on `feat/mobile-motion` (one month old, with changes) is not part of this programme and is left alone.
+- 2026-09-03 18:30: F1 built. Implementer observed: tsc exit 0; 41 of 42 test files green, 1,066 of 1,067 tests; the one red is `lib/contact.test.ts` "puts the click on the fields themselves", red at baseline on this CRLF checkout (`indexOf("<form
+")` against a CRLF file) and green in CI on Linux, so it is a Windows-checkout fragility, not F1's. Mutation check with that file temporarily LF: 71 of 71 caught, all seven F1 rows red. Not verified by the implementer: build, parity image, phone check, CI, live. Rebased onto main; reviewer dispatched.
+- 2026-09-03: three implementers (F1, F3, F4) and the spike runner each stopped once while waiting on a backgrounded long run; a stopped subagent is not woken by its own monitor. Each was resumed with an instruction to poll the output file. Lesson logged in the playbook.
