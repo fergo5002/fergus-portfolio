@@ -112,6 +112,12 @@ export default function Terminal() {
       setHistory([]);
       return;
     }
+    if (res.type === "program") {
+      // G0 replaces this with the arcade runtime. Until then the door opens
+      // onto a note and the prompt comes straight back.
+      setHistory((h) => [...h, { cmd: raw, lines: [res.program.title, "no runtime yet"] }]);
+      return;
+    }
     if (res.type === "effect") applyEffect(res.effect);
 
     setHistory((h) => [...h, { cmd: raw, lines: res.lines }]);

@@ -9,14 +9,14 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | ID | Sub-project | State | Branch | PR | Live check |
 |---|---|---|---|---|---|
 | F0 | Ship path | **live** | `toolshed/f0-ship-path` (in the main checkout, F0 only; every later sub-project gets its own worktree) | [#1](https://github.com/fergo5002/fergus-portfolio/pull/1) merged 4b968c0 | `dpl_4DPMWyNeL3FKBmYfcuTqJwibyc2F` READY, aliased, /tools 200 |
-| F1 | Command registry | **queued** | | | |
-| F2 | The shell everywhere | **queued** | | | |
-| F3 | Tool registry and page shell | **queued** | | | |
+| F1 | Command registry | **live** | `toolshed/f1-command-registry` | [#2](https://github.com/fergo5002/fergus-portfolio/pull/2) merged a269a1e | `dpl_Cp4p19RHXiafBDMzh3PJjG4mwuNm` READY; live `help` prints the five sections, `cd arcade` prints "arcade: no runtime yet", `top` lists arcade, console clean |
+| F2 | The shell everywhere | **plan** | | | |
+| F3 | Tool registry and page shell | **building** | `toolshed/f3-tool-registry` | | |
 | F4 | State layer | **building** | `toolshed/f4-state-layer` (worktree `C:/Dev/fergus-portfolio-toolshed-f4-state-layer`) | | |
-| S1 | Spike: WebSocket on Hobby | **queued** | | | |
-| S2 | Spike: WebKit in a function | **queued** | | | |
-| S3 | Spike: DuckDB in the tab | **queued** | | | |
-| S4 | Spike: the .ie seed | **queued** | | | |
+| S1 | Spike: WebSocket on Hobby | **plan** (brief written, runner not started) | | | |
+| S2 | Spike: WebKit in a function | **plan** (brief written, runner not started) | | | |
+| S3 | Spike: DuckDB in the tab | **decided** | `toolshed/f5-spikes` | record on main | 0 mismatches at 1e-9; 8.1 MB gzip and 82 s at Slow 4G, so DuckDB does not ship: port to TypeScript, keep the macros as the oracle |
+| S4 | Spike: the .ie seed | **decided** | `toolshed/f5-spikes` | record on main | 126,214 registered .ie domains, 17 MB, under a minute, reproduced twice; 38% of the registry figure |
 | T1 | Drift | **queued** | | | |
 | T2 | Relief | **queued** | | | |
 | T3 | Overlap | **queued** | | | |
@@ -55,4 +55,15 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-03: prediction before Task 4: the merge of PR #1 produces a production deployment with readyState READY and meta.githubCommitSha equal to the merge commit. If it is BLOCKED, the private-repo rule was not the whole cause and the Vercel account's GitHub connection is the next suspect.
 - 2026-09-03: F0 Task 4 observed, prediction held. PR #1 squash-merged as 4b968c0; production deployment `dpl_4DPMWyNeL3FKBmYfcuTqJwibyc2F` went BUILDING then READY with `meta.githubCommitSha` 4b968c0, `aliasAssigned` true, aliases fergusoreilly.dev and www; live /tools returned 200 with the headline-check entry. On the revert run the Vercel preview check also passed for the same git author, which is the second observation that the private-repo rule was the cause. Not verified: runtime logs (no runtime code changed in this PR; the only file was the workflow). Rung: explained (the mechanism predicted the preview pass and the READY deploy, and both checked out); not "fixed" in the revert-to-confirm sense, since flipping the repo back private to watch it block again is not worth doing.
 - 2026-09-03: F0 done. Wave 0 next: F1, F3, F4 and the four spikes in parallel, each in its own worktree from main at 4b968c0 or later.
+- 2026-09-03 17:20: plans for F1, F2, F3 and the four spikes are on main; F4's plan has Tasks 1 to 4 and the rest is being written. Implementers running: F1, F3, and one spike runner doing S4 then S3. Four agents at once, not six: an earlier burst of six exhausted the session's usage limit at about 14:30 and every agent died with it (nothing was lost on disk; the worktrees had no commits). S2 and S1 start when a slot frees.
+- 2026-09-03: a pre-existing worktree `C:\Devergus-portfolio-mobile-motion` on `feat/mobile-motion` (one month old, with changes) is not part of this programme and is left alone.
+- 2026-09-03 18:30: F1 built. Implementer observed: tsc exit 0; 41 of 42 test files green, 1,066 of 1,067 tests; the one red is `lib/contact.test.ts` "puts the click on the fields themselves", red at baseline on this CRLF checkout (`indexOf("<form
+")` against a CRLF file) and green in CI on Linux, so it is a Windows-checkout fragility, not F1's. Mutation check with that file temporarily LF: 71 of 71 caught, all seven F1 rows red. Not verified by the implementer: build, parity image, phone check, CI, live. Rebased onto main; reviewer dispatched.
+- 2026-09-03: three implementers (F1, F3, F4) and the spike runner each stopped once while waiting on a backgrounded long run; a stopped subagent is not woken by its own monitor. Each was resumed with an instruction to poll the output file. Lesson logged in the playbook.
+- 2026-09-03 18:20: F1 review (ledger-aware code-reviewer): parity confirmed, door clean, purity clean, interfaces exact; one medium finding, `help` had lost its five curated sections to a flat sorted list (my brief asked for "sorted", so the regression was mine). Fixed with `group` and `rank` on each command and a line-for-line parity test against the old text. PR #2, CI green (check 1m05s, mutation 6m28s), squash-merged as a269a1e, production `dpl_Cp4p19RHXiafBDMzh3PJjG4mwuNm` READY. Live check by real browser: `help`, `cd arcade`, `top` as above; console errors 0. Not verified: the parity Docker image (low-risk tier, skipped by policy), reduced-motion behaviour (unchanged code).
+- 2026-09-03: PR #3 opened for the CRLF-fragile contact test (normalise line endings before the guard), found by the F1 implementer, reproduced by the reviewer, green on this checkout after the change.
+- 2026-09-03: spikes S4 and S3 decided, records on main under `docs/superpowers/spikes/`. S3's 8 MB DuckDB bundle was ruled on rather than parked: DuckDB does not ship, the macros are ported to TypeScript, and the DuckDB-versus-Postgres comparison becomes T4's regression test at 1e-9. Reasoning appended to the S3 record. The design's dependency list loses `@duckdb/duckdb-wasm`.
+- 2026-09-03: S2 and S1 runner dispatched (preview deployments only). F2 worktree cut from main after F1 merged.
+- 2026-09-03 19:00: PR #3 (CRLF contact test) green and merged as 56affc9, production `dpl_GHGRwoTS1eXmcn8KGPK7JiQnvBRi` READY, and the file's 42 tests now pass on this Windows checkout where they were red before. Test-only change, so no user-facing flow was exercised beyond a 200 on the home page, and that is all that claim covers.
+- 2026-09-03 19:00: plan-writers dispatched for T1 Drift and T2 Relief, both on Opus 5. Every agent from here runs on Opus; the four started earlier (F2, F3, F4, the S2 and S1 spikes) keep Fable until their task ends, because a model is fixed when an agent spawns and killing them would discard finished work.
 - 2026-09-03: F4 Task 1 partly done, from the worktree. Blob created from the CLI: `fergus-portfolio-blob` (`store_yp1P59AcWqlEFHMv`), `iad1`, public, linked, `BLOB_READ_WRITE_TOKEN` on all three environments. Upstash and Neon both stopped at `integration_terms_acceptance_required` in non-interactive mode, no resource created: needs Fergus at the two accept-terms URLs in `f4-stores-2026-09-03.md`, then the two retry commands written there. Two metadata defaults changed on purpose: Upstash `autoUpgrade=false` (its default is true and that is a path onto a paid plan) and Neon `auth=false`. Code tasks continue; every Redis proof waits for the database.

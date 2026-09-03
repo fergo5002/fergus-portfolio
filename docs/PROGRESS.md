@@ -6,6 +6,15 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-03: the command registry
+
+F1 of the toolshed programme. `lib/commands.ts` is a dispatcher over `lib/commands/*.ts`, each
+command a `defineCommand`, help and completion derived from the registry, and `cd arcade` a hidden
+door that prints "arcade: no runtime yet" until G0. `lib/commands.test.ts` passed unchanged, which
+was the acceptance test. Seven guards were added to the mutation check and all seven went red.
+Not verified: the live site. Nothing a visitor sees changed except the order of `help`, which is now
+alphabetical rather than grouped, and that awaits the post-deploy check.
+
 **Status (2026-09-03, latest): the ship path is git again, and the toolshed programme has started.**
 F0 of `docs/superpowers/specs/2026-09-03-toolshed-programme-design.md`: the history was swept
 (record in `docs/superpowers/programme/`), the repository went public, `main` requires the two CI
