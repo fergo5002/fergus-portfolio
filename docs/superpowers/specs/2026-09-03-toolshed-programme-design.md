@@ -13,7 +13,7 @@ It is the output of two research passes (the "FergusOS Toolshed" pages, 3 Septem
 | Question | Decision |
 |---|---|
 | Which tools | On the glass, Tide, Irish Stack Census, Second Visit, Overlap, Drift, Relief, Play your website, Burn. Rung, Deadlock hunter, Ledger and On a tube are not in this programme. |
-| Second Visit and the Tigh model | Ship the real model (migration 0300's functions ported to DuckDB SQL), credited and linked, so it doubles as a Tigh Sauna demo on a prospect's own export. Assumes Connell's nod; the page copy is written so that removing the credit is a one-line change. |
+| Second Visit and the Tigh model | Ship the real model (migration 0300's functions ported and proven equal to the SQL row for row; see the S3 ruling), credited and linked, so it doubles as a Tigh Sauna demo on a prospect's own export. Assumes Connell's nod; the page copy is written so that removing the credit is a one-line change. |
 | Burn | Curated words and shared knobs, **no free text**. Pointer burn-in from everyone, a stamp from a curated word list, vote-driven shared knobs that decay overnight, a nightly degauss, `who` for presence. Nothing a stranger types is ever shown to anyone. |
 | Games | Four: Phosphor Pong, Snake, a roguelike (Under the Terminal), Six-max poker. |
 | The door | `cd arcade` in the terminal. Not in `help`, not in completion, not in `ls`. **The terminal is available on every page of the site.** |
