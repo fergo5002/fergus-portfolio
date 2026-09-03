@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { OWNED_PREFIX, forget, isOwnedKey, listKeys, ownedKeys, removeKeys } from "./forget";
 import type { StorageLike } from "./forget";
 import { SETTINGS_KEY } from "./system";
@@ -76,5 +78,113 @@ describe("forget", () => {
   it("returns nothing when there is nothing to forget", () => {
     expect(forget(fake({ other: "x" }))).toEqual([]);
     expect(forget(fake())).toEqual([]);
+  });
+});
+
+/**
+ * The guard the key list did not have.
+ *
+ * `forget` promises that everything the site keeps on a visitor's machine goes
+ * when they type it, and it keeps that promise by knowing two things: the
+ * `fergusos:` prefix, and the one older fixed name. Nothing enforced either.
+ * A tool added next month that wrote `drift-profile` would leave that key
+ * behind for ever, `forget` would print a list that did not include it, and
+ * every test in this file would still be green, because they all test `forget`
+ * against keys the test itself made up.
+ *
+ * So this walks the source instead and checks the writes. A source-coupling
+ * check, with the same limits as `components/chrome.test.ts`: it reads text,
+ * it cannot run a browser, and a key assembled at run time from pieces is
+ * beyond it. What it can do is fail the moment somebody writes a name the
+ * site does not own, which is the regression it exists for.
+ */
+describe("every key the site writes is a key the site owns", () => {
+  const ROOT = join(process.cwd());
+
+  /** Every .ts/.tsx under the given directories, tests excluded. */
+  function sources(dirs: string[]): string[] {
+    const out: string[] = [];
+    const walk = (dir: string) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+          walk(path);
+          continue;
+        }
+        if (!/\.tsx?$/.test(entry.name)) continue;
+        // A test's fake storage is a Map, not the visitor's machine.
+        if (/\.test\.tsx?$/.test(entry.name)) continue;
+        out.push(path);
+      }
+    };
+    for (const dir of dirs) walk(join(ROOT, dir));
+    return out;
+  }
+
+  /**
+   * Constants this file has checked by hand, because the walk reads text and
+   * cannot follow an import. Adding a row here is the deliberate act: it means
+   * somebody looked at the key and said what it is.
+   */
+  const KNOWN: Record<string, { value: string; session: boolean }> = {
+    SETTINGS_KEY: { value: SETTINGS_KEY, session: false },
+    // The boot marker. Session storage, so it dies with the tab and `forget`
+    // is not the thing that removes it. `lib/forget.ts`'s docblock says so.
+    SESSION_KEY: { value: "fergusos_booted", session: true },
+  };
+
+  type Write = { file: string; receiver: string; arg: string };
+
+  /** Every `setItem(` call, with the expression it was called on. */
+  function writes(): Write[] {
+    const found: Write[] = [];
+    for (const file of sources(["app", "components", "lib"])) {
+      const source = readFileSync(file, "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, " ")
+        .replace(/^\s*\/\/.*$/gm, " ");
+      const call = /([A-Za-z_$][\w$.?]*)\.setItem\(\s*([^,]+?)\s*,/g;
+      for (let m = call.exec(source); m !== null; m = call.exec(source)) {
+        found.push({ file: file.slice(ROOT.length + 1), receiver: m[1], arg: m[2] });
+      }
+    }
+    return found;
+  }
+
+  const all = writes();
+
+  it("finds the writes at all, so a silent zero cannot pass for a clean sweep", () => {
+    // Two today: the settings, and the boot marker in session storage. The
+    // number is not the point; finding none would mean the regex had rotted
+    // and every assertion below had quietly become vacuous.
+    expect(all.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("writes no key under a name the site does not own", () => {
+    for (const w of all) {
+      const literal = /^(["'`])(.*)\1$/.exec(w.arg);
+      const known = KNOWN[w.arg];
+      const where = `${w.file}: ${w.receiver}.setItem(${w.arg}, ...)`;
+
+      if (literal) {
+        expect(isOwnedKey(literal[2]), `${where} writes a key forget cannot find`).toBe(true);
+        continue;
+      }
+      if (known) {
+        if (known.session) {
+          // Allowed precisely because it is not local storage. Say so, so a
+          // later change that points it at localStorage has to come back here.
+          expect(w.receiver, `${where} is session-only but writes elsewhere`).toMatch(
+            /sessionStorage$/,
+          );
+        } else {
+          expect(isOwnedKey(known.value), `${where} writes a key forget cannot find`).toBe(true);
+        }
+        continue;
+      }
+      // Neither a literal nor a name this file has vouched for. That is not a
+      // pass, because nothing here can tell what it writes.
+      expect.fail(`${where} writes a key this guard cannot check. Add it to KNOWN, or use a literal.`);
+    }
   });
 });
