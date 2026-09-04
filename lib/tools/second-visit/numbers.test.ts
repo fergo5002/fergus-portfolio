@@ -97,9 +97,10 @@ describe("Postgres-like rounding over doubles", () => {
     expect(roundTo(0.0625, 3)).toBe(0.063);
   });
 
-  it("pins the known exact-decimal tie difference from numeric", () => {
-    expect(roundTo(1.0005, 3)).toBe(1);
-    expect(roundTo(120.05, 1)).toBe(120);
+  it("does not let binary representation move an exact decimal tie down", () => {
+    expect(roundTo(1.0005, 3)).toBe(1.001);
+    expect(roundTo(120.05, 1)).toBe(120.1);
+    expect(roundTo(-1.0005, 3)).toBe(-1.001);
   });
 
   it("leaves non-finite and exponent-sized values alone", () => {

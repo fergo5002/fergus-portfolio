@@ -56,6 +56,20 @@ describe("what it decides for itself", () => {
     });
     expect(moved.usingProductionParams).toBe(false);
   });
+
+  it("does not invent a model row for a customer who only cancelled", () => {
+    const out = analyse({
+      bookings: [
+        ...crowd(),
+        b({ customerId: "cancelled-only", day: day("2026-01-01"), status: "cancelled" }),
+      ],
+      asOfDay: null,
+      venueTown: null,
+    });
+
+    expect(out.rows.some((row) => row.id === "cancelled-only")).toBe(false);
+    expect(out.counts.customers).toBe(30);
+  });
 });
 
 describe("the season factor, and why it is off", () => {
@@ -227,4 +241,3 @@ describe("the output crosses a worker and a JSON round trip unchanged", () => {
     expect(round).toEqual(out);
   });
 });
-

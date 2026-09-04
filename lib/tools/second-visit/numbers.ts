@@ -90,10 +90,15 @@ export function medianCont(values: readonly number[]): number | null {
   return percentileCont(values, 0.5);
 }
 
-/** Closest double-precision equivalent of Postgres numeric rounding. */
+/** Decimal half-away-from-zero rounding, matching Postgres `numeric`. */
 export function roundTo(value: number, digits: number): number {
   if (!Number.isFinite(value) || Math.abs(value) >= 1e21) return value;
-  return Number(value.toFixed(digits));
+  const factor = 10 ** digits;
+  const scaled = Math.abs(value) * factor;
+  // Decimal ties such as 1.0005 can sit one binary ulp below .5. Moving by
+  // that ulp restores the decimal value the export and Postgres both mean.
+  const atDecimalPrecision = scaled + Number.EPSILON * Math.max(1, scaled);
+  return Math.sign(value) * Math.round(atDecimalPrecision) / factor;
 }
 
 export function widthBucket(value: number, bounds: readonly number[]): number {

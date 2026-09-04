@@ -332,4 +332,3 @@ export function winnabilityCents(
   const r = Math.max(0, usable(reach) ? reach : 0);
   return Math.max(0, roundTo(p * margin * r, 0));
 }
-

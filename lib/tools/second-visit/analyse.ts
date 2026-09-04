@@ -227,7 +227,10 @@ export function analyse(input: AnalyseInput): Analysis {
     warnings.push("This file covers fewer than twelve months, so the season factor is switched off. One winter is no evidence at all about your summer.");
   }
 
-  const facts = buildCustomers(bookings, asOfDay, season, params);
+  // Migration 0300 starts from the attended-visits CTE. A customer represented
+  // only by cancelled rows is not in that relation and must not acquire a
+  // synthetic prospect score here.
+  const facts = buildCustomers(bookings, asOfDay, season, params).filter((customer) => customer.visits > 0);
   const occupancy = buildOccupancy(bookings);
 
   const townOf = new Map<string, Town | null>();
@@ -475,4 +478,3 @@ export function analyse(input: AnalyseInput): Analysis {
     warnings,
   };
 }
-
