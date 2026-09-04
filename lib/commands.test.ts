@@ -338,3 +338,37 @@ describe("reduced motion", () => {
     expect(runCommand("dock", { reducedMotion: true })).toMatchObject({ type: "effect" });
   });
 });
+
+describe("neofetch and the boards", () => {
+  const boards = {
+    available: true,
+    boards: [{ game: "bounce", rows: [{ initials: "FOR", score: 12 }] }],
+  };
+
+  it("says nothing about the arcade to somebody who has not found it", () => {
+    const res = runCommand("neofetch", { arcade: { seen: false, boards } });
+    expect(res.type).toBe("output");
+    if (res.type !== "output") return;
+    expect(res.lines.join("\n")).not.toContain("FOR");
+  });
+
+  it("prints the boards once the door has been opened", () => {
+    const res = runCommand("neofetch", { arcade: { seen: true, boards } });
+    expect(res.type).toBe("output");
+    if (res.type !== "output") return;
+    expect(res.lines.join("\n")).toContain("FOR");
+  });
+
+  it("says the boards are unavailable rather than printing a gap", () => {
+    const res = runCommand("neofetch", { arcade: { seen: true, boards: null } });
+    expect(res.type).toBe("output");
+    if (res.type !== "output") return;
+    expect(res.lines.join("\n")).toContain("unavailable");
+  });
+
+  it("is unchanged for a context with no arcade at all", () => {
+    const before = runCommand("neofetch", {});
+    const after = runCommand("neofetch", { arcade: { seen: false, boards: null } });
+    expect(before).toEqual(after);
+  });
+});

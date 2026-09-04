@@ -2,6 +2,8 @@ import { profile } from "@/content/profile";
 import { projects } from "@/content/projects";
 import { experience } from "@/content/experience";
 import { articles } from "@/content/articles";
+import { arcadeCopy, GAME_TITLES } from "@/content/arcade";
+import { formatBoards } from "@/lib/arcade/board";
 import { formatUptime } from "@/lib/system";
 import { defineCommand } from "./registry";
 import { ok } from "./shared";
@@ -38,7 +40,19 @@ function neofetch(ctx: CommandContext): string[] {
   for (let i = 0; i < rows; i++) {
     out.push(`${(art[i] ?? " ".repeat(21)).padEnd(23)}${info[i] ?? ""}`);
   }
-  return out;
+  return [...out, ...arcadeBlock(ctx)];
+}
+
+/**
+ * The boards, printed only to somebody who has been through the door this
+ * session. The spec asks `neofetch` to print the boards and also asks `top` to
+ * be the one hint; a permanent block of high scores in `neofetch` would be a
+ * second hint and a louder one, so the session flag settles it. It is never
+ * persisted, so a reload puts the machine back to one hint.
+ */
+function arcadeBlock(ctx: CommandContext): string[] {
+  if (!ctx.arcade?.seen) return [];
+  return ["", arcadeCopy.board.neofetchHeading, ...formatBoards(ctx.arcade.boards, 40, GAME_TITLES)];
 }
 
 function top(): string[] {

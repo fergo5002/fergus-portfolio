@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { OWNED_PREFIX, forget, isOwnedKey, listKeys, ownedKeys, removeKeys } from "./forget";
 import type { StorageLike } from "./forget";
 import { SETTINGS_KEY } from "./system";
+import { INITIALS_KEY } from "./arcade/session";
 
 /** An in-memory Storage with the three members the module is allowed to use. */
 function fake(initial: Record<string, string> = {}): StorageLike & { keys(): string[] } {
@@ -132,6 +133,10 @@ describe("every key the site writes is a key the site owns", () => {
     // The boot marker. Session storage, so it dies with the tab and `forget`
     // is not the thing that removes it. `lib/forget.ts`'s docblock says so.
     SESSION_KEY: { value: "fergusos_booted", session: true },
+    // The three characters a visitor chose for the arcade board, written
+    // only when they post a score. Under OWNED_PREFIX, so `forget` finds it
+    // without knowing its name.
+    INITIALS_KEY: { value: INITIALS_KEY, session: false },
   };
 
   type Write = { file: string; receiver: string; arg: string };
@@ -154,10 +159,11 @@ describe("every key the site writes is a key the site owns", () => {
   const all = writes();
 
   it("finds the writes at all, so a silent zero cannot pass for a clean sweep", () => {
-    // Two today: the settings, and the boot marker in session storage. The
-    // number is not the point; finding none would mean the regex had rotted
-    // and every assertion below had quietly become vacuous.
-    expect(all.length).toBeGreaterThanOrEqual(2);
+    // Three today: the settings, the boot marker in session storage, and the
+    // arcade's initials. The number is not the point; finding none would mean
+    // the regex had rotted and every assertion below had quietly become
+    // vacuous.
+    expect(all.length).toBeGreaterThanOrEqual(3);
   });
 
   it("writes no key under a name the site does not own", () => {

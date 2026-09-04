@@ -6,6 +6,63 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-04: the arcade runtime
+
+G0 of the toolshed programme. `cd arcade` opens a cabinet instead of printing an apology.
+`lib/arcade/` is a fixed 30Hz loop on the site's one frame clock, a character grid measured from
+the font rather than assumed, one key vocabulary covering the arrows, WASD, swipes and taps, five
+synth sounds, and a board of three-letter initials. A game is now a file and one line in a list.
+`bounce` ships as the worked example and is the fixture every runtime test drives.
+
+Three things the plan had wrong, all fixed on the branch and all worth knowing. The drawer sizes
+itself to its content, so an arcade with `height: auto` inside it measured nothing and refused a
+screen that was really there; it now states a height and the drawer grows for a program. `cd`
+looked its door up on every argument joined, so `cd arcade bounce` asked the registry for a command
+called "arcade bounce" and got nothing; it looks up the first word now. And three lines of copy were
+wider than the 32-column grid they are drawn into, which the copy's own test caught.
+
+The first whole-branch review found the runtime could restart a live game on an ordinary React
+render or a resize, could keep ticking an instance after that instance had exited, and sent exit
+button events to the game before leaving. Those paths now have guards that fail when removed.
+Board responses are bounded and checked for real three-character initials, both requests time out,
+and the hidden measuring probe inherits the exact font token the grid draws. Final-tree evidence:
+1,425 tests, clean TypeScript and production build, 121/121 mutations caught. In local WebKit the
+390-wide drawer measured 40 by 18, the 320-wide drawer resized in place to 32 by 16 without
+restarting Bounce, both font readings were 15px, the grid fitted, the exit control was 44 by 44,
+Enter on that control left the arcade, Escape restored the prompt, and reduced motion declined it.
+
+Not verified: the board against a real Redis, because F4 is still unmerged and Upstash is not
+provisioned; the live board therefore reads "boards are unavailable", which is the path that was
+tested. No real device, only WebKit emulating an iPhone at 390 and 320, where the headless engine
+throttles the frame clock to about two a second, so nothing here measures how a game feels at 60fps.
+No audio: `sound on` was never typed during the run.
+
+An independent final review found two states the earlier green checks did not exercise. A running
+Bounce near the old right edge disappeared after a 40-to-32 resize while it walked back into the
+smaller grid, and a key released after focus or modifiers changed could remain logically held. The
+runtime now notifies programs after changing the measured world; Bounce clamps and redraws at once.
+Physical keydowns are paired to their logical keyups, with every held key released on blur,
+visibility loss, hand-off and exit. The host also refuses non-finite, non-positive and greater than
+10,000,000 scores before initials entry. These are behaviour tests rather than claims inferred from
+the React source. The deleted one-off phone driver is replaced by
+`scripts/arcade-phone-check.mjs`, which enters through the hidden command and is part of the phone
+CI job without putting the door in the sitemap.
+Final evidence for this review fix: 1,434 tests, clean TypeScript and production build, 127/127
+mutations caught, and the committed WebKit hidden-flow check green against that build. It measured
+40 by 18 at 390, then resized the same running Bounce to 32 by 16 at 320 with its glyph still
+visible. It also rechecked prompt focus and the reduced-motion refusal. Production remains
+unverified because this is still an open pull request.
+
+The branch was then merged normally with `origin/main` at `20892de`, bringing in Overlap without
+dropping either tool's guards. On the combined tree, the 456 focused Arcade, Overlap, relay, budget
+and store tests passed; the full suite passed 1,699 tests with the two opt-in real-Upstash tests
+skipped; TypeScript and the production build passed; and both browser checks passed against that
+build. Arcade entered through its hidden command at 390, resized the live game to 320 and exercised
+reduced motion. Overlap passed all three phone profiles. A local merged-tree mutation run caught
+the first 76 of 149 mutations before it was stopped deliberately to free the machine; the required
+GitHub mutation job remains the whole-catalogue proof. The pull request is still unmerged and
+production remains unverified.
+
 ## 2026-09-04: Overlap recovery audit
 
 The follow-up security review found seven gaps and they are now implemented locally on the same

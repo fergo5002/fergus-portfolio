@@ -1,5 +1,6 @@
 import type { Theme } from "@/lib/system";
 import type { ProgramSpec } from "@/lib/arcade/program";
+import type { ArcadeSession } from "@/lib/arcade/session";
 
 /**
  * Side effects a command can ask the host page to perform. `runCommand` stays a
@@ -27,8 +28,9 @@ export type CommandResult =
   | { type: "clear" }
   | { type: "effect"; effect: SystemEffect; lines: string[] }
   /**
-   * A program for the terminal to host. The runtime is sub-project G0; until it
-   * lands, Terminal prints the title and "no runtime yet" and returns the prompt.
+   * A program for the terminal to host: a game, or the arcade's own cabinet.
+   * The runtime is `lib/arcade/` and `components/arcade/ArcadeScreen.tsx`, and
+   * `Terminal` is the only thing allowed to mount it.
    */
   | { type: "program"; program: ProgramSpec };
 
@@ -56,6 +58,13 @@ export type CommandContext = {
   storageKeys?: () => string[];
   /** What the presence provider last said. Absent until it has answered once. */
   presence?: number;
+  /**
+   * What the arcade knows this session: whether the door has been opened, and
+   * the last board snapshot the client fetched. Supplied by the Terminal, and
+   * read only by `neofetch`, which prints the boards to somebody who has been
+   * through the door and nothing at all to anyone else.
+   */
+  arcade?: ArcadeSession;
 };
 
 /** Sections reachable from the terminal. */

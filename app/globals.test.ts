@@ -383,3 +383,18 @@ describe("the touch bar separates thumb size from screen space", () => {
     expect(touch).not.toContain(".statusbar__pwd");
   });
 });
+
+describe("the arcade measures the same cell it draws", () => {
+  it("owns the font token above the probe and grid, never on either sibling", () => {
+    expect(tokens(".arcade")["--arcade-font"]).toBe("15px");
+    expect(tokens(".arcade__grid")["--arcade-font"]).toBeUndefined();
+    expect(tokens(".arcade__probe")["--arcade-font"]).toBeUndefined();
+    expect(css).toMatch(/@media \(min-width: 601px\) \{\s*\.arcade \{\s*--arcade-font: 16px;/);
+  });
+
+  it("makes the entire input surface non-scrolling, not only the grid", () => {
+    const arcade = /\.arcade\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(arcade).toContain("touch-action: none");
+    expect(arcade).toContain("overscroll-behavior: contain");
+  });
+});

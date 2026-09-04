@@ -9,6 +9,7 @@
     "test": "vitest run",
     "indexnow": "node scripts/indexnow.mjs",
     "phone-check": "node scripts/phone-check.mjs",
+    "phone-check:arcade": "node scripts/arcade-phone-check.mjs",
     "som:report": "node scripts/share-of-model/report.mjs",
     "som:publish": "node scripts/share-of-model/publish.mjs"
   },
