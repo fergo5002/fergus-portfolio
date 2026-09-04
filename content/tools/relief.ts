@@ -65,4 +65,42 @@ export const reliefCopy = {
     "The SVG is geometry only: strokes, no fills, millimetres on the page, one group per contour level so you can put a different pen in for each. No text, because a plotter has no font.",
   stlNote:
     "The STL is a closed solid, 102mm by 46mm, 2mm of base and up to 12mm of relief. Two triangles a cell on top, the same grid upside down underneath, and a wall joining them.",
+
+  /* Added with the page. The pure modules return keys and throw named errors;
+     every sentence a visitor reads is in this object. */
+  sourceLegend: "What to draw",
+  drawGithub: "Draw my year",
+  stop: "Stop",
+  useDemo: "Back to the demo",
+  fileLabel: "CSV file",
+  noFile: "No file chosen yet, so the sheet below is still the demo.",
+  columnLabel: "Which column holds the date",
+  plateAlt:
+    "A contour plate. Fifty-two weeks left to right, twenty-four hours top to bottom, six levels, every second one drawn heavier. The numbers under it say what is on it.",
+  exportsHeading: "Take it away",
+  readout: {
+    heading: "What is on the sheet",
+    events: "Events",
+    occupied: "Hours with anything in them",
+    busiest: "Busiest hour",
+    ceiling: "The top of the scale",
+  },
+  drawn: "Drawn. {events} events across {occupied} of the 1,248 hours in the year.",
+  truncated:
+    "Stopped at 5,000 commits. What is drawn is the newest 5,000 and not the whole year, which is worth knowing before you frame it.",
+  stopped: "Stopped. Nothing was kept, and the sheet is still the last one it drew.",
+  csvRead: "Read {read} rows out of that column and skipped {skipped}.",
+  csvCapped:
+    "That file runs past 200,000 rows, so only the first 200,000 were read. A phone reading more than that is a phone that stops answering.",
+  noDateColumn:
+    "No column in that file reads as a date. Relief takes ISO dates, with or without a time and an offset, and the space-separated version a spreadsheet writes. It will not guess at 14/01/2026, because that is two different days depending on who typed it.",
+  errors: {
+    auth: "GitHub refused that token. Check it has not expired, and that it was pasted whole.",
+    rate: "GitHub is rate limiting this token. It goes away on its own in a few minutes; a token with no scopes ticked still gets the higher limit, so this usually means another tab is using the same one.",
+    input:
+      "That is not a GitHub username, or the token box is empty. A year of commits needs both.",
+    other: "Something between here and GitHub went wrong, and it was not the token or the limit.",
+    paint:
+      "The theme did not hand the plate a colour to draw in. Switch themes at the terminal and it should come back.",
+  },
 } as const;

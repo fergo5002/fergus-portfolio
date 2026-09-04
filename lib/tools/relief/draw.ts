@@ -51,11 +51,21 @@ export function paletteFromTokens(read: (name: string) => string): Palette {
   };
 }
 
-/** The subset of CanvasRenderingContext2D the painter uses. The real one satisfies it. */
+/**
+ * The subset of CanvasRenderingContext2D the painter uses, so the real one
+ * satisfies it with no cast.
+ *
+ * `fillStyle` and `strokeStyle` carry the DOM's own union rather than `string`,
+ * and that is not tidiness. A mutable property is invariant, so a `Ctx2D`
+ * declaring `fillStyle: string` refuses a real context outright: TS2345, "type
+ * CanvasGradient is not assignable to type string". The painter only ever
+ * assigns a colour string, and the recording stub in `draw.test.ts` only ever
+ * reads one back.
+ */
 export type Ctx2D = {
   canvas: { width: number; height: number };
-  fillStyle: string;
-  strokeStyle: string;
+  fillStyle: string | CanvasGradient | CanvasPattern;
+  strokeStyle: string | CanvasGradient | CanvasPattern;
   lineWidth: number;
   font: string;
   textAlign: string;
