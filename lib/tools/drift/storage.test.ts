@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { OWNED_PREFIX, isOwnedKey } from "@/lib/forget";
 import { buildReference } from "./reference";
 import { profileOf } from "./profile";
-import { DRIFT_PROFILE_KEY, parseProfile, serialiseProfile } from "./storage";
+import { DRIFT_PROFILE_KEY, parseProfile, removeSavedProfile, serialiseProfile } from "./storage";
 
 function doc(joins: number): string {
   return Array.from({ length: 40 }, (_, i) =>
@@ -20,6 +20,24 @@ describe("the key", () => {
   it("is the one forget already knows about", () => {
     expect(DRIFT_PROFILE_KEY).toBe(`${OWNED_PREFIX}drift-profile`);
     expect(isOwnedKey(DRIFT_PROFILE_KEY)).toBe(true);
+  });
+});
+
+describe("explicit deletion", () => {
+  it("reports success only after the browser actually removes the owned key", () => {
+    const removed: string[] = [];
+    expect(removeSavedProfile({ removeItem: (key) => removed.push(key) })).toBe(true);
+    expect(removed).toEqual([DRIFT_PROFILE_KEY]);
+  });
+
+  it("reports failure when storage refuses deletion", () => {
+    expect(
+      removeSavedProfile({
+        removeItem() {
+          throw new DOMException("blocked", "SecurityError");
+        },
+      }),
+    ).toBe(false);
   });
 });
 
@@ -61,15 +79,38 @@ describe("refusals", () => {
     ["a missing savedAt", { ...JSON.parse(saved), savedAt: undefined }],
     ["a non-numeric frequency", { ...JSON.parse(saved), profile: { ...profile, freq: { and: "lots" } } }],
     ["a NaN z-score", { ...JSON.parse(saved), profile: { ...profile, z: { and: Number.NaN } } }],
+    ["a missing marker frequency", { ...JSON.parse(saved), profile: { ...profile, freq: {} } }],
+    ["a missing marker z-score", { ...JSON.parse(saved), profile: { ...profile, z: {} } }],
+    ["a z-score that does not match the saved frequency and reference", {
+      ...JSON.parse(saved),
+      profile: {
+        ...profile,
+        z: Object.fromEntries(ref.markers.map((marker) => [marker, profile.z[marker] + 1])),
+      },
+    }],
+    ["profile counts that do not match the saved reference", {
+      ...JSON.parse(saved),
+      profile: { ...profile, pieces: profile.pieces + 1 },
+    }],
     ["a missing rhythm", { ...JSON.parse(saved), profile: { ...profile, rhythm: undefined } }],
     ["buckets that are not numbers", { ...JSON.parse(saved), profile: { ...profile, rhythm: { ...profile.rhythm, buckets: ["a"] } } }],
+    ["the wrong number of rhythm buckets", { ...JSON.parse(saved), profile: { ...profile, rhythm: { ...profile.rhythm, buckets: [1] } } }],
     ["a malformed pair count", { ...JSON.parse(saved), profile: { ...profile, pairs: { utilise: { formal: 1 } } } }],
+    ["an incomplete fixed pair table", { ...JSON.parse(saved), profile: { ...profile, pairs: {} } }],
     ["no reference at all", { ...JSON.parse(saved), reference: undefined }],
     ["a reference with no marker list", { ...JSON.parse(saved), reference: { ...ref, markers: "the and" } }],
     ["a reference missing a marker's sd", { ...JSON.parse(saved), reference: { ...ref, sd: {} } }],
     ["a reference with a zero sd, which is a division by zero downstream", {
       ...JSON.parse(saved),
       reference: { ...ref, sd: Object.fromEntries(ref.markers.map((m) => [m, 0])) },
+    }],
+    ["a reference with duplicate markers", {
+      ...JSON.parse(saved),
+      reference: { ...ref, markers: [ref.markers[0], ref.markers[0]] },
+    }],
+    ["an impossible self-spread ordering", {
+      ...JSON.parse(saved),
+      spread: { pieces: 2, min: 0.3, median: 0.2, max: 0.1 },
     }],
   ];
 

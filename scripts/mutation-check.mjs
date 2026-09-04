@@ -661,6 +661,18 @@ const MUTATIONS = [
       /      setReport\(analyse\(stored\.profile, driftDemo\.draft, stored\.reference, stored\.spread\)\);\r?\n/,
     replace: "",
   },
+  {
+    name: "drift's marker cap disappears while its test still claims to cover it",
+    file: "lib/tools/drift/reference.ts",
+    pattern: /    if \(markers\.length >= MARKER_COUNT\) break;/,
+    replace: "    if (false) break;",
+  },
+  {
+    name: "drift claims a blocked profile deletion succeeded",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /  } catch \{\r?\n    return false;\r?\n  }/,
+    replace: "  } catch {\n    return true;\n  }",
+  },
 ];
 
 let caught = 0;

@@ -7,7 +7,12 @@ import { buildReference, type Reference } from "@/lib/tools/drift/reference";
 import { selfSpread, type SelfSpread } from "@/lib/tools/drift/delta";
 import { MIN_PROFILE_WORDS, profileOf, type VoiceProfile } from "@/lib/tools/drift/profile";
 import { analyse, type DriftReport } from "@/lib/tools/drift/report";
-import { DRIFT_PROFILE_KEY, parseProfile, serialiseProfile } from "@/lib/tools/drift/storage";
+import {
+  DRIFT_PROFILE_KEY,
+  parseProfile,
+  removeSavedProfile,
+  serialiseProfile,
+} from "@/lib/tools/drift/storage";
 import { splitPieces } from "@/lib/tools/drift/text";
 import { trackToolRun } from "@/lib/tools/events";
 
@@ -132,10 +137,9 @@ export default function DriftTool({
   }
 
   function onDrop() {
-    try {
-      window.localStorage.removeItem(DRIFT_PROFILE_KEY);
-    } catch {
-      // Nothing to do: if it cannot be removed it was never written.
+    if (!removeSavedProfile(window.localStorage)) {
+      setNote(driftCopy.dropFailed);
+      return;
     }
     setSavedAt(null);
     setNote(driftCopy.droppedNote);

@@ -993,7 +993,7 @@ describe("check_voice", () => {
   const pieces = [doc(1), doc(2), doc(3), doc(4), doc(5), doc(6)];
   const callerRef = buildReference(pieces);
   const saved = JSON.parse(
-    serialiseProfile(callerRef, profileOf([doc(1)], callerRef), null, "2026-09-03T12:00:00.000Z"),
+    serialiseProfile(callerRef, profileOf(pieces, callerRef), null, "2026-09-03T12:00:00.000Z"),
   );
 
   const draft = [

@@ -97,9 +97,15 @@ describe("buildReference", () => {
   });
 
   it("never returns more than MARKER_COUNT markers", () => {
-    const many = Array.from({ length: 400 }, (_, i) => `word${i}`).join(" ");
+    // Digits are deliberately not words in this tool. `word0`, `word1`, ...
+    // therefore collapse to one token and make this cap check pass even if the
+    // cap is removed. These are 400 genuinely distinct alphabetic tokens.
+    const many = Array.from(
+      { length: 400 },
+      (_, i) => `w${String.fromCharCode(97 + Math.floor(i / 26))}${String.fromCharCode(97 + (i % 26))}`,
+    ).join(" ");
     const ref = buildReference(docs(many, `${many} extra`, many, `${many} extra`, many, `${many} extra`));
-    expect(ref.markers.length).toBeLessThanOrEqual(MARKER_COUNT);
+    expect(ref.markers).toHaveLength(MARKER_COUNT);
   });
 
   it("gives every marker a finite mean and a positive standard deviation", () => {

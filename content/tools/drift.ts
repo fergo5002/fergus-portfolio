@@ -73,6 +73,8 @@ export const driftCopy = {
   savedContents:
     "What gets saved is a frequency table: your hundred commonest words, a number beside each, and the rates. Your own words, then, but single ones, in frequency order, never in the order you wrote them. No sentence goes in and none can be got back out.",
   droppedNote: "Deleted. Nothing of yours is left in this browser.",
+  dropFailed:
+    "This browser refused the deletion, so the saved profile may still be here. Try the terminal's forget command after storage access is restored.",
   neverSaved: "Nothing is saved unless you press save.",
 
   demoNote:

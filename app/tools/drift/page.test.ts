@@ -86,8 +86,12 @@ describe("the client component", () => {
 
   it("reads and clears the same key it writes", () => {
     expect(tool).toContain("localStorage.getItem(DRIFT_PROFILE_KEY)");
-    expect(tool).toContain("localStorage.removeItem(DRIFT_PROFILE_KEY)");
+    expect(tool).toContain("removeSavedProfile(window.localStorage)");
     expect(tool).not.toMatch(/"fergusos:/);
+  });
+
+  it("does not claim deletion when the browser refuses it", () => {
+    expect(tool).toMatch(/if \(!removeSavedProfile\(window\.localStorage\)\) \{[\s\S]*?driftCopy\.dropFailed[\s\S]*?return;/);
   });
 
   it("re-measures the displayed draft when it restores a saved profile", () => {
