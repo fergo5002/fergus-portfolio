@@ -29,9 +29,14 @@ button and opened copy and paste. Not verified: a real LinkedIn export, browsers
 networks or symmetric NAT, a configured Redis room-code exchange, the WebRTC flow in real WebKit,
 CI or production.
 
-This branch copied the minimum F4 store files and `@upstash/redis` while F4 was still unmerged.
-Reconcile those files with the recovered F4 branch before T3 merges; do not assume the copies are
-the state layer's final versions.
+The minimum F4 store subset has now been reconciled against recovered F4 tip `47f6964`. The three
+production files (`lib/store/errors.ts`, `lib/store/redis.ts` and `lib/budget.ts`) and their store
+tests are byte-for-byte identical. Both lockfiles resolve `@upstash/redis` 1.38.3 from the same
+tarball with the same integrity. T3 deliberately does not copy F4's Neon and Blob dependencies,
+which Overlap does not import, and keeps the newer mainline Playwright phone-check dependency. The
+only behavioural-test difference stays on T3: a hash test no longer rejects the substring `203`,
+which a daily-changing hexadecimal digest contains by chance about once in three hundred runs.
+The 94 state, budget, relay, fallback and copy tests pass after that comparison.
 
 ## 2026-09-03: the shell everywhere
 
