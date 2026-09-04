@@ -206,6 +206,8 @@ export default function ReliefTool() {
         sleep: (ms) => new Promise<void>((done) => window.setTimeout(done, ms)),
         onProgress: (done, total, commits) =>
           setNote(fill(reliefCopy.drawing, { done, total, commits })),
+        onBackoff: (ms) =>
+          setNote(fill(reliefCopy.backoff, { seconds: Math.ceil(ms / 1000) })),
         signal: controller.signal,
       });
       const ok = accept(found);

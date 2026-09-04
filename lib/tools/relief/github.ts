@@ -34,8 +34,14 @@ export const PAGE_SIZE = 100;
 export const MAX_PAGES_PER_WINDOW = 10;
 /** Past this the page says it truncated rather than pretending it saw the lot. */
 export const MAX_COMMITS = 5000;
-/** Commit search allows about thirty requests a minute authenticated. 2.2s is inside it. */
-export const SEARCH_INTERVAL_MS = 2200;
+/**
+ * Commit search advertises thirty requests a minute, but the live endpoint
+ * applied an undocumented secondary limit after ten closely spaced searches.
+ * Seven seconds stays below the limit we actually measured.
+ */
+export const SEARCH_INTERVAL_MS = 7000;
+/** GitHub's documented minimum when a secondary limit carries no retry hint. */
+export const SECONDARY_BACKOFF_MS = 60_000;
 
 export class ReliefInputError extends Error {
   constructor(message: string) {
@@ -53,6 +59,53 @@ export class ReliefRateLimitError extends Error {
   constructor() {
     super("relief: GitHub is rate limiting this token");
     this.name = "ReliefRateLimitError";
+  }
+}
+
+/**
+ * How long GitHub told us to stop.
+ *
+ * Primary exhaustion carries a reset instant. A secondary limit may carry a
+ * Retry-After value, but the live commit-search endpoint did not; GitHub's
+ * documented fallback for that case is at least one minute. The extra second
+ * on a primary reset keeps a clock rounded to seconds from retrying on its own
+ * boundary.
+ */
+export function rateLimitDelay(headers: Headers, nowMs = Date.now()): number {
+  const retryAfter = Number(headers.get("retry-after"));
+  if (Number.isFinite(retryAfter) && retryAfter > 0) return Math.ceil(retryAfter * 1000);
+
+  if (headers.get("x-ratelimit-remaining") === "0") {
+    const resetSeconds = Number(headers.get("x-ratelimit-reset"));
+    if (Number.isFinite(resetSeconds) && resetSeconds > 0) {
+      return Math.max(1000, Math.ceil(resetSeconds * 1000 - nowMs + 1000));
+    }
+  }
+
+  return SECONDARY_BACKOFF_MS;
+}
+
+/** A wait the page's Stop button can interrupt, including a minute-long backoff. */
+export async function abortableSleep(
+  ms: number,
+  sleep: (ms: number) => Promise<void>,
+  signal?: AbortSignal,
+): Promise<void> {
+  if (!signal) {
+    await sleep(ms);
+    return;
+  }
+  signal.throwIfAborted();
+
+  let onAbort: (() => void) | undefined;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    onAbort = () => reject(signal.reason ?? new DOMException("Aborted", "AbortError"));
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+  try {
+    await Promise.race([sleep(ms), aborted]);
+  } finally {
+    if (onAbort) signal.removeEventListener("abort", onAbort);
   }
 }
 
@@ -102,6 +155,7 @@ export type FetchOptions = {
   fetchImpl: typeof fetch;
   sleep: (ms: number) => Promise<void>;
   onProgress?: (done: number, total: number, commits: number) => void;
+  onBackoff?: (ms: number) => void;
   signal?: AbortSignal;
 };
 
@@ -110,7 +164,7 @@ type SearchItem = { commit?: { author?: { date?: string } } };
 export async function fetchCommitEvents(
   options: FetchOptions,
 ): Promise<{ events: ReliefEvent[]; truncated: boolean }> {
-  const { user, token, endMs, fetchImpl, sleep, onProgress, signal } = options;
+  const { user, token, endMs, fetchImpl, sleep, onProgress, onBackoff, signal } = options;
   if (!validUsername(user)) throw new ReliefInputError("relief: that is not a GitHub username");
   if (token.trim() === "") throw new ReliefInputError("relief: a token is needed for a whole year");
   signal?.throwIfAborted();
@@ -119,12 +173,13 @@ export async function fetchCommitEvents(
   const windows = searchWindows(endMs);
   let truncated = false;
   let requests = 0;
+  let rateRetryUsed = false;
 
   for (let w = 0; w < windows.length && !truncated; w++) {
     const { since, until } = windows[w];
     for (let page = 1; page <= MAX_PAGES_PER_WINDOW; page++) {
       signal?.throwIfAborted();
-      if (requests > 0) await sleep(SEARCH_INTERVAL_MS);
+      if (requests > 0) await abortableSleep(SEARCH_INTERVAL_MS, sleep, signal);
       requests++;
 
       const url = githubUrl("/search/commits", {
@@ -134,17 +189,29 @@ export async function fetchCommitEvents(
         per_page: String(PAGE_SIZE),
         page: String(page),
       });
-      const response = await fetchImpl(url, {
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${token}`,
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
-        signal,
-      });
+      let response: Response | null = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        response = await fetchImpl(url, {
+          headers: {
+            Accept: "application/vnd.github+json",
+            Authorization: `Bearer ${token}`,
+            "X-GitHub-Api-Version": "2022-11-28",
+          },
+          signal,
+        });
 
-      if (response.status === 401) throw new ReliefAuthError();
-      if (response.status === 403 || response.status === 429) throw new ReliefRateLimitError();
+        if (response.status === 401) throw new ReliefAuthError();
+        if (response.status !== 403 && response.status !== 429) break;
+        if (attempt === 1 || rateRetryUsed) throw new ReliefRateLimitError();
+
+        const delay = rateLimitDelay(response.headers);
+        rateRetryUsed = true;
+        onBackoff?.(delay);
+        await abortableSleep(delay, sleep, signal);
+        requests++;
+      }
+
+      if (!response) throw new Error("relief: GitHub returned no response");
       if (!response.ok) {
         throw new Error(`relief: GitHub answered ${response.status}`);
       }

@@ -753,7 +753,7 @@ const MUTATIONS = [
     replace: "The code is dead now",
   },
 
-  // -- relief: ten guards, each with the test that bites on it --
+  // -- relief: thirteen guards, each with the test that bites on it --
   {
     name: "relief takes the percentile ceiling upwards into the outlier it exists to ignore",
     file: "lib/tools/relief/heightmap.ts",
@@ -807,6 +807,24 @@ const MUTATIONS = [
     file: "lib/tools/relief/github.ts",
     pattern: /if \(!path\.startsWith\("\/"\) \|\| path\.startsWith\("\/\/"\)\) \{/,
     replace: "if (false) {",
+  },
+  {
+    name: "relief gives up on GitHub's first secondary limit instead of retrying once",
+    file: "lib/tools/relief/github.ts",
+    pattern: /for \(let attempt = 0; attempt < 2; attempt\+\+\) \{/,
+    replace: "for (let attempt = 0; attempt < 1; attempt++) {",
+  },
+  {
+    name: "relief waits another minute on every secondary limit instead of bounding the run",
+    file: "lib/tools/relief/github.ts",
+    pattern: /if \(attempt === 1 \|\| rateRetryUsed\) throw new ReliefRateLimitError\(\);/,
+    replace: "if (attempt === 1) throw new ReliefRateLimitError();",
+  },
+  {
+    name: "relief paces GitHub at its advertised rate instead of the tighter limit measured live",
+    file: "lib/tools/relief/github.ts",
+    pattern: /export const SEARCH_INTERVAL_MS = 7000;/,
+    replace: "export const SEARCH_INTERVAL_MS = 2200;",
   },
   {
     name: "relief anchors a CSV's year on today, so a two-year-old export draws 52 empty weeks",

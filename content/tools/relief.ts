@@ -41,12 +41,14 @@ export const reliefCopy = {
   demoCaption:
     "Generated, not measured. A modelled developer's year from a fixed seed, so the page has ground on it before you give it any.",
   githubHelp:
-    "Your username, and a GitHub token with no scopes ticked. A token with nothing ticked can already read every public repository, which is all this needs unless you want your private ones counted.",
+    "Your username, and a GitHub token with no scopes ticked. A token with nothing ticked can already read every public repository, which is all this needs unless you want your private ones counted. GitHub makes this path slow; a year usually takes about two minutes.",
   tokenLabel: "GitHub token",
   userLabel: "GitHub username",
   csvHelp:
     "Any CSV with a column of dates. Pick the column and the tool does the rest. The file is read in this tab and never sent anywhere.",
   drawing: "Reading GitHub. Window {done} of {total}, {commits} commits so far.",
+  backoff:
+    "GitHub asked this tab to slow down. Waiting about {seconds} seconds, then trying this window once more.",
   refusal: {
     "few-events":
       "That is too thin to contour. Fewer than 150 events in the year, and the rings would be drawn around single cells, which looks like a map and means nothing.",
@@ -96,7 +98,8 @@ export const reliefCopy = {
     "No column in that file reads as a date. Relief takes ISO dates, with or without a time and an offset, and the space-separated version a spreadsheet writes. It will not guess at 14/01/2026, because that is two different days depending on who typed it.",
   errors: {
     auth: "GitHub refused that token. Check it has not expired, and that it was pasted whole.",
-    rate: "GitHub is rate limiting this token. It goes away on its own in a few minutes; a token with no scopes ticked still gets the higher limit, so this usually means another tab is using the same one.",
+    rate:
+      "GitHub asked this tab to stop again after the retry. Nothing on the sheet changed. Give it a few minutes before trying again.",
     input:
       "That is not a GitHub username, or the token box is empty. A year of commits needs both.",
     other: "Something between here and GitHub went wrong, and it was not the token or the limit.",

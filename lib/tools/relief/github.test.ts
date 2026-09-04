@@ -7,10 +7,14 @@ import {
   ReliefAuthError,
   ReliefInputError,
   ReliefRateLimitError,
+  SEARCH_INTERVAL_MS,
+  SECONDARY_BACKOFF_MS,
   WINDOWS,
+  abortableSleep,
   fetchCommitEvents,
   githubUrl,
   localHour,
+  rateLimitDelay,
   searchWindows,
   validUsername,
 } from "./github";
@@ -203,16 +207,54 @@ describe("fetchCommitEvents", () => {
   });
 
   it("backs off once on a rate limit and gives up saying so", async () => {
-    const { promise } = run([{ status: 403, headers: { "retry-after": "1" } }]);
+    const waits: number[] = [];
+    const { calls, promise } = run([{ status: 403 }], {
+      sleep: async (ms: number) => void waits.push(ms),
+    });
     await expect(promise).rejects.toBeInstanceOf(ReliefRateLimitError);
+    expect(calls).toHaveLength(2);
+    expect(waits).toEqual([SECONDARY_BACKOFF_MS]);
   });
 
-  it("waits between requests, so the per-minute search limit is never the thing that stops it", async () => {
+  /**
+   * Reproduced against GitHub itself: the ninth commit-search request answered
+   * 403 while 25 of 30 primary search requests remained. GitHub called it a
+   * secondary limit and sent no Retry-After, so its documented minimum is one
+   * minute. The old implementation threw immediately and could not finish a
+   * thirteen-window year.
+   */
+  it("waits and recovers from one secondary limit", async () => {
+    const waits: number[] = [];
+    const backoffs: number[] = [];
+    const { calls, promise } = run([{ status: 403 }, []], {
+      sleep: async (ms: number) => void waits.push(ms),
+      onBackoff: (ms: number) => void backoffs.push(ms),
+    });
+    await expect(promise).resolves.toEqual({ events: [], truncated: false });
+    expect(calls.length).toBeGreaterThan(WINDOWS);
+    expect(waits).toContain(SECONDARY_BACKOFF_MS);
+    expect(backoffs).toEqual([SECONDARY_BACKOFF_MS]);
+  });
+
+  it("backs off only once for the whole run, so repeated limits cannot hold the tab for minutes", async () => {
+    const waits: number[] = [];
+    const backoffs: number[] = [];
+    const { promise } = run([{ status: 403 }, [], { status: 403 }], {
+      sleep: async (ms: number) => void waits.push(ms),
+      onBackoff: (ms: number) => void backoffs.push(ms),
+    });
+    await expect(promise).rejects.toBeInstanceOf(ReliefRateLimitError);
+    expect(waits.filter((ms) => ms === SECONDARY_BACKOFF_MS)).toHaveLength(1);
+    expect(backoffs).toEqual([SECONDARY_BACKOFF_MS]);
+  });
+
+  it("keeps commit search below the hidden ten-a-minute secondary limit seen live", async () => {
     const waits: number[] = [];
     const { promise } = run([[]], { sleep: async (ms: number) => void waits.push(ms) });
     await promise;
     expect(waits.length).toBeGreaterThanOrEqual(WINDOWS - 1);
-    expect(Math.max(...waits)).toBeGreaterThanOrEqual(2000);
+    expect(SEARCH_INTERVAL_MS).toBeGreaterThanOrEqual(7000);
+    expect(Math.max(...waits)).toBe(SEARCH_INTERVAL_MS);
   });
 
   it("reports progress once per window", async () => {
@@ -242,5 +284,47 @@ describe("fetchCommitEvents", () => {
     const { calls, promise } = run([[]], { signal: controller.signal });
     await expect(promise).rejects.toThrow(/abort/i);
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("rateLimitDelay", () => {
+  const now = Date.UTC(2026, 8, 4, 12, 0, 0);
+
+  it("honours Retry-After when GitHub sends one", () => {
+    expect(rateLimitDelay(new Headers({ "retry-after": "3" }), now)).toBe(3000);
+  });
+
+  it("waits for the primary reset when no requests remain", () => {
+    const reset = Math.floor(now / 1000) + 9;
+    expect(
+      rateLimitDelay(
+        new Headers({ "x-ratelimit-remaining": "0", "x-ratelimit-reset": String(reset) }),
+        now,
+      ),
+    ).toBe(10_000);
+  });
+
+  it("uses GitHub's one-minute minimum for a secondary limit with no hint", () => {
+    expect(rateLimitDelay(new Headers({ "x-ratelimit-remaining": "25" }), now)).toBe(
+      SECONDARY_BACKOFF_MS,
+    );
+  });
+});
+
+describe("abortableSleep", () => {
+  it("lets Stop interrupt the one-minute secondary-limit wait", async () => {
+    const controller = new AbortController();
+    let release: (() => void) | undefined;
+    const sleeping = abortableSleep(
+      60_000,
+      () => new Promise<void>((resolve) => {
+        release = resolve;
+      }),
+      controller.signal,
+    );
+
+    controller.abort();
+    await expect(sleeping).rejects.toMatchObject({ name: "AbortError" });
+    release?.();
   });
 });
