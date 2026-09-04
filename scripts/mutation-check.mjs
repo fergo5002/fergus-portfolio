@@ -610,7 +610,129 @@ const MUTATIONS = [
     pattern: /    record\("refused", started\);\r?\n    return \{ status: "invalid", seq, url: "", message: headlineCopy\.emptyUrl \};/,
     replace: '    return { status: "invalid", seq, url: "", message: headlineCopy.emptyUrl };',
   },
+  // ── the arcade runtime (G0) ──
+  {
+    name: "the arcade stops declining under reduced motion",
+    file: "lib/commands/hidden.ts",
+    pattern: /if \(ctx\.reducedMotion\) return ok\(ARCADE_DECLINED\);/,
+    replace: "if (false) return ok(ARCADE_DECLINED);",
+  },
+  {
+    name: "the door launches a game nobody has built",
+    file: "lib/commands/hidden.ts",
+    pattern: /if \(!isReady\(game\) \|\| !game\.spec\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "the loop plays back a stall instead of dropping it",
+    file: "lib/arcade/loop.ts",
+    pattern: /if \(steps >= MAX_TICKS_PER_FRAME\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "the loop throws its remainder away, so speed drifts with the frame rate",
+    file: "lib/arcade/loop.ts",
+    pattern: /    state\.acc -= TICK_MS;/,
+    replace: "    state.acc = 0;",
+  },
+  {
+    name: "the grid draws a glyph too small to be one",
+    file: "lib/arcade/grid.ts",
+    pattern: /if \(w < MIN_CELL_PX\) continue;/,
+    replace: "if (false) continue;",
+  },
+  {
+    name: "a screen with no room gets a clipped grid instead of a sentence",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /if \(measured && !fit\) leave\(\[\.\.\.arcadeCopy\.noRoom\]\);/,
+    replace: "if (false) leave([...arcadeCopy.noRoom]);",
+  },
+  {
+    name: "the arrows scroll the page out from under the player",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /if \(shouldCapture\(e\.key, mods\)\) e\.preventDefault\(\);/,
+    replace: ";",
+  },
+  {
+    name: "Escape stops leaving the arcade",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /if \(e\.key === "Escape"\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "the arcade's keys reach the drawer, so one Escape closes both",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /    e\.stopPropagation\(\);\r?\n    if \(e\.key === "Escape"\) \{/,
+    replace: '    if (e.key === "Escape") {',
+  },
+  {
+    name: "the grid is rewritten every frame whether or not it changed",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /if \(next === lastDrawnRef\.current\) return;/,
+    replace: ";",
+  },
+  {
+    name: "a score is reported as posted before the server answered",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /leave\(\[result\.ok \? arcadeCopy\.initials\.saved : result\.reason\]\);/,
+    replace: "leave([arcadeCopy.initials.saved]);",
+  },
+  {
+    name: "initials skip the blocklist",
+    file: "lib/arcade/board.ts",
+    pattern: /if \(BLOCKED_INITIALS\.has\(folded\)\)/,
+    replace: "if (false)",
+  },
+  {
+    name: "initials stop being folded, so 4SS gets on the board",
+    file: "lib/arcade/board.ts",
+    pattern: /  const folded = foldLeet\(cleaned\);/,
+    replace: "  const folded = cleaned;",
+  },
+  {
+    name: "initials are truncated rather than refused, so the site picks them for you",
+    file: "lib/arcade/board.ts",
+    pattern: /if \(cleaned\.length !== INITIALS_LENGTH\)/,
+    replace: "if (cleaned.length < INITIALS_LENGTH)",
+  },
+  {
+    name: "the board keeps every score ever posted",
+    file: "lib/arcade/board.ts",
+    pattern: /\.sort\(\(a, b\) => b\.score - a\.score\)\.slice\(0, size\)/,
+    replace: ".sort((a, b) => b.score - a.score)",
+  },
+  {
+    name: "the client trusts a body that never said it was available",
+    file: "lib/arcade/board-client.ts",
+    pattern: /  if \(body\.available !== true\) return UNAVAILABLE;/,
+    replace: "  if (false) return UNAVAILABLE;",
+  },
+  {
+    name: "a network failure becomes a crash instead of a sentence",
+    file: "lib/arcade/board-client.ts",
+    pattern: /  \} catch \{\r?\n    return UNAVAILABLE;\r?\n  \}/,
+    replace: "  } catch (error) {\n    throw error;\n  }",
+  },
+  {
+    name: "neofetch prints the boards to somebody who never found the door",
+    file: "lib/commands/info.ts",
+    pattern: /if \(!ctx\.arcade\?\.seen\) return \[\];/,
+    replace: "if (false) return [];",
+  },
+  {
+    name: "the cabinet launches a game with no program behind it",
+    file: "lib/arcade/cabinet.ts",
+    pattern: /if \(!isReady\(game\)\) return \{ state: \{ index, note: arcadeCopy\.cabinet\.notReady \}, launch: null \};/,
+    replace: "if (false) return { state: { index, note: arcadeCopy.cabinet.notReady }, launch: null };",
+  },
+  {
+    name: "the cd door is looked up on the whole argument again, so `cd arcade bounce` dies",
+    file: "lib/commands/nav.ts",
+    pattern: /const doorName = \(args\[0\] \?\? ""\)\.toLowerCase\(\)\.replace\(\/\^\\\/\+\|\\\/\+\$\/g, ""\);/,
+    replace: "const doorName = dest;",
+  },
 ];
+
 
 let caught = 0;
 const survived = [];
