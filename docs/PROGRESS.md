@@ -22,8 +22,10 @@ integrated; T3 does not alter F4's worktree.
 
 Final local evidence after those changes: 1,473 tests passed and the two opt-in real-Upstash tests
 skipped because no Redis variables are present; `tsc --noEmit` and the production build passed;
-all 107 deliberate mutations went red; the phone-check self-test caught every planted fault, and
-`/tools/overlap` passed at iPhone 390, iPhone 320 and throttled Pixel sizes. Against the built API
+the full 107-mutation run went red throughout, and after tightening the secret to a 32-byte minimum
+the updated fail-open mutation was applied separately and made both secret tests fail; the
+phone-check self-test caught every planted fault, and `/tools/overlap` passed at iPhone 390, iPhone
+320 and throttled Pixel sizes. Against the built API
 with neither Redis nor `BUDGET_HASH_SECRET`, room creation returned 503 `relay-unavailable` and the
 manual-signalling sentence without exposing the variable name. Not verified remains unchanged: a
 real Redis room, a real LinkedIn export, separate physical networks, symmetric NAT, real WebKit
