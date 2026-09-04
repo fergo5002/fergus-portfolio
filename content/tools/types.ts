@@ -15,6 +15,12 @@ export type ToolEntry = {
    * day, nothing else."
    */
   privacy: "browser" | "server";
+  /**
+   * One extra sentence under the privacy line, for a tool whose two words are
+   * not the whole truth. Optional and additive: the frozen `ToolEntry` block in
+   * the programme design permits additions.
+   */
+  privacyNote?: string;
   /** Printed at the foot of the tool page under "Can't see". */
   cantSee: string[];
   /** `soon` entries are listed on the index but not linked. */

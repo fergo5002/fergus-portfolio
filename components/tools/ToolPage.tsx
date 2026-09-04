@@ -56,6 +56,7 @@ export default function ToolPage({
       </h1>
       <p className="page__lede">{tool.blurb}</p>
       <p className="tool__privacy">{toolShellCopy.privacy[tool.privacy]}</p>
+      {tool.privacyNote ? <p className="tool__privacynote">{tool.privacyNote}</p> : null}
 
       {children}
 
