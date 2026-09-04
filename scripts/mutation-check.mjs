@@ -753,7 +753,7 @@ const MUTATIONS = [
     replace: "The code is dead now",
   },
 
-  // -- relief: thirteen guards, each with the test that bites on it --
+  // -- relief: twenty-two guards, each with the test that bites on it --
   {
     name: "relief takes the percentile ceiling upwards into the outlier it exists to ignore",
     file: "lib/tools/relief/heightmap.ts",
@@ -831,6 +831,60 @@ const MUTATIONS = [
     file: "lib/tools/relief/csv.ts",
     pattern: /const endMs = Math\.max\(\.\.\.parsed\.map\(\(p\) => p\.at\)\);/,
     replace: "  const endMs = Date.now();",
+  },
+  {
+    name: "relief accepts impossible calendar dates after Date silently normalises them",
+    file: "lib/tools/relief/csv.ts",
+    pattern: /    date > days\[month - 1\] \|\|/,
+    replace: "    false ||",
+  },
+  {
+    name: "relief parses past its CSV row cap without admitting it",
+    file: "lib/tools/relief/csv.ts",
+    pattern: /      if \(table\.length <= maxRows\) table\.push\(row\);/,
+    replace: "      if (true) table.push(row);",
+  },
+  {
+    name: "relief reads an oversized CSV into memory before refusing it",
+    file: "lib/tools/relief/csv.ts",
+    pattern: /bytes <= MAX_CSV_BYTES/,
+    replace: "true",
+  },
+  {
+    name: "relief hides a CSV truncation warning after choosing the date column",
+    file: "app/tools/relief/ReliefTool.tsx",
+    pattern: /readColumn\(parsed\.rows, guess, parsed\.capped\);/,
+    replace: "readColumn(parsed.rows, guess, false);",
+  },
+  {
+    name: "relief leaves a token-bearing GitHub request alive after its route unmounts",
+    file: "app/tools/relief/ReliefTool.tsx",
+    pattern: /useEffect\(\(\) => \(\) => runRef\.current\?\.abort\(\), \[\]\);/,
+    replace: "useEffect(() => undefined, []);",
+  },
+  {
+    name: "relief swallows an export failure instead of putting it in the status line",
+    file: "app/tools/relief/ReliefTool.tsx",
+    pattern: /      setNote\(reliefCopy\.errors\.export\);/,
+    replace: "      return;",
+  },
+  {
+    name: "relief keeps a saturated GitHub window broad and silently loses results after 1000",
+    file: "lib/tools/relief/github.ts",
+    pattern: /    if \(split && saturated\) \{/,
+    replace: "    if (false) {",
+  },
+  {
+    name: "relief reports a full tenth GitHub page as a complete window",
+    file: "lib/tools/relief/github.ts",
+    pattern: /      if \(page === MAX_PAGES_PER_WINDOW\) truncated = true;/,
+    replace: "      if (page === MAX_PAGES_PER_WINDOW) truncated = false;",
+  },
+  {
+    name: "relief fixes every ambiguous contour saddle to one diagonal",
+    file: "lib/tools/relief/contour.ts",
+    pattern: /const topologyA = saddle > 0 \|\| \(saddle === 0 && k === 10\);/,
+    replace: "const topologyA = k === 10;",
   },
 ];
 

@@ -16,9 +16,8 @@ export type ToolEntry = {
    */
   privacy: "browser" | "server";
   /**
-  * An honest replacement for the generic line when a tool does peer-to-peer
-  * networking. `privacyNote` is not enough for that case because it would
-  * leave a false bold sentence above the qualification.
+   * An honest replacement for the generic line when the default would be
+   * false, including peer-to-peer networking or a direct third-party API call.
    */
   privacyLine?: string;
   /**

@@ -160,6 +160,27 @@ export type FetchOptions = {
 };
 
 type SearchItem = { commit?: { author?: { date?: string } } };
+type SearchBody = {
+  total_count?: number;
+  incomplete_results?: boolean;
+  items?: SearchItem[];
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function splitWindow(
+  since: string,
+  until: string,
+): [{ since: string; until: string }, { since: string; until: string }] | null {
+  const first = Date.parse(`${since}T00:00:00Z`);
+  const last = Date.parse(`${until}T00:00:00Z`);
+  if (first >= last) return null;
+  const mid = first + Math.floor((last - first) / (2 * DAY_MS)) * DAY_MS;
+  return [
+    { since, until: day(mid) },
+    { since: day(mid + DAY_MS), until },
+  ];
+}
 
 export async function fetchCommitEvents(
   options: FetchOptions,
@@ -172,68 +193,98 @@ export async function fetchCommitEvents(
   const events: ReliefEvent[] = [];
   const windows = searchWindows(endMs);
   let truncated = false;
+  let stopped = false;
   let requests = 0;
   let rateRetryUsed = false;
 
-  for (let w = 0; w < windows.length && !truncated; w++) {
-    const { since, until } = windows[w];
-    for (let page = 1; page <= MAX_PAGES_PER_WINDOW; page++) {
-      signal?.throwIfAborted();
-      if (requests > 0) await abortableSleep(SEARCH_INTERVAL_MS, sleep, signal);
-      requests++;
+  const requestPage = async (since: string, until: string, page: number): Promise<SearchBody> => {
+    signal?.throwIfAborted();
+    if (requests > 0) await abortableSleep(SEARCH_INTERVAL_MS, sleep, signal);
+    requests++;
 
-      const url = githubUrl("/search/commits", {
-        q: `author:${user} author-date:${since}..${until}`,
-        sort: "author-date",
-        order: "desc",
-        per_page: String(PAGE_SIZE),
-        page: String(page),
+    const url = githubUrl("/search/commits", {
+      q: `author:${user} author-date:${since}..${until}`,
+      sort: "author-date",
+      order: "desc",
+      per_page: String(PAGE_SIZE),
+      page: String(page),
+    });
+    let response: Response | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      response = await fetchImpl(url, {
+        headers: {
+          Accept: "application/vnd.github+json",
+          Authorization: `Bearer ${token}`,
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        signal,
       });
-      let response: Response | null = null;
-      for (let attempt = 0; attempt < 2; attempt++) {
-        response = await fetchImpl(url, {
-          headers: {
-            Accept: "application/vnd.github+json",
-            Authorization: `Bearer ${token}`,
-            "X-GitHub-Api-Version": "2022-11-28",
-          },
-          signal,
-        });
 
-        if (response.status === 401) throw new ReliefAuthError();
-        if (response.status !== 403 && response.status !== 429) break;
-        if (attempt === 1 || rateRetryUsed) throw new ReliefRateLimitError();
+      if (response.status === 401) throw new ReliefAuthError();
+      if (response.status !== 403 && response.status !== 429) break;
+      if (attempt === 1 || rateRetryUsed) throw new ReliefRateLimitError();
 
-        const delay = rateLimitDelay(response.headers);
-        rateRetryUsed = true;
-        onBackoff?.(delay);
-        await abortableSleep(delay, sleep, signal);
-        requests++;
-      }
-
-      if (!response) throw new Error("relief: GitHub returned no response");
-      if (!response.ok) {
-        throw new Error(`relief: GitHub answered ${response.status}`);
-      }
-
-      const body = (await response.json()) as { items?: SearchItem[] };
-      const items = body.items ?? [];
-      for (const item of items) {
-        const iso = item.commit?.author?.date;
-        if (!iso) continue;
-        const hour = localHour(iso);
-        const at = Date.parse(iso);
-        if (hour === null || !Number.isFinite(at)) continue;
-        const week = weekIndex(at, endMs);
-        if (week === null) continue;
-        events.push({ week, hour });
-        if (events.length >= MAX_COMMITS) {
-          truncated = true;
-          break;
-        }
-      }
-      if (truncated || items.length < PAGE_SIZE) break;
+      const delay = rateLimitDelay(response.headers);
+      rateRetryUsed = true;
+      onBackoff?.(delay);
+      await abortableSleep(delay, sleep, signal);
+      requests++;
     }
+
+    if (!response) throw new Error("relief: GitHub returned no response");
+    if (!response.ok) throw new Error(`relief: GitHub answered ${response.status}`);
+    return (await response.json()) as SearchBody;
+  };
+
+  const addItems = (items: SearchItem[]) => {
+    for (const item of items) {
+      const iso = item.commit?.author?.date;
+      if (!iso) continue;
+      const hour = localHour(iso);
+      const at = Date.parse(iso);
+      if (hour === null || !Number.isFinite(at)) continue;
+      const week = weekIndex(at, endMs);
+      if (week === null) continue;
+      events.push({ week, hour });
+      if (events.length >= MAX_COMMITS) {
+        truncated = true;
+        stopped = true;
+        break;
+      }
+    }
+  };
+
+  const readWindow = async (since: string, until: string): Promise<void> => {
+    if (stopped) return;
+    const first = await requestPage(since, until, 1);
+    const split = splitWindow(since, until);
+    const saturated =
+      (first.total_count ?? 0) > PAGE_SIZE * MAX_PAGES_PER_WINDOW ||
+      first.incomplete_results === true;
+    if (split && saturated) {
+      await readWindow(split[0].since, split[0].until);
+      await readWindow(split[1].since, split[1].until);
+      return;
+    }
+    if (saturated) truncated = true;
+
+    const firstItems = first.items ?? [];
+    addItems(firstItems);
+    if (stopped || firstItems.length < PAGE_SIZE) return;
+
+    for (let page = 2; page <= MAX_PAGES_PER_WINDOW; page++) {
+      const body = await requestPage(since, until, page);
+      const items = body.items ?? [];
+      if (body.incomplete_results === true) truncated = true;
+      addItems(items);
+      if (stopped || items.length < PAGE_SIZE) return;
+      if (page === MAX_PAGES_PER_WINDOW) truncated = true;
+    }
+  };
+
+  for (let w = 0; w < windows.length && !stopped; w++) {
+    const { since, until } = windows[w];
+    await readWindow(since, until);
     onProgress?.(w + 1, windows.length, events.length);
   }
 

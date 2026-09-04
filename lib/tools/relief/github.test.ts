@@ -3,6 +3,7 @@ import { MS_WEEK, WEEKS } from "./types";
 import {
   GITHUB_API,
   MAX_COMMITS,
+  MAX_PAGES_PER_WINDOW,
   PAGE_SIZE,
   ReliefAuthError,
   ReliefInputError,
@@ -270,6 +271,75 @@ describe("fetchCommitEvents", () => {
     const { events, truncated } = await promise;
     expect(events.length).toBeLessThanOrEqual(MAX_COMMITS);
     expect(truncated).toBe(true);
+  });
+
+  it("marks a full tenth page incomplete even when GitHub understates total_count", async () => {
+    const full = Array.from({ length: PAGE_SIZE }, () => commit("2026-08-01T09:00:00Z"));
+    const { promise } = run([
+      ...Array.from({ length: MAX_PAGES_PER_WINDOW }, () => full),
+      [],
+    ]);
+    const { events, truncated } = await promise;
+    expect(events).toHaveLength(PAGE_SIZE * MAX_PAGES_PER_WINDOW);
+    expect(truncated).toBe(true);
+  });
+
+  it("subdivides a saturated date window and does not count the broad page twice", async () => {
+    const queries: string[] = [];
+    const fetchImpl = (async (input: string | URL) => {
+      const url = new URL(String(input));
+      const q = url.searchParams.get("q") ?? "";
+      queries.push(q);
+      const match = /author-date:(\d{4}-\d{2}-\d{2})\.\.(\d{4}-\d{2}-\d{2})/.exec(q);
+      const singleDay = match?.[1] === match?.[2];
+      const items = singleDay ? [commit(`${match?.[1]}T09:00:00Z`)] : [commit("not-a-date")];
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({
+          total_count: singleDay ? 1 : 1001,
+          incomplete_results: false,
+          items,
+        }),
+      } as Response;
+    }) as typeof fetch;
+
+    const { events, truncated } = await fetchCommitEvents({
+      user: "fergo5002",
+      token: TOKEN,
+      endMs: END,
+      fetchImpl,
+      sleep: async () => {},
+    });
+    expect(queries.some((q) => /author-date:(\d{4}-\d{2}-\d{2})\.\.\1/.test(q))).toBe(true);
+    // The oldest midnight falls just outside weekIndex's rolling 52-week
+    // instant boundary. Every event counted came from a one-day query; the
+    // invalid marker returned for broad queries was not counted twice.
+    expect(events).toHaveLength(363);
+    expect(truncated).toBe(false);
+  });
+
+  it("propagates GitHub's incomplete_results flag after subdivision reaches a day", async () => {
+    let calls = 0;
+    const fetchImpl = (async () => {
+      calls++;
+      return {
+        ok: true,
+        status: 200,
+        headers: new Headers(),
+        json: async () => ({ total_count: 0, incomplete_results: true, items: [] }),
+      } as Response;
+    }) as typeof fetch;
+    const result = await fetchCommitEvents({
+      user: "fergo5002",
+      token: TOKEN,
+      endMs: END,
+      fetchImpl,
+      sleep: async () => {},
+    });
+    expect(calls).toBeGreaterThan(WINDOWS);
+    expect(result).toEqual({ events: [], truncated: true });
   });
 
   it("drops a commit whose date it cannot read instead of throwing", async () => {

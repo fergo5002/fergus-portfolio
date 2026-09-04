@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { MS_WEEK, WEEKS } from "./types";
-import { dateColumnGuess, eventsFromCsv, parseCsv, parseWhen } from "./csv";
+import {
+  MAX_CSV_BYTES,
+  csvFileAllowed,
+  dateColumnGuess,
+  eventsFromCsv,
+  parseCsv,
+  parseWhen,
+} from "./csv";
 
 describe("parseCsv", () => {
   it("reads a plain file", () => {
@@ -37,7 +44,21 @@ describe("parseCsv", () => {
   });
 
   it("returns nothing for an empty file", () => {
-    expect(parseCsv("")).toEqual({ headers: [], rows: [] });
+    expect(parseCsv("")).toEqual({ headers: [], rows: [], capped: false });
+  });
+
+  it("reports when rows beyond the phone-safe cap were not parsed", () => {
+    expect(parseCsv("date\n2026-01-01\n2026-01-02\n2026-01-03", 2)).toEqual({
+      headers: ["date"],
+      rows: [["2026-01-01"], ["2026-01-02"]],
+      capped: true,
+    });
+    expect(parseCsv("date\n2026-01-01\n2026-01-02", 2).capped).toBe(false);
+  });
+
+  it("rejects a file before reading its text when its byte size is unsafe", () => {
+    expect(csvFileAllowed(MAX_CSV_BYTES)).toBe(true);
+    expect(csvFileAllowed(MAX_CSV_BYTES + 1)).toBe(false);
   });
 });
 
@@ -64,6 +85,19 @@ describe("parseWhen", () => {
     for (const bad of ["", "not a date", "14/01/2026", "20260114"]) {
       expect(parseWhen(bad), bad).toBeNull();
     }
+  });
+
+  it("refuses impossible calendar dates instead of letting Date normalise them", () => {
+    for (const bad of [
+      "2026-02-29",
+      "2026-02-31T12:00:00Z",
+      "2026-04-31 12:00:00",
+      "2026-01-01T12:60:00Z",
+      "2026-01-01T12:00:60Z",
+    ]) {
+      expect(parseWhen(bad), bad).toBeNull();
+    }
+    expect(parseWhen("2024-02-29T23:59:59Z")).not.toBeNull();
   });
 });
 

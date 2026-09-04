@@ -41,6 +41,28 @@ describe("contour", () => {
     expect(contour([[1]], 0.5)).toHaveLength(0);
     expect(contour([], 0.5)).toHaveLength(0);
   });
+
+  it("uses the asymptotic saddle value to choose which corners connect", () => {
+    const pairs = (field: Field) =>
+      contour(field, 0.25).map(([a, b]) =>
+        [a, b]
+          .map((p) => `${p.x.toFixed(3)},${p.y.toFixed(3)}`)
+          .sort()
+          .join(" -> "),
+      );
+
+    // Both are case 5 (top-right and bottom-left are high), but their centre
+    // values lie on opposite sides of the contour. A fixed lookup table would
+    // connect them identically and turn one saddle inside out.
+    expect(pairs([[0, 0.4], [0.4, 0]])).toEqual([
+      "0.625,0.000 -> 1.000,0.375",
+      "0.000,0.625 -> 0.375,1.000",
+    ]);
+    expect(pairs([[0, 1], [1, 0]])).toEqual([
+      "0.000,0.250 -> 0.250,0.000",
+      "0.750,1.000 -> 1.000,0.750",
+    ]);
+  });
 });
 
 describe("chainSegments", () => {

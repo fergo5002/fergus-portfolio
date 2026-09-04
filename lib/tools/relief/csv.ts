@@ -19,13 +19,32 @@ import { weekIndex } from "./heightmap";
 
 /** A phone reading a bigger file than this is a phone that stops responding. */
 export const MAX_CSV_ROWS = 200_000;
+/** Reject before File.text() duplicates a large file in a phone's memory. */
+export const MAX_CSV_BYTES = 8 * 1024 * 1024;
 
-export function parseCsv(text: string): { headers: string[]; rows: string[][] } {
+export type CsvTable = { headers: string[]; rows: string[][]; capped: boolean };
+
+export function csvFileAllowed(bytes: number): boolean {
+  return Number.isFinite(bytes) && bytes >= 0 && bytes <= MAX_CSV_BYTES;
+}
+
+export function parseCsv(text: string, maxRows = MAX_CSV_ROWS): CsvTable {
   const source = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
   const table: string[][] = [];
   let row: string[] = [];
   let field = "";
   let quoted = false;
+  let capped = false;
+
+  const finishRow = () => {
+    row.push(field);
+    field = "";
+    if (row.some((cell) => cell.trim() !== "")) {
+      if (table.length <= maxRows) table.push(row);
+      else capped = true;
+    }
+    row = [];
+  };
 
   for (let i = 0; i < source.length; i++) {
     const ch = source[i];
@@ -44,22 +63,14 @@ export function parseCsv(text: string): { headers: string[]; rows: string[][] } 
       field = "";
     } else if (ch === "\n" || ch === "\r") {
       if (ch === "\r" && source[i + 1] === "\n") i++;
-      row.push(field);
-      field = "";
-      table.push(row);
-      row = [];
-      if (table.length > MAX_CSV_ROWS) break;
+      finishRow();
+      if (capped) break;
     } else field += ch;
   }
-  if (field !== "" || row.length > 0) {
-    row.push(field);
-    table.push(row);
-  }
+  if (!capped && (field !== "" || row.length > 0)) finishRow();
 
-  // A trailing newline produces one row of one empty field. It is not a row.
-  const real = table.filter((r) => r.some((c) => c.trim() !== ""));
-  const headers = (real.shift() ?? []).map((h) => h.trim());
-  return { headers, rows: real };
+  const headers = (table.shift() ?? []).map((h) => h.trim());
+  return { headers, rows: table, capped };
 }
 
 export type Parsed = { at: number; hour: number };
@@ -76,8 +87,26 @@ const ISO =
 export function parseWhen(value: string): Parsed | null {
   const m = ISO.exec(value.trim());
   if (!m) return null;
+  const year = Number(m[1]);
+  const month = Number(m[2]);
+  const date = Number(m[3]);
   const hour = m[4] === undefined ? 0 : Number(m[4]);
-  if (!Number.isInteger(hour) || hour < 0 || hour > 23) return null;
+  const minute = m[5] === undefined ? 0 : Number(m[5]);
+  const second = m[6] === undefined ? 0 : Number(m[6]);
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  if (
+    month < 1 ||
+    month > 12 ||
+    date < 1 ||
+    date > days[month - 1] ||
+    hour < 0 ||
+    hour > 23 ||
+    minute < 0 ||
+    minute > 59 ||
+    second < 0 ||
+    second > 59
+  ) return null;
   // The instant, for the column. Offsetless input is read as UTC here, which
   // shifts a column boundary by at most half a day and never a row.
   const at = Date.parse(

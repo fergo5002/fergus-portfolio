@@ -5,11 +5,13 @@ import type { Field, Point, Polyline, Segment } from "./types";
  *
  * `contour` is lifted from Tigh Sauna's survey sheet,
  * `apps/site/src/lib/survey/terrain.ts` on branch `feat/ordnance-survey`,
- * written for the same purpose: drawing a trading year as ground. One change,
+ * written for the same purpose: drawing a trading year as ground. Two changes,
  * stated here so nobody has to diff two repositories to find it: the loop
  * bounds come off the array instead of the module constants ROWS and COLS,
- * because Relief contours grids of other sizes in its tests. The saddle
- * handling is the original's, cheap on purpose.
+ * because Relief contours grids of other sizes in its tests. Ambiguous saddle
+ * cells use the asymptotic decider instead of a fixed diagonal, so the contour
+ * follows the bilinear surface rather than turning one kind of saddle inside
+ * out.
  *
  * `chainSegments` is new. `terrain.ts` draws to a canvas, where a thousand
  * loose two-point segments cost nothing. Relief writes an SVG a pen plotter
@@ -56,8 +58,19 @@ export function contour(field: Field, level: number): Segment[] {
         case 4: case 11: segs.push([T, R]); break;
         case 6: case 9:  segs.push([T, B]); break;
         case 7: case 8:  segs.push([L, T]); break;
-        case 5:  segs.push([L, T]); segs.push([B, R]); break;
-        case 10: segs.push([T, R]); segs.push([L, B]); break;
+        case 5:
+        case 10: {
+          const saddle = (tl - level) * (br - level) - (tr - level) * (bl - level);
+          const topologyA = saddle > 0 || (saddle === 0 && k === 10);
+          if (topologyA) {
+            segs.push([T, R]);
+            segs.push([L, B]);
+          } else {
+            segs.push([L, T]);
+            segs.push([B, R]);
+          }
+          break;
+        }
       }
     }
   }

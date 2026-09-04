@@ -84,6 +84,18 @@ describe("the token's rules, read off the source", () => {
     expect([...tool.matchAll(/fetchCommitEvents\(/g)]).toHaveLength(1);
     expect(tool).toContain("fetchImpl: window.fetch.bind(window)");
   });
+
+  it("aborts the token-bearing request when the route unmounts", () => {
+    expect(tool).toMatch(/useEffect\(\(\) => \(\) => runRef\.current\?\.abort\(\), \[\]\)/);
+  });
+
+  it("refuses an oversized CSV before File.text allocates it", () => {
+    const body = tool.match(/async function onFile\([\s\S]*?\n {2}\}/)?.[0] ?? "";
+    expect(body.indexOf("csvFileAllowed(chosen.size)")).toBeGreaterThan(0);
+    expect(body.indexOf("csvFileAllowed(chosen.size)")).toBeLessThan(body.indexOf("chosen.text()"));
+    expect(body).toContain("readColumn(parsed.rows, guess, parsed.capped)");
+    expect(tool).toContain("readColumn(table.rows, next, table.capped)");
+  });
 });
 
 describe("the exports", () => {
@@ -106,9 +118,19 @@ describe("the exports", () => {
     expect(body).not.toContain("fetch");
     expect(body).not.toContain("trackToolRun");
   });
+
+  it("turns an export rejection into a visible status message", () => {
+    const body = tool.match(/async function onExport\([\s\S]*?\n {2}\}/)?.[0] ?? "";
+    expect(body).toContain("catch");
+    expect(body).toContain("reliefCopy.errors.export");
+  });
 });
 
 describe("what it reports", () => {
+  it("keeps GitHub's incomplete warning visible even when density refuses the result", () => {
+    expect(tool).toContain("accept(found, truncated ? reliefCopy.truncated : undefined)");
+  });
+
   it("records a run with the slug, the outcome and the milliseconds, and nothing else", () => {
     // Three call sites and no more: the GitHub draw, the error it can end in,
     // and the CSV read. None on the demo, because nothing was asked for; none

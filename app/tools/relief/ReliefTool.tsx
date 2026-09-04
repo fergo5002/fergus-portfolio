@@ -4,7 +4,13 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useSystem } from "@/components/system/SystemProvider";
 import { reliefCopy } from "@/content/tools/relief";
 import { contourLayers } from "@/lib/tools/relief/contour";
-import { MAX_CSV_ROWS, dateColumnGuess, eventsFromCsv, parseCsv } from "@/lib/tools/relief/csv";
+import {
+  type CsvTable,
+  csvFileAllowed,
+  dateColumnGuess,
+  eventsFromCsv,
+  parseCsv,
+} from "@/lib/tools/relief/csv";
 import { demoEvents } from "@/lib/tools/relief/demo";
 import {
   type PlateKind,
@@ -114,13 +120,15 @@ export default function ReliefTool() {
   const [busy, setBusy] = useState(false);
   const [user, setUser] = useState("");
   const [token, setToken] = useState("");
-  const [table, setTable] = useState<{ headers: string[]; rows: string[][] } | null>(null);
+  const [table, setTable] = useState<CsvTable | null>(null);
   const [column, setColumn] = useState(-1);
   const [width, setWidth] = useState(720);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
   const runRef = useRef<AbortController | null>(null);
+
+  useEffect(() => () => runRef.current?.abort(), []);
 
   const heightmap = useMemo(() => buildHeightmap(events), [events]);
   const layers = useMemo(() => contourLayers(heightmap.field), [heightmap]);
@@ -178,10 +186,14 @@ export default function ReliefTool() {
    * one on the sheet: the message changes and the plate stays, which is more
    * use than an empty page and a sentence.
    */
-  function accept(next: ReliefEvent[]): boolean {
+  function accept(next: ReliefEvent[], warning?: string): boolean {
     const density = checkDensity(next);
     if (!density.ok) {
-      setNote(reliefCopy.refusal[density.reason]);
+      setNote(
+        warning
+          ? `${warning} ${reliefCopy.refusal[density.reason]}`
+          : reliefCopy.refusal[density.reason],
+      );
       return false;
     }
     setEvents(next);
@@ -210,7 +222,7 @@ export default function ReliefTool() {
           setNote(fill(reliefCopy.backoff, { seconds: Math.ceil(ms / 1000) })),
         signal: controller.signal,
       });
-      const ok = accept(found);
+      const ok = accept(found, truncated ? reliefCopy.truncated : undefined);
       if (ok) {
         setSource("github");
         setNote(
@@ -240,25 +252,44 @@ export default function ReliefTool() {
 
   async function onFile(chosen: File | undefined) {
     if (!chosen) return;
-    const text = await chosen.text();
+    setSource("csv");
+    if (!csvFileAllowed(chosen.size)) {
+      setTable(null);
+      setColumn(-1);
+      setNote(reliefCopy.errors.csvTooLarge);
+      return;
+    }
+    let text: string;
+    try {
+      text = await chosen.text();
+    } catch {
+      setNote(reliefCopy.errors.csvRead);
+      return;
+    }
     const parsed = parseCsv(text);
     const guess = dateColumnGuess(parsed.headers, parsed.rows);
     setTable(parsed);
     setColumn(guess);
-    setSource("csv");
     if (guess < 0) {
-      setNote(reliefCopy.noDateColumn);
+      setNote(
+        parsed.capped
+          ? `${reliefCopy.csvCapped} ${reliefCopy.noDateColumn}`
+          : reliefCopy.noDateColumn,
+      );
       return;
     }
-    if (parsed.rows.length >= MAX_CSV_ROWS) setNote(reliefCopy.csvCapped);
-    readColumn(parsed.rows, guess);
+    readColumn(parsed.rows, guess, parsed.capped);
   }
 
-  function readColumn(rows: string[][], index: number) {
+  function readColumn(rows: string[][], index: number, capped = false) {
     const started = Date.now();
     const reading = eventsFromCsv(rows, index);
-    const ok = accept(reading.events);
-    if (ok) setNote(fill(reliefCopy.csvRead, { read: reading.read, skipped: reading.skipped }));
+    const warning = capped ? reliefCopy.csvCapped : undefined;
+    const ok = accept(reading.events, warning);
+    if (ok) {
+      const result = fill(reliefCopy.csvRead, { read: reading.read, skipped: reading.skipped });
+      setNote(warning ? `${warning} ${result}` : result);
+    }
     void trackToolRun({ tool: "relief", outcome: ok ? "ok" : "refused", ms: Date.now() - started });
   }
 
@@ -281,19 +312,23 @@ export default function ReliefTool() {
   );
 
   async function onExport(kind: PlateKind) {
-    const name = plateFilename(source, kind, new Date().toISOString());
-    audio.key();
-    if (kind === "svg") {
-      saveBlob(svgBlob(plotterSvg(layers)), name, saveEnv);
-      return;
+    try {
+      const name = plateFilename(source, kind, new Date().toISOString());
+      audio.key();
+      if (kind === "svg") {
+        saveBlob(svgBlob(plotterSvg(layers)), name, saveEnv);
+        return;
+      }
+      if (kind === "stl") {
+        saveBlob(stlBlob(writeBinaryStl(buildMesh(heightmap.field))), name, saveEnv);
+        return;
+      }
+      const canvas = canvasRef.current;
+      if (!canvas) throw new Error("relief: the plate canvas is unavailable");
+      saveBlob(await canvasBlob(canvas), name, saveEnv);
+    } catch {
+      setNote(reliefCopy.errors.export);
     }
-    if (kind === "stl") {
-      saveBlob(stlBlob(writeBinaryStl(buildMesh(heightmap.field))), name, saveEnv);
-      return;
-    }
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    saveBlob(await canvasBlob(canvas), name, saveEnv);
   }
 
   const userId = `${uid}-user`;
@@ -383,7 +418,7 @@ export default function ReliefTool() {
                 onChange={(e) => {
                   const next = Number(e.target.value);
                   setColumn(next);
-                  readColumn(table.rows, next);
+                  readColumn(table.rows, next, table.capped);
                 }}
               >
                 {table.headers.map((head, i) => (
