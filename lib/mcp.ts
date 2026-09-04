@@ -73,6 +73,8 @@
 
 import { profile } from "@/content/profile";
 import { experience } from "@/content/experience";
+import { analyse as analyseDrift } from "@/lib/tools/drift/report";
+import { parseProfile as parseDriftProfile } from "@/lib/tools/drift/storage";
 import { projects } from "@/content/projects";
 import { articles, articleBySlug, readingMinutes, wordCount } from "@/content/articles";
 import { absolute, articlePath } from "@/lib/seo";
@@ -637,6 +639,58 @@ const TOOLS: ToolDefinition[] = [
           url: absolute(`/experience#${entry.id}`),
         })),
       });
+    },
+  },
+  {
+    name: "check_voice",
+    title: "Measure a draft against a voice profile",
+    description:
+      "Burrows's Delta, sentence rhythm, punctuation rates, join rates and substitution hits for a draft against a voice profile saved from /tools/drift. Pass the profile object exactly as that tool exports it, reference table included: the z-scores in it were computed against the writer's own pieces, and without that table they have no units, so a profile with it stripped out is refused rather than guessed at. A draft under 150 words gets the counts and no distance, because a Delta under that length reports chance rather than habit. A profile built from fewer than 5 pieces gets the habits and no distance, because the standard deviations behind it come from too few numbers to be units of anything. This is not an AI detector: a low distance means the writer's own commonest words appear at similar rates, and nothing more.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        profile: {
+          type: "object",
+          description: "The saved profile object from /tools/drift, unchanged, reference included.",
+        },
+        draft: { type: "string", minLength: 1, description: "The draft to measure." },
+      },
+      required: ["profile", "draft"],
+      additionalProperties: false,
+    },
+    run(args) {
+      const draft = readString(args, "draft");
+      if (!draft.ok) return draft.error;
+
+      const saved = parseDriftProfile(args.profile);
+      if (!saved) {
+        return toolError(
+          "`profile` is not a Drift profile. Paste the JSON object that /tools/drift saves, unchanged and with its reference table.",
+        );
+      }
+
+      // The caller's own table, carried in the record. Nothing here builds one,
+      // and nothing here imports this site's corpus: a stranger's draft scored
+      // against my articles would be a real number in somebody else's units.
+      const report = analyseDrift(saved.profile, draft.value, saved.reference, saved.spread);
+
+      if (report.status === "too-short") {
+        return {
+          content: text(
+            `${report.words} words, and the floor is ${report.floor}. Under ${report.floor} words a Delta reports whether a word happened to occur at all, so no distance is printed. The counts still hold: ${report.emDashes} em dash(es), ${report.substitutions.length} substitution(s).`,
+          ),
+          structuredContent: report,
+        };
+      }
+      if (report.status === "thin-reference") {
+        return {
+          content: text(
+            `The profile was built from ${report.reference.documents} piece(s) and ${report.reference.markers} marker word(s), and the floor is ${report.documentFloor} pieces. Every standard deviation behind the distance would come from that many numbers, so no distance is printed. The habits, the em dashes and the substitutions are all in the structured result.`,
+          ),
+          structuredContent: report,
+        };
+      }
+      return structured(report);
     },
   },
 ];
