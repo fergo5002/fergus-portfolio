@@ -17,7 +17,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | S2 | Spike: WebKit in a function | **decided** | `toolshed/s2-webkit` | record on main | WebKit dies at libatk; Chromium 20 of 20, warm 12.5 s; T5 must cut work per run |
 | S3 | Spike: DuckDB in the tab | **decided** | `toolshed/f5-spikes` | record on main | 0 mismatches at 1e-9; 8.1 MB gzip and 82 s at Slow 4G, so DuckDB does not ship: port to TypeScript, keep the macros as the oracle |
 | S4 | Spike: the .ie seed | **decided** | `toolshed/f5-spikes` | record on main | 126,214 registered .ie domains, 17 MB, under a minute, reproduced twice; 38% of the registry figure |
-| T1 | Drift | **review** | `toolshed/t1-drift` | not opened | 1,413 tests, 104/104 mutations, production build and all three phone profiles green; CI and live check pending |
+| T1 | Drift | **pr** | `toolshed/t1-drift` | [#11](https://github.com/fergo5002/fergus-portfolio/pull/11) | merged-main local gates green; CI and live check pending |
 | T2 | Relief | **building** | `toolshed/t2-relief` | | |
 | T3 | Overlap | **review** | `toolshed/t3-overlap` | not opened | local only; browser, phone and failure-path audit green |
 | T4 | Second Visit | **queued** | | | |
@@ -160,3 +160,9 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-04 morning: c85dcc3 (the spike docs) reached production READY as `dpl_3oSTTjjegh3ARZEQpoW4M3e3Z43g`. Docs only, so no user-facing flow was exercised and that is all the claim covers.
 - 2026-09-04 morning: retried the Upstash install before assuming the gate was still shut. It still answers `integration_terms_acceptance_required` with no resource created, so F4 stays held and the two clicks remain the critical path for every store-backed tool.
 - 2026-09-04 morning: wave 1 dispatched. Four implementers on Opus, each in its own worktree cut from main at c85dcc3: T1 Drift, T2 Relief, T3 Overlap and G0 the arcade runtime. Four rather than three because every one of them has a finished plan on main and nothing between them shares a file. Each is briefed to build, self-verify, open a PR and stop short of merging.
+- 2026-09-04: T1 merged current main normally and opened PR #11. Five conflicts were resolved
+  additively: the tool registry contains Drift, headline check and Overlap; the voice scan covers
+  both tools; the mutation suite retains both tools' rows; and both programme histories remain.
+  Focused integration: 228 tests. Full suite: 1,678 passed and two credential-gated Redis tests
+  skipped. TypeScript and the 41-page production build passed. Phone checks passed Drift and
+  Overlap on all three profiles. GitHub owns the full integrated mutation run; not merged.

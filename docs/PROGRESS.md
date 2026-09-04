@@ -37,7 +37,13 @@ storage deletion failure retains the text and record; successful deletion remove
 clears samples, restores the demo draft and disables Measure; the report has no live-region marker;
 and there were no application console errors.
 
-Still not verified: CI, pull request, preview, production, PostHog delivery or a physical iPhone.
+After merging current main, the focused integration suite passed 228 tests; the full suite passed
+1,678 tests with two Redis integration tests skipped because no live store credentials were present;
+`tsc --noEmit` and the 41-page production build passed. The phone check passed both Drift and
+Overlap at 390, 320 and Pixel Slow with no failures. Pull request 11 is open for GitHub's integrated
+mutation and phone gates.
+
+Still not verified: CI, preview, production, PostHog delivery or a physical iPhone.
 The marker count and all three floors remain uncalibrated; self-spread still runs slightly tight as
 previously documented; and the Delta still has no external implementation oracle. The branch is
 merged current main normally before its pull request; the additive registry, voice, programme and
