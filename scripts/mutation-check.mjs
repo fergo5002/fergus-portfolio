@@ -610,6 +610,282 @@ const MUTATIONS = [
     pattern: /    record\("refused", started\);\r?\n    return \{ status: "invalid", seq, url: "", message: headlineCopy\.emptyUrl \};/,
     replace: '    return { status: "invalid", seq, url: "", message: headlineCopy.emptyUrl };',
   },
+
+  // ── overlap: fifteen guards, each with the test that bites on it ──
+  //
+  // Two of these are not in the plan that specified this tool, and both replace
+  // a row that would have survived. The Bloom step guard the plan asked for
+  // (`|| 1` on `h2 % bits`) cannot fire, because h2 is forced odd and the bit
+  // count is always even; taking it out left the whole suite green. What was
+  // actually broken there was the signedness, and that is the row below. The
+  // second addition is `pairedChannels` holding a message sent before the far
+  // side has a handler, which is the difference between an exchange and a hang.
+  {
+    name: "overlap decodes before splitting a URL, so a %23 in a slug cuts it in half",
+    file: "lib/tools/overlap/slug.ts",
+    pattern: /s = s\.split\("#", 1\)\[0\];/,
+    replace: 's = decodeURIComponent(s).split("#", 1)[0];',
+  },
+  {
+    name: "overlap turns an old /pub/ link into an /in/ slug, inventing matches",
+    file: "lib/tools/overlap/slug.ts",
+    pattern: /if \(\/\^pub\(\\\/\|\$\)\/i\.test\(s\)\) return \{ ok: false, reason: "legacy-pub" \};/,
+    replace: 's = s.replace(/^pub\\//i, "");',
+  },
+  {
+    name: "overlap stops composing accents, so one name hashes two ways",
+    file: "lib/tools/overlap/slug.ts",
+    pattern: /s = s\.normalize\("NFC"\)\.toLowerCase\(\);/,
+    replace: "s = s.toLowerCase();",
+  },
+  {
+    name: "overlap accepts any host, so a lookalike domain becomes a LinkedIn profile",
+    file: "lib/tools/overlap/slug.ts",
+    pattern: /if \(!LINKEDIN_HOST\.test\(host\)\) return \{ ok: false, reason: "not-a-profile" \};/,
+    replace: 'if (false) return { ok: false, reason: "not-a-profile" };',
+  },
+  {
+    name: "overlap strips the suffix, so two people called John Smith become one",
+    file: "lib/tools/overlap/slug.ts",
+    pattern: /s = s\.replace\(\/\^in\\\/\/i, ""\);/,
+    replace: 's = s.replace(/^in\\//i, "").replace(/-[0-9a-z]+$/, "");',
+  },
+  {
+    name: "overlap truncates to 48 bits, where a big pair of lists gets a wrong name",
+    file: "lib/tools/overlap/hash.ts",
+    pattern: /export const HASH_HEX_CHARS = 16;/,
+    replace: "export const HASH_HEX_CHARS = 12;",
+  },
+  {
+    name: "overlap hashes the slug before the salt, so the two sides still agree and the salt does nothing",
+    file: "lib/tools/overlap/hash.ts",
+    pattern: /buffer\.set\(salt, 0\);/,
+    replace: "buffer.set(salt, text.length);",
+  },
+  {
+    name: "overlap lets a bloom step re-sign, so half of all hashes walk off the front of the filter",
+    file: "lib/tools/overlap/bloom.ts",
+    pattern: /const h2 = \(\(Number\.parseInt\(hash\.slice\(8, 16\), 16\) >>> 0\) \| 1\) >>> 0;/,
+    replace: "const h2 = (Number.parseInt(hash.slice(8, 16), 16) >>> 0) | 1;",
+  },
+  {
+    name: "overlap sizes a filter at 8 bits an entry, ten thousand times its stated rate",
+    file: "lib/tools/overlap/bloom.ts",
+    pattern: /export const BITS_PER_ENTRY = 29;/,
+    replace: "export const BITS_PER_ENTRY = 8;",
+  },
+  {
+    name: "overlap takes the remainder without rejecting, biasing the room code towards 2, 3 and 4",
+    file: "lib/tools/overlap/code.ts",
+    pattern: /const REJECT_AT = 253;/,
+    replace: "const REJECT_AT = 256;",
+  },
+  {
+    name: "overlap measures an SDP in code units, so an astral blob is three times the cap",
+    file: "lib/relay.ts",
+    pattern: /return encoder\.encode\(value\)\.length <= MAX_SDP_BYTES;/,
+    replace: "  return value.length <= MAX_SDP_BYTES;",
+  },
+  {
+    name: "overlap dresses a missing Redis up as a server fault, so nobody is told to use copy and paste",
+    file: "app/api/relay/route.ts",
+    pattern: /if \(error instanceof StoreUnavailableError\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "overlap always sends a filter, so a small list gets false positives for nothing",
+    file: "lib/tools/overlap/protocol.ts",
+    pattern: /const mode: Mode = mine\.length > threshold \? "bloom" : "exact";/,
+    replace: 'const mode: Mode = "bloom";',
+  },
+  {
+    name: "overlap drops a message sent before the far side is listening, which is how a handshake hangs",
+    file: "lib/tools/overlap/protocol.ts",
+    pattern: /else waiting\[far\]\.push\(text\);/,
+    replace: "else return;",
+  },
+  {
+    name: "overlap softens the paragraph that says what a salted hash does not do",
+    file: "content/tools/overlap.ts",
+    pattern: /not a private set intersection protocol/,
+    replace: "a careful way to compare lists",
+  },
+  {
+    name: "overlap address pseudonyms stop using the server secret, so IPv4 can be enumerated offline",
+    file: "lib/budget.ts",
+    pattern: /createHmac\("sha256", secret\)/,
+    replace: 'createHmac("sha256", "public")',
+  },
+  {
+    name: "overlap accepts a missing address-key secret instead of failing closed",
+    file: "lib/budget.ts",
+    pattern: /if \(!secret \|\| new TextEncoder\(\)\.encode\(secret\)\.byteLength < 32\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "overlap relay requests lose their abort signal and can occupy a tab forever",
+    file: "lib/tools/overlap/relay-client.ts",
+    pattern: /return await fetchImpl\(url, \{ \.\.\.init, signal: controller\.signal \}\);/,
+    replace: "return await fetchImpl(url, init);",
+  },
+  {
+    name: "overlap decodes an oversized manual paste before refusing it",
+    file: "lib/tools/overlap/webrtc.ts",
+    pattern: /if \(text\.length > MAX_PACKED_SDP_CHARS\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "overlap hands decoded base64 to WebRTC without proving it is SDP",
+    file: "lib/tools/overlap/webrtc.ts",
+    pattern: /const sdp = new TextDecoder\(\)\.decode\(bytes\);\r?\n  if \(!validSdp\(sdp\)\)/,
+    replace: "const sdp = new TextDecoder().decode(bytes);\n  if (false)",
+  },
+  {
+    name: "overlap lets a peer grow the protocol inbox without a bound",
+    file: "lib/tools/overlap/protocol.ts",
+    pattern: /if \(inbox\.length >= MAX_INBOX_FRAMES\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "overlap calls a live ten-minute room dead when one tab stops polling",
+    file: "content/tools/overlap.ts",
+    pattern: /The room can still be joined until its ten minutes run out/,
+    replace: "The code is dead now",
+  },
+
+  // -- relief: twenty-two guards, each with the test that bites on it --
+  {
+    name: "relief takes the percentile ceiling upwards into the outlier it exists to ignore",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /Math\.floor\(p \* \(occupied\.length - 1\)\)/,
+    replace: "Math.ceil(p * (occupied.length - 1))",
+  },
+  {
+    name: "relief scales counts linearly, so every real hour lands under half a percent",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /return Math\.min\(1, Math\.log1p\(count\) \/ Math\.log1p\(Math\.max\(1, ceiling\)\)\);/,
+    replace: "  return Math.min(1, count / Math.max(1, ceiling));",
+  },
+  {
+    name: "relief stops wrapping the hour axis, so a ridge across midnight becomes two",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /const u = h\[\(r - 1 \+ rows\) % rows\]\[c\];/,
+    replace: "const u = h[Math.max(0, r - 1)][c];",
+  },
+  {
+    name: "relief wraps the week axis, so the first week of the year touches the last",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /const l = row\[Math\.max\(0, c - 1\)\];/,
+    replace: "const l = row[(c - 1 + cols) % cols];",
+  },
+  {
+    name: "relief draws contours around a handful of events instead of refusing",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /if \(events\.length < MIN_EVENTS\)/,
+    replace: "if (false)",
+  },
+  {
+    name: "relief draws a year piled into a dozen cells instead of refusing",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /if \(cells\.size < MIN_OCCUPIED_CELLS\)/,
+    replace: "if (false)",
+  },
+  {
+    name: "relief paints black on black when a theme token is missing, instead of saying so",
+    file: "lib/tools/relief/draw.ts",
+    pattern: /if \(!value\) throw new ReliefPaletteError\(name\);/,
+    replace: "if (!value) return value;",
+  },
+  {
+    name: "relief lifts the skirt off the base, so the STL is no longer a closed solid",
+    file: "lib/tools/relief/stl.ts",
+    pattern: /const qb: Vec3 = \[b\[0\], b\[1\], 0\];/,
+    replace: "const qb: Vec3 = [b[0], b[1], 0.5];",
+  },
+  {
+    name: "relief's origin fence accepts any path it is handed",
+    file: "lib/tools/relief/github.ts",
+    pattern: /if \(!path\.startsWith\("\/"\) \|\| path\.startsWith\("\/\/"\)\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "relief gives up on GitHub's first secondary limit instead of retrying once",
+    file: "lib/tools/relief/github.ts",
+    pattern: /for \(let attempt = 0; attempt < 2; attempt\+\+\) \{/,
+    replace: "for (let attempt = 0; attempt < 1; attempt++) {",
+  },
+  {
+    name: "relief waits another minute on every secondary limit instead of bounding the run",
+    file: "lib/tools/relief/github.ts",
+    pattern: /if \(attempt === 1 \|\| rateRetryUsed\) throw new ReliefRateLimitError\(\);/,
+    replace: "if (attempt === 1) throw new ReliefRateLimitError();",
+  },
+  {
+    name: "relief paces GitHub at its advertised rate instead of the tighter limit measured live",
+    file: "lib/tools/relief/github.ts",
+    pattern: /export const SEARCH_INTERVAL_MS = 7000;/,
+    replace: "export const SEARCH_INTERVAL_MS = 2200;",
+  },
+  {
+    name: "relief anchors a CSV's year on today, so a two-year-old export draws 52 empty weeks",
+    file: "lib/tools/relief/csv.ts",
+    pattern: /const endMs = Math\.max\(\.\.\.parsed\.map\(\(p\) => p\.at\)\);/,
+    replace: "  const endMs = Date.now();",
+  },
+  {
+    name: "relief accepts impossible calendar dates after Date silently normalises them",
+    file: "lib/tools/relief/csv.ts",
+    pattern: /    date > days\[month - 1\] \|\|/,
+    replace: "    false ||",
+  },
+  {
+    name: "relief parses past its CSV row cap without admitting it",
+    file: "lib/tools/relief/csv.ts",
+    pattern: /      if \(table\.length <= maxRows\) table\.push\(row\);/,
+    replace: "      if (true) table.push(row);",
+  },
+  {
+    name: "relief reads an oversized CSV into memory before refusing it",
+    file: "lib/tools/relief/csv.ts",
+    pattern: /bytes <= MAX_CSV_BYTES/,
+    replace: "true",
+  },
+  {
+    name: "relief hides a CSV truncation warning after choosing the date column",
+    file: "app/tools/relief/ReliefTool.tsx",
+    pattern: /readColumn\(parsed\.rows, guess, parsed\.capped\);/,
+    replace: "readColumn(parsed.rows, guess, false);",
+  },
+  {
+    name: "relief leaves a token-bearing GitHub request alive after its route unmounts",
+    file: "app/tools/relief/ReliefTool.tsx",
+    pattern: /useEffect\(\(\) => \(\) => runRef\.current\?\.abort\(\), \[\]\);/,
+    replace: "useEffect(() => undefined, []);",
+  },
+  {
+    name: "relief swallows an export failure instead of putting it in the status line",
+    file: "app/tools/relief/ReliefTool.tsx",
+    pattern: /      setNote\(reliefCopy\.errors\.export\);/,
+    replace: "      return;",
+  },
+  {
+    name: "relief keeps a saturated GitHub window broad and silently loses results after 1000",
+    file: "lib/tools/relief/github.ts",
+    pattern: /    if \(split && saturated\) \{/,
+    replace: "    if (false) {",
+  },
+  {
+    name: "relief reports a full tenth GitHub page as a complete window",
+    file: "lib/tools/relief/github.ts",
+    pattern: /      if \(page === MAX_PAGES_PER_WINDOW\) truncated = true;/,
+    replace: "      if (page === MAX_PAGES_PER_WINDOW) truncated = false;",
+  },
+  {
+    name: "relief fixes every ambiguous contour saddle to one diagonal",
+    file: "lib/tools/relief/contour.ts",
+    pattern: /const topologyA = saddle > 0 \|\| \(saddle === 0 && k === 10\);/,
+    replace: "const topologyA = k === 10;",
+  },
 ];
 
 let caught = 0;

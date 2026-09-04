@@ -6,6 +6,129 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-04: Overlap recovery audit
+
+The follow-up security review found seven gaps and they are now implemented locally on the same
+branch. Address budget keys use HMAC-SHA-256 with the server-only `BUDGET_HASH_SECRET`, rather
+than a public-date digest that could be searched across the IPv4 space; room codes fail closed if
+that variable is absent while manual copy and paste remains available. Relay requests have a
+ten-second bound and share an abort signal with the component lifecycle. Manual blobs are capped
+before base64 decoding, capped again while decompression is streamed, and must be valid SDP before
+WebRTC sees them. The peer inbox holds at most one maximum exchange. Copy now says that a safety
+string cannot detect somebody who guessed the room code, and that a tab stopping after one minute
+does not kill the ten-minute room. `.env.example` and the opt-in real-Upstash integration proof are
+included. F4 must take the same HMAC and environment contract before its shared state branch is
+integrated; T3 does not alter F4's worktree.
+
+Final local evidence after those changes: 1,473 tests passed and the two opt-in real-Upstash tests
+skipped because no Redis variables are present; `tsc --noEmit` and the production build passed;
+the full 107-mutation run went red throughout, and after tightening the secret to a 32-byte minimum
+the updated fail-open mutation was applied separately and made both secret tests fail; the
+phone-check self-test caught every planted fault, and `/tools/overlap` passed at iPhone 390, iPhone
+320 and throttled Pixel sizes. Against the built API
+with neither Redis nor `BUDGET_HASH_SECRET`, room creation returned 503 `relay-unavailable` and the
+manual-signalling sentence without exposing the variable name. Not verified remains unchanged: a
+real Redis room, a real LinkedIn export, separate physical networks, symmetric NAT, real WebKit
+WebRTC, CI and production.
+
+T3 is implemented on `toolshed/t3-overlap` and is in review. It has not been pushed, opened as a
+pull request or deployed. The recovered commits did not satisfy the plan on their own: successful
+relay responses were trusted without shape checks, peer frames and waits were effectively
+unbounded, several setup failures escaped the UI, abandoned peer connections stayed open, and the
+page understated what the other browser and room service learn. Those paths now fail closed and
+visibly, and the page says precisely that the file and names stay local while the peer receives the
+salted hashes, salt and count and sees the connecting address. The matching phrase is described as
+a useful check rather than proof against interception. Manual copy and paste is accurately described
+as skipping the room-code service while still requiring a direct WebRTC connection, Cloudflare STUN
+by default, and no TURN relay.
+
+Observed on the recovered tree: 1,461 of 1,461 full tests passed; `tsc --noEmit` and the production
+build passed; all 100 deliberate mutations went red; the phone check passed at iPhone 390, iPhone
+320 and throttled Pixel; and two local Chromium contexts exchanged five matches by copy and paste
+without one side's spellings leaving that side. That browser proof passed once with the default STUN
+configuration and once in same-network-only mode, with zero `/api/relay` requests in both runs. With
+Redis absent, the room endpoint returned the intended 503 `relay-unavailable`, removed the dead room
+button and opened copy and paste. Not verified: a real LinkedIn export, browsers on separate real
+networks or symmetric NAT, a configured Redis room-code exchange, the WebRTC flow in real WebKit,
+CI or production.
+
+The minimum F4 store subset has now been reconciled against recovered F4 tip `47f6964`. The three
+production files (`lib/store/errors.ts`, `lib/store/redis.ts` and `lib/budget.ts`) and their store
+tests are byte-for-byte identical. Both lockfiles resolve `@upstash/redis` 1.38.3 from the same
+tarball with the same integrity. T3 deliberately does not copy F4's Neon and Blob dependencies,
+which Overlap does not import, and keeps the newer mainline Playwright phone-check dependency. The
+only behavioural-test difference stays on T3: a hash test no longer rejects the substring `203`,
+which a daily-changing hexadecimal digest contains by chance about once in three hundred runs.
+The 94 state, budget, relay, fallback and copy tests pass after that comparison.
+
+## 2026-09-04: Relief
+
+T2 of the toolshed programme is built on `toolshed/t2-relief`; its first independent review's
+eight findings are resolved and it is ready for a second review. The route
+`/tools/relief` turns a GitHub commit year, any CSV with a date column, or a fixed-seed demo into
+the same 24 by 52 heightmap. It draws six contour levels, every second one heavier, and exports
+the result as a PNG, a strokes-only SVG in millimetres, or a binary STL closed by its directed-edge
+test. Nothing is uploaded or stored. The GitHub path is the stated exception to "nothing leaves
+this tab": the visitor's own browser sends the token in one `Authorization` header to
+`api.github.com`, behind an origin fence, and nowhere else.
+
+The review fix round makes incomplete work explicit rather than plausible. A GitHub search
+window over the 1,000-result ceiling is bisected by date until each query fits; a saturated day,
+GitHub's `incomplete_results` flag, a full tenth page and the overall 5,000-event cap all preserve
+an incomplete warning through the density check. Leaving the route aborts the live controller,
+including a pacing or secondary-limit wait. The existing one-retry secondary-limit bound is
+unchanged. CSV files over 8 MiB are refused from their metadata before `File.text()` allocates
+them; the parser's separate 200,000-row cap reports `capped`, and that warning survives automatic
+or manual column selection and a density refusal. ISO-shaped dates now pass a Gregorian calendar
+check before `Date.parse`, so 31 February does not become March.
+
+Export errors now reach the visible status line. The privacy sentence is one truthful override,
+not a generic "nothing leaves" claim followed by a contradiction. Plotter and printer promises
+were removed: the page now names only the SVG and STL properties measured by tests and says that
+no physical machine was checked. Marching-squares saddle cases 5 and 10 use the asymptotic
+decider; a paired fixture holds the corner pattern constant and proves the connection changes
+when the bilinear saddle crosses the contour level.
+
+The demo produces 2,646 events across 828 of the 1,248 cells. Its 98th-percentile ceiling is 8;
+counts are compressed with `log1p`, smoothed twice with midnight wrapped and the ends of the year
+clamped, then chained from 701 loose segments into 32 polylines. The SVG is 10,223 bytes in six
+groups. The STL is 4,988 triangles and 249,484 bytes, has no open directed edge and has positive
+signed volume. These are observations from the branch's pure modules, not claims about a real
+person's year.
+
+The first three-profile phone run passed, but looking at the WebKit screenshots found a failure
+the checker cannot detect: an explicit CSS height stretched the canvas by 60% at initial 320px
+load while every standard phone floor stayed green. Removing that height and letting the bitmap
+own its aspect ratio holds measured skew at 0% through 320, 375 and 900px. The new guard was proved
+both ways: restoring the explicit height makes the test red and reproduces the 60% distortion;
+restoring the fix makes it green. At 320, the hidden GitHub inputs are 254 by 44px at 16px text
+and the CSV input is 254 by 45px at 16px text. The saved screenshots show legible ground rather
+than moire at both 320 and 390.
+
+A real browser run against GitHub found an undocumented secondary limit that the advertised
+30-request search allowance did not explain: the endpoint returned 403 while 25 primary requests
+remained, and the old implementation threw immediately despite its test claiming it backed off.
+The fixed path waits GitHub's documented one-minute fallback once, lets Stop interrupt that wait,
+and gives up honestly if GitHub asks it to stop again. A second live run proved that bound and that
+the token appeared in no URL, request body or browser storage. The ordinary request interval is now
+seven seconds, below the tighter ten-a-minute limit observed live, rather than the original 2.2
+seconds derived from the advertised allowance. The broad-scope test token did not prove the
+no-scopes-token path, and repeated test traffic prevented a complete live year from finishing.
+
+Not verified here: the branch has not had independent review, been pushed, run in CI or deployed;
+a full GitHub year and a no-scopes token have not completed live; no unrelated real CSV has been
+dropped into the page; no downloaded SVG has reached a physical plotter; no downloaded STL has
+reached a slicer, viewer or printer; and no physical iPhone has run it. The tests prove the mesh is
+closed by the edge test, not that it prints. The phone workflow already discovers this route from
+the sitemap, so no hard-coded CI route needed changing.
+
+Final local verification after the review fixes: TypeScript passed; all 1,420 tests in 68 files
+passed; the production build generated `/tools/relief` as a static route with a 10.8 kB route
+bundle and 129 kB first load; all 107 mutations were caught, including Relief's twenty-two; and the phone instrument passed the
+route on WebKit at 390 and 320 and on the throttled Pixel. Its own planted-fault self-test also
+passed on all three profiles. The 320 run sampled 45 of 46 readable elements and skipped one status
+readout because another control occluded it; that is recorded rather than silently counted green.
+
 ## 2026-09-03: the shell everywhere
 
 F2 of the toolshed programme. The terminal is a drawer on every route (backtick, the status bar
@@ -828,6 +951,17 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
 ---
 
 ## Decision log
+
+- **2026-09-04 (Relief):** Three inputs share one pipeline: GitHub, CSV and a generated demo.
+  Counts use a 98th-percentile `log1p` ceiling so one large hour does not flatten the year, then
+  two separable smoothing passes that wrap the hour axis but clamp the week axis, followed by six
+  contour levels. The generated observation is 2,646 events across 828 occupied cells, reduced
+  from 701 segments to 32 plotted lines. The 4,988-triangle STL has zero open directed edges and
+  positive volume; that earns "closed by the edge test", not "prints". Canvas height belongs to
+  its bitmap aspect ratio rather than a lagging `ResizeObserver` result, because WebKit measured
+  the old explicit-height path at 60% distortion on initial 320px load. GitHub's live commit-search
+  endpoint imposed a secondary limit below its advertised primary allowance, so requests are paced
+  at the measured limit and one interruptible minute-long retry is allowed for the whole run.
 
 - **2026-08-04 (content refresh: skills, voice, live numbers)**: Fergus asked for the skills to
   match recent work and for the prose to read more relaxed, while still coming across as ambitious.

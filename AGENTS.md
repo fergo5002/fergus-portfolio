@@ -7,12 +7,12 @@ before touching code. (Claude Code, Cursor, Copilot, and others read `AGENTS.md`
 
 **FergusOS Terminal**: Patrick Fergus O'Reilly's personal portfolio, styled as a retro CRT
 computer terminal (green phosphor + amber accent, scanlines, boot sequence, interactive
-command line). Nine routes: landing (`/`), experience (`/experience`), projects
+command line). Ten routes: landing (`/`), experience (`/experience`), projects
 (`/projects`), writing index (`/writing`), articles (`/writing/[slug]`), contact
-(`/contact`), tools index (`/tools`), the headline checker (`/tools/headline-check`) and the
-MCP documentation page (`/mcp`).
+(`/contact`), tools index (`/tools`), the headline checker (`/tools/headline-check`), Overlap
+(`/tools/overlap`) and the MCP documentation page (`/mcp`).
 
-Plus one API route. **`/api/mcp` is a Model Context Protocol server**, unauthenticated because
+Plus three API routes. **`/api/mcp` is a Model Context Protocol server**, unauthenticated because
 everything it returns is already on the pages, with six tools that all read from `content/` so it
 cannot say something the site does not. Read `lib/mcp.ts`'s docblock before touching it: it names
 the spec revision it implements and the URL that revision was read from. That matters more than
@@ -27,6 +27,16 @@ reserved addresses on the typed URL and again on every redirect hop, checks ever
 rather than the first, and caps time and size. Its docblock states the gap it does not close (DNS
 rebinding) and the thing that bounds it (the content type is checked before any body is read).
 Do not weaken either without reading that first.
+
+**`/tools/overlap` reads a LinkedIn connections CSV in the browser.** The file and names never
+leave that browser. A peer receives salted, truncated hashes, the salt and the list count over a
+direct WebRTC data channel. This is not private-set intersection: the peer learns the count, sees
+the connecting IP address, and can try likely profile slugs against the salt. The optional room
+service holds opaque offer/answer SDP for at most ten minutes and a daily-changing address hash for
+the one-hour budget window. Manual copy and paste skips that room service but still needs WebRTC;
+by default it uses Cloudflare STUN, and there is deliberately no TURN relay. Both routes can fail
+on restrictive networks. Protocol unit tests use in-memory channels, and the browser proof so far
+is two local Chromium contexts, not two real networks. Keep those boundaries visible in the copy.
 
 **The site is also a search and answer-engine surface**, which is a second set of constraints on
 top of the CRT premise and does not bend to it. Every route carries a canonical URL and JSON-LD;
@@ -232,7 +242,19 @@ for the phone check. Nothing else without an argument.
   Since the toolshed programme (2026-09-03) a tool may own `app/tools/<slug>/tool.css`,
   imported by its own `page.tsx`; `globals.css` stays the shell's. The tools list lives in
   `content/tools/`, one file per tool, and every tool renders through
-  `components/tools/ToolPage.tsx`.
+  `components/tools/ToolPage.tsx`. `/tools/relief` draws a year of dated events as contour
+  ground. The marching squares in `lib/tools/relief/contour.ts` are lifted from Tigh Sauna's
+  `apps/site/src/lib/survey/terrain.ts` and the file says so; the rest of
+  `lib/tools/relief/` is pure and tested, and `app/tools/relief/ReliefTool.tsx` is wiring. It
+  adds no dependency: the canvas is the browser's, the SVG is a string, and the binary STL is
+  84 bytes plus 50 a triangle written into a `DataView`. `d3-contour`, `three` and `papaparse`
+  were each considered and refused on the record in the plan. The GitHub token lives in React
+  state, goes into one `Authorization` header built by `githubUrl()` behind an origin fence,
+  and is never written anywhere; `lib/tools/relief/safety.test.ts` greps the whole tool for a
+  storage API, for any direct `fetch` call at all (there are none: `github.ts` takes a
+  `fetchImpl` and the component hands it `window.fetch.bind(window)` in one place), and for any
+  URL literal outside `github.ts`. `draw.ts` holds no colour of its own and throws
+  `ReliefPaletteError` when a theme token is missing, rather than painting black on black.
 - **Animation libraries (changed in v4):** `lenis` (inertial scroll), `ogl` (the WebGL
   phosphor shader) and `motion` (springs). v5 added no dependencies: the physics solver and
   the synth are both hand-written, because a physics engine that ships 90 kB to drop some
