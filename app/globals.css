@@ -743,6 +743,119 @@ html.crt-off body {
   color: var(--green-bright);
 }
 
+/* ----- the arcade --------------------------------------------------------
+   A program running inside the terminal. It replaces the scrollback and the
+   prompt for as long as it runs, so it gets the terminal's whole box.
+
+   There is not one keyframe or transition in this block, so there is nothing
+   to gate behind prefers-reduced-motion: the arcade declines under `reduce`
+   before it can start (lib/commands/hidden.ts), and ArcadeScreen leaves if the
+   preference changes mid-game. The only thing that moves is the glyphs, which
+   is the game.
+
+   Colours are the terminal's own: --green-bright on the terminal's ground,
+   which is the pairing every other line of terminal text already uses. Nothing
+   here uses --green-dim, which app/globals.test.ts documents as under 4.5:1 on
+   the amber and ice phosphors. */
+.arcade {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  outline: none;
+  /* Inline on the home page the terminal has no height of its own, so the
+     arcade asks for one. In the drawer it fills what the drawer allows. */
+  height: min(56vh, 440px);
+}
+.arcade:focus-visible {
+  outline: 1px solid var(--green);
+  outline-offset: 2px;
+}
+.arcade__screen {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+.arcade__grid {
+  --arcade-font: 15px;
+  margin: 0;
+  font-family: inherit;
+  font-size: calc(var(--arcade-font) * var(--arcade-scale, 1));
+  line-height: 1.25;
+  letter-spacing: 0;
+  color: var(--green-bright);
+  text-shadow: var(--glow);
+  white-space: pre;
+  /* A finger on the grid is an input, never a scroll. */
+  touch-action: none;
+  overscroll-behavior: contain;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* Measured at scale 1: fitGrid applies the scale itself, so a probe that
+   inherited it would measure the answer instead of the question. */
+.arcade__probe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  font-family: inherit;
+  font-size: var(--arcade-font, 15px);
+  line-height: 1.25;
+  white-space: pre;
+}
+.arcade__srhelp {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+.arcade__foot {
+  display: flex;
+  justify-content: flex-end;
+}
+.arcade__exit {
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: var(--green);
+  background: transparent;
+  border: 1px solid var(--green-line);
+  border-radius: 3px;
+  /* 44 by 44, because on a phone this is the only way out: there is no
+     Escape key on the glass. */
+  min-width: 44px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.arcade__exit:hover,
+.arcade__exit:focus-visible {
+  color: var(--green-bright);
+}
+@media (min-width: 601px) {
+  .arcade__grid {
+    --arcade-font: 16px;
+  }
+}
+/* In the drawer the height comes from the drawer, not from the arcade. */
+.shell .term--program {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.shell .term--program .arcade {
+  height: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 /* ----- hero -------------------------------------------------------------- */
 .hero__grid {
   display: grid;

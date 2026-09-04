@@ -8,6 +8,9 @@ import type { SystemEffect } from "@/lib/commands";
 import { historyStore, initialHistory } from "@/lib/history";
 import { listKeys, removeKeys } from "@/lib/forget";
 import { localPresence } from "@/lib/presence";
+import ArcadeScreen from "@/components/arcade/ArcadeScreen";
+import { arcadeSession, markArcadeSeen } from "@/lib/arcade/session";
+import type { ProgramSpec } from "@/lib/arcade/program";
 import { profile } from "@/content/profile";
 import Magnetic from "@/components/motion/Magnetic";
 import { useSystem } from "@/components/system/SystemProvider";
@@ -54,6 +57,9 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
   const [cursor, setCursor] = useState<number | null>(null);
   const [wiping, setWiping] = useState(false);
   const [presence, setPresence] = useState<number | undefined>(undefined);
+  const [program, setProgram] = useState<ProgramSpec | null>(null);
+  /** The command that opened the door, so the exit line echoes under it. */
+  const programCmd = useRef("");
 
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -160,6 +166,7 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
       // Passed uncalled: only `forget` asks, so only `forget` reads storage.
       storageKeys: readStorageKeys,
       presence,
+      arcade: arcadeSession(),
     });
 
     if (res.type === "navigate") {
@@ -172,9 +179,9 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
       return;
     }
     if (res.type === "program") {
-      // G0 replaces this with the arcade runtime. Until then the door opens
-      // onto a note and the prompt comes straight back.
-      historyStore.dispatch({ type: "print", cmd: raw, lines: [res.program.title, "no runtime yet"] });
+      programCmd.current = raw;
+      markArcadeSeen();
+      setProgram(res.program);
       return;
     }
     const extra = res.type === "effect" ? applyEffect(res.effect) : [];
@@ -256,81 +263,107 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
     return completed.slice(value.length);
   }, [value]);
 
+  // "Escape always exits, always restores the prompt, always leaves the
+  // history intact." The scrollback lives in lib/history.ts and is untouched;
+  // this is the focus half of that promise.
+  const hadProgram = useRef(false);
+  useEffect(() => {
+    if (program) {
+      hadProgram.current = true;
+      return;
+    }
+    if (!hadProgram.current) return;
+    hadProgram.current = false;
+    inputRef.current?.focus();
+  }, [program]);
+
   return (
     <div
-      className={`term term--${variant}${wiping ? " is-wiping" : ""}`}
+      className={`term term--${variant}${program ? " term--program" : ""}${wiping ? " is-wiping" : ""}`}
       onClick={() => inputRef.current?.focus()}
     >
-      <div className="term__scroll" ref={scrollRef}>
-        {entries.map((entry, i) => (
-          <div key={i} className="term__entry">
-            {entry.cmd !== "" && (
-              <p className="promptline promptline--echo">
-                <span className="promptline__user">
-                  {profile.user}@{profile.host}
-                </span>
-                <span className="promptline__sep" />
-                <span className="promptline__path">~</span>
-                <span className="promptline__dollar" />
-                <span className="promptline__cmd">{entry.cmd}</span>
-              </p>
-            )}
-            {entry.lines.map((line, j) => (
-              <p key={j} className="term__out">
-                {line}
-              </p>
+      {program ? (
+        <ArcadeScreen
+          program={program}
+          onExit={(lines) => {
+            setProgram(null);
+            historyStore.dispatch({ type: "print", cmd: programCmd.current, lines });
+          }}
+        />
+      ) : (
+        <>
+          <div className="term__scroll" ref={scrollRef}>
+            {entries.map((entry, i) => (
+              <div key={i} className="term__entry">
+                {entry.cmd !== "" && (
+                  <p className="promptline promptline--echo">
+                    <span className="promptline__user">
+                      {profile.user}@{profile.host}
+                    </span>
+                    <span className="promptline__sep" />
+                    <span className="promptline__path">~</span>
+                    <span className="promptline__dollar" />
+                    <span className="promptline__cmd">{entry.cmd}</span>
+                  </p>
+                )}
+                {entry.lines.map((line, j) => (
+                  <p key={j} className="term__out">
+                    {line}
+                  </p>
+                ))}
+              </div>
             ))}
           </div>
-        ))}
-      </div>
 
-      <form className="term__form" onSubmit={onSubmit}>
-        <label htmlFor={inputId} className="term__label">
-          <span className="promptline__user">
-            {profile.user}@{profile.host}
-          </span>
-          <span className="promptline__sep" />
-          <span className="promptline__path">~</span>
-          <span className="promptline__dollar" />
-        </label>
-        <span className="term__field">
-          {/* The typed half is rendered transparent purely to position the
-              suggestion; the input itself stays the single source of truth. */}
-          <span className="term__ghost" aria-hidden="true">
-            <span className="term__ghost-typed">{value}</span>
-            <span className="term__ghost-rest">{ghost}</span>
-          </span>
-          <input
-            id={inputId}
-            ref={inputRef}
-            className="term__input"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onKeyDown={onKeyDown}
-            autoComplete="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            aria-label="Terminal command input"
-            aria-describedby={helpId}
-            placeholder="type 'help'..."
-          />
-        </span>
-      </form>
+          <form className="term__form" onSubmit={onSubmit}>
+            <label htmlFor={inputId} className="term__label">
+              <span className="promptline__user">
+                {profile.user}@{profile.host}
+              </span>
+              <span className="promptline__sep" />
+              <span className="promptline__path">~</span>
+              <span className="promptline__dollar" />
+            </label>
+            <span className="term__field">
+              {/* The typed half is rendered transparent purely to position the
+                  suggestion; the input itself stays the single source of truth. */}
+              <span className="term__ghost" aria-hidden="true">
+                <span className="term__ghost-typed">{value}</span>
+                <span className="term__ghost-rest">{ghost}</span>
+              </span>
+              <input
+                id={inputId}
+                ref={inputRef}
+                className="term__input"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={onKeyDown}
+                autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                aria-label="Terminal command input"
+                aria-describedby={helpId}
+                placeholder="type 'help'..."
+              />
+            </span>
+          </form>
 
-      <p id={helpId} className="term__srhint">
-        Press Tab to complete a command, Up and Down arrows to recall previous commands, and
-        Control plus L to clear the screen.
-      </p>
+          <p id={helpId} className="term__srhint">
+            Press Tab to complete a command, Up and Down arrows to recall previous commands, and
+            Control plus L to clear the screen.
+          </p>
 
-      <div className="term__hints" aria-label="Command shortcuts">
-        {HINTS.map((h) => (
-          <Magnetic key={h} pull={0.3}>
-            <button type="button" className="term__hint" onClick={() => run(h)}>
-              {h}
-            </button>
-          </Magnetic>
-        ))}
-      </div>
+          <div className="term__hints" aria-label="Command shortcuts">
+            {HINTS.map((h) => (
+              <Magnetic key={h} pull={0.3}>
+                <button type="button" className="term__hint" onClick={() => run(h)}>
+                  {h}
+                </button>
+              </Magnetic>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -28,9 +28,27 @@ describe("Terminal and a program result", () => {
     expect(effectAt).toBeGreaterThan(at);
   });
 
-  it("prints the program's title and says there is no runtime", () => {
-    expect(terminal).toMatch(/res\.program\.title/);
-    expect(terminal).toMatch(/"no runtime yet"/);
+  it("hosts the program rather than printing an apology about it", () => {
+    expect(terminal).toMatch(/setProgram\(res\.program\)/);
+    expect(terminal).not.toMatch(/"no runtime yet"/);
+  });
+
+  it("marks the arcade found, which is what lets neofetch print the boards", () => {
+    expect(terminal).toMatch(/markArcadeSeen\(\)/);
+  });
+
+  it("swaps the prompt for the screen and puts it back", () => {
+    expect(terminal).toMatch(/program \? \(/);
+    expect(terminal).toMatch(/<ArcadeScreen/);
+    expect(terminal).toMatch(/inputRef\.current\?\.focus\(\)/);
+  });
+
+  it("keeps the scrollback, and echoes the command that opened the door", () => {
+    expect(terminal).toMatch(/historyStore\.dispatch\(\{ type: "print", cmd: programCmd\.current, lines \}\)/);
+  });
+
+  it("hands the commands the session, so neofetch can read it", () => {
+    expect(terminal).toMatch(/arcade: arcadeSession\(\)/);
   });
 });
 
@@ -42,7 +60,7 @@ describe("Terminal reads the shared history", () => {
 
   it("dispatches typed, print and clear, and nothing else", () => {
     expect(terminal).toMatch(/historyStore\.dispatch\(\{ type: "typed", cmd: raw \}\)/);
-    expect(terminal).toMatch(/historyStore\.dispatch\(\{ type: "print", cmd: raw, lines: \[res\.program\.title, "no runtime yet"\] \}\)/);
+    expect(terminal).toMatch(/historyStore\.dispatch\(\{ type: "print", cmd: programCmd\.current, lines \}\)/);
     expect(terminal).toMatch(/historyStore\.dispatch\(\{ type: "clear" \}\)/);
   });
 
