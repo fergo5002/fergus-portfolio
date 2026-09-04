@@ -63,13 +63,31 @@ The 94 state, budget, relay, fallback and copy tests pass after that comparison.
 
 ## 2026-09-04: Relief
 
-T2 of the toolshed programme is built on `toolshed/t2-relief` and ready for review. The route
+T2 of the toolshed programme is built on `toolshed/t2-relief`; its first independent review's
+eight findings are resolved and it is ready for a second review. The route
 `/tools/relief` turns a GitHub commit year, any CSV with a date column, or a fixed-seed demo into
 the same 24 by 52 heightmap. It draws six contour levels, every second one heavier, and exports
 the result as a PNG, a strokes-only SVG in millimetres, or a binary STL closed by its directed-edge
 test. Nothing is uploaded or stored. The GitHub path is the stated exception to "nothing leaves
 this tab": the visitor's own browser sends the token in one `Authorization` header to
 `api.github.com`, behind an origin fence, and nowhere else.
+
+The review fix round makes incomplete work explicit rather than plausible. A GitHub search
+window over the 1,000-result ceiling is bisected by date until each query fits; a saturated day,
+GitHub's `incomplete_results` flag, a full tenth page and the overall 5,000-event cap all preserve
+an incomplete warning through the density check. Leaving the route aborts the live controller,
+including a pacing or secondary-limit wait. The existing one-retry secondary-limit bound is
+unchanged. CSV files over 8 MiB are refused from their metadata before `File.text()` allocates
+them; the parser's separate 200,000-row cap reports `capped`, and that warning survives automatic
+or manual column selection and a density refusal. ISO-shaped dates now pass a Gregorian calendar
+check before `Date.parse`, so 31 February does not become March.
+
+Export errors now reach the visible status line. The privacy sentence is one truthful override,
+not a generic "nothing leaves" claim followed by a contradiction. Plotter and printer promises
+were removed: the page now names only the SVG and STL properties measured by tests and says that
+no physical machine was checked. Marching-squares saddle cases 5 and 10 use the asymptotic
+decider; a paired fixture holds the corner pattern constant and proves the connection changes
+when the bilinear saddle crosses the contour level.
 
 The demo produces 2,646 events across 828 of the 1,248 cells. Its 98th-percentile ceiling is 8;
 counts are compressed with `log1p`, smoothed twice with midnight wrapped and the ends of the year
@@ -104,9 +122,9 @@ reached a slicer, viewer or printer; and no physical iPhone has run it. The test
 closed by the edge test, not that it prints. The phone workflow already discovers this route from
 the sitemap, so no hard-coded CI route needed changing.
 
-Final local verification: TypeScript passed; all 1,408 tests in 68 files passed; the production
-build generated `/tools/relief` as a static route with a 10.1 kB route bundle and 128 kB first load;
-all 98 mutations were caught, including Relief's thirteen; and the phone instrument passed the
+Final local verification after the review fixes: TypeScript passed; all 1,420 tests in 68 files
+passed; the production build generated `/tools/relief` as a static route with a 10.8 kB route
+bundle and 129 kB first load; all 107 mutations were caught, including Relief's twenty-two; and the phone instrument passed the
 route on WebKit at 390 and 320 and on the throttled Pixel. Its own planted-fault self-test also
 passed on all three profiles. The 320 run sampled 45 of 46 readable elements and skipped one status
 readout because another control occluded it; that is recorded rather than silently counted green.
