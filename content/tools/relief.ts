@@ -23,7 +23,7 @@ export const relief: ToolEntry = {
     "Whether a physical plotter, slicer or printer accepts an export. The page checks the SVG's units and strokes, and the STL's binary layout and closed directed edges, but no physical machine was part of that check.",
   ],
   status: "live",
-  order: 30,
+  order: 40,
 };
 
 /**
