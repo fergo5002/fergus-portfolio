@@ -6,7 +6,7 @@ import {
   buildReference,
 } from "./reference";
 
-/** Six documents, so the over-half threshold is three and a word in two is under it. */
+/** Six documents, so the at-least-half threshold is three and a word in two is under it. */
 function docs(...bodies: string[]): string[] {
   return bodies;
 }
@@ -20,7 +20,7 @@ describe("the constants", () => {
     expect(Math.ceil(5 * MIN_DOCUMENT_SHARE)).toBe(3);
   });
 
-  it("floors the population at five, the smallest count where over-half bites", () => {
+  it("floors the population at five, where ceil-half is a strict majority", () => {
     expect(MIN_REFERENCE_DOCUMENTS).toBe(5);
     expect(Math.ceil(MIN_REFERENCE_DOCUMENTS * MIN_DOCUMENT_SHARE)).toBeGreaterThan(
       MIN_REFERENCE_DOCUMENTS / 2,

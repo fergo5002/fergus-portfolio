@@ -36,7 +36,7 @@ describe("the site's own corpus", () => {
     expect(siteReference()).toBe(siteReference());
   });
 
-  it("keeps every marker in over half the articles", () => {
+  it("keeps every marker in at least half the articles", () => {
     // With eleven documents the share rule asks for six, which is the number an
     // earlier draft of this plan hard-coded. So moving to a share did not move
     // the worked example's marker set.

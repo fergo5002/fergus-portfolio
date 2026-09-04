@@ -29,7 +29,7 @@ import { words } from "./text";
 export const MARKER_COUNT = 100;
 
 /**
- * A marker must appear in over half the documents it was built from. Below that
+ * A marker must appear in at least half the documents it was built from. Below that
  * the word's standard deviation is computed mostly from zeroes and reports an
  * accident of topic rather than a habit.
  *

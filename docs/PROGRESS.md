@@ -23,9 +23,9 @@ imported constant even though `forget` owned its value at runtime. Adding `DRIFT
 that guard's explicit known-key table made the source-level storage promise testable as well as
 true at runtime.
 
-Observed locally after the final fixes: `tsc --noEmit` clean; 67 test files and 1,371 tests pass
+Observed locally after the final fixes: `tsc --noEmit` clean; 67 test files and 1,372 tests pass
 (baseline 56 files and 1,208 tests); production build clean with 40 static pages and
-`/tools/drift` at 8.28 kB; 92 of 92 repository mutations caught, including all 7 Drift rows; and
+`/tools/drift` at 8.29 kB; 93 of 93 repository mutations caught, including all 8 Drift rows; and
 the phone check passes `/tools/drift` on WebKit at 390 and 320 and on the throttled Chromium Pixel
 with no overflow, small input, tap-target, contrast, asset or layout failures. The first phone run
 had one overflow, two 23px labels and two disabled-button contrast failures per profile. A later
@@ -41,6 +41,15 @@ and afterwards carries 5 reference documents, 20 single-word markers and no sent
 errors were zero apart from the documented local-only Vercel Analytics 404. The plan's original
 browser fixture was corrected after this check found that 30 sentences modulo 3 gave every
 supposedly varying piece the same 10/20 split and therefore zero standard deviation.
+
+Final diff review found one further client-state bug: restoring a saved profile replaced the
+reference, profile and spread but left the worked example's report on screen. A coupling test
+failed before the fix, the component now re-analyses the displayed draft with the stored profile
+and its stored reference during hydration, and an eighth Drift mutation proves that removing the
+re-analysis is caught. A fresh local WebKit reload kept the saved report at 5 pieces, 2,430 words,
+20 markers and Delta 21.65 instead of reverting to the 11-piece demo. The same audit corrected
+"over half" in implementation comments to "at least half", which is what the tested
+`Math.ceil(documents * 0.5)` rule actually does for even document counts.
 
 Not verified: CI, code review, a pull request, a Vercel preview, production or PostHog delivery.
 The marker count, document share and both floors have not been calibrated on real writers; the

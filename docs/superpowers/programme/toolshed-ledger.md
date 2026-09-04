@@ -125,9 +125,9 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
   three profiles: 0 overflow, input-font, tap-target, contrast, asset and layout-moved failures;
   sampled 132/132, 131/132 and 132/132; the one skip is the already-known status-bar occlusion.
   The 320 screenshot was inspected and the wrapped tables remain readable.
-- 2026-09-04: T1 ready for review. Observed: `tsc --noEmit` clean; 67 test files and 1,371 tests
+- 2026-09-04: T1 ready for review. Observed: `tsc --noEmit` clean; 67 test files and 1,372 tests
   passing, from a baseline of 56 and 1,208; production build clean with 40 static pages and the
-  Drift route at 8.28 kB; all 92 repository mutations caught, including all 7 Drift rows. A full
+  Drift route at 8.29 kB; all 93 repository mutations caught, including all 8 Drift rows. A full
   local WebKit iPhone flow found the plan's original fixture had identical word frequencies rather
   than the variation its comment claimed; the verifier now uses five genuinely different join
   rates. With that fixture the demo arrived at Delta 1.63 from 11 pieces, four pieces got the
@@ -136,3 +136,11 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
   documents and 20 single-word markers. `tools/list`, `llms.txt` and the sitemap pick up Drift and
   `check_voice` without hand edits. Not verified: review, CI, PR, preview, production, PostHog or a
   physical iPhone; the numerical choices and external-oracle gaps remain as recorded in PROGRESS.
+- 2026-09-04: T1 final diff review found saved-profile hydration replaced the reference, profile
+  and spread but left the 11-piece worked-example report on screen. A failing-first coupling test
+  now pins re-analysis against the stored profile and stored reference, and the eighth Drift
+  mutation proves deleting it is caught. In a fresh local production build, WebKit saved a
+  5-piece, 2,430-word, 20-marker profile at Delta 21.65, reloaded the page, and retained those same
+  report values with the saved-profile note. The final phone run remained green on all three
+  profiles. Review also corrected the method's wording from "over half" to "at least half" to
+  match the tested `Math.ceil(documents * 0.5)` rule; the algorithm did not change.
