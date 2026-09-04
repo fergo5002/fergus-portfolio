@@ -207,6 +207,11 @@ Every such key is either `fergusos_settings` or starts with `fergusos:`, so the 
 can wipe all of it without knowing their names, and it prints what it wiped. Settings equal to the
 defaults are not written at all (`saveSettings` removes the key), so a visitor who changed nothing
 has nothing stored. Session storage holds one flag, the boot marker, which dies with the tab.
+The arcade writes exactly one key, `fergusos:arcade.initials`, and only when a visitor posts a
+score. Whether the door has been found this session, and the last board it read, live at module
+level in `lib/arcade/session.ts` and die with the tab: nothing about the arcade is persisted except
+the three characters somebody chose. `lib/forget.test.ts` walks the tree for every `setItem` call
+and fails on one it cannot vouch for, so a new key is a deliberate line in that guard.
 Server-side, the site holds anonymous aggregates only: a heat map of pointer wear, three-letter
 initials with a score, per-IP budgets that expire within a day. Nothing keyed to a person.
 
@@ -380,6 +385,19 @@ two pull requests rarely collide. `COMMANDS`, `HELP_LINES` and `complete()` are 
 registry, so a command is listed by being visible, not by being added to three lists. A
 `hidden: true` command is absent from help, completion and `ls`, and is reachable only by name or
 through `cd <name>`: that is the door to the arcade, and the `arcade` row in `top` is the one hint.
+Since 2026-09-04 that door opens something. `lib/arcade/` is a program runtime the terminal hosts:
+a fixed 30Hz tick driven by `SystemProvider`'s one rAF clock, a character grid sized from the
+measured cell (48 by 20 down to 32 by 16, and a sentence rather than a clipped grid when even the
+smallest will not fit), one key vocabulary for arrows, WASD and swipes, and `Escape` always exiting
+to the prompt with the scrollback intact. A game is a `ProgramSpec` in `lib/arcade/<game>.ts` plus
+one line in `ARCADE_GAMES`; it writes no React, no CSS and no route. The arcade declines under
+`prefers-reduced-motion: reduce` the way `gravity` and `eject` do, in a sentence.
+
+**The drawer sizes itself to its content, so a program must state a height.** `.shell` is
+`position: fixed` with a `max-height` and no height, and an arcade set to `height: auto` inside it
+wraps an empty `<pre>`, measures a box a few pixels tall and refuses a screen that is really there.
+`.shell:has(.term--program)` sets `--shell-program-h` and the arcade's height is arithmetic on it.
+Measured on WebKit at 390 and 320: 40 by 18 and 32 by 16, both at full size.
 
 Commands that change the running site (`theme`, `crt`, `scanlines`, `matrix`, `degauss`,
 `sudo rm -rf /`) return an `effect` descriptor, and a program (a game) returns

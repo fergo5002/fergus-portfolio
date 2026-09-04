@@ -6,6 +6,27 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-04: the arcade runtime
+
+G0 of the toolshed programme. `cd arcade` opens a cabinet instead of printing an apology.
+`lib/arcade/` is a fixed 30Hz loop on the site's one frame clock, a character grid measured from
+the font rather than assumed, one key vocabulary covering the arrows, WASD, swipes and taps, five
+synth sounds, and a board of three-letter initials. A game is now a file and one line in a list.
+`bounce` ships as the worked example and is the fixture every runtime test drives.
+
+Three things the plan had wrong, all fixed on the branch and all worth knowing. The drawer sizes
+itself to its content, so an arcade with `height: auto` inside it measured nothing and refused a
+screen that was really there; it now states a height and the drawer grows for a program. `cd`
+looked its door up on every argument joined, so `cd arcade bounce` asked the registry for a command
+called "arcade bounce" and got nothing; it looks up the first word now. And three lines of copy were
+wider than the 32-column grid they are drawn into, which the copy's own test caught.
+
+Not verified: the board against a real Redis, because F4 is still unmerged and Upstash is not
+provisioned; the live board therefore reads "boards are unavailable", which is the path that was
+tested. No real device, only WebKit emulating an iPhone at 390 and 320, where the headless engine
+throttles the frame clock to about two a second, so nothing here measures how a game feels at 60fps.
+No audio: `sound on` was never typed during the run.
+
 ## 2026-09-03: the shell everywhere
 
 F2 of the toolshed programme. The terminal is a drawer on every route (backtick, the status bar

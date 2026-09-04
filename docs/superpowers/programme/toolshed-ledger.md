@@ -25,7 +25,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | T6 | Irish Stack Census | **queued** | | | |
 | T7 | Tide | **queued** | | | |
 | X1 | Burn | **queued** | | | |
-| G0 | Arcade runtime | **building** | `toolshed/g0-arcade-runtime` | | |
+| G0 | Arcade runtime | **pr** | `toolshed/g0-arcade-runtime` | | |
 | G1 | Phosphor Pong | **queued** | | | |
 | G2 | Snake | **queued** | | | |
 | G3 | Under the Terminal | **queued** | | | |
@@ -113,4 +113,13 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
   - The same route at **320 by 568**: **32 by 16 at scale 1**, 15px type. Working: 80vh is 454, the arcade gets 409, the screen 357. Width 304, so 40 columns (360) are out and 32 (288) are in; 16 rows need 300 against 357. Under the plan's original CSS this size refused, and that refusal is what sent me back to the stylesheet.
   - Home page, inline terminal, **390 by 844**: **32 by 16 at scale 1**. The page container is narrower than the drawer once its own padding is counted, so 40 columns miss.
   - Everywhere: no horizontal overflow on the document, no scrolling inside the grid, every drawn line exactly `cols` characters, the exit control at least 44 by 44, a swipe changing the screen, the arrow keys **not** scrolling the page, Escape returning the prompt with `cd arcade` still in the scrollback and the drawer still open, sampled contrast at least 4.5:1, and zero console errors.
-  - The reading that would falsify the layout change: a refusal at either width, or a grid that scrolls inside itself. If 40 columns come back at 320, or 48 at 390, the advance is narrower than 9px and the predictions were pessimistic rather than the code being wrong.
+  - The reading that would falsify the layout change: a refusal at either width, or a grid that scrolls inside itself. If 40 columns come back at 320, or 48 at 390, the advance is narrower than 9px and the predictions were pessimistic rather than the code being wrong.
+- 2026-09-04: G0 phone readings, real WebKit against a production build of the branch on `localhost:3111`. **Every grid prediction held, to the row and the scale.**
+  - **drawer 390 by 844: 40 by 18 at scale 1**, 15px type, `--green-bright` on `#070b07` measured at **15.56:1**. Document overflow 0, grid overflow 0, every drawn line exactly 40 characters, exit control exactly 44 by 44.
+  - **drawer 320 by 568: 32 by 16 at scale 1**, same type, same contrast, overflow 0, every line exactly 32 characters, exit 44 by 44.
+  - **inline 390 by 844 (home page): 32 by 16 at scale 1.** 40 columns miss because the page container is narrower than the drawer, which is what was predicted.
+  - Behaviour, at all three: the arrow keys move the cabinet cursor and **do not scroll the page** (`window.scrollY` unchanged); a downward drag moves it too, so a thumb can pick a game; Escape returns the prompt with `cd arcade` still in the scrollback and, in the drawer, **the drawer still open**, so the first Escape leaves the game and not the shell.
+  - The cabinet reads: five games, four in brackets as not built, and the board panel printing `boards are unavailable.` / `the games still play.`, which is the F4-unmerged path doing exactly what it was built to do.
+  - **Two console 404s, both explained and neither the arcade's fault to fix.** `/_vercel/insights/script.js` is on every page and AGENTS.md already documents that pretty path as a meaningless 404. `/api/board` is the route F4 has not merged yet; `fetchBoards` reads it as unavailable and the sentence above is the result. It goes when F4 lands.
+  - **The frame rate here is the instrument, not the page, and I checked that before saying so.** Control reading on a page with no arcade running at all: **5 rAF callbacks in 2,448ms**, tab visible, `document.hidden` false. This headless WebKit throttles the frame clock to about two a second. Under it `bounce` still moved: the glyph went from row 9 column 20 to row 11 column 22 across 4 frames in 3,807ms, which is the fixed-step loop doing exactly what it should with the frames it was given. So: the loop runs and the game animates, **observed**; how it feels at 60fps on a real phone is **not measured here and is not claimed**.
+  - Not measured: a real device, a phone GPU, the shader's cost with a game running, audio (`sound on` was never typed), and the board against a real Redis. One engine, WebKit, emulating an iPhone 13 on a desktop kernel.
