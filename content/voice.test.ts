@@ -104,6 +104,9 @@ describe("house style", () => {
     ...tools.flatMap((t) => [
       { where: `tools.${t.slug}.name`, text: t.name },
       { where: `tools.${t.slug}.blurb`, text: t.blurb },
+      ...(t.privacyLine
+        ? [{ where: `tools.${t.slug}.privacyLine`, text: t.privacyLine }]
+        : []),
       ...t.cantSee.map((line, i) => ({ where: `tools.${t.slug}.cantSee[${i}]`, text: line })),
       ...(t.privacyNote ? [{ where: `tools.${t.slug}.privacyNote`, text: t.privacyNote }] : []),
     ]),

@@ -250,6 +250,19 @@ for the phone check. Nothing else without an argument.
   only production file that may import it. It saves a profile, reference table included, under
   `fergusos:drift-profile`, built from `OWNED_PREFIX` so `forget` wipes it, and it writes that key
   in exactly one place, behind the save button. `app/tools/drift/page.test.ts` counts the writes.
+  `/tools/relief` draws a year of dated events as contour
+  ground. The marching squares in `lib/tools/relief/contour.ts` are lifted from Tigh Sauna's
+  `apps/site/src/lib/survey/terrain.ts` and the file says so; the rest of
+  `lib/tools/relief/` is pure and tested, and `app/tools/relief/ReliefTool.tsx` is wiring. It
+  adds no dependency: the canvas is the browser's, the SVG is a string, and the binary STL is
+  84 bytes plus 50 a triangle written into a `DataView`. `d3-contour`, `three` and `papaparse`
+  were each considered and refused on the record in the plan. The GitHub token lives in React
+  state, goes into one `Authorization` header built by `githubUrl()` behind an origin fence,
+  and is never written anywhere; `lib/tools/relief/safety.test.ts` greps the whole tool for a
+  storage API, for any direct `fetch` call at all (there are none: `github.ts` takes a
+  `fetchImpl` and the component hands it `window.fetch.bind(window)` in one place), and for any
+  URL literal outside `github.ts`. `draw.ts` holds no colour of its own and throws
+  `ReliefPaletteError` when a theme token is missing, rather than painting black on black.
 - **Animation libraries (changed in v4):** `lenis` (inertial scroll), `ogl` (the WebGL
   phosphor shader) and `motion` (springs). v5 added no dependencies: the physics solver and
   the synth are both hand-written, because a physics engine that ships 90 kB to drop some
