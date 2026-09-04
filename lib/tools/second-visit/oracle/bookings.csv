@@ -70,6 +70,7 @@ C0242,2024-11-09,55.00,14:00,8,completed,Longford,IE,Sauna session,1,5
 C0376,2024-11-09,45.00,11:00,8,completed,Longford,IE,Cold plunge,1,0
 C0360,2024-11-10,45.00,11:00,8,completed,Cavan,IE,Sauna session,2,0
 C0392,2024-11-10,45.00,11:00,8,completed,Cavan,IE,Ten-pack,2,0
+LAPSED,2024-11-10,55.00,11:00,8,completed,Longford,IE,Private hire,1,0
 C0021,2024-11-11,45.00,20:00,8,completed,Dublin,IE,Cold plunge,1,0
 C0194,2024-11-12,45.00,11:00,8,completed,Mullingar,IE,Sauna session,1,0
 C0225,2024-11-12,45.00,18:00,8,completed,Longford,IE,Private hire,2,0
@@ -94,6 +95,7 @@ C0242,2024-11-23,45.00,14:00,8,completed,Longford,IE,Sauna session,1,5
 C0286,2024-11-23,45.00,11:00,8,completed,Longford,IE,Sauna session,1,0
 C0096,2024-11-24,45.00,20:00,8,completed,Belfast,GB,Private hire,1,0
 C0304,2024-11-24,45.00,17:00,8,completed,Dublin,IE,Private hire,1,0
+LAPSED,2024-11-24,55.00,11:00,8,completed,Longford,IE,Private hire,1,0
 C0056,2024-11-25,45.00,14:00,8,completed,Sligo,IE,Cold plunge,1,0
 C0043,2024-11-26,45.00,14:00,8,completed,Mullingar,IE,Cold plunge,1,0
 C0194,2024-11-26,45.00,11:00,8,completed,Mullingar,IE,Sauna session,1,0
@@ -111,6 +113,7 @@ C0188,2024-12-04,55.00,20:00,8,completed,,,Ten-pack,1,0
 C0258,2024-12-06,45.00,20:00,8,completed,Sligo,IE,Cold plunge,1,0
 C0259,2024-12-06,45.00,17:00,8,no_show,Mullingar,IE,Cold plunge,2,5
 C0077,2024-12-08,55.00,14:00,8,completed,Dublin,IE,Sauna session,1,5
+LAPSED,2024-12-08,55.00,11:00,8,completed,Longford,IE,Private hire,1,0
 C0256,2024-12-09,55.00,11:00,8,completed,Granard,IE,Cold plunge,2,0
 C0015,2024-12-10,45.00,14:00,8,completed,Sligo,IE,Private hire,1,0
 C0194,2024-12-10,45.00,11:00,8,completed,Mullingar,IE,Sauna session,1,0

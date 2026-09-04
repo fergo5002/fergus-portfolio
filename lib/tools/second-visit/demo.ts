@@ -168,6 +168,25 @@ export function generate(options: GenerateOptions): GeneratedFile {
     ]);
   }
 
+  // One regular with a clean fortnightly rhythm who stopped early. The demo
+  // must populate the lapsed-regulars export rather than showing an empty
+  // action file merely because a random seed kept every regular current.
+  for (const day of [startDay + 70, startDay + 84, startDay + 98]) {
+    rows.push([
+      "LAPSED",
+      toIso(day),
+      "55.00",
+      "11:00",
+      8,
+      "completed",
+      options.venueTown,
+      "IE",
+      PRODUCTS[1],
+      1,
+      0,
+    ]);
+  }
+
   // Filler bookings use their own identifiers, on one weekday and hour.
   for (let week = 0; week < 40; week++) {
     // This is the deliberately congested run: leave two quieter weeks so the
