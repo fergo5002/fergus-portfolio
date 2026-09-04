@@ -1108,7 +1108,8 @@ describe("roundTo, which has to be half away from zero", () => {
   it("rounds to a given number of places", () => {
     expect(roundTo(1.23456, 3)).toBe(1.235);
     expect(roundTo(0.0625, 3)).toBe(0.063);
-    expect(roundTo(120.05, 1)).toBe(120.1);
+    expect(roundTo(120.46, 1)).toBe(120.5);
+    expect(roundTo(120.44, 1)).toBe(120.4);
   });
 
   /**
@@ -1122,8 +1123,11 @@ describe("roundTo, which has to be half away from zero", () => {
    * real occurrence is a red test rather than a silent 0.001.
    */
   it("differs from Postgres on an exact decimal tie, and that is known", () => {
+    // Postgres numeric holds 1.0005 exactly and rounds up to 1.001. The nearest
+    // double is 1.00049999999999994, a hair below the tie, so this rounds down.
     expect(roundTo(1.0005, 3)).toBe(1);
-    expect(1.0005 < 1.0005000000000001).toBe(true);
+    // The same thing one decimal along: 120.05 as a double is 120.049999...
+    expect(roundTo(120.05, 1)).toBe(120);
   });
 
   it("leaves the absurd alone rather than producing exponent notation", () => {
@@ -1575,10 +1579,15 @@ describe("distanceKm", () => {
    * from Aughnacliff, and that is the point of this boundary rather than an
    * accident of it", so this pair is the one worth pinning.
    */
-  it("puts Dublin about 98km from Aughnacliff", () => {
+  it("puts Dublin the far side of the 95km boundary from north Longford", () => {
+    // The migration says 98km and does not publish the point it measured from.
+    // These coordinates give 104. That the exact figure moves with the point is
+    // the reason this asserts the band rather than the metre: what the model
+    // does with it is the same either way.
     const km = distanceKm(53.8608, -7.5806, 53.3498, -6.2603) as number;
-    expect(km).toBeGreaterThan(94);
-    expect(km).toBeLessThan(102);
+    expect(km).toBeGreaterThan(90);
+    expect(km).toBeLessThan(115);
+    expect(distanceBand(km, true)).toBe("distant");
   });
 
   it("is zero for a point on itself", () => {
@@ -3036,7 +3045,9 @@ export function parseAmountCents(raw: string): number | null {
 
 const COMPLETED = /^(completed?|attended|checked.?in|finished|fulfill?ed|paid|done|success(ful)?)$/i;
 const NO_SHOW = /^(no.?show|did.?not.?attend|dna|missed)$/i;
-const CANCELLED = /^(cancell?ed|refunded|voided?|declined|failed|abandoned)$/i;
+// `void(ed)?` and not `voided?`: the second one needs the "e" and so misses the
+// bare word "void", which is what a payment system actually writes.
+const CANCELLED = /^(cancell?ed|refunded|void(ed)?|declined|failed|abandoned)$/i;
 
 export function statusRole(raw: string): StatusRole {
   const text = raw.trim().replace(/[_\s]+/g, " ");
@@ -3414,10 +3425,11 @@ describe("what a centroid can and cannot do", () => {
     const dublin = findTown("Dublin");
     expect(dublin).not.toBeNull();
     const km = distanceKm(53.8608, -7.5806, dublin!.lat, dublin!.lng) as number;
-    // The migration's own comment says 98km. A centroid will not be exact and
-    // this is the tolerance that says so out loud.
+    // The migration's comment says 98km; these coordinates and GeoNames'
+    // Dublin centroid give about 104. A centroid is not an address and this
+    // tolerance says so out loud. What matters is which side of 95 it falls.
     expect(km).toBeGreaterThan(90);
-    expect(km).toBeLessThan(106);
+    expect(km).toBeLessThan(115);
   });
 });
 ```
@@ -4224,7 +4236,10 @@ describe("the answer somebody came for", () => {
 
   it("says 73%, not 50%", () => {
     const answer = returnedBy(curve, 40);
-    expect(answer.estimate).toBeCloseTo(41 / 56, 15);
+    // 12 places, not 15: `1 - 15/56` and `41/56` are the same number to within
+    // one bit of double precision, and pinning the last bit tests the floating
+    // point unit rather than the model.
+    expect(answer.estimate).toBeCloseTo(41 / 56, 12);
     expect(naiveReturnRate(eight)).toBe(0.5);
   });
 
@@ -6747,7 +6762,9 @@ describe("a cell", () => {
     expect(csvCell("+44 7700 900000")).toBe("'+44 7700 900000");
     expect(csvCell("@handle")).toBe("'@handle");
     expect(csvCell("-lead")).toBe("'-lead");
-    expect(csvCell("\tstart")).toBe("\"'\tstart\"");
+    // Guarded but not quoted: a tab needs no quoting in a comma-delimited file,
+    // and RFC 4180 only asks for it round a comma, a quote or a line break.
+    expect(csvCell("\tstart")).toBe("'\tstart");
   });
 
   it("leaves a number alone, so a sheet can still add it up", () => {
@@ -9017,6 +9034,17 @@ Sixth, **reachability would have emptied all three CSVs.** `hearth.reachability`
 **One thing in Task 2 is not code in this plan and it is deliberate.** The twelve SQL function bodies are marked "paste them here" rather than reproduced, because they are three hundred lines of another repository's file and retyping them into a plan is exactly the transcription error the whole oracle exists to catch. What the task gives instead is the file, the commit, the `grep` that prints the line ranges, the order they go in, the four permitted changes, and a smoke test of seven values worked out by hand from the migration's own text. An implementer with no context can execute it, and the smoke test is what tells them whether they got it right.
 
 Three sets of numbers are arithmetic rather than measurement and are marked as such: the Kaplan-Meier worked example, which is a product of three fractions and a Greenwood sum anybody can check on paper; the birthday-free claim that the port and Postgres should differ by about 1e-13, which is S3's measurement rather than this plan's; and the 40 KB ceiling on the towns table, which is a budget rather than a reading and which Task 7 replaces with a real gzip count.
+
+**2b. The code in this plan was executed, and six assertions in it were wrong.** Reading a test and believing it is the same move `CLAIMS.md` is about, so the pure parts were transcribed into scratch scripts and run before this plan was saved: the CSV reader against twenty-nine of its own cases, the mapping helpers against forty-one, the twelve model functions against eighty-eight, the CSV writer and the HTML escaper and the chart path against twenty-two, plus the date helpers and the Kaplan-Meier worked example. Everything else passed, and the survival curve came back at exactly 5/7, 15/28 and 15/56 with a Greenwood sum of 0.6404761904761904 and an interval of [0.013125, 0.670013], which is what the plan's own section says. These six did not, and each is fixed above:
+
+- `roundTo(120.05, 1)` was asserted as `120.1`. It is `120`, because 120.05 as a double is 120.04999999999999716, which is the documented decimal-tie divergence and now sits in the test that documents it.
+- `statusRole("void")` was asserted as `cancelled` against a pattern of `voided?`, which needs the "e" and so matches "voide" and "voided" but not "void". The pattern is now `void(ed)?`.
+- `distanceKm` from those Aughnacliff coordinates to Dublin is 104.0 km, not the 98 the migration's comment names, and the test asserted a window of 94 to 102. It now asserts the band, which is what the model actually uses, and says why.
+- The same figure appears in `towns.test.ts` against GeoNames' Dublin centroid, with the same fix.
+- `returnedBy(curve, 40)` was asserted against `41/56` to fifteen places. The two differ by one bit of double precision, which passes by a factor of four and tests the floating point unit rather than the model. Twelve places now.
+- `csvCell("\tstart")` was asserted as quoted. It is guarded with an apostrophe and not quoted, and that is correct: RFC 4180 asks for quotes round a comma, a quote or a line break, and a tab in a comma-delimited file is none of those.
+
+What that run cannot see: anything involving React, the worker, the SQL, Postgres, or the modules that import `@/content`, because a scratch script has no bundler and no alias. Those are checked by the tasks themselves.
 
 **3. Type consistency.** Checked name by name across tasks:
 
