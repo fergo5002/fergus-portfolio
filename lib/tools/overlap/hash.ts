@@ -88,6 +88,15 @@ export type HashAllOptions = {
   onProgress?: (done: number, total: number) => void;
   /** Yields to the event loop so a 30,000-row file does not freeze the tab. */
   yieldTo?: () => Promise<void>;
+  /**
+   * Every slug with the hash it produced, in input order, as they are computed.
+   *
+   * The exchange needs both the sorted list and a way back from a hash to the
+   * row it came from, and hashing twice to get them would double the one
+   * genuinely expensive thing this tool does. Called once per slug, including
+   * for a slug whose hash has already been seen.
+   */
+  onEach?: (slug: string, hash: string) => void;
 };
 
 /**
@@ -114,7 +123,9 @@ export async function hashAll(
 
   const seen = new Set<string>();
   for (let i = 0; i < slugs.length; i++) {
-    seen.add(await hashSlug(salt, slugs[i], subtle));
+    const hash = await hashSlug(salt, slugs[i], subtle);
+    options.onEach?.(slugs[i], hash);
+    seen.add(hash);
     if ((i + 1) % batch === 0) {
       options.onProgress?.(i + 1, slugs.length);
       await yieldTo();

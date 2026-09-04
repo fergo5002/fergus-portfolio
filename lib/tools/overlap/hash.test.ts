@@ -115,6 +115,20 @@ describe("hashAll", () => {
     expect(onProgress.mock.calls.map(([done]) => done)).toEqual([100, 200, 250]);
   });
 
+  /**
+   * The exchange needs the sorted list and a way back from a hash to its row.
+   * Hashing twice to get both would double the one expensive thing this tool
+   * does, on the machine least able to afford it.
+   */
+  it("hands back every slug with its hash as it goes, so nothing is hashed twice", async () => {
+    const seen: Array<[string, string]> = [];
+    const out = await hashAll(salt, ["b", "a", "b"], { onEach: (s, h) => seen.push([s, h]) });
+    expect(seen.map(([s]) => s)).toEqual(["b", "a", "b"]);
+    expect(seen[0][1]).toBe(await hashSlug(salt, "b"));
+    expect(seen[0][1]).toBe(seen[2][1]);
+    expect(out).toHaveLength(2);
+  });
+
   it("takes an injected subtle, which is how the exchange stays testable", async () => {
     const subtle = { digest: vi.fn(globalThis.crypto.subtle.digest.bind(globalThis.crypto.subtle)) };
     await hashAll(salt, ["a", "b"], { subtle });
