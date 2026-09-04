@@ -6,6 +6,33 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-04: Overlap recovery audit
+
+T3 is implemented on `toolshed/t3-overlap` and is in review. It has not been pushed, opened as a
+pull request or deployed. The recovered commits did not satisfy the plan on their own: successful
+relay responses were trusted without shape checks, peer frames and waits were effectively
+unbounded, several setup failures escaped the UI, abandoned peer connections stayed open, and the
+page understated what the other browser and room service learn. Those paths now fail closed and
+visibly, and the page says precisely that the file and names stay local while the peer receives the
+salted hashes, salt and count and sees the connecting address. The matching phrase is described as
+a useful check rather than proof against interception. Manual copy and paste is accurately described
+as skipping the room-code service while still requiring a direct WebRTC connection, Cloudflare STUN
+by default, and no TURN relay.
+
+Observed on the recovered tree: 1,461 of 1,461 full tests passed; `tsc --noEmit` and the production
+build passed; all 100 deliberate mutations went red; the phone check passed at iPhone 390, iPhone
+320 and throttled Pixel; and two local Chromium contexts exchanged five matches by copy and paste
+without one side's spellings leaving that side. That browser proof passed once with the default STUN
+configuration and once in same-network-only mode, with zero `/api/relay` requests in both runs. With
+Redis absent, the room endpoint returned the intended 503 `relay-unavailable`, removed the dead room
+button and opened copy and paste. Not verified: a real LinkedIn export, browsers on separate real
+networks or symmetric NAT, a configured Redis room-code exchange, the WebRTC flow in real WebKit,
+CI or production.
+
+This branch copied the minimum F4 store files and `@upstash/redis` while F4 was still unmerged.
+Reconcile those files with the recovered F4 branch before T3 merges; do not assume the copies are
+the state layer's final versions.
+
 ## 2026-09-03: the shell everywhere
 
 F2 of the toolshed programme. The terminal is a drawer on every route (backtick, the status bar
