@@ -1,0 +1,165 @@
+/* app/tools/relief/tool.css */
+/* The route's own rules. `app/globals.css` stays the shell's stylesheet
+   (design section 2, rule 2), so nothing here appends to it. */
+
+.relief {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.relief__sources,
+.relief__panel {
+  border: 1px solid var(--green-line);
+  padding: var(--sp-3);
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.relief__sources {
+  grid-auto-flow: column;
+  justify-content: start;
+}
+
+.relief__legend,
+.relief__label {
+  display: block;
+  font-weight: 600;
+}
+
+/* `--green`, not `--green-dim`. `app/globals.test.ts` measured the dim token at
+   4.45 against the background on the amber theme and 4.46 on ice, so it passes
+   on the theme a developer happens to be looking at and fails on the two a
+   visitor reaches by typing four characters at the terminal. */
+.relief__hint,
+.relief__note {
+  color: var(--green);
+  margin: 0;
+  max-width: 68ch;
+}
+
+/* 16px exactly, on all three. Anything smaller and iOS zooms the viewport on
+   focus and drops the visitor into a sideways-scrolled page. */
+.relief__input,
+.relief__file,
+.relief__select {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 16px;
+  min-height: 44px;
+  line-height: 1.5;
+  color: var(--green);
+  background: var(--bg-panel);
+  border: 1px solid var(--green-line);
+  padding: 0.5rem 0.75rem;
+}
+
+.relief__input:focus-visible,
+.relief__file:focus-visible,
+.relief__select:focus-visible,
+.relief__button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.relief__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* 44px is the floor `scripts/phone-check.mjs` fails below. */
+.relief__button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 1rem;
+  font: inherit;
+  font-size: 16px;
+  color: var(--green);
+  background: transparent;
+  border: 1px solid var(--green-line);
+  cursor: pointer;
+}
+
+.relief__button[aria-pressed="true"] {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.relief__button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* The frame is what the ResizeObserver measures, so it must be the thing that
+   is allowed to be narrower than the page. */
+.relief__frame {
+  width: 100%;
+  overflow: hidden;
+}
+
+/* The canvas carries an intrinsic width from its width attribute, which is the
+   device-pixel width and is larger than the CSS box at any DPR above 1. Without
+   the first two of these it pushes the page sideways at 320, which is the single
+   most likely phone-check failure on this route.
+
+   `height: auto` is the third, and it is load-bearing rather than tidy. The
+   component sizes the bitmap from a width a ResizeObserver measured, and that
+   reading lags the box for a beat after load and after a viewport change.
+   Measured on a real WebKit iPhone: with an explicit CSS height on the canvas
+   the ground was stretched 60% at 320 on load, 52% mid-resize and 148% straight
+   after a 375 to 900 change, and putting that height back brings all three
+   numbers back. With the height left to the bitmap's own ratio the lag costs
+   resolution for a frame and never the shape: 0.0% skew at every reading. */
+.relief__plate {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+.relief__readout {
+  margin: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.relief__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px solid var(--green-line);
+  padding-bottom: 0.35rem;
+}
+
+.relief__row dt {
+  font-weight: 600;
+}
+
+.relief__row dd {
+  margin: 0;
+  color: var(--amber);
+}
+
+.relief__heading {
+  margin: var(--sp-2) 0 0;
+}
+
+/* The one bit of motion on the route, and it is on the figure rather than the
+   drawing. There is no progressive draw-on: SystemProvider owns the only rAF
+   loop and a second one is forbidden. */
+@media (prefers-reduced-motion: no-preference) {
+  .relief__frame {
+    animation: relief-fade 240ms ease-out both;
+  }
+
+  @keyframes relief-fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { liveTools, toolBySlug, toolShellCopy, tools } from "./index";
+import { reliefCopy } from "./relief";
 
 /**
  * The registry guard, in the shape of `content/articles.test.ts`.
@@ -105,5 +106,39 @@ describe("tool shell copy", () => {
     expect(toolShellCopy.privacy.server).toBe(
       "Runs on the server. Keeps a hashed IP for a day, nothing else.",
     );
+  });
+});
+
+describe("relief", () => {
+  it("is registered, live, and browser-side", () => {
+    const t = toolBySlug("relief");
+    expect(t?.status).toBe("live");
+    expect(t?.privacy).toBe("browser");
+  });
+
+  /**
+   * The one path that leaves the tab is GitHub, and the shell's browser line
+   * would be false about it. The note is what makes the page honest, so its
+   * absence is a test failure rather than a missing nicety.
+   */
+  it("corrects the browser privacy line where GitHub is concerned", () => {
+    const note = toolBySlug("relief")?.privacyLine ?? "";
+    expect(note).toContain("api.github.com");
+    expect(note.length).toBeGreaterThan(60);
+    expect(note).not.toContain("Nothing leaves this tab");
+  });
+
+  it("limits export claims to properties checked from the files", () => {
+    const t = toolBySlug("relief");
+    const words = [t?.blurb, reliefCopy.description, reliefCopy.plotterNote, reliefCopy.stlNote].join(" ");
+    expect(words).not.toMatch(/printer can|printable|plotter can draw/i);
+    expect(words).toMatch(/millimetres/i);
+    expect(words).toMatch(/edge check/i);
+  });
+
+  it("says the two things the design fixed as can't-see lines", () => {
+    const lines = (toolBySlug("relief")?.cantSee ?? []).join(" ");
+    expect(lines).toMatch(/private/i);
+    expect(lines).toMatch(/local time|local clock/i);
   });
 });
