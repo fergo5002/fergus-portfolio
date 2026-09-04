@@ -54,6 +54,8 @@ export type ProgramInstance = {
   tick(dtMs: number): void;
   key(key: ArcadeKey, down: boolean): void;
   swipe?(dir: "up" | "down" | "left" | "right"): void;
+  /** The measured character world changed. Keep live state inside it and redraw. */
+  resize?(cols: number, rows: number): void;
   dispose(): void;
 };
 

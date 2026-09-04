@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
+import type {
+  CSSProperties,
+  FocusEvent as ReactFocusEvent,
+  KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
+} from "react";
 import { arcadeCopy } from "@/content/arcade";
 import { fetchBoards, submitScore } from "@/lib/arcade/board-client";
 import { findGame } from "@/lib/arcade/games";
@@ -9,7 +14,16 @@ import { finishOutcome } from "@/lib/arcade/finish";
 import { fitGrid } from "@/lib/arcade/grid";
 import type { GridFit } from "@/lib/arcade/grid";
 import { createInitialsProgram } from "@/lib/arcade/initials";
-import { arcadeKey, deliverGesture, gestureOf, shouldCapture } from "@/lib/arcade/input";
+import {
+  arcadeKey,
+  deliverGesture,
+  gestureOf,
+  holdKey,
+  releaseAllKeys,
+  releaseKey,
+  shouldCapture,
+} from "@/lib/arcade/input";
+import type { HeldKeys } from "@/lib/arcade/input";
 import { advance, createLoopState } from "@/lib/arcade/loop";
 import type { ProgramHost, ProgramInstance, ProgramResult, ProgramSpec } from "@/lib/arcade/program";
 import { arcadeSession, loadInitials, saveInitials, setArcadeBoards } from "@/lib/arcade/session";
@@ -74,6 +88,7 @@ export default function ArcadeScreen({ program, onExit }: Props) {
   const rectRef = useRef<DOMRect | null>(null);
   const rectStaleRef = useRef(true);
   const pointerRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  const heldKeysRef = useRef<HeldKeys>(new Map());
   const exitedRef = useRef(false);
   const postedRef = useRef(false);
   const seedRef = useRef<string | null>(null);
@@ -91,22 +106,33 @@ export default function ArcadeScreen({ program, onExit }: Props) {
 
   /* ── leaving ───────────────────────────────────────────────────────────── */
 
+  const releaseHeld = useCallback(() => {
+    const instance = runningRef.current?.instance;
+    if (!instance) {
+      heldKeysRef.current.clear();
+      return;
+    }
+    for (const key of releaseAllKeys(heldKeysRef.current)) instance.key(key, false);
+  }, []);
+
   const leave = useCallback((lines: string[]) => {
     if (exitedRef.current) return;
     exitedRef.current = true;
+    releaseHeld();
     runningRef.current?.instance.dispose();
     runningRef.current = null;
     onExitRef.current(lines);
-  }, []);
+  }, [releaseHeld]);
 
   /* ── the host ──────────────────────────────────────────────────────────── */
 
   const startProgram = useCallback((spec: ProgramSpec, host: ProgramHost) => {
+    releaseHeld();
     runningRef.current?.instance.dispose();
     lastDrawnRef.current = "";
     loopRef.current = createLoopState();
     runningRef.current = { spec, instance: spec.start(host) };
-  }, []);
+  }, [releaseHeld]);
 
   useEffect(() => {
     if (!ready) return;
@@ -224,11 +250,12 @@ export default function ArcadeScreen({ program, onExit }: Props) {
 
     return () => {
       unsubscribe();
+      releaseHeld();
       runningRef.current?.instance.dispose();
       runningRef.current = null;
       hostRef.current = null;
     };
-  }, [ready, program, onFrame, audio, frame, leave, startProgram]);
+  }, [ready, program, onFrame, audio, frame, leave, releaseHeld, startProgram]);
 
   /** Resize changes the game's world; it does not erase the game in progress. */
   useEffect(() => {
@@ -236,8 +263,22 @@ export default function ArcadeScreen({ program, onExit }: Props) {
     if (!host || !fit) return;
     host.cols = fit.cols;
     host.rows = fit.rows;
+    const instance = runningRef.current?.instance;
+    instance?.resize?.(fit.cols, fit.rows);
     rectStaleRef.current = true;
   }, [fit]);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") releaseHeld();
+    };
+    window.addEventListener("blur", releaseHeld);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("blur", releaseHeld);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [releaseHeld]);
 
   /* ── measuring ─────────────────────────────────────────────────────────── */
 
@@ -325,15 +366,20 @@ export default function ArcadeScreen({ program, onExit }: Props) {
     if (e.repeat) return;
     const key = arcadeKey(e.key, mods);
     if (!key) return;
-    runningRef.current?.instance.key(key, true);
+    const pressed = holdKey(heldKeysRef.current, e.code || e.key, key);
+    if (pressed) runningRef.current?.instance.key(pressed, true);
   };
 
   const onKeyUp = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    if (fromControl(e.target)) return;
-    const key = arcadeKey(e.key, { ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey });
+    const key = releaseKey(heldKeysRef.current, e.code || e.key);
     if (!key) return;
     runningRef.current?.instance.key(key, false);
+  };
+
+  const onBlur = (e: ReactFocusEvent<HTMLDivElement>) => {
+    const next = e.relatedTarget;
+    if (!(next instanceof Node) || !e.currentTarget.contains(next)) releaseHeld();
   };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
@@ -375,6 +421,7 @@ export default function ArcadeScreen({ program, onExit }: Props) {
       tabIndex={0}
       onKeyDown={onKeyDown}
       onKeyUp={onKeyUp}
+      onBlur={onBlur}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
       onPointerCancel={() => {

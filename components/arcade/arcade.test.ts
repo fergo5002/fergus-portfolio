@@ -45,6 +45,7 @@ describe("the arcade runs on the one frame clock", () => {
 
   it("updates the running host on resize instead of restarting the program", () => {
     expect(screen).toMatch(/host\.cols = fit\.cols;\s*host\.rows = fit\.rows;/);
+    expect(screen).toMatch(/instance\?\.resize\?\.\(fit\.cols, fit\.rows\)/);
     const subscription = /const unsubscribe = onFrame[\s\S]*?\}, \[([^\]]+)\]\);/.exec(screen);
     expect(subscription, "arcade subscription effect not found").toBeTruthy();
     expect(subscription![1]).not.toMatch(/\bfit\b|\bmeasured\b/);
@@ -107,7 +108,23 @@ describe("input", () => {
   });
 
   it("ignores an auto-repeat, so a held key is one press", () => {
-    expect(screen).toMatch(/e\.repeat/);
+    expect(screen).toMatch(/holdKey\(heldKeysRef\.current,/);
+  });
+
+  it("releases held keys on focus loss and when the document is hidden", () => {
+    expect(screen).toMatch(/onBlur=\{onBlur\}/);
+    expect(screen).toMatch(/document\.visibilityState === "hidden"/);
+    expect(screen).toMatch(/window\.addEventListener\("blur", releaseHeld\)/);
+  });
+
+  it("pairs keyup from the physical-key ledger instead of remapping it", () => {
+    const keyup = /const onKeyUp[\s\S]*?\n  \};/.exec(screen)?.[0] ?? "";
+    expect(keyup).toMatch(/releaseKey\(heldKeysRef\.current, e\.code \|\| e\.key\)/);
+    expect(keyup).not.toMatch(/arcadeKey\(/);
+  });
+
+  it("releases every held input before disposing on exit", () => {
+    expect(screen).toMatch(/exitedRef\.current = true;\s*releaseHeld\(\);\s*runningRef\.current\?\.instance\.dispose\(\)/);
   });
 
   it("routes a gesture through deliverGesture rather than deciding itself", () => {
@@ -115,7 +132,9 @@ describe("input", () => {
   });
 
   it("does not send button events to the running game", () => {
-    expect(screen.match(/if \(fromControl\(e\.target\)\) return;/g) ?? []).toHaveLength(2);
+    // Only keydown consults the target. Keyup must release a physical key that
+    // began on the game even if focus moved onto the exit button meanwhile.
+    expect(screen.match(/if \(fromControl\(e\.target\)\) return;/g) ?? []).toHaveLength(1);
     expect(screen.match(/if \(fromControl\(e\.target\)\) \{\s*pointerRef\.current = null;\s*return;/g) ?? []).toHaveLength(2);
   });
 });
@@ -152,8 +171,9 @@ describe("leaving", () => {
 
   it("keeps the latest exit callback without restarting the program", () => {
     expect(screen).toMatch(/onExitRef\.current = onExit/);
-    expect(screen).toMatch(/onExitRef\.current\(lines\)/);
-    expect(screen).toMatch(/const leave = useCallback\([\s\S]*?onExitRef\.current\(lines\);[\s\S]*?\}, \[\]\);/);
+    const leave = /const leave = useCallback\([\s\S]*?\n  \}, \[releaseHeld\]\);/.exec(screen)?.[0] ?? "";
+    expect(leave).toMatch(/onExitRef\.current\(lines\)/);
+    expect(leave).not.toMatch(/\bonExit\(lines\)/);
   });
 
   it("prints what the server said, not what it hoped", () => {

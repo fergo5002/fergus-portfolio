@@ -133,6 +133,9 @@ export function createCabinet(): ProgramSpec {
           state = cabinetReduce(state, dir, ARCADE_GAMES).state;
           render();
         },
+        resize() {
+          render();
+        },
         dispose() {
           /* no timers, no listeners */
         },

@@ -37,6 +37,22 @@ tested. No real device, only WebKit emulating an iPhone at 390 and 320, where th
 throttles the frame clock to about two a second, so nothing here measures how a game feels at 60fps.
 No audio: `sound on` was never typed during the run.
 
+An independent final review found two states the earlier green checks did not exercise. A running
+Bounce near the old right edge disappeared after a 40-to-32 resize while it walked back into the
+smaller grid, and a key released after focus or modifiers changed could remain logically held. The
+runtime now notifies programs after changing the measured world; Bounce clamps and redraws at once.
+Physical keydowns are paired to their logical keyups, with every held key released on blur,
+visibility loss, hand-off and exit. The host also refuses non-finite, non-positive and greater than
+10,000,000 scores before initials entry. These are behaviour tests rather than claims inferred from
+the React source. The deleted one-off phone driver is replaced by
+`scripts/arcade-phone-check.mjs`, which enters through the hidden command and is part of the phone
+CI job without putting the door in the sitemap.
+Final evidence for this review fix: 1,434 tests, clean TypeScript and production build, 127/127
+mutations caught, and the committed WebKit hidden-flow check green against that build. It measured
+40 by 18 at 390, then resized the same running Bounce to 32 by 16 at 320 with its glyph still
+visible. It also rechecked prompt focus and the reduced-motion refusal. Production remains
+unverified because this is still an open pull request.
+
 ## 2026-09-03: the shell everywhere
 
 F2 of the toolshed programme. The terminal is a drawer on every route (backtick, the status bar

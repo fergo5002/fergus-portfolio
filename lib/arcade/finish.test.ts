@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { finishOutcome } from "@/lib/arcade/finish";
+import { finishOutcome, MAX_PROGRAM_SCORE } from "@/lib/arcade/finish";
 import { arcadeCopy } from "@/content/arcade";
 
 const base = { posted: false, board: true, available: true };
@@ -43,6 +43,16 @@ describe("finishOutcome", () => {
     // title screen, which is the mutation this test exists to catch.
     expect(finishOutcome({ ...base, score: 0 })).toEqual({ kind: "leave", lines: [arcadeCopy.left] });
     expect(finishOutcome({ ...base })).toEqual({ kind: "leave", lines: [arcadeCopy.left] });
+  });
+
+  it("rejects non-finite and out-of-contract scores at the host boundary", () => {
+    for (const score of [Number.NaN, Number.POSITIVE_INFINITY, -1, MAX_PROGRAM_SCORE + 1]) {
+      expect(finishOutcome({ ...base, score })).toEqual({ kind: "leave", lines: [arcadeCopy.left] });
+    }
+    expect(finishOutcome({ ...base, score: MAX_PROGRAM_SCORE })).toEqual({
+      kind: "initials",
+      score: MAX_PROGRAM_SCORE,
+    });
   });
 
   it("prefers a program's own parting line when it has nothing to post", () => {

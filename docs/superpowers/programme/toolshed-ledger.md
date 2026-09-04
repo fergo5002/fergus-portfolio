@@ -138,4 +138,16 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
   restarting Bounce; probe and grid both 15px, exit 44 by 44, keyboard exit and prompt focus green,
   reduced motion declined. Expected local 404s only: Vercel Analytics' development path and the
   deliberately absent board route. Still unverified: CI, preview, production, a real device and Redis.
-
+- 2026-09-04: G0 independent final review found two blockers behind the green source-coupling checks.
+  Resize changed only the host dimensions, so Bounce could remain outside a smaller grid until it
+  walked back in; keyup remapped the release-time event, so a modifier or focus change could strand
+  a held direction. Failing-first behavioural cases now pin immediate in-bounds resize and a
+  physical-key ledger, including release-all. `ProgramInstance.resize` is optional and the runtime
+  updates the host before calling it; Bounce clamps and redraws, while stateless screens redraw.
+  The same pass bounded the host score contract to finite values from 1 through 10,000,000. The
+  arcade-specific WebKit flow is now a committed CI script reached through `cd arcade`, not a
+  sitemap route, so future grid CSS regressions can make the required phone job red.
+  Final local evidence: 1,434/1,434 tests, TypeScript and production build green, 127/127 mutations
+  caught. The committed WebKit flow passed at 390, after an in-place resize to 320 with Bounce still
+  visible, and under reduced motion. CI and preview still need the pushed commit; production is not
+  claimed and remains for after merge.

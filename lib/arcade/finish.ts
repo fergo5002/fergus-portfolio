@@ -34,8 +34,15 @@ export type FinishOutcome =
   | { kind: "initials"; score: number }
   | { kind: "leave"; lines: string[] };
 
+/** The board route applies the same ceiling again. Internal games are not a trust boundary. */
+export const MAX_PROGRAM_SCORE = 10_000_000;
+
+export function isProgramScore(score: unknown): score is number {
+  return typeof score === "number" && Number.isFinite(score) && score > 0 && score <= MAX_PROGRAM_SCORE;
+}
+
 export function finishOutcome(input: FinishInput): FinishOutcome {
-  const hasScore = input.board && typeof input.score === "number" && input.score > 0;
+  const hasScore = input.board && isProgramScore(input.score);
   if (!input.posted && hasScore && input.available) {
     return { kind: "initials", score: input.score as number };
   }

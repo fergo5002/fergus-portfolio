@@ -58,6 +58,31 @@ export function shouldCapture(key: string, mods: KeyMods): boolean {
   return arcadeKey(key, mods) !== null;
 }
 
+/**
+ * A logical direction is chosen once, on keydown, and paired to the physical
+ * key that produced it. Keyup must not reinterpret the event: focus and
+ * modifiers may have changed while the key was held.
+ */
+export type HeldKeys = Map<string, ArcadeKey>;
+
+export function holdKey(held: HeldKeys, physical: string, key: ArcadeKey): ArcadeKey | null {
+  if (held.has(physical)) return null;
+  held.set(physical, key);
+  return key;
+}
+
+export function releaseKey(held: HeldKeys, physical: string): ArcadeKey | null {
+  const key = held.get(physical) ?? null;
+  held.delete(physical);
+  return key;
+}
+
+export function releaseAllKeys(held: HeldKeys): ArcadeKey[] {
+  const keys = [...held.values()];
+  held.clear();
+  return keys;
+}
+
 /* ── touch ───────────────────────────────────────────────────────────────── */
 
 export const SWIPE_MIN_PX = 24;

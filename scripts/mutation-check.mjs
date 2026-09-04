@@ -788,8 +788,8 @@ const MUTATIONS = [
   {
     name: "a zero score is offered to the board",
     file: "lib/arcade/finish.ts",
-    pattern: /input\.score > 0/,
-    replace: "input.score >= 0",
+    pattern: /score > 0/,
+    replace: "score >= 0",
   },
   {
     name: "a board response can inject a newline through initials",
@@ -818,14 +818,50 @@ const MUTATIONS = [
   {
     name: "an onExit render restarts the running program",
     file: "components/arcade/ArcadeScreen.tsx",
-    pattern: /    onExitRef\.current\(lines\);\r?\n  \}, \[\]\);/,
-    replace: "    onExit(lines);\n  }, [onExit]);",
+    pattern: /    onExitRef\.current\(lines\);\r?\n  \}, \[releaseHeld\]\);/,
+    replace: "    onExit(lines);\n  }, [onExit, releaseHeld]);",
   },
   {
     name: "the probe and grid stop inheriting the same font size",
     file: "app/globals.css",
     pattern: /\.arcade \{\r?\n  \/\* Declared here[\s\S]*?  --arcade-font: 15px;/,
     replace: ".arcade {",
+  },
+  {
+    name: "a resized game is not told its measured world changed",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /    instance\?\.resize\?\.\(fit\.cols, fit\.rows\);\r?\n/,
+    replace: "",
+  },
+  {
+    name: "Bounce keeps an old column outside a smaller grid",
+    file: "lib/arcade/bounce.ts",
+    pattern: /  state\.x = Math\.max\(0, Math\.min\(state\.x, cols - 1\)\);/,
+    replace: "  state.x = state.x;",
+  },
+  {
+    name: "keyup remaps current modifiers instead of releasing the key that went down",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /    const key = releaseKey\(heldKeysRef\.current, e\.code \|\| e\.key\);/,
+    replace: "    const key = arcadeKey(e.key, { ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey });",
+  },
+  {
+    name: "exit disposes a game without releasing its held controls",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /    exitedRef\.current = true;\r?\n    releaseHeld\(\);/,
+    replace: "    exitedRef.current = true;",
+  },
+  {
+    name: "a non-finite score reaches the initials screen",
+    file: "lib/arcade/finish.ts",
+    pattern: /Number\.isFinite\(score\) && score > 0 && score <= MAX_PROGRAM_SCORE/,
+    replace: "score > 0",
+  },
+  {
+    name: "an out-of-contract game score reaches the board",
+    file: "lib/arcade/finish.ts",
+    pattern: / && score <= MAX_PROGRAM_SCORE/,
+    replace: "",
   },
 ];
 

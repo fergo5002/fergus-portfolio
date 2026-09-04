@@ -57,6 +57,13 @@ export function stepBounce(state: BounceState, cols: number, rows: number): "non
   return hit ? "wall" : "none";
 }
 
+/** Keep a live ball visible when the measured character world becomes smaller. */
+export function resizeBounce(state: BounceState, cols: number, rows: number): BounceState {
+  state.x = Math.max(0, Math.min(state.x, cols - 1));
+  state.y = Math.max(0, Math.min(state.y, rows - 1));
+  return state;
+}
+
 export function steerBounce(state: BounceState, key: ArcadeKey): BounceState {
   switch (key) {
     case "up":
@@ -115,6 +122,10 @@ export const bounce: ProgramSpec = {
       },
       swipe(dir) {
         steerBounce(state, dir);
+        render();
+      },
+      resize(cols, rows) {
+        resizeBounce(state, cols, rows);
         render();
       },
       dispose() {

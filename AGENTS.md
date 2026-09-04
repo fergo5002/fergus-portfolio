@@ -393,11 +393,20 @@ to the prompt with the scrollback intact. A game is a `ProgramSpec` in `lib/arca
 one line in `ARCADE_GAMES`; it writes no React, no CSS and no route. The arcade declines under
 `prefers-reduced-motion: reduce` the way `gravity` and `eject` do, in a sentence.
 
+A running program may implement `resize(cols, rows)`: the runtime updates the host first, then asks
+the program to keep any live coordinates inside the new character world and redraw without a
+restart. Keyboard input is paired by physical key. The logical key chosen on keydown is the one
+released on keyup even if modifiers or focus changed, and blur, visibility loss, program hand-off
+and exit release every held key before disposal. New games must preserve both contracts.
+
 **The drawer sizes itself to its content, so a program must state a height.** `.shell` is
 `position: fixed` with a `max-height` and no height, and an arcade set to `height: auto` inside it
 wraps an empty `<pre>`, measures a box a few pixels tall and refuses a screen that is really there.
 `.shell:has(.term--program)` sets `--shell-program-h` and the arcade's height is arithmetic on it.
 Measured on WebKit at 390 and 320: 40 by 18 and 32 by 16, both at full size.
+`scripts/arcade-phone-check.mjs` reaches it through `cd arcade`, rather than adding the hidden door
+to the sitemap, and keeps that resize, layout, focus and reduced-motion flow in the required phone
+CI job.
 
 Commands that change the running site (`theme`, `crt`, `scanlines`, `matrix`, `degauss`,
 `sudo rm -rf /`) return an `effect` descriptor, and a program (a game) returns

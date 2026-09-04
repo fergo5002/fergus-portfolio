@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  BOUNCE_STEP_TICKS, bounce, bounceView, initialBounceState, stepBounce, steerBounce,
+  BOUNCE_STEP_TICKS, bounce, bounceView, initialBounceState, resizeBounce, stepBounce, steerBounce,
 } from "@/lib/arcade/bounce";
 import type { ProgramHost } from "@/lib/arcade/program";
 
@@ -39,6 +39,14 @@ describe("bounce", () => {
       expect(s.y).toBeLessThan(ROWS);
     }
     expect(s.bounces).toBeGreaterThan(0);
+  });
+
+  it("moves an existing position inside a smaller grid immediately", () => {
+    const s = { ...initialBounceState(40, 18), x: 39, y: 17 };
+    resizeBounce(s, 32, 16);
+    expect(s.x).toBe(31);
+    expect(s.y).toBe(15);
+    expect(bounceView(s, 32, 16).some((line) => line.includes("O"))).toBe(true);
   });
 
   it("reports the wall it hit, once, on the step it hit it", () => {
@@ -119,6 +127,19 @@ describe("bounce as a program", () => {
     p.key("start", true);
     expect(f.result.got).toMatchObject({ score: expect.any(Number) });
     p.dispose();
+  });
+
+  it("redraws visibly inside the new world when the host shrinks", () => {
+    const f = fakeHost();
+    const p = bounce.start(f.host);
+    for (let i = 0; i < 80; i++) p.tick(33.334);
+    f.host.cols = 8;
+    f.host.rows = 4;
+    p.resize?.(8, 4);
+    const last = f.drawn.at(-1) ?? [];
+    expect(last).toHaveLength(4);
+    expect(last.every((line) => line.length === 8)).toBe(true);
+    expect(last.some((line) => line.includes("O"))).toBe(true);
   });
 
   it("says who it is", () => {

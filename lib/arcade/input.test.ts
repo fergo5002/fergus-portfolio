@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { arcadeKey, deliverGesture, gestureOf, shouldCapture } from "@/lib/arcade/input";
+import {
+  arcadeKey, deliverGesture, gestureOf, holdKey, releaseAllKeys, releaseKey, shouldCapture,
+} from "@/lib/arcade/input";
 
 const NO_MODS = { ctrlKey: false, metaKey: false, altKey: false };
 
@@ -57,6 +59,31 @@ describe("shouldCapture", () => {
     for (const k of ["Tab", "F5", "Escape", "q", "/"]) {
       expect(shouldCapture(k, NO_MODS), k).toBe(false);
     }
+  });
+});
+
+describe("held physical keys", () => {
+  it("pairs a release with the logical key chosen on keydown", () => {
+    const held = new Map();
+    expect(holdKey(held, "KeyA", "left")).toBe("left");
+    // Release does not need to remap `a`, so a modifier pressed in between
+    // cannot strand the logical direction in its down state.
+    expect(releaseKey(held, "KeyA")).toBe("left");
+    expect(held.size).toBe(0);
+  });
+
+  it("does not send a second down for repeat or duplicate keydown", () => {
+    const held = new Map();
+    expect(holdKey(held, "ArrowUp", "up")).toBe("up");
+    expect(holdKey(held, "ArrowUp", "up")).toBeNull();
+  });
+
+  it("releases every held direction on focus or visibility loss", () => {
+    const held = new Map();
+    holdKey(held, "ArrowUp", "up");
+    holdKey(held, "Space", "fire");
+    expect(releaseAllKeys(held)).toEqual(["up", "fire"]);
+    expect(held.size).toBe(0);
   });
 });
 

@@ -124,6 +124,9 @@ export function createInitialsProgram(opts: {
           state = initialsReduce(state, dir).state;
           render();
         },
+        resize() {
+          render();
+        },
         dispose() {
           done = true;
         },
