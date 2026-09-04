@@ -4179,16 +4179,16 @@ cd "$WT"
 node --input-type=module -e "$(cat <<'JS'
 import { devices, webkit } from "playwright";
 
-/** Five pieces of about 365 words each, varying between them so the sigmas are real. */
-const piece = (n) =>
-  Array.from({ length: 30 }, (_, i) =>
-    (i + n) % 3 === 0
+/** Five pieces of about 480 words each, with genuinely different join rates so the sigmas are real. */
+const piece = (joins) =>
+  Array.from({ length: 40 }, (_, i) =>
+    i < joins
       ? "So I wrote it down and it turned out fine in the end."
       : "The thing works and I use it every day here without thinking.",
   ).join(" ");
 
-const five = [1, 2, 3, 4, 5].map(piece).join("\n---\n");
-const four = [1, 2, 3, 4].map(piece).join("\n---\n");
+const five = [2, 4, 6, 8, 10].map(piece).join("\n---\n");
+const four = [2, 4, 6, 8].map(piece).join("\n---\n");
 
 const browser = await webkit.launch();
 const context = await browser.newContext(devices["iPhone 13"]);

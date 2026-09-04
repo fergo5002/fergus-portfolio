@@ -6,6 +6,48 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-04: Drift, ready for review
+
+T1 of the toolshed programme is complete locally on `toolshed/t1-drift`. `/tools/drift` builds a
+reference population from the visitor's own pieces in their tab, never from this site's articles,
+and measures a draft against it with Burrows's Delta, sentence rhythm, punctuation, joins and the
+fixed substitution table. The site's 11 articles are only the worked example: measured on this
+branch at 10,423 words and a full 100 markers. The marker count is capped at 100, markers must
+appear in at least half the pieces, a distance is refused under 150 draft words, and a reference
+with fewer than 5 pieces is refused. Those are argued choices, not calibrated measurements.
+
+The saved record carries the visitor's reference table with the profile under
+`fergusos:drift-profile`, assembled from `OWNED_PREFIX`, and the component writes it only behind
+the Save button. A full-suite run caught that `lib/forget.test.ts` did not yet recognise the
+imported constant even though `forget` owned its value at runtime. Adding `DRIFT_PROFILE_KEY` to
+that guard's explicit known-key table made the source-level storage promise testable as well as
+true at runtime.
+
+Observed locally after the final fixes: `tsc --noEmit` clean; 67 test files and 1,371 tests pass
+(baseline 56 files and 1,208 tests); production build clean with 40 static pages and
+`/tools/drift` at 8.28 kB; 92 of 92 repository mutations caught, including all 7 Drift rows; and
+the phone check passes `/tools/drift` on WebKit at 390 and 320 and on the throttled Chromium Pixel
+with no overflow, small input, tap-target, contrast, asset or layout failures. The first phone run
+had one overflow, two 23px labels and two disabled-button contrast failures per profile. A later
+run exposed two more mechanisms: the right table cells grazed the viewport while clipped outside
+their scroll box, and a bright phosphor-persistence streak sat behind two report sentences. The
+tables now wrap inside a fixed three-column layout and the report has an opaque patch of the same
+tube background. The 320 screenshot was inspected after the change and remains readable.
+
+A local WebKit iPhone flow also passed: the worked example arrives at Delta 1.63 from 11 pieces;
+four pieces get the refusal naming 5; five genuinely different pieces produce Delta 21.65 from
+2,430 words and 20 markers; a short draft gets the refusal naming 150; storage is null before Save
+and afterwards carries 5 reference documents, 20 single-word markers and no sentence; console
+errors were zero apart from the documented local-only Vercel Analytics 404. The plan's original
+browser fixture was corrected after this check found that 30 sentences modulo 3 gave every
+supposedly varying piece the same 10/20 split and therefore zero standard deviation.
+
+Not verified: CI, code review, a pull request, a Vercel preview, production or PostHog delivery.
+The marker count, document share and both floors have not been calibrated on real writers; the
+leave-one-out spread is measured on a table the held-out piece helped build and therefore runs
+slightly tight by an unmeasured amount; the Delta has not been checked against an external oracle;
+the 22 substitution pairs are hand-picked; and no physical iPhone has been used.
+
 ## 2026-09-03: the shell everywhere
 
 F2 of the toolshed programme. The terminal is a drawer on every route (backtick, the status bar

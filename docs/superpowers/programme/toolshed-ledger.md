@@ -17,7 +17,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | S2 | Spike: WebKit in a function | **decided** | `toolshed/s2-webkit` | record on main | WebKit dies at libatk; Chromium 20 of 20, warm 12.5 s; T5 must cut work per run |
 | S3 | Spike: DuckDB in the tab | **decided** | `toolshed/f5-spikes` | record on main | 0 mismatches at 1e-9; 8.1 MB gzip and 82 s at Slow 4G, so DuckDB does not ship: port to TypeScript, keep the macros as the oracle |
 | S4 | Spike: the .ie seed | **decided** | `toolshed/f5-spikes` | record on main | 126,214 registered .ie domains, 17 MB, under a minute, reproduced twice; 38% of the registry figure |
-| T1 | Drift | **building** | `toolshed/t1-drift` | | |
+| T1 | Drift | **review** | `toolshed/t1-drift` | not opened | local production build and all three phone profiles green; CI and live check pending |
 | T2 | Relief | **queued** | | | |
 | T3 | Overlap | **queued** | | | |
 | T4 | Second Visit | **queued** | | | |
@@ -107,3 +107,32 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
   2. **The meters cannot be read the way section 5 assumed.** Vercel's usage API is Pro only, this project is Hobby, and the signed-in browser is the sauna account which cannot see `larry-pm` at all. So every hosted tool now measures its own cost, wall clock and Node CPU per run, and reports it. That is better than the original plan anyway: a number from our own instrument beats one we hoped to look up.
 - 2026-09-04: T1 started in its own worktree on `toolshed/t1-drift`, cut from main at c85dcc3. Baseline before any change: tsc exit 0, 56 test files and 1,208 tests passing. F2 and F3 confirmed present in the worktree by reading `OWNED_PREFIX` from `lib/forget.ts`, `toolShellCopy` from `content/tools/index.ts`, the can't-see list in `components/tools/ToolPage.tsx` and the self-test flag in `scripts/phone-check.mjs`.
 - 2026-09-04: T1 worked example corpus measured. `siteReference()` over the site's articles: 11 documents, 10,423 words, a full 100 markers, top ten `the a and is it that of you to in`. That is the demo corpus only. A visitor's reference population is built in their own tab from their own pieces, and none of these numbers apply to it.
+- 2026-09-04: T1 first phone-check run, before any phone fix. All three profiles failed with the
+  same five findings: document overflow (`scrollWidth 484`, viewport 390, 320 and 393), both field
+  labels at 468 by 23 rather than 44px high, and disabled Save/Delete buttons at 4.21 to 4.27:1.
+  The run sampled 132/132, 95/96 and 127/127 text runs on iPhone 390, iPhone 320 and Pixel Slow,
+  with no input-font, asset or layout-moved failures. The full output was kept until this record
+  was written; the long tail was offscreen table cells and the already-documented single occluded
+  status-bar path, not additional failures.
+- 2026-09-04: T1 phone fixes, with mechanism. `min-width: 0` on the report stops a 468px
+  min-content table from growing the page's one grid track; touch labels now take 44px; disabled
+  buttons use 0.6 opacity after 0.5 measured below the contrast floor. The second run cleared all
+  three but exposed 15 false 1:1 readings where right-hand table cells grazed the viewport while
+  their pixels were clipped outside the horizontal scroll box, plus 4 real 1.01 to 1.34:1
+  readings where the moving phosphor persistence field sat directly behind report sentences.
+  Fixed within Drift: the three-column tables wrap and remain inside their report, and the report
+  owns an opaque patch of the same tube background. A fresh production build then passed all
+  three profiles: 0 overflow, input-font, tap-target, contrast, asset and layout-moved failures;
+  sampled 132/132, 131/132 and 132/132; the one skip is the already-known status-bar occlusion.
+  The 320 screenshot was inspected and the wrapped tables remain readable.
+- 2026-09-04: T1 ready for review. Observed: `tsc --noEmit` clean; 67 test files and 1,371 tests
+  passing, from a baseline of 56 and 1,208; production build clean with 40 static pages and the
+  Drift route at 8.28 kB; all 92 repository mutations caught, including all 7 Drift rows. A full
+  local WebKit iPhone flow found the plan's original fixture had identical word frequencies rather
+  than the variation its comment claimed; the verifier now uses five genuinely different join
+  rates. With that fixture the demo arrived at Delta 1.63 from 11 pieces, four pieces got the
+  refusal naming 5, five pieces measured Delta 21.65 from 2,430 words and 20 markers, a short draft
+  got the refusal naming 150, local storage was null before Save and afterwards held 5 reference
+  documents and 20 single-word markers. `tools/list`, `llms.txt` and the sitemap pick up Drift and
+  `check_voice` without hand edits. Not verified: review, CI, PR, preview, production, PostHog or a
+  physical iPhone; the numerical choices and external-oracle gaps remain as recorded in PROGRESS.

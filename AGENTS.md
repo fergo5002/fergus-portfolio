@@ -233,6 +233,13 @@ for the phone check. Nothing else without an argument.
   imported by its own `page.tsx`; `globals.css` stays the shell's. The tools list lives in
   `content/tools/`, one file per tool, and every tool renders through
   `components/tools/ToolPage.tsx`.
+  `/tools/drift` measures Burrows's Delta against a reference population built from the visitor's
+  own pieces, in the browser, by `lib/tools/drift/reference.ts`, which imports nothing but the
+  tokeniser. `lib/tools/drift/corpus.ts` is the only module allowed to import `content/articles`
+  and it exists only for the worked example the page renders at build time, so `page.tsx` is the
+  only production file that may import it. It saves a profile, reference table included, under
+  `fergusos:drift-profile`, built from `OWNED_PREFIX` so `forget` wipes it, and it writes that key
+  in exactly one place, behind the save button. `app/tools/drift/page.test.ts` counts the writes.
 - **Animation libraries (changed in v4):** `lenis` (inertial scroll), `ogl` (the WebGL
   phosphor shader) and `motion` (springs). v5 added no dependencies: the physics solver and
   the synth are both hand-written, because a physics engine that ships 90 kB to drop some
