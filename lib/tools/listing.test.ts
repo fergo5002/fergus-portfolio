@@ -42,6 +42,11 @@ describe("toolListing", () => {
     expect(b.privacyLine).toBe(toolShellCopy.privacy.server);
   });
 
+  it("uses a tool's honest override when the generic browser claim is too broad", () => {
+    const [row] = toolListing([{ ...live, privacyLine: "Names stay here; hashes go to your peer." }]);
+    expect(row.privacyLine).toBe("Names stay here; hashes go to your peer.");
+  });
+
   it("keeps the order it was given", () => {
     expect(toolListing([soon, live]).map((r) => r.slug)).toEqual(["beta", "alpha"]);
   });

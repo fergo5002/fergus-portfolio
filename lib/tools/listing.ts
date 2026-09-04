@@ -24,7 +24,7 @@ export function toolListing(entries: readonly ToolEntry[]): ToolRow[] {
     slug: t.slug,
     name: t.name,
     blurb: t.blurb,
-    privacyLine: toolShellCopy.privacy[t.privacy],
+    privacyLine: t.privacyLine ?? toolShellCopy.privacy[t.privacy],
     href: t.status === "live" ? toolPath(t.slug) : null,
     soon: t.status === "soon",
   }));

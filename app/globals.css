@@ -3304,6 +3304,18 @@ textarea.cform__input {
   max-width: 62ch;
 }
 
+/* The sentence after it, for a tool whose two words are not the whole truth.
+   Green rather than amber so the qualification reads as prose rather than as a
+   second warning, and --green rather than --green-faint because the faint token
+   is under 4.5:1 on two of the three themes. */
+.tool__privacynote {
+  margin: calc(var(--sp-5) * -0.5) 0 0;
+  font-size: 0.82rem;
+  color: var(--green);
+  text-shadow: none;
+  max-width: 62ch;
+}
+
 /* What the tool cannot see, at the foot, where the answer is. Real text, not
    costume: a reviewer checks these lines against the code. */
 .tool__cantsee {

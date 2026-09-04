@@ -113,6 +113,7 @@ describe("the prose rules use the token that passes", () => {
     ".tools__meta",
     ".tool__cantsee-item",
     ".tool__privacy",
+    ".tool__privacynote",
   ])("%s does not use --green-faint for body text", (selector) => {
     expect(rule(selector)).not.toMatch(/color:\s*var\(--green-faint\)/);
   });

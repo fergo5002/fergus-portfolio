@@ -22,7 +22,7 @@ describe("ToolPage renders the shell in the interface's order", () => {
     'className="page__title"',
     "<Scramble text={tool.slug}",
     'className="page__lede">{tool.blurb}',
-    'className="tool__privacy">{toolShellCopy.privacy[tool.privacy]}',
+    'className="tool__privacy">{tool.privacyLine ?? toolShellCopy.privacy[tool.privacy]}',
     "{children}",
     'className="tool__cantsee"',
     "{tool.cantSee.map(",
