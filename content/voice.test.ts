@@ -7,6 +7,7 @@ import { projects } from "@/content/projects";
 import { experience } from "@/content/experience";
 import { skills } from "@/content/skills";
 import { tools, toolShellCopy } from "@/content/tools";
+import { driftCopy } from "@/content/tools/drift";
 
 /**
  * Fergus's house style (`~/.claude/LANGUAGE.md`) bans em dashes outright, and by
@@ -104,6 +105,16 @@ describe("house style", () => {
       { where: `tools.${t.slug}.blurb`, text: t.blurb },
       ...t.cantSee.map((line, i) => ({ where: `tools.${t.slug}.cantSee[${i}]`, text: line })),
     ]),
+    // Every visible string on /tools/drift except the demo draft, which is a
+    // specimen of bad house style on purpose: linting the exhibit would be
+    // linting the point. `content/tools/drift.test.ts` guards it instead.
+    ...Object.entries(driftCopy)
+      .filter(([, value]) => typeof value === "string")
+      .map(([key, value]) => ({ where: `driftCopy.${key}`, text: value as string })),
+    ...Object.entries(driftCopy.metricLabels).map(([key, value]) => ({
+      where: `driftCopy.metricLabels.${key}`,
+      text: value,
+    })),
     { where: "toolShellCopy.privacy.browser", text: toolShellCopy.privacy.browser },
     { where: "toolShellCopy.privacy.server", text: toolShellCopy.privacy.server },
     { where: "toolShellCopy.cantSeeHeading", text: toolShellCopy.cantSeeHeading },
