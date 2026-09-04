@@ -94,6 +94,25 @@ describe("reading surfaces clear 4.5:1 on every theme", () => {
   );
 });
 
+/**
+ * Relief draws its contours in --green-dim and --green on --bg. Those are
+ * graphical objects rather than text, so the applicable floor is WCAG 1.4.11's
+ * 3:1 and not 4.5:1. Asserted here rather than in the tool, because this is
+ * where the token blocks are parsed and where a theme is added.
+ *
+ * Guess before the first run, 2026-09-03: --green-dim on the green theme lands
+ * near 4.7:1 by hand calculation. The run is what decides.
+ */
+describe("relief's contour colours are visible on every theme", () => {
+  it.each(THEMES.map((t) => [t[0], t[1]] as const))("%s: an ordinary contour", (_name, vars) => {
+    expect(ratio(hex(vars["--green-dim"]), hex(vars["--bg"]))).toBeGreaterThanOrEqual(3);
+  });
+
+  it.each(THEMES.map((t) => [t[0], t[1]] as const))("%s: an index contour", (_name, vars) => {
+    expect(ratio(hex(vars["--green"]), hex(vars["--bg"]))).toBeGreaterThanOrEqual(3);
+  });
+});
+
 describe("the prose rules use the token that passes", () => {
   const rule = (selector: string) => {
     const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
