@@ -17,15 +17,15 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | S2 | Spike: WebKit in a function | **decided** | `toolshed/s2-webkit` | record on main | WebKit dies at libatk; Chromium 20 of 20, warm 12.5 s; T5 must cut work per run |
 | S3 | Spike: DuckDB in the tab | **decided** | `toolshed/f5-spikes` | record on main | 0 mismatches at 1e-9; 8.1 MB gzip and 82 s at Slow 4G, so DuckDB does not ship: port to TypeScript, keep the macros as the oracle |
 | S4 | Spike: the .ie seed | **decided** | `toolshed/f5-spikes` | record on main | 126,214 registered .ie domains, 17 MB, under a minute, reproduced twice; 38% of the registry figure |
-| T1 | Drift | **building** | `toolshed/t1-drift` | | |
-| T2 | Relief | **review fixes complete** | `toolshed/t2-relief` | not opened | 1,420 tests, build, 107 mutations and three-profile phone check green; eight independent-review findings resolved |
+| T1 | Drift | **pr** | `toolshed/t1-drift` | [#11](https://github.com/fergo5002/fergus-portfolio/pull/11) | merged-main local gates green; CI and live check pending |
+| T2 | Relief | **live** | `toolshed/t2-relief` | [#10](https://github.com/fergo5002/fergus-portfolio/pull/10) merged 076affb | production READY; demo and SVG download verified at 390px |
 | T3 | Overlap | **live** | `toolshed/t3-overlap` | [#9](https://github.com/fergo5002/fergus-portfolio/pull/9) merged 20892de | `dpl_6ed85NL71VMRcrDrvpBKmbdGzLWK` READY; page, manual fallback, relay 503 and logs verified live |
 | T4 | Second Visit | **queued** | | | |
 | T5 | On the glass | **queued** | | | |
 | T6 | Irish Stack Census | **queued** | | | |
 | T7 | Tide | **queued** | | | |
 | X1 | Burn | **queued** | | | |
-| G0 | Arcade runtime | **building** | `toolshed/g0-arcade-runtime` | | |
+| G0 | Arcade runtime | **pr** | `toolshed/g0-arcade-runtime` | [#8](https://github.com/fergo5002/fergus-portfolio/pull/8) | |
 | G1 | Phosphor Pong | **queued** | | | |
 | G2 | Snake | **queued** | | | |
 | G3 | Under the Terminal | **queued** | | | |
@@ -47,6 +47,7 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 
 ## Log
 
+- 2026-09-04: G0 PR #8 merged `origin/main` at `20892de` normally after Overlap landed. The two real conflicts, `docs/PROGRESS.md` and `scripts/mutation-check.mjs`, preserve both complete sections and both mutation sets. Combined local evidence: 456 focused tests and 1,699 full tests passed, with two opt-in Upstash integration tests skipped; TypeScript, production build, the hidden Arcade WebKit flow and all three Overlap phone profiles passed. The first 76 of the merged catalogue's 149 mutations were caught locally before stopping the duplicate run to free the machine; the required GitHub job will run all 149. PR #8 remains open and nothing was deployed.
 - 2026-09-04: T3 Overlap recovered and audited on `toolshed/t3-overlap`; it is in review, not pushed or live. The audit corrected the privacy claim (file and names stay local, but the peer receives the salt, hashes and count and sees the connecting address), removed the claim that the matching phrase proves no interception, made the no-room-code route honest about still using WebRTC/STUN, validated every successful relay response, bounded connection and protocol waits, rejected malformed or oversized peer frames, closed abandoned connections, and made every setup failure visible. Missing Redis is an intentional 503 with copy-and-paste opened, not a silent or generic 500. Evidence on the recovered tree: 1,461 of 1,461 full tests, TypeScript clean, production build clean, 100 of 100 mutations caught; phone check green at iPhone 390, iPhone 320 and throttled Pixel; two Chromium contexts exchanged five matches by copy and paste with zero relay requests both with Cloudflare STUN and in same-network-only mode. A real LinkedIn export, a real cross-network/NAT pair, a configured Redis room-code round trip, WebKit's actual WebRTC flow, CI and production remain unverified.
 - 2026-09-04: T3's copied F4 subset reconciled against recovered F4 tip `47f6964` without modifying F4. `lib/store/errors.ts`, `lib/store/redis.ts`, `lib/budget.ts` and the two store tests are byte-identical; both locks carry the same `@upstash/redis` 1.38.3 tarball and integrity. Neon and Blob remain F4-only because T3 imports neither; Playwright remains T3-only because it arrived on main with the required phone check after F4 branched. T3 keeps its non-flaky budget assertion instead of F4's date-dependent ban on the coincidental hex substring `203`. The 94 state, budget, relay, missing-Redis fallback and copy tests pass.
 - 2026-09-03: programme designed, decisions taken, ledger opened. Nothing built yet.
@@ -107,8 +108,107 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-04 01:30: **two things the spikes changed in the design, and both are mine to own.**
   1. **On the glass is too expensive as designed.** At the pessimistic ceiling it affords about four renders a day against a rule that stops below five. Rather than drop the tool or raise the bill, the work per run comes down: one browser reused across both widths, the separate "Pixel" profile dropped because it was Chromium too and so was never a second engine, frame differencing kept but at half resolution over 1.5 seconds, and one screenshot per width feeding every check. Nobody should treat four as measured; it is arithmetic on a ceiling between a 0.21 second Node floor and a 12.5 second wall-clock ceiling.
   2. **The meters cannot be read the way section 5 assumed.** Vercel's usage API is Pro only, this project is Hobby, and the signed-in browser is the sauna account which cannot see `larry-pm` at all. So every hosted tool now measures its own cost, wall clock and Node CPU per run, and reports it. That is better than the original plan anyway: a number from our own instrument beats one we hoped to look up.
+- 2026-09-04: T1 started in its own worktree on `toolshed/t1-drift`, cut from main at c85dcc3. Baseline before any change: tsc exit 0, 56 test files and 1,208 tests passing. F2 and F3 confirmed present in the worktree by reading `OWNED_PREFIX` from `lib/forget.ts`, `toolShellCopy` from `content/tools/index.ts`, the can't-see list in `components/tools/ToolPage.tsx` and the self-test flag in `scripts/phone-check.mjs`.
+- 2026-09-04: T1 worked example corpus measured. `siteReference()` over the site's articles: 11 documents, 10,423 words, a full 100 markers, top ten `the a and is it that of you to in`. That is the demo corpus only. A visitor's reference population is built in their own tab from their own pieces, and none of these numbers apply to it.
+- 2026-09-04: T1 first phone-check run, before any phone fix. All three profiles failed with the
+  same five findings: document overflow (`scrollWidth 484`, viewport 390, 320 and 393), both field
+  labels at 468 by 23 rather than 44px high, and disabled Save/Delete buttons at 4.21 to 4.27:1.
+  The run sampled 132/132, 95/96 and 127/127 text runs on iPhone 390, iPhone 320 and Pixel Slow,
+  with no input-font, asset or layout-moved failures. The full output was kept until this record
+  was written; the long tail was offscreen table cells and the already-documented single occluded
+  status-bar path, not additional failures.
+- 2026-09-04: T1 phone fixes, with mechanism. `min-width: 0` on the report stops a 468px
+  min-content table from growing the page's one grid track; touch labels now take 44px; disabled
+  buttons use 0.6 opacity after 0.5 measured below the contrast floor. The second run cleared all
+  three but exposed 15 false 1:1 readings where right-hand table cells grazed the viewport while
+  their pixels were clipped outside the horizontal scroll box, plus 4 real 1.01 to 1.34:1
+  readings where the moving phosphor persistence field sat directly behind report sentences.
+  Fixed within Drift: the three-column tables wrap and remain inside their report, and the report
+  owns an opaque patch of the same tube background. A fresh production build then passed all
+  three profiles: 0 overflow, input-font, tap-target, contrast, asset and layout-moved failures;
+  sampled 132/132, 131/132 and 132/132; the one skip is the already-known status-bar occlusion.
+  The 320 screenshot was inspected and the wrapped tables remain readable.
+- 2026-09-04: T1 ready for review. Observed: `tsc --noEmit` clean; 67 test files and 1,372 tests
+  passing, from a baseline of 56 and 1,208; production build clean with 40 static pages and the
+  Drift route at 8.29 kB; all 93 repository mutations caught, including all 8 Drift rows. A full
+  local WebKit iPhone flow found the plan's original fixture had identical word frequencies rather
+  than the variation its comment claimed; the verifier now uses five genuinely different join
+  rates. With that fixture the demo arrived at Delta 1.63 from 11 pieces, four pieces got the
+  refusal naming 5, five pieces measured Delta 21.65 from 2,430 words and 20 markers, a short draft
+  got the refusal naming 150, local storage was null before Save and afterwards held 5 reference
+  documents and 20 single-word markers. `tools/list`, `llms.txt` and the sitemap pick up Drift and
+  `check_voice` without hand edits. Not verified: review, CI, PR, preview, production, PostHog or a
+  physical iPhone; the numerical choices and external-oracle gaps remain as recorded in PROGRESS.
+- 2026-09-04: T1 final diff review found saved-profile hydration replaced the reference, profile
+  and spread but left the 11-piece worked-example report on screen. A failing-first coupling test
+  now pins re-analysis against the stored profile and stored reference, and the eighth Drift
+  mutation proves deleting it is caught. In a fresh local production build, WebKit saved a
+  5-piece, 2,430-word, 20-marker profile at Delta 21.65, reloaded the page, and retained those same
+  report values with the saved-profile note. The final phone run remained green on all three
+  profiles. Review also corrected the method's wording from "over half" to "at least half" to
+  match the tested `Math.ceil(documents * 0.5)` rule; the algorithm did not change.
+- 2026-09-04: T1 independent-review fixes complete locally. The active reference is now an explicit
+  `demo | visitor` session state, so Measure cannot run against the worked-example reference.
+  Rebuilding keeps an older saved record visible and deletable; successful Delete clears both text
+  fields and every derived value, while a refused deletion retains them and reports failure. Profile
+  parsing now rejects impossible ranges, inconsistent aggregates, extra marker/statistic keys and a
+  spread larger than its reference. Interpretive and threshold copy is scoped to what was measured,
+  and one concise status replaces the whole-report live region. Observed: 68 files and 1,413 tests,
+  `tsc --noEmit`, production build, 104/104 mutations, and all three phone profiles green. Fresh
+  WebKit interaction exercised build, save, rebuild-over-save, forced deletion failure and successful
+  deletion with zero application console errors. Still unverified: CI, PR, preview, production,
+  PostHog and a physical iPhone; statistical calibration and the external-oracle gap are unchanged.
 - 2026-09-04 morning: c85dcc3 (the spike docs) reached production READY as `dpl_3oSTTjjegh3ARZEQpoW4M3e3Z43g`. Docs only, so no user-facing flow was exercised and that is all the claim covers.
 - 2026-09-04 morning: retried the Upstash install before assuming the gate was still shut. It still answers `integration_terms_acceptance_required` with no resource created, so F4 stays held and the two clicks remain the critical path for every store-backed tool.
 - 2026-09-04 morning: wave 1 dispatched. Four implementers on Opus, each in its own worktree cut from main at c85dcc3: T1 Drift, T2 Relief, T3 Overlap and G0 the arcade runtime. Four rather than three because every one of them has a finished plan on main and nothing between them shares a file. Each is briefed to build, self-verify, open a PR and stop short of merging.
+- 2026-09-04: G0 started in its own worktree. Plan: `docs/superpowers/plans/2026-09-04-toolshed-g0-arcade-runtime.md`. Baseline on the branch: 56 test files, 1,208 tests, tsc clean. F4 state at start: not merged (`lib/store/redis.ts` absent), which means Task 12 does not run.
+- 2026-09-04: G0 canary. A failing test in `lib/arcade/` is collected, fails with `expected 2 to be 3`, and exits 1; the full run carries it (1 failed, 56 passed) and exits 1 too. Deleting it returns the suite to 1,208 green. Observed, not assumed.
+- 2026-09-04: G0 phone-check predictions, written and committed before any browser was opened.
+  - The layout was **changed before predicting, not after measuring**. The plan's drawer CSS gave the arcade `height: auto` inside a `position: fixed` drawer that sizes to its content, so an empty `<pre>` would have measured a box a few pixels tall and the runtime would have refused a screen that was really there. The drawer now grows for a program (`.shell:has(.term--program)`, 80vh capped at 620px), the terminal gives its padding back as glass while a program runs (16px to 8px), and the arcade's height in the drawer is definite arithmetic on that cap. The predictions below are worked from those numbers.
+  - `/writing/why-presterly-wound-down`, WebKit iPhone at **390 by 844**, drawer open, `cd arcade`: **40 by 18 at scale 1**, 15px type. Working: 80vh is 675 so the 620px cap wins; the arcade gets 620 less 45 of bar and padding, so 575, and the screen gets 575 less 8 of gap and 44 of exit button, so 523. Width is 390 less 16 of padding, so 374. At a 9px advance 48 columns need 432 and do not fit, 40 need 360 and do; 18 rows at 18.75 need 337.5 against 523.
+  - The same route at **320 by 568**: **32 by 16 at scale 1**, 15px type. Working: 80vh is 454, the arcade gets 409, the screen 357. Width 304, so 40 columns (360) are out and 32 (288) are in; 16 rows need 300 against 357. Under the plan's original CSS this size refused, and that refusal is what sent me back to the stylesheet.
+  - Home page, inline terminal, **390 by 844**: **32 by 16 at scale 1**. The page container is narrower than the drawer once its own padding is counted, so 40 columns miss.
+  - Everywhere: no horizontal overflow on the document, no scrolling inside the grid, every drawn line exactly `cols` characters, the exit control at least 44 by 44, a swipe changing the screen, the arrow keys **not** scrolling the page, Escape returning the prompt with `cd arcade` still in the scrollback and the drawer still open, sampled contrast at least 4.5:1, and zero console errors.
+  - The reading that would falsify the layout change: a refusal at either width, or a grid that scrolls inside itself. If 40 columns come back at 320, or 48 at 390, the advance is narrower than 9px and the predictions were pessimistic rather than the code being wrong.
+- 2026-09-04: G0 phone readings, real WebKit against a production build of the branch on `localhost:3111`. **Every grid prediction held, to the row and the scale.**
+  - **drawer 390 by 844: 40 by 18 at scale 1**, 15px type, `--green-bright` on `#070b07` measured at **15.56:1**. Document overflow 0, grid overflow 0, every drawn line exactly 40 characters, exit control exactly 44 by 44.
+  - **drawer 320 by 568: 32 by 16 at scale 1**, same type, same contrast, overflow 0, every line exactly 32 characters, exit 44 by 44.
+  - **inline 390 by 844 (home page): 32 by 16 at scale 1.** 40 columns miss because the page container is narrower than the drawer, which is what was predicted.
+  - Behaviour, at all three: the arrow keys move the cabinet cursor and **do not scroll the page** (`window.scrollY` unchanged); a downward drag moves it too, so a thumb can pick a game; Escape returns the prompt with `cd arcade` still in the scrollback and, in the drawer, **the drawer still open**, so the first Escape leaves the game and not the shell.
+  - The cabinet reads: five games, four in brackets as not built, and the board panel printing `boards are unavailable.` / `the games still play.`, which is the F4-unmerged path doing exactly what it was built to do.
+  - **Two console 404s, both explained and neither the arcade's fault to fix.** `/_vercel/insights/script.js` is on every page and AGENTS.md already documents that pretty path as a meaningless 404. `/api/board` is the route F4 has not merged yet; `fetchBoards` reads it as unavailable and the sentence above is the result. It goes when F4 lands.
+  - **The frame rate here is the instrument, not the page, and I checked that before saying so.** Control reading on a page with no arcade running at all: **5 rAF callbacks in 2,448ms**, tab visible, `document.hidden` false. This headless WebKit throttles the frame clock to about two a second. Under it `bounce` still moved: the glyph went from row 9 column 20 to row 11 column 22 across 4 frames in 3,807ms, which is the fixed-step loop doing exactly what it should with the frames it was given. So: the loop runs and the game animates, **observed**; how it feels at 60fps on a real phone is **not measured here and is not claimed**.
+  - Not measured: a real device, a phone GPU, the shader's cost with a game running, audio (`sound on` was never typed), and the board against a real Redis. One engine, WebKit, emulating an iPhone 13 on a desktop kernel.
+- 2026-09-04: G0 review recovery. The interrupted reviewer-fix agent had stopped after introducing
+  a syntax error in a comment while hardening board responses. The comment was repaired, then the
+  review was completed with behaviour-first guards: stable exit callback and host dimensions,
+  no ticks after disposal, controls excluded from game input, probe and box both observed, bounded
+  and validated board rows, six-second fetch timeouts, and a pure finish decision that says where
+  an unposted score went. A deliberately invalid early mutation run was stopped after the coordinator
+  noticed it was editing the same worktree; the transient shader mutation was restored and discarded.
+  On the frozen commit: 1,425 tests, TypeScript and production build green, **121/121 mutations caught**,
+  clean tree. Local WebKit reproduced 40 by 18 at 390 and 32 by 16 after resizing to 320 without
+  restarting Bounce; probe and grid both 15px, exit 44 by 44, keyboard exit and prompt focus green,
+  reduced motion declined. Expected local 404s only: Vercel Analytics' development path and the
+  deliberately absent board route. Still unverified: CI, preview, production, a real device and Redis.
+- 2026-09-04: G0 independent final review found two blockers behind the green source-coupling checks.
+  Resize changed only the host dimensions, so Bounce could remain outside a smaller grid until it
+  walked back in; keyup remapped the release-time event, so a modifier or focus change could strand
+  a held direction. Failing-first behavioural cases now pin immediate in-bounds resize and a
+  physical-key ledger, including release-all. `ProgramInstance.resize` is optional and the runtime
+  updates the host before calling it; Bounce clamps and redraws, while stateless screens redraw.
+  The same pass bounded the host score contract to finite values from 1 through 10,000,000. The
+  arcade-specific WebKit flow is now a committed CI script reached through `cd arcade`, not a
+  sitemap route, so future grid CSS regressions can make the required phone job red.
+  Final local evidence: 1,434/1,434 tests, TypeScript and production build green, 127/127 mutations
+  caught. The committed WebKit flow passed at 390, after an in-place resize to 320 with Bounce still
+  visible, and under reduced motion. CI and preview still need the pushed commit; production is not
+  claimed and remains for after merge.
+- 2026-09-04: T1 merged current main normally and opened PR #11. Five conflicts were resolved
+  additively: the tool registry contains Drift, headline check and Overlap; the voice scan covers
+  both tools; the mutation suite retains both tools' rows; and both programme histories remain.
+  Focused integration: 228 tests. Full suite: 1,678 passed and two credential-gated Redis tests
+  skipped. TypeScript and the 41-page production build passed. Phone checks passed Drift and
+  Overlap on all three profiles. GitHub owns the full integrated mutation run; not merged.
 - 2026-09-04: T2 built and ready for review. Observed on `toolshed/t2-relief`: the demo generates 2,646 events across 828 of 1,248 cells with a ceiling of 8; six levels make 701 segments chained into 32 polylines and a 10,223-byte SVG; the STL has 4,988 triangles, is 249,484 bytes, has zero open directed edges and positive signed volume. The first phone check passed on WebKit at 390 and 320 and on the throttled Pixel, with no overflow, undersized input, undersized tap target, contrast, asset or layout failures. Looking at the screenshots found what that check cannot: an explicit canvas height produced 60% aspect-ratio distortion on initial 320px load. The fix leaves height to the bitmap; putting the old line back makes the new guard red and reproduces the 60%, while the fixed build holds skew at 0% through 320, 375 and 900px. At 320 the hidden GitHub fields measured 254 by 44px at 16px and the CSV input 254 by 45px at 16px. A real GitHub run then found a secondary 403 with 25 of 30 primary requests still available. The old path threw immediately; the fixed path paces below the tighter limit observed live, performs at most one interruptible one-minute retry for the whole run, and reports a second refusal without changing the sheet. Live requests exposed the token in no URL, body or browser storage. The full GitHub draw remains unverified because repeated test traffic kept the secondary limit active, and the available token had broader scopes than the no-scopes recommendation. The sitemap-driven phone workflow already includes the route, so CI needed no hard-coded route change. Final local evidence: TypeScript, 1,408 tests in 68 files, the production build, 98 of 98 mutations, the route's three-profile phone run and the phone instrument's own planted-fault self-test are green. Not verified at this point: independent review, CI, production, a real unrelated CSV, a slicer's opinion, a plotter, a printer or a physical iPhone.
 - 2026-09-04: T2's first independent review found eight gaps and the branch resolves all eight. GitHub searches now bisect saturated date windows and preserve every incomplete signal, including through density refusal; unmount aborts the token-bearing controller while the one-retry secondary-limit backoff remains bounded. CSV reads have an 8 MiB pre-allocation fence plus an explicit 200,000-row truncation result whose warning survives column changes. Calendar validation rejects impossible ISO-shaped dates. Export failures reach the status line. One privacy override replaces the contradictory two-line claim. Export copy names only properties measured from the SVG and STL files. Saddle cases use the asymptotic decider, pinned by a paired fixture whose corner bits stay fixed while its connection changes. Verification after the fixes: TypeScript, 1,420 tests in 68 files, production build, 107 of 107 mutations, the three-profile Relief phone run and the phone instrument's planted-fault self-test are green. At 320 the route again sampled 45 of 46 readable elements and explicitly reported the one status segment occluded by the audio control. Still not verified: a complete live GitHub year, a no-scopes token, a real unrelated CSV, physical export hardware, a physical iPhone, CI, review round two or production.

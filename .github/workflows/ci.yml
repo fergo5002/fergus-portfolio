@@ -93,6 +93,8 @@ jobs:
         run: node scripts/phone-check.mjs --self-test --out .phone-check
       - name: phone check on every live tool route
         run: node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap --out .phone-check
+      - name: phone check through the hidden arcade door
+        run: node scripts/arcade-phone-check.mjs --base http://localhost:3000 --out .phone-check/arcade
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

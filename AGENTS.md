@@ -217,6 +217,11 @@ Every such key is either `fergusos_settings` or starts with `fergusos:`, so the 
 can wipe all of it without knowing their names, and it prints what it wiped. Settings equal to the
 defaults are not written at all (`saveSettings` removes the key), so a visitor who changed nothing
 has nothing stored. Session storage holds one flag, the boot marker, which dies with the tab.
+The arcade writes exactly one key, `fergusos:arcade.initials`, and only when a visitor posts a
+score. Whether the door has been found this session, and the last board it read, live at module
+level in `lib/arcade/session.ts` and die with the tab: nothing about the arcade is persisted except
+the three characters somebody chose. `lib/forget.test.ts` walks the tree for every `setItem` call
+and fails on one it cannot vouch for, so a new key is a deliberate line in that guard.
 Server-side, the site holds anonymous aggregates only: a heat map of pointer wear, three-letter
 initials with a score, per-IP budgets that expire within a day. Nothing keyed to a person.
 
@@ -242,7 +247,15 @@ for the phone check. Nothing else without an argument.
   Since the toolshed programme (2026-09-03) a tool may own `app/tools/<slug>/tool.css`,
   imported by its own `page.tsx`; `globals.css` stays the shell's. The tools list lives in
   `content/tools/`, one file per tool, and every tool renders through
-  `components/tools/ToolPage.tsx`. `/tools/relief` draws a year of dated events as contour
+  `components/tools/ToolPage.tsx`.
+  `/tools/drift` measures Burrows's Delta against a reference population built from the visitor's
+  own pieces, in the browser, by `lib/tools/drift/reference.ts`, which imports nothing but the
+  tokeniser. `lib/tools/drift/corpus.ts` is the only module allowed to import `content/articles`
+  and it exists only for the worked example the page renders at build time, so `page.tsx` is the
+  only production file that may import it. It saves a profile, reference table included, under
+  `fergusos:drift-profile`, built from `OWNED_PREFIX` so `forget` wipes it, and it writes that key
+  in exactly one place, behind the save button. `app/tools/drift/page.test.ts` counts the writes.
+  `/tools/relief` draws a year of dated events as contour
   ground. The marching squares in `lib/tools/relief/contour.ts` are lifted from Tigh Sauna's
   `apps/site/src/lib/survey/terrain.ts` and the file says so; the rest of
   `lib/tools/relief/` is pure and tested, and `app/tools/relief/ReliefTool.tsx` is wiring. It
@@ -402,6 +415,28 @@ two pull requests rarely collide. `COMMANDS`, `HELP_LINES` and `complete()` are 
 registry, so a command is listed by being visible, not by being added to three lists. A
 `hidden: true` command is absent from help, completion and `ls`, and is reachable only by name or
 through `cd <name>`: that is the door to the arcade, and the `arcade` row in `top` is the one hint.
+Since 2026-09-04 that door opens something. `lib/arcade/` is a program runtime the terminal hosts:
+a fixed 30Hz tick driven by `SystemProvider`'s one rAF clock, a character grid sized from the
+measured cell (48 by 20 down to 32 by 16, and a sentence rather than a clipped grid when even the
+smallest will not fit), one key vocabulary for arrows, WASD and swipes, and `Escape` always exiting
+to the prompt with the scrollback intact. A game is a `ProgramSpec` in `lib/arcade/<game>.ts` plus
+one line in `ARCADE_GAMES`; it writes no React, no CSS and no route. The arcade declines under
+`prefers-reduced-motion: reduce` the way `gravity` and `eject` do, in a sentence.
+
+A running program may implement `resize(cols, rows)`: the runtime updates the host first, then asks
+the program to keep any live coordinates inside the new character world and redraw without a
+restart. Keyboard input is paired by physical key. The logical key chosen on keydown is the one
+released on keyup even if modifiers or focus changed, and blur, visibility loss, program hand-off
+and exit release every held key before disposal. New games must preserve both contracts.
+
+**The drawer sizes itself to its content, so a program must state a height.** `.shell` is
+`position: fixed` with a `max-height` and no height, and an arcade set to `height: auto` inside it
+wraps an empty `<pre>`, measures a box a few pixels tall and refuses a screen that is really there.
+`.shell:has(.term--program)` sets `--shell-program-h` and the arcade's height is arithmetic on it.
+Measured on WebKit at 390 and 320: 40 by 18 and 32 by 16, both at full size.
+`scripts/arcade-phone-check.mjs` reaches it through `cd arcade`, rather than adding the hidden door
+to the sitemap, and keeps that resize, layout, focus and reduced-motion flow in the required phone
+CI job.
 
 Commands that change the running site (`theme`, `crt`, `scanlines`, `matrix`, `degauss`,
 `sudo rm -rf /`) return an `effect` descriptor, and a program (a game) returns

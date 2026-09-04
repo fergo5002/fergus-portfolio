@@ -7,7 +7,9 @@ import { projects } from "@/content/projects";
 import { experience } from "@/content/experience";
 import { skills } from "@/content/skills";
 import { tools, toolShellCopy } from "@/content/tools";
+import { driftCopy } from "@/content/tools/drift";
 import { overlapCopy } from "@/content/tools/overlap";
+import { secondVisitCopy, TIGH_CREDIT } from "@/content/tools/second-visit";
 
 /**
  * Fergus's house style (`~/.claude/LANGUAGE.md`) bans em dashes outright, and by
@@ -109,6 +111,16 @@ describe("house style", () => {
       ...t.cantSee.map((line, i) => ({ where: `tools.${t.slug}.cantSee[${i}]`, text: line })),
       ...(t.privacyNote ? [{ where: `tools.${t.slug}.privacyNote`, text: t.privacyNote }] : []),
     ]),
+    // Every visible string on /tools/drift except the demo draft, which is a
+    // specimen of bad house style on purpose: linting the exhibit would be
+    // linting the point. `content/tools/drift.test.ts` guards it instead.
+    ...Object.entries(driftCopy)
+      .filter(([, value]) => typeof value === "string")
+      .map(([key, value]) => ({ where: `driftCopy.${key}`, text: value as string })),
+    ...Object.entries(driftCopy.metricLabels).map(([key, value]) => ({
+      where: `driftCopy.metricLabels.${key}`,
+      text: value,
+    })),
     // Overlap's honesty paragraphs and the relay's refusals are not fields on
     // ToolEntry, so the spread above cannot reach them, and they are the longest
     // stretch of prose any tool on this site prints.
@@ -123,6 +135,19 @@ describe("house style", () => {
     { where: "toolShellCopy.privacy.browser", text: toolShellCopy.privacy.browser },
     { where: "toolShellCopy.privacy.server", text: toolShellCopy.privacy.server },
     { where: "toolShellCopy.cantSeeHeading", text: toolShellCopy.cantSeeHeading },
+    ...(function flattenSecondVisit(): { where: string; text: string }[] {
+      const out: { where: string; text: string }[] = [];
+      const walk = (node: unknown, path: string) => {
+        if (typeof node === "string") out.push({ where: `secondVisitCopy.${path}`, text: node });
+        else if (Array.isArray(node)) node.forEach((value, index) => walk(value, `${path}[${index}]`));
+        else if (node && typeof node === "object") {
+          for (const [key, value] of Object.entries(node)) walk(value, path ? `${path}.${key}` : key);
+        }
+      };
+      walk(secondVisitCopy, "");
+      if (TIGH_CREDIT) out.push({ where: "TIGH_CREDIT.line", text: TIGH_CREDIT.line });
+      return out;
+    })(),
   ];
 
   // Restored after being briefly replaced by the file scan above. Checking the

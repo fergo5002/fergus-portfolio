@@ -1,0 +1,46 @@
+/* app/tools/second-visit/tool.css
+   The tool's own rules, per the toolshed rule that a tool owns
+   app/tools/<slug>/tool.css and the shell keeps globals.css. Imported by
+   ./page.tsx, so it loads on this route only. It reads the shell's custom
+   properties (--green, --bg-panel, --sp-*, --radius, --amber, --red) and
+   redefines none of them.
+
+   --green-dim is borderline on the amber and ice themes (app/globals.test.ts),
+   so it appears on nothing a visitor has to read. Every animation is behind
+   prefers-reduced-motion. */
+
+.sv { width: 100%; min-width: 0; max-width: 68ch; margin-top: var(--sp-5); }
+.sv__step, .sv__results, .sv__honesty { display: grid; gap: var(--sp-2); margin-top: var(--sp-5); }
+.sv__label { display: grid; gap: var(--sp-1); color: var(--green); font-size: 0.82rem; }
+.sv__input, .sv__select, .sv__file {
+  font-size: 16px;
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  background: var(--bg-panel);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  color: var(--green-bright);
+  text-overflow: ellipsis;
+}
+.sv__button {
+  min-height: 44px;
+  min-width: 44px;
+  font-size: 16px;
+  background: var(--bg-panel);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  color: var(--green-bright);
+}
+.sv__slider { min-height: 44px; width: 100%; }
+.sv__big { font-size: 2.4rem; line-height: 1.1; color: var(--amber-bright); }
+.sv__hint, .sv__message, .sv__warn { color: var(--green); font-size: 0.86rem; }
+.sv__warn { color: var(--amber); }
+.sv__chart { width: 100%; height: auto; color: var(--amber); }
+.sv__table { display: block; overflow-x: auto; max-width: 100%; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .sv__results { animation: sv-in 240ms ease-out both; }
+  @keyframes sv-in { from { opacity: 0; } to { opacity: 1; } }
+}

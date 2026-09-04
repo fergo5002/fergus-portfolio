@@ -41,6 +41,11 @@
       "name": "list_experience",
       "title": "List the experience",
       "description": "Where Fergus has worked and what he did there, newest first. Entries for companies that no longer trade stay in the list and are described in the past tense."
+    },
+    {
+      "name": "check_voice",
+      "title": "Measure a draft against a voice profile",
+      "description": "Burrows's Delta, sentence rhythm, punctuation rates, join rates and substitution hits for a draft against a voice profile saved from /tools/drift. Pass the profile object exactly as that tool exports it, reference table included: the z-scores in it were computed against the writer's own pieces, and without that table they have no units, so a profile with it stripped out is refused rather than guessed at. The tool uses conservative, uncalibrated floors of 150 draft words and 5 reference pieces; below either it returns the counts and habits that still hold but no distance. This is not an AI detector: a low distance means the writer's own commonest words appear at similar rates, and nothing more."
     }
   ]
 }

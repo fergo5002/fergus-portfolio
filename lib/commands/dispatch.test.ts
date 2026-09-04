@@ -21,9 +21,13 @@ describe("hidden commands", () => {
     expect(ls.lines.join(" ")).not.toContain("arcade");
   });
 
-  it("open as `cd <name>`, and the arcade is closed until G0", () => {
-    expect(runCommand("cd arcade")).toEqual({ type: "output", lines: ["arcade: no runtime yet"] });
-    expect(runCommand("arcade")).toEqual({ type: "output", lines: ["arcade: no runtime yet"] });
+  it("open as `cd <name>`, and the arcade opens onto a program", () => {
+    for (const input of ["cd arcade", "arcade"]) {
+      const res = runCommand(input);
+      expect(res.type, input).toBe("program");
+      if (res.type !== "program") continue;
+      expect(res.program.id).toBe("arcade");
+    }
   });
 
   it("get their one hint from top", () => {

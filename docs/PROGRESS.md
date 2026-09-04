@@ -6,6 +6,156 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-04: the arcade runtime
+
+G0 of the toolshed programme. `cd arcade` opens a cabinet instead of printing an apology.
+`lib/arcade/` is a fixed 30Hz loop on the site's one frame clock, a character grid measured from
+the font rather than assumed, one key vocabulary covering the arrows, WASD, swipes and taps, five
+synth sounds, and a board of three-letter initials. A game is now a file and one line in a list.
+`bounce` ships as the worked example and is the fixture every runtime test drives.
+
+Three things the plan had wrong, all fixed on the branch and all worth knowing. The drawer sizes
+itself to its content, so an arcade with `height: auto` inside it measured nothing and refused a
+screen that was really there; it now states a height and the drawer grows for a program. `cd`
+looked its door up on every argument joined, so `cd arcade bounce` asked the registry for a command
+called "arcade bounce" and got nothing; it looks up the first word now. And three lines of copy were
+wider than the 32-column grid they are drawn into, which the copy's own test caught.
+
+The first whole-branch review found the runtime could restart a live game on an ordinary React
+render or a resize, could keep ticking an instance after that instance had exited, and sent exit
+button events to the game before leaving. Those paths now have guards that fail when removed.
+Board responses are bounded and checked for real three-character initials, both requests time out,
+and the hidden measuring probe inherits the exact font token the grid draws. Final-tree evidence:
+1,425 tests, clean TypeScript and production build, 121/121 mutations caught. In local WebKit the
+390-wide drawer measured 40 by 18, the 320-wide drawer resized in place to 32 by 16 without
+restarting Bounce, both font readings were 15px, the grid fitted, the exit control was 44 by 44,
+Enter on that control left the arcade, Escape restored the prompt, and reduced motion declined it.
+
+Not verified: the board against a real Redis, because F4 is still unmerged and Upstash is not
+provisioned; the live board therefore reads "boards are unavailable", which is the path that was
+tested. No real device, only WebKit emulating an iPhone at 390 and 320, where the headless engine
+throttles the frame clock to about two a second, so nothing here measures how a game feels at 60fps.
+No audio: `sound on` was never typed during the run.
+
+An independent final review found two states the earlier green checks did not exercise. A running
+Bounce near the old right edge disappeared after a 40-to-32 resize while it walked back into the
+smaller grid, and a key released after focus or modifiers changed could remain logically held. The
+runtime now notifies programs after changing the measured world; Bounce clamps and redraws at once.
+Physical keydowns are paired to their logical keyups, with every held key released on blur,
+visibility loss, hand-off and exit. The host also refuses non-finite, non-positive and greater than
+10,000,000 scores before initials entry. These are behaviour tests rather than claims inferred from
+the React source. The deleted one-off phone driver is replaced by
+`scripts/arcade-phone-check.mjs`, which enters through the hidden command and is part of the phone
+CI job without putting the door in the sitemap.
+Final evidence for this review fix: 1,434 tests, clean TypeScript and production build, 127/127
+mutations caught, and the committed WebKit hidden-flow check green against that build. It measured
+40 by 18 at 390, then resized the same running Bounce to 32 by 16 at 320 with its glyph still
+visible. It also rechecked prompt focus and the reduced-motion refusal. Production remains
+unverified because this is still an open pull request.
+
+The branch was then merged normally with `origin/main` at `20892de`, bringing in Overlap without
+dropping either tool's guards. On the combined tree, the 456 focused Arcade, Overlap, relay, budget
+and store tests passed; the full suite passed 1,699 tests with the two opt-in real-Upstash tests
+skipped; TypeScript and the production build passed; and both browser checks passed against that
+build. Arcade entered through its hidden command at 390, resized the live game to 320 and exercised
+reduced motion. Overlap passed all three phone profiles. A local merged-tree mutation run caught
+the first 76 of 149 mutations before it was stopped deliberately to free the machine; the required
+GitHub mutation job remains the whole-catalogue proof. The pull request is still unmerged and
+production remains unverified.
+
+## 2026-09-04: Drift, final review fixes complete locally
+
+The independent review's eight findings are fixed on `toolshed/t1-drift`. Drift now models the
+active profile source explicitly, so Measure is disabled while Fergus's worked example is active
+and cannot score visitor prose against the wrong reference. Building a new profile retains the
+timestamp and Delete control for an older saved record and says that the new profile is unsaved.
+A successful deletion clears the saved key, both visitor text fields and all derived values before
+claiming success; a refused deletion retains them and says so. Seven pure session-transition tests
+cover those paths because this repository's Vitest environment has no DOM harness. The production
+component is separately coupled to the tested transitions.
+
+Saved and MCP-supplied profiles now require exact envelope, marker/statistic and fixed-pair key
+sets; valid single-word markers; bounded shares; consistent rhythm and join aggregates; nonnegative
+rates; substitution counts no larger than the profile; an ISO timestamp; and a self-spread that
+cannot claim more pieces than the reference. The public copy no longer turns an absent pull or
+substitution row into a conclusion, scopes substitution evidence to the pasted samples, says that
+at most 100 filtered marker words are saved, and labels the 150-word, five-piece and 1,000-word
+choices as conservative and uncalibrated. One concise hidden status announces each action; the
+whole report is no longer a live region.
+
+Observed after the fixes: 68 test files and 1,413 tests pass; `tsc --noEmit` passes; the production
+build completes with 40 static pages and `/tools/drift` at 9.68 kB; and all 104 repository mutations
+are caught, including nine new Drift state/validation mutations, with the tree restored after every
+row. The phone check passes `/tools/drift` on WebKit at 390 and 320 and on the throttled Chromium
+Pixel with zero overflow, input-font, tap-target, contrast, asset or layout-moved failures. A fresh
+WebKit interaction also proved: Measure disabled in demo mode; enabled after Build; Save writes the
+profile; rebuilding retains an enabled Delete control and names the older saved profile; a forced
+storage deletion failure retains the text and record; successful deletion removes the record,
+clears samples, restores the demo draft and disables Measure; the report has no live-region marker;
+and there were no application console errors.
+
+After merging current main, the focused integration suite passed 228 tests; the full suite passed
+1,678 tests with two Redis integration tests skipped because no live store credentials were present;
+`tsc --noEmit` and the 41-page production build passed. The phone check passed both Drift and
+Overlap at 390, 320 and Pixel Slow with no failures. Pull request 11 is open for GitHub's integrated
+mutation and phone gates.
+
+Still not verified: CI, preview, production, PostHog delivery or a physical iPhone.
+The marker count and all three floors remain uncalibrated; self-spread still runs slightly tight as
+previously documented; and the Delta still has no external implementation oracle. The branch is
+merged current main normally before its pull request; the additive registry, voice, programme and
+mutation conflicts were resolved without dropping either tool's coverage.
+
+## 2026-09-04: Drift, ready for review
+
+T1 of the toolshed programme is complete locally on `toolshed/t1-drift`. `/tools/drift` builds a
+reference population from the visitor's own pieces in their tab, never from this site's articles,
+and measures a draft against it with Burrows's Delta, sentence rhythm, punctuation, joins and the
+fixed substitution table. The site's 11 articles are only the worked example: measured on this
+branch at 10,423 words and a full 100 markers. The marker count is capped at 100, markers must
+appear in at least half the pieces, a distance is refused under 150 draft words, and a reference
+with fewer than 5 pieces is refused. Those are argued choices, not calibrated measurements.
+
+The saved record carries the visitor's reference table with the profile under
+`fergusos:drift-profile`, assembled from `OWNED_PREFIX`, and the component writes it only behind
+the Save button. A full-suite run caught that `lib/forget.test.ts` did not yet recognise the
+imported constant even though `forget` owned its value at runtime. Adding `DRIFT_PROFILE_KEY` to
+that guard's explicit known-key table made the source-level storage promise testable as well as
+true at runtime.
+
+Observed locally after the final fixes: `tsc --noEmit` clean; 67 test files and 1,372 tests pass
+(baseline 56 files and 1,208 tests); production build clean with 40 static pages and
+`/tools/drift` at 8.29 kB; 93 of 93 repository mutations caught, including all 8 Drift rows; and
+the phone check passes `/tools/drift` on WebKit at 390 and 320 and on the throttled Chromium Pixel
+with no overflow, small input, tap-target, contrast, asset or layout failures. The first phone run
+had one overflow, two 23px labels and two disabled-button contrast failures per profile. A later
+run exposed two more mechanisms: the right table cells grazed the viewport while clipped outside
+their scroll box, and a bright phosphor-persistence streak sat behind two report sentences. The
+tables now wrap inside a fixed three-column layout and the report has an opaque patch of the same
+tube background. The 320 screenshot was inspected after the change and remains readable.
+
+A local WebKit iPhone flow also passed: the worked example arrives at Delta 1.63 from 11 pieces;
+four pieces get the refusal naming 5; five genuinely different pieces produce Delta 21.65 from
+2,430 words and 20 markers; a short draft gets the refusal naming 150; storage is null before Save
+and afterwards carries 5 reference documents, 20 single-word markers and no sentence; console
+errors were zero apart from the documented local-only Vercel Analytics 404. The plan's original
+browser fixture was corrected after this check found that 30 sentences modulo 3 gave every
+supposedly varying piece the same 10/20 split and therefore zero standard deviation.
+
+Final diff review found one further client-state bug: restoring a saved profile replaced the
+reference, profile and spread but left the worked example's report on screen. A coupling test
+failed before the fix, the component now re-analyses the displayed draft with the stored profile
+and its stored reference during hydration, and an eighth Drift mutation proves that removing the
+re-analysis is caught. A fresh local WebKit reload kept the saved report at 5 pieces, 2,430 words,
+20 markers and Delta 21.65 instead of reverting to the 11-piece demo. The same audit corrected
+"over half" in implementation comments to "at least half", which is what the tested
+`Math.ceil(documents * 0.5)` rule actually does for even document counts.
+
+Not verified: CI, code review, a pull request, a Vercel preview, production or PostHog delivery.
+The marker count, document share and both floors have not been calibrated on real writers; the
+leave-one-out spread is measured on a table the held-out piece helped build and therefore runs
+slightly tight by an unmeasured amount; the Delta has not been checked against an external oracle;
+the 22 substitution pairs are hand-picked; and no physical iPhone has been used.
 ## 2026-09-04: Overlap recovery audit
 
 The follow-up security review found seven gaps and they are now implemented locally on the same
