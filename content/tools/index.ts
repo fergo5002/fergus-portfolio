@@ -1,6 +1,7 @@
 import type { ToolEntry } from "./types";
 import { headlineCheck } from "./headline-check";
 import { overlap } from "./overlap";
+import { relief } from "./relief";
 
 export type { ToolEntry } from "./types";
 
@@ -13,7 +14,7 @@ export type { ToolEntry } from "./types";
  * tool's page read from here and nowhere else, which is how a tool that is
  * added once shows up everywhere at once.
  */
-const entries: ToolEntry[] = [headlineCheck, overlap];
+const entries: ToolEntry[] = [headlineCheck, overlap, relief];
 
 /** Every tool, `soon` ones included, in index order. */
 export const tools: ToolEntry[] = [...entries].sort((a, b) => a.order - b.order);

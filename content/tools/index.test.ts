@@ -107,3 +107,28 @@ describe("tool shell copy", () => {
     );
   });
 });
+
+describe("relief", () => {
+  it("is registered, live, and browser-side", () => {
+    const t = toolBySlug("relief");
+    expect(t?.status).toBe("live");
+    expect(t?.privacy).toBe("browser");
+  });
+
+  /**
+   * The one path that leaves the tab is GitHub, and the shell's browser line
+   * would be false about it. The note is what makes the page honest, so its
+   * absence is a test failure rather than a missing nicety.
+   */
+  it("corrects the browser privacy line where GitHub is concerned", () => {
+    const note = toolBySlug("relief")?.privacyNote ?? "";
+    expect(note).toContain("api.github.com");
+    expect(note.length).toBeGreaterThan(60);
+  });
+
+  it("says the two things the design fixed as can't-see lines", () => {
+    const lines = (toolBySlug("relief")?.cantSee ?? []).join(" ");
+    expect(lines).toMatch(/private/i);
+    expect(lines).toMatch(/local time|local clock/i);
+  });
+});
