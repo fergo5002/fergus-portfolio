@@ -710,6 +710,48 @@ const MUTATIONS = [
     pattern: /not a private set intersection protocol/,
     replace: "a careful way to compare lists",
   },
+  {
+    name: "overlap address pseudonyms stop using the server secret, so IPv4 can be enumerated offline",
+    file: "lib/budget.ts",
+    pattern: /createHmac\("sha256", secret\)/,
+    replace: 'createHmac("sha256", "public")',
+  },
+  {
+    name: "overlap accepts a missing address-key secret instead of failing closed",
+    file: "lib/budget.ts",
+    pattern: /if \(!secret \|\| new TextEncoder\(\)\.encode\(secret\)\.byteLength < 32\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "overlap relay requests lose their abort signal and can occupy a tab forever",
+    file: "lib/tools/overlap/relay-client.ts",
+    pattern: /return await fetchImpl\(url, \{ \.\.\.init, signal: controller\.signal \}\);/,
+    replace: "return await fetchImpl(url, init);",
+  },
+  {
+    name: "overlap decodes an oversized manual paste before refusing it",
+    file: "lib/tools/overlap/webrtc.ts",
+    pattern: /if \(text\.length > MAX_PACKED_SDP_CHARS\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "overlap hands decoded base64 to WebRTC without proving it is SDP",
+    file: "lib/tools/overlap/webrtc.ts",
+    pattern: /const sdp = new TextDecoder\(\)\.decode\(bytes\);\r?\n  if \(!validSdp\(sdp\)\)/,
+    replace: "const sdp = new TextDecoder().decode(bytes);\n  if (false)",
+  },
+  {
+    name: "overlap lets a peer grow the protocol inbox without a bound",
+    file: "lib/tools/overlap/protocol.ts",
+    pattern: /if \(inbox\.length >= MAX_INBOX_FRAMES\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "overlap calls a live ten-minute room dead when one tab stops polling",
+    file: "content/tools/overlap.ts",
+    pattern: /The room can still be joined until its ten minutes run out/,
+    replace: "The code is dead now",
+  },
 ];
 
 let caught = 0;

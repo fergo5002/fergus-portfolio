@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { StoreUnavailableError } from "./store/errors";
 import { getRedis } from "./store/redis";
 
@@ -39,10 +39,10 @@ import { getRedis } from "./store/redis";
  *
  * ## The address is never stored
  *
- * `budgetKeyForIp` hashes the visitor's address with the UTC date, so the key
- * is a different sixteen hex characters every day and there is no way back
- * from a key to a person. That is the whole of the site's server-side memory
- * of a visitor, and it expires with the window.
+ * `budgetKeyForIp` authenticates the visitor's address and UTC date with a
+ * server-only secret, so the key changes daily and cannot be rebuilt from the
+ * public date plus an IPv4 dictionary. That is the whole of the site's
+ * server-side memory of a visitor, and it expires with the window.
  *
  * Preview and production deployments share one database and one key space
  * (the key does not carry the environment), so a preview test spends the
@@ -224,12 +224,18 @@ export async function takeBudget(req: BudgetRequest, now: number = Date.now()): 
  * host both ends are the same value; that is a fact about the platform, not a
  * property of the code.
  *
- * Then `sha256(ip + ":" + yyyy-mm-dd)`, first sixteen hex characters. The
- * date is the salt, so the raw address is never stored and two days' keys
- * cannot be joined. `Pick<Headers, "get">` rather than `Headers` so Next's
- * `ReadonlyHeaders` passes without a cast; every `Headers` satisfies it.
+ * Then `HMAC-SHA256(BUDGET_HASH_SECRET, ip + ":" + yyyy-mm-dd)`, first
+ * sixteen hex characters. The secret prevents an offline IPv4 dictionary;
+ * the date makes two days' keys unlinkable. A missing secret fails closed and
+ * names only the variable, never the address or the missing value.
+ * `Pick<Headers, "get">` rather than `Headers` lets Next's `ReadonlyHeaders`
+ * pass without a cast; every `Headers` satisfies it.
  */
 export function budgetKeyForIp(headers: Pick<Headers, "get">): string {
+  const secret = process.env.BUDGET_HASH_SECRET;
+  if (!secret || new TextEncoder().encode(secret).byteLength < 32) {
+    throw new StoreUnavailableError("redis", "BUDGET_HASH_SECRET");
+  }
   const forwarded = headers.get("x-forwarded-for") ?? "";
   const chain = forwarded
     .split(",")
@@ -237,5 +243,5 @@ export function budgetKeyForIp(headers: Pick<Headers, "get">): string {
     .filter(Boolean);
   const ip = headers.get("x-real-ip")?.trim() || chain[chain.length - 1] || "unknown";
   const day = new Date().toISOString().slice(0, 10);
-  return createHash("sha256").update(`${ip}:${day}`).digest("hex").slice(0, 16);
+  return createHmac("sha256", secret).update(`${ip}:${day}`).digest("hex").slice(0, 16);
 }

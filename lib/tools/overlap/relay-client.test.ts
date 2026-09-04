@@ -59,6 +59,38 @@ describe("createRoom", () => {
     await expect(createRoom(SDP, impl)).resolves.toMatchObject({ ok: false, error: "failed" });
   });
 
+  it("aborts a relay request that outlives its bound", async () => {
+    vi.useFakeTimers();
+    try {
+      const impl = async (_input: string, init?: RequestInit) => {
+        if (!init?.signal) {
+          return new Response(JSON.stringify({ code: "K4M9F2", ttlSec: 600 }), { status: 200 });
+        }
+        return new Promise<Response>((_resolve, reject) => {
+          init.signal?.addEventListener("abort", () => reject(init.signal?.reason), { once: true });
+        });
+      };
+      const pending = createRoom(SDP, impl, { requestTimeoutMs: 25 });
+      await vi.advanceTimersByTimeAsync(25);
+      await expect(pending).resolves.toMatchObject({ ok: false, error: "failed" });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("passes the caller's abort signal into the request", async () => {
+    const controller = new AbortController();
+    controller.abort(new DOMException("left page", "AbortError"));
+    const impl = async (_input: string, init?: RequestInit) => {
+      if (init?.signal?.aborted) throw init.signal.reason;
+      return new Response(JSON.stringify({ code: "K4M9F2", ttlSec: 600 }), { status: 200 });
+    };
+    await expect(createRoom(SDP, impl, { signal: controller.signal })).resolves.toMatchObject({
+      ok: false,
+      error: "failed",
+    });
+  });
+
   it("turns a reply that is not JSON into an outcome", async () => {
     const impl = async () => new Response("<html>", { status: 200 });
     await expect(createRoom(SDP, impl)).resolves.toMatchObject({ ok: false, error: "failed" });
@@ -145,6 +177,19 @@ describe("pollForAnswer", () => {
     });
     expect(result).toMatchObject({ ok: false, error: "gave-up" });
     expect(calls.length).toBeLessThanOrEqual(POLL_WINDOW_MS / POLL_INTERVAL_MS + 1);
+  });
+
+  it("lets navigation abort the wait between polls", async () => {
+    const controller = new AbortController();
+    const { impl, calls } = recorder([{ status: 200, body: { answer: null } }]);
+    const pending = pollForAnswer("K4M9F2", impl, {
+      signal: controller.signal,
+      wait: () => new Promise<void>(() => {}),
+    });
+    await Promise.resolve();
+    controller.abort(new DOMException("left page", "AbortError"));
+    await expect(pending).resolves.toMatchObject({ ok: false, error: "failed" });
+    expect(calls).toHaveLength(1);
   });
 
   it("stops on a refusal instead of hammering it", async () => {

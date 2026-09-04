@@ -8,6 +8,27 @@
 
 ## 2026-09-04: Overlap recovery audit
 
+The follow-up security review found seven gaps and they are now implemented locally on the same
+branch. Address budget keys use HMAC-SHA-256 with the server-only `BUDGET_HASH_SECRET`, rather
+than a public-date digest that could be searched across the IPv4 space; room codes fail closed if
+that variable is absent while manual copy and paste remains available. Relay requests have a
+ten-second bound and share an abort signal with the component lifecycle. Manual blobs are capped
+before base64 decoding, capped again while decompression is streamed, and must be valid SDP before
+WebRTC sees them. The peer inbox holds at most one maximum exchange. Copy now says that a safety
+string cannot detect somebody who guessed the room code, and that a tab stopping after one minute
+does not kill the ten-minute room. `.env.example` and the opt-in real-Upstash integration proof are
+included. F4 must take the same HMAC and environment contract before its shared state branch is
+integrated; T3 does not alter F4's worktree.
+
+Final local evidence after those changes: 1,473 tests passed and the two opt-in real-Upstash tests
+skipped because no Redis variables are present; `tsc --noEmit` and the production build passed;
+all 107 deliberate mutations went red; the phone-check self-test caught every planted fault, and
+`/tools/overlap` passed at iPhone 390, iPhone 320 and throttled Pixel sizes. Against the built API
+with neither Redis nor `BUDGET_HASH_SECRET`, room creation returned 503 `relay-unavailable` and the
+manual-signalling sentence without exposing the variable name. Not verified remains unchanged: a
+real Redis room, a real LinkedIn export, separate physical networks, symmetric NAT, real WebKit
+WebRTC, CI and production.
+
 T3 is implemented on `toolshed/t3-overlap` and is in review. It has not been pushed, opened as a
 pull request or deployed. The recovered commits did not satisfy the plan on their own: successful
 relay responses were trusted without shape checks, peer frames and waits were effectively

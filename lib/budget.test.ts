@@ -285,9 +285,15 @@ describe("takeBudget: which implementation answers", () => {
 
 describe("budgetKeyForIp", () => {
   const headersOf = (init: Record<string, string>) => new Headers(init);
+  const secret = "a-server-only-budget-secret-with-at-least-32-bytes";
+
+  const keyed = (init: Record<string, string>) => {
+    vi.stubEnv("BUDGET_HASH_SECRET", secret);
+    return budgetKeyForIp(headersOf(init));
+  };
 
   it("is sixteen hex characters that never contain the address", () => {
-    const key = budgetKeyForIp(headersOf({ "x-real-ip": "203.0.113.9" }));
+    const key = keyed({ "x-real-ip": "203.0.113.9" });
     expect(key).toMatch(/^[0-9a-f]{16}$/);
     expect(key).not.toContain("203.0.113.9");
     // Not `not.toContain("203")`. A hex digest carries "203" by chance about
@@ -297,24 +303,50 @@ describe("budgetKeyForIp", () => {
   });
 
   it("prefers x-real-ip, then the last x-forwarded-for entry, then unknown", () => {
-    const real = budgetKeyForIp(headersOf({ "x-real-ip": "203.0.113.9", "x-forwarded-for": "198.51.100.1, 203.0.113.9" }));
-    const last = budgetKeyForIp(headersOf({ "x-forwarded-for": "198.51.100.1, 203.0.113.9" }));
-    const first = budgetKeyForIp(headersOf({ "x-forwarded-for": "198.51.100.1" }));
+    const real = keyed({ "x-real-ip": "203.0.113.9", "x-forwarded-for": "198.51.100.1, 203.0.113.9" });
+    const last = keyed({ "x-forwarded-for": "198.51.100.1, 203.0.113.9" });
+    const first = keyed({ "x-forwarded-for": "198.51.100.1" });
     expect(real).toBe(last);
     expect(first).not.toBe(last);
-    expect(budgetKeyForIp(headersOf({}))).toBe(budgetKeyForIp(headersOf({ "x-forwarded-for": "" })));
+    expect(keyed({})).toBe(keyed({ "x-forwarded-for": "" }));
   });
 
   it("changes with the UTC date, so yesterday's key cannot be joined to today's", () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     try {
       vi.setSystemTime(new Date("2026-09-03T23:59:59Z"));
-      const before = budgetKeyForIp(headersOf({ "x-real-ip": "203.0.113.9" }));
-      expect(budgetKeyForIp(headersOf({ "x-real-ip": "203.0.113.9" }))).toBe(before);
+      const before = keyed({ "x-real-ip": "203.0.113.9" });
+      expect(keyed({ "x-real-ip": "203.0.113.9" })).toBe(before);
       vi.setSystemTime(new Date("2026-09-04T00:00:00Z"));
-      expect(budgetKeyForIp(headersOf({ "x-real-ip": "203.0.113.9" }))).not.toBe(before);
+      expect(keyed({ "x-real-ip": "203.0.113.9" })).not.toBe(before);
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  it("changes when the server secret changes, so the public date is not enough to reverse it", () => {
+    vi.stubEnv("BUDGET_HASH_SECRET", secret);
+    const first = budgetKeyForIp(headersOf({ "x-real-ip": "203.0.113.9" }));
+    vi.stubEnv("BUDGET_HASH_SECRET", `${secret}-rotated`);
+    expect(budgetKeyForIp(headersOf({ "x-real-ip": "203.0.113.9" }))).not.toBe(first);
+  });
+
+  it("fails closed without the server secret and never prints an address", () => {
+    vi.stubEnv("BUDGET_HASH_SECRET", "");
+    expect(() => budgetKeyForIp(headersOf({ "x-real-ip": "203.0.113.9" }))).toThrow(
+      /BUDGET_HASH_SECRET/,
+    );
+    try {
+      budgetKeyForIp(headersOf({ "x-real-ip": "203.0.113.9" }));
+    } catch (error) {
+      expect(String(error)).not.toContain("203.0.113.9");
+    }
+  });
+
+  it("fails closed when the server secret is shorter than the documented 32-byte minimum", () => {
+    vi.stubEnv("BUDGET_HASH_SECRET", "short");
+    expect(() => budgetKeyForIp(headersOf({ "x-real-ip": "203.0.113.9" }))).toThrow(
+      /BUDGET_HASH_SECRET/,
+    );
   });
 });

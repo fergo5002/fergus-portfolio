@@ -1,7 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
 import { BLOOM_THRESHOLD } from "./bloom";
 import { encodeSalt, newSalt } from "./hash";
-import { MAX_FRAME_CHARS, fingerprintOf, pairedChannels, runExchange, safetyString } from "./protocol";
+import {
+  MAX_FRAME_CHARS,
+  MAX_INBOX_FRAMES,
+  fingerprintOf,
+  pairedChannels,
+  runExchange,
+  safetyString,
+  type Channel,
+} from "./protocol";
 import type { Entry } from "./types";
 
 const person = (slug: string, label = slug): Entry => ({ slug, label });
@@ -233,6 +241,28 @@ describe("what it refuses", () => {
     });
     left.send(JSON.stringify({ t: "salt", v: encodeSalt(new Uint8Array(32)) }));
     await expect(run).rejects.toThrow(/timed out/);
+  });
+
+  it("refuses a peer that fills more than one bounded inbox", async () => {
+    const flooding: Channel = {
+      send: () => undefined,
+      onMessage(handler) {
+        for (let i = 0; i <= MAX_INBOX_FRAMES; i += 1) {
+          handler(JSON.stringify({ t: "done" }));
+        }
+      },
+      close: () => undefined,
+    };
+
+    await expect(
+      runExchange({
+        side: "joiner",
+        entries: [person("a")],
+        channel: flooding,
+        fingerprints: FINGERPRINTS,
+        receiveTimeoutMs: 5,
+      }),
+    ).rejects.toThrow(/too many peer messages/);
   });
 });
 

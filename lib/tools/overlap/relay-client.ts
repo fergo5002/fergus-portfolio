@@ -18,6 +18,7 @@ import { validSdp } from "../../relay";
 
 export const POLL_INTERVAL_MS = 4_000;
 export const POLL_WINDOW_MS = 60_000;
+export const RELAY_REQUEST_TIMEOUT_MS = 10_000;
 
 export type RelayFetch = (input: string, init?: RequestInit) => Promise<Response>;
 
@@ -59,14 +60,43 @@ const JSON_POST = (body: unknown): RequestInit => ({
 const KNOWN = ["relay-unavailable", "budget", "no-room", "already-joined", "bad-code"] as const;
 const malformed = (): RelayFailure => ({ ok: false, error: "failed", message: "" });
 
+export type RelayCallOptions = {
+  signal?: AbortSignal;
+  requestTimeoutMs?: number;
+};
+
+async function boundedFetch(
+  fetchImpl: RelayFetch,
+  url: string,
+  init: RequestInit | undefined,
+  options: RelayCallOptions,
+): Promise<Response> {
+  const controller = new AbortController();
+  const caller = options.signal;
+  const abortFromCaller = () => controller.abort(caller?.reason);
+  if (caller?.aborted) abortFromCaller();
+  else caller?.addEventListener("abort", abortFromCaller, { once: true });
+  const timer = setTimeout(
+    () => controller.abort(new DOMException("relay request timed out", "TimeoutError")),
+    options.requestTimeoutMs ?? RELAY_REQUEST_TIMEOUT_MS,
+  );
+  try {
+    return await fetchImpl(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+    caller?.removeEventListener("abort", abortFromCaller);
+  }
+}
+
 async function call(
   fetchImpl: RelayFetch,
   url: string,
   init?: RequestInit,
+  options: RelayCallOptions = {},
 ): Promise<{ ok: true; body: Record<string, unknown> } | RelayFailure> {
   let response: Response;
   try {
-    response = await fetchImpl(url, init);
+    response = await boundedFetch(fetchImpl, url, init, options);
   } catch {
     return { ok: false, error: "failed", message: "" };
   }
@@ -91,8 +121,9 @@ async function call(
 export async function createRoom(
   offer: string,
   fetchImpl: RelayFetch = platformFetch,
+  options: RelayCallOptions = {},
 ): Promise<{ ok: true; code: string; ttlSec: number } | RelayFailure> {
-  const result = await call(fetchImpl, "/api/relay", JSON_POST({ offer }));
+  const result = await call(fetchImpl, "/api/relay", JSON_POST({ offer }), options);
   if (!result.ok) return result;
   if (!isCode(result.body.code) || !Number.isInteger(result.body.ttlSec) || Number(result.body.ttlSec) <= 0) {
     return malformed();
@@ -103,8 +134,9 @@ export async function createRoom(
 export async function fetchOffer(
   code: string,
   fetchImpl: RelayFetch = platformFetch,
+  options: RelayCallOptions = {},
 ): Promise<{ ok: true; offer: string } | RelayFailure> {
-  const result = await call(fetchImpl, `/api/relay?code=${code}`);
+  const result = await call(fetchImpl, `/api/relay?code=${code}`, undefined, options);
   if (!result.ok) return result;
   return validSdp(result.body.offer) ? { ok: true, offer: result.body.offer } : malformed();
 }
@@ -113,17 +145,33 @@ export async function sendAnswer(
   code: string,
   answer: string,
   fetchImpl: RelayFetch = platformFetch,
+  options: RelayCallOptions = {},
 ): Promise<{ ok: true } | RelayFailure> {
-  const result = await call(fetchImpl, "/api/relay/answer", JSON_POST({ code, answer }));
+  const result = await call(fetchImpl, "/api/relay/answer", JSON_POST({ code, answer }), options);
   if (!result.ok) return result;
   return result.body.ok === true ? { ok: true } : malformed();
 }
 
-export type PollOptions = {
+export type PollOptions = RelayCallOptions & {
   wait?: (ms: number) => Promise<void>;
   now?: () => number;
   onTick?: (secondsLeft: number) => void;
 };
+
+async function waitAbortably(wait: (ms: number) => Promise<void>, ms: number, signal?: AbortSignal) {
+  if (!signal) return wait(ms);
+  if (signal.aborted) throw signal.reason ?? new DOMException("Aborted", "AbortError");
+  let onAbort: (() => void) | undefined;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    onAbort = () => reject(signal.reason ?? new DOMException("Aborted", "AbortError"));
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+  try {
+    await Promise.race([wait(ms), aborted]);
+  } finally {
+    if (onAbort) signal.removeEventListener("abort", onAbort);
+  }
+}
 
 export async function pollForAnswer(
   code: string,
@@ -135,13 +183,17 @@ export async function pollForAnswer(
   const started = now();
 
   for (;;) {
-    const result = await call(fetchImpl, `/api/relay/answer?code=${code}`);
+    const result = await call(fetchImpl, `/api/relay/answer?code=${code}`, undefined, options);
     if (!result.ok) return result;
     if (result.body.answer !== null) {
       return validSdp(result.body.answer) ? { ok: true, answer: result.body.answer } : malformed();
     }
     if (now() - started >= POLL_WINDOW_MS) return { ok: false, error: "gave-up", message: "" };
     options.onTick?.(Math.max(0, Math.round((POLL_WINDOW_MS - (now() - started)) / 1000)));
-    await wait(POLL_INTERVAL_MS);
+    try {
+      await waitAbortably(wait, POLL_INTERVAL_MS, options.signal);
+    } catch {
+      return malformed();
+    }
   }
 }

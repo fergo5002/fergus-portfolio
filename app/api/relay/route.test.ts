@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StoreUnavailableError } from "@/lib/store/errors";
 
-const { getRedisMock, takeBudgetMock } = vi.hoisted(() => ({
+const { budgetKeyMock, getRedisMock, takeBudgetMock } = vi.hoisted(() => ({
+  budgetKeyMock: vi.fn(),
   getRedisMock: vi.fn(),
   takeBudgetMock: vi.fn(),
 }));
 vi.mock("@/lib/store/redis", () => ({ getRedis: getRedisMock }));
 vi.mock("@/lib/budget", () => ({
   takeBudget: takeBudgetMock,
-  budgetKeyForIp: () => "ip-hash",
+  budgetKeyForIp: budgetKeyMock,
 }));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 
@@ -23,6 +24,8 @@ function post(body: unknown) {
 beforeEach(() => {
   getRedisMock.mockReset();
   takeBudgetMock.mockReset();
+  budgetKeyMock.mockReset();
+  budgetKeyMock.mockReturnValue("ip-hash");
   takeBudgetMock.mockResolvedValue({ ok: true, remaining: 4 });
 });
 
@@ -88,6 +91,20 @@ describe("POST /api/relay", () => {
     expect(body.error).toBe("relay-unavailable");
     expect(body.message).toContain("copy and paste");
     expect(body.message).not.toContain("UPSTASH");
+  });
+
+  it("fails closed without the address-key secret and keeps manual signalling available", async () => {
+    budgetKeyMock.mockImplementation(() => {
+      throw new StoreUnavailableError("redis", "BUDGET_HASH_SECRET");
+    });
+    const res = await POST(post({ offer: SDP }));
+    expect(res.status).toBe(503);
+    const body = await res.json();
+    expect(body.error).toBe("relay-unavailable");
+    expect(body.message).toContain("copy and paste");
+    expect(JSON.stringify(body)).not.toContain("BUDGET_HASH_SECRET");
+    expect(takeBudgetMock).not.toHaveBeenCalled();
+    expect(getRedisMock).not.toHaveBeenCalled();
   });
 
   it("does not dress a real fault up as a missing store", async () => {

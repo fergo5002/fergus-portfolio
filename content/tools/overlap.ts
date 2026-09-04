@@ -22,7 +22,7 @@ export const overlapCopy = {
     relaySees:
       "The room code service holds one connection blob from each side for ten minutes and a daily-changing hash of your address for up to an hour. It never sees a hash from your list, a name, or the file. The blob does carry your address inside it, because that is how two browsers find each other.",
     safety:
-      "The four characters under the result are computed from the salt and both connection fingerprints. Read them aloud to each other. A match is a useful check, not proof: two unrelated sessions have a one in 14,641 chance of matching by accident. If you do not read them aloud they do nothing at all.",
+      "The four characters under the result are computed from the salt and both connection fingerprints. Read them aloud to each other. A match is a useful check, not proof: two unrelated sessions have a one in 14,641 chance of matching by accident. They do not catch somebody who guessed the room code, because that person is the other end of the connection and sees the same characters. If you do not read them aloud they do nothing at all.",
     storage:
       "This tool writes nothing to your machine: no cookie, no local storage, nothing. The forget command has nothing to wipe here.",
     stun:
@@ -66,7 +66,7 @@ export const overlapCopy = {
     waiting: "Waiting for the other tab. {seconds}s left.",
     open: "Connected.",
     gaveUp:
-      "Nobody joined in a minute. The code is dead now; make another one, or use copy and paste below.",
+      "This tab stopped waiting after a minute. The room can still be joined until its ten minutes run out, but this tab is no longer listening. Make another code, or use copy and paste below.",
     failed:
       "The two browsers could not reach each other. That happens on some mobile networks. Copy and paste skips the room code service, but it still needs a direct browser connection and can fail on the same restrictive networks.",
     sameNetwork: "Same network only",

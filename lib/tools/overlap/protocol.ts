@@ -40,6 +40,8 @@ import { OverlapProtocolError, type Entry } from "./types";
 export const MAX_FRAME_CHARS = 12_000;
 export const MAX_CONNECTIONS = 30_000;
 export const MAX_PARTS = 64;
+/** One complete maximum-size peer message set, plus one spare control frame. */
+export const MAX_INBOX_FRAMES = MAX_PARTS + 4;
 export const FRAME_WAIT_MS = 30_000;
 const VERSION = 1;
 
@@ -238,7 +240,12 @@ export async function runExchange(input: ExchangeInput): Promise<ExchangeResult>
 
   channel.onMessage((text) => {
     try {
-      inbox.push(parseFrame(text));
+      const frame = parseFrame(text);
+      if (inbox.length >= MAX_INBOX_FRAMES) {
+        failure = new OverlapProtocolError("too many peer messages waiting");
+      } else {
+        inbox.push(frame);
+      }
     } catch (error) {
       failure = error instanceof Error ? error : new OverlapProtocolError("an unreadable message");
     }

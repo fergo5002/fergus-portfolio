@@ -1,4 +1,5 @@
 import type { Channel } from "./protocol";
+import { MAX_SDP_BYTES, validSdp } from "../../relay";
 
 /**
  * The only module in this tool that touches `RTCPeerConnection`.
@@ -30,6 +31,8 @@ export const ICE_SERVERS: RTCIceServer[] = [{ urls: ["stun:stun.cloudflare.com:3
 /** Some networks never report gathering as complete. Go with what we have. */
 const ICE_TIMEOUT_MS = 4_000;
 export const CONNECTION_TIMEOUT_MS = 20_000;
+/** Bounds pasted input before base64 decoding or decompression starts. */
+export const MAX_PACKED_SDP_CHARS = 16 * 1024;
 
 /** Once both descriptions exist, a connection either opens promptly or fails visibly. */
 export function waitForConnection<T>(pending: Promise<T>, timeoutMs = CONNECTION_TIMEOUT_MS): Promise<T> {
@@ -158,6 +161,7 @@ export async function openAsJoiner(
  * silent rather than a refusal.
  */
 export async function packSdp(sdp: string): Promise<string> {
+  if (!validSdp(sdp)) throw new Error("overlap: not a valid session description");
   const bytes = new TextEncoder().encode(sdp);
   if (typeof CompressionStream === "undefined") return base64url(bytes);
   const stream = blobOf(bytes).stream().pipeThrough(new CompressionStream("deflate"));
@@ -165,11 +169,51 @@ export async function packSdp(sdp: string): Promise<string> {
 }
 
 export async function unpackSdp(text: string): Promise<string> {
+  if (text.length > MAX_PACKED_SDP_CHARS) {
+    throw new Error("overlap: session description is too large");
+  }
   const compressed = text.startsWith("z");
   const bytes = fromBase64url(compressed ? text.slice(1) : text);
-  if (!compressed) return new TextDecoder().decode(bytes);
+  if (!compressed) return checkedSdp(bytes);
   const stream = blobOf(bytes).stream().pipeThrough(new DecompressionStream("deflate"));
-  return new TextDecoder().decode(await new Response(stream).arrayBuffer());
+  return checkedSdp(await boundedBytes(stream, MAX_SDP_BYTES));
+}
+
+function checkedSdp(bytes: Uint8Array): string {
+  if (bytes.byteLength > MAX_SDP_BYTES) {
+    throw new Error("overlap: session description is too large");
+  }
+  const sdp = new TextDecoder().decode(bytes);
+  if (!validSdp(sdp)) throw new Error("overlap: not a valid session description");
+  return sdp;
+}
+
+/** Read a decompressor incrementally so a small zip bomb never becomes one allocation. */
+async function boundedBytes(stream: ReadableStream<Uint8Array>, limit: number): Promise<Uint8Array> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > limit) {
+        await reader.cancel();
+        throw new Error("overlap: session description is too large");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return out;
 }
 
 /**

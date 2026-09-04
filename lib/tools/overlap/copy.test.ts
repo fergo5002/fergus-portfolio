@@ -63,7 +63,15 @@ describe("overlap copy", () => {
   it("says the safety string is useless unless it is read aloud", () => {
     expect(overlapCopy.honesty.safety).toContain("read them aloud");
     expect(overlapCopy.honesty.safety).toContain("one in 14,641");
+    expect(overlapCopy.honesty.safety).toContain("guessed the room code");
     expect(overlapCopy.honesty.safety).not.toMatch(/if they match, nobody/i);
+  });
+
+  it("does not call a ten-minute room dead when this tab stops polling after one minute", () => {
+    expect(overlapCopy.connect.created).toContain("ten minutes");
+    expect(overlapCopy.connect.gaveUp).toContain("stopped waiting after a minute");
+    expect(overlapCopy.connect.gaveUp).toContain("can still be joined");
+    expect(overlapCopy.connect.gaveUp).not.toContain("code is dead");
   });
 
   it("does not pretend manual signalling removes WebRTC or guarantees a connection", () => {

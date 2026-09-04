@@ -89,6 +89,24 @@ export default function OverlapTool() {
   const started = useRef(0);
   /** Set once a paste-route offer has been made here, so the reply is an answer. */
   const awaitingAnswer = useRef<PendingCreator | null>(null);
+  const relayRun = useRef<AbortController | null>(null);
+  const activePeer = useRef<(() => void) | null>(null);
+
+  const closeActive = useCallback(() => {
+    relayRun.current?.abort(new DOMException("Overlap run ended", "AbortError"));
+    relayRun.current = null;
+    activePeer.current?.();
+    activePeer.current = null;
+    awaitingAnswer.current?.close();
+    awaitingAnswer.current = null;
+  }, []);
+
+  const releaseRun = useCallback((controller: AbortController) => {
+    if (relayRun.current !== controller) return;
+    relayRun.current = null;
+    activePeer.current = null;
+    awaitingAnswer.current = null;
+  }, []);
 
   // The demo runs the real exchange, in this tab, on mount.
   useEffect(() => {
@@ -102,10 +120,9 @@ export default function OverlapTool() {
       });
     return () => {
       live = false;
-      awaitingAnswer.current?.close();
-      awaitingAnswer.current = null;
+      closeActive();
     };
-  }, []);
+  }, [closeActive]);
 
   const applyColumn = useCallback((parsed: ConnectionsFile, index: number) => {
     if (index < 0) {
@@ -126,8 +143,7 @@ export default function OverlapTool() {
 
   const readFile = useCallback(
     (chosen: File) => {
-      awaitingAnswer.current?.close();
-      awaitingAnswer.current = null;
+      closeActive();
       setFile(null);
       setColumn(-1);
       setEntries([]);
@@ -146,29 +162,37 @@ export default function OverlapTool() {
       };
       reader.readAsText(chosen);
     },
-    [applyColumn],
+    [applyColumn, closeActive],
   );
 
   const finish = useCallback(
-    async (opened: Opened, side: Side) => {
+    async (opened: Opened, side: Side, controller: AbortController) => {
       const fingerprints =
         side === "creator"
           ? { offer: fingerprintOf(opened.localSdp), answer: fingerprintOf(opened.remoteSdp) }
           : { offer: fingerprintOf(opened.remoteSdp), answer: fingerprintOf(opened.localSdp) };
       try {
         const out = await runExchange({ side, entries, channel: opened.channel, fingerprints });
-        setResult(out);
-        setNote(null);
-        void trackToolRun({ tool: "overlap", outcome: "ok", ms: round100(Date.now() - started.current) });
+        if (!controller.signal.aborted) {
+          setResult(out);
+          setNote(null);
+          void trackToolRun({ tool: "overlap", outcome: "ok", ms: round100(Date.now() - started.current) });
+        }
       } catch {
-        setNote({ kind: "warn", text: overlapCopy.errors.protocol });
-        void trackToolRun({ tool: "overlap", outcome: "error", ms: round100(Date.now() - started.current) });
+        if (!controller.signal.aborted) {
+          setNote({ kind: "warn", text: overlapCopy.errors.protocol });
+          void trackToolRun({ tool: "overlap", outcome: "error", ms: round100(Date.now() - started.current) });
+        }
       } finally {
         opened.channel.close();
         opened.connection.close();
-        awaitingAnswer.current = null;
-        setBusy(false);
-        started.current = 0;
+        if (relayRun.current === controller) {
+          awaitingAnswer.current = null;
+          relayRun.current = null;
+          activePeer.current = null;
+          setBusy(false);
+          started.current = 0;
+        }
       }
     },
     [entries],
@@ -189,6 +213,9 @@ export default function OverlapTool() {
   }, []);
 
   const create = useCallback(async () => {
+    closeActive();
+    const controller = new AbortController();
+    relayRun.current = controller;
     setBusy(true);
     started.current = Date.now();
     setNote({ kind: "info", text: overlapCopy.connect.creating });
@@ -196,9 +223,19 @@ export default function OverlapTool() {
     try {
       const setup = await openAsCreator({ sameNetworkOnly });
       close = setup.close;
-      const room = await createRoom(setup.offer);
+      activePeer.current = setup.close;
+      if (controller.signal.aborted) {
+        close();
+        return;
+      }
+      const room = await createRoom(setup.offer, undefined, { signal: controller.signal });
+      if (controller.signal.aborted) {
+        close();
+        return;
+      }
       if (!room.ok) {
         close();
+        releaseRun(controller);
         if (room.error === "relay-unavailable" || room.error === "budget") {
           setCodesOff(room.error === "relay-unavailable");
           setPasteOpen(true);
@@ -209,23 +246,38 @@ export default function OverlapTool() {
       setCode(room.code);
       setNote({ kind: "info", text: fill(overlapCopy.connect.created, { code: displayCode(room.code) }) });
       const answer = await pollForAnswer(room.code, undefined, {
+        signal: controller.signal,
         onTick: (secondsLeft) =>
           setNote({ kind: "info", text: fill(overlapCopy.connect.waiting, { seconds: secondsLeft }) }),
       });
+      if (controller.signal.aborted) {
+        close();
+        return;
+      }
       if (!answer.ok) {
         close();
+        releaseRun(controller);
         refused(answer.error === "gave-up" ? overlapCopy.connect.gaveUp : answer.message);
         return;
       }
       setNote({ kind: "info", text: overlapCopy.connect.open });
       const opened = await waitForConnection(setup.finish(answer.answer));
       close = null;
-      await finish(opened, "creator");
+      if (controller.signal.aborted) {
+        opened.channel.close();
+        opened.connection.close();
+        return;
+      }
+      activePeer.current = opened.connection.close.bind(opened.connection);
+      await finish(opened, "creator", controller);
     } catch {
       close?.();
-      failed(overlapCopy.connect.failed);
+      if (!controller.signal.aborted) {
+        releaseRun(controller);
+        failed(overlapCopy.connect.failed);
+      }
     }
-  }, [failed, finish, refused, sameNetworkOnly]);
+  }, [closeActive, failed, finish, refused, releaseRun, sameNetworkOnly]);
 
   const join = useCallback(async () => {
     const clean = normaliseTypedCode(typed);
@@ -233,13 +285,18 @@ export default function OverlapTool() {
       setNote({ kind: "warn", text: overlapCopy.relay.badCode });
       return;
     }
+    closeActive();
+    const controller = new AbortController();
+    relayRun.current = controller;
     setBusy(true);
     started.current = Date.now();
     setNote({ kind: "info", text: overlapCopy.connect.joining });
     let close: (() => void) | null = null;
     try {
-      const offer = await fetchOffer(clean);
+      const offer = await fetchOffer(clean, undefined, { signal: controller.signal });
+      if (controller.signal.aborted) return;
       if (!offer.ok) {
+        releaseRun(controller);
         if (offer.error === "relay-unavailable") {
           setCodesOff(true);
           setPasteOpen(true);
@@ -249,38 +306,70 @@ export default function OverlapTool() {
       }
       const setup = await openAsJoiner(offer.offer, { sameNetworkOnly });
       close = setup.close;
-      const posted = await sendAnswer(clean, setup.answer);
+      activePeer.current = setup.close;
+      if (controller.signal.aborted) {
+        close();
+        return;
+      }
+      const posted = await sendAnswer(clean, setup.answer, undefined, { signal: controller.signal });
+      if (controller.signal.aborted) {
+        close();
+        return;
+      }
       if (!posted.ok) {
         close();
+        releaseRun(controller);
         refused(posted.message || overlapCopy.relay.failed);
         return;
       }
       setNote({ kind: "info", text: overlapCopy.connect.open });
       const opened = await waitForConnection(setup.opened);
       close = null;
-      await finish(opened, "joiner");
+      if (controller.signal.aborted) {
+        opened.channel.close();
+        opened.connection.close();
+        return;
+      }
+      activePeer.current = opened.connection.close.bind(opened.connection);
+      await finish(opened, "joiner", controller);
     } catch {
       close?.();
-      failed(overlapCopy.connect.failed);
+      if (!controller.signal.aborted) {
+        releaseRun(controller);
+        failed(overlapCopy.connect.failed);
+      }
     }
-  }, [failed, finish, refused, sameNetworkOnly, typed]);
+  }, [closeActive, failed, finish, refused, releaseRun, sameNetworkOnly, typed]);
 
   const pasteStart = useCallback(async () => {
+    closeActive();
+    const controller = new AbortController();
+    relayRun.current = controller;
     setBusy(true);
     started.current = Date.now();
     try {
       awaitingAnswer.current?.close();
       const setup = await openAsCreator({ sameNetworkOnly });
+      if (controller.signal.aborted) {
+        setup.close();
+        return;
+      }
       awaitingAnswer.current = { complete: setup.finish, close: setup.close };
-      setOutbound(await packSdp(setup.offer));
+      activePeer.current = setup.close;
+      const packed = await packSdp(setup.offer);
+      if (controller.signal.aborted) return;
+      setOutbound(packed);
       setNote({ kind: "info", text: overlapCopy.connect.pasteStart });
       setBusy(false);
     } catch {
       awaitingAnswer.current?.close();
       awaitingAnswer.current = null;
-      failed(overlapCopy.errors.other);
+      if (!controller.signal.aborted) {
+        releaseRun(controller);
+        failed(overlapCopy.errors.other);
+      }
     }
-  }, [failed, sameNetworkOnly]);
+  }, [closeActive, failed, releaseRun, sameNetworkOnly]);
 
   /**
    * One button, two meanings, decided by whether this tab already made an
@@ -288,32 +377,60 @@ export default function OverlapTool() {
    * not means the blob is somebody else's offer and this tab answers it.
    */
   const pasteContinue = useCallback(async () => {
+    const controller = relayRun.current ?? new AbortController();
+    relayRun.current = controller;
     setBusy(true);
     if (!started.current) started.current = Date.now();
     let close: (() => void) | null = null;
     try {
       const sdp = await unpackSdp(inbound.trim());
+      if (controller.signal.aborted) return;
       const pending = awaitingAnswer.current;
       if (pending) {
         const opened = await waitForConnection(pending.complete(sdp));
         awaitingAnswer.current = null;
-        await finish(opened, "creator");
+        if (controller.signal.aborted) {
+          opened.channel.close();
+          opened.connection.close();
+          return;
+        }
+        activePeer.current = opened.connection.close.bind(opened.connection);
+        await finish(opened, "creator", controller);
         return;
       }
       const setup = await openAsJoiner(sdp, { sameNetworkOnly });
       close = setup.close;
-      setOutbound(await packSdp(setup.answer));
+      activePeer.current = setup.close;
+      if (controller.signal.aborted) {
+        close();
+        return;
+      }
+      const packed = await packSdp(setup.answer);
+      if (controller.signal.aborted) {
+        close();
+        return;
+      }
+      setOutbound(packed);
       setNote({ kind: "info", text: overlapCopy.connect.pasteAnswer });
       const opened = await waitForConnection(setup.opened, MANUAL_CONNECTION_TIMEOUT_MS);
       close = null;
-      await finish(opened, "joiner");
+      if (controller.signal.aborted) {
+        opened.channel.close();
+        opened.connection.close();
+        return;
+      }
+      activePeer.current = opened.connection.close.bind(opened.connection);
+      await finish(opened, "joiner", controller);
     } catch {
       close?.();
       awaitingAnswer.current?.close();
       awaitingAnswer.current = null;
-      failed(overlapCopy.connect.failed);
+      if (!controller.signal.aborted) {
+        releaseRun(controller);
+        failed(overlapCopy.connect.failed);
+      }
     }
-  }, [failed, finish, inbound, sameNetworkOnly]);
+  }, [failed, finish, inbound, releaseRun, sameNetworkOnly]);
 
   const saveDemoFiles = useCallback(() => {
     const { a, b } = demoLists();

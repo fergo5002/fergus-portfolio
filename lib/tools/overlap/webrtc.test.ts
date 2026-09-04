@@ -1,7 +1,14 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { CONNECTION_TIMEOUT_MS, ICE_SERVERS, packSdp, unpackSdp, waitForConnection } from "./webrtc";
+import {
+  CONNECTION_TIMEOUT_MS,
+  ICE_SERVERS,
+  MAX_PACKED_SDP_CHARS,
+  packSdp,
+  unpackSdp,
+  waitForConnection,
+} from "./webrtc";
 
 /**
  * A source-coupling check, not a render and not a connection.
@@ -65,6 +72,26 @@ describe("packSdp and unpackSdp", () => {
 
   it("refuses a blob that is not one rather than handing back rubbish", async () => {
     await expect(unpackSdp("not a blob at all")).rejects.toThrow();
+  });
+
+  it("refuses a decoded blob that is valid base64 but not an SDP", async () => {
+    const encoded = Buffer.from("hello", "utf8").toString("base64url");
+    await expect(unpackSdp(encoded)).rejects.toThrow(/session description/i);
+  });
+
+  it("refuses an oversized paste before decoding it", async () => {
+    const decode = vi.spyOn(globalThis, "atob");
+    await expect(unpackSdp("a".repeat(MAX_PACKED_SDP_CHARS + 1))).rejects.toThrow(/too large/i);
+    expect(decode).not.toHaveBeenCalled();
+    decode.mockRestore();
+  });
+
+  it("stops a compressed blob whose decoded SDP expands past the relay's bound", async () => {
+    const large = `v=0\r\n${"a=x\r\n".repeat(3_000)}`;
+    const compressed = new Blob([large]).stream().pipeThrough(new CompressionStream("deflate"));
+    const bytes = new Uint8Array(await new Response(compressed).arrayBuffer());
+    const encoded = `z${Buffer.from(bytes).toString("base64url")}`;
+    await expect(unpackSdp(encoded)).rejects.toThrow(/too large/i);
   });
 });
 
