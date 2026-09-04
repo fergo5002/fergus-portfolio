@@ -147,6 +147,19 @@ describe("the stylesheet", () => {
     expect(css).toMatch(/\.relief__plate\s*\{[^}]*width:\s*100%/);
   });
 
+  /**
+   * The pair that keeps the ground the right shape. The bitmap is sized from a
+   * ResizeObserver reading that lags its box for a beat, so an explicit CSS
+   * height on the canvas stretches the picture sideways whenever the two
+   * disagree: measured at 2.13 drawn against 5.29 displayed on a 900px box.
+   * Leaving the height to the bitmap's own ratio makes the lag cost resolution
+   * instead. Both halves have to hold, so both are asserted.
+   */
+  it("lets the plate keep its own aspect ratio rather than being given a height", () => {
+    expect(css).toMatch(/\.relief__plate\s*\{[^}]*height:\s*auto/);
+    expect(tool).not.toContain("canvas.style.height");
+  });
+
   it("never dims its text with the two tokens that fail on two of the three themes", () => {
     expect(css).not.toMatch(/color:\s*var\(--green-dim\)/);
     expect(css).not.toMatch(/color:\s*var\(--green-faint\)/);

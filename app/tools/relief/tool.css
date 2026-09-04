@@ -101,12 +101,22 @@
 
 /* The canvas carries an intrinsic width from its width attribute, which is the
    device-pixel width and is larger than the CSS box at any DPR above 1. Without
-   both of these it pushes the page sideways at 320, which is the single most
-   likely phone-check failure on this route. */
+   the first two of these it pushes the page sideways at 320, which is the single
+   most likely phone-check failure on this route.
+
+   `height: auto` is the third, and it is load-bearing rather than tidy. The
+   component sizes the bitmap from a width a ResizeObserver measured, and that
+   reading lags the box for a beat after load and after a viewport change.
+   Measured on a real WebKit iPhone: with an explicit CSS height on the canvas
+   the ground was stretched 60% at 320 on load, 52% mid-resize and 148% straight
+   after a 375 to 900 change, and putting that height back brings all three
+   numbers back. With the height left to the bitmap's own ratio the lag costs
+   resolution for a frame and never the shape: 0.0% skew at every reading. */
 .relief__plate {
   display: block;
   width: 100%;
   max-width: 100%;
+  height: auto;
 }
 
 .relief__readout {

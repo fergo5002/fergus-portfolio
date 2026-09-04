@@ -160,10 +160,13 @@ export default function ReliefTool() {
       return;
     }
 
+    // The bitmap only. Its CSS height is deliberately not set here: `tool.css`
+    // leaves it `auto` so the displayed shape is the bitmap's own ratio, and a
+    // ResizeObserver reading that lags the box costs resolution rather than
+    // stretching the ground sideways.
     const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
     canvas.width = Math.round(geometry.width * dpr);
     canvas.height = Math.round(geometry.height * dpr);
-    canvas.style.height = `${geometry.height}px`;
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     // The face is whatever the page is set in, so no font name lives here.
     context.font = `${LABEL_PX}px ${style.fontFamily}`;
