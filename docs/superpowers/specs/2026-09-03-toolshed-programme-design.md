@@ -91,7 +91,7 @@ Rough monthly draw at the caps below (guessed, not measured; the first month mea
 
 | Tool | Cap | CPU-hrs | GB-hrs | Invocations | Redis commands |
 |---|---|---|---|---|---|
-| On the glass | 15 renders a day, 3 per IP | 1.3 | 8 | 500 | 2k |
+| On the glass | see T5: 4 a day at the ceiling, and the work per run is being cut | 1.3 | 8 | 500 | 2k |
 | Burn | 100 visitor-hours | 0.1 | 3 | 90k | 180k |
 | Tide | 1,000 queries | 0.1 | 1 | 5k | 4k |
 | Census (serving) | ISR, daily | ~0 | ~0 | 2k | 0 |
@@ -99,6 +99,11 @@ Rough monthly draw at the caps below (guessed, not measured; the first month mea
 | **Total** | | **1.5 of 4** | **12 of 360** | **110k of 1M** | **206k of 500k** |
 
 Active CPU is the binding meter and On the glass is the only thing that moves it. The rule: every hosted tool has a per-IP budget, a per-target budget and a global daily cap, each refusal is a sentence rather than a spinner, and the caps are chosen so the month sums to under 60% of every allotment. If a meter passes 60% before the 20th, the global cap of the tool responsible halves. Nothing ever moves to a paid tier without Fergus saying so.
+
+**Correction, 2026-09-04, from spike S2: the meters cannot be read the way this assumed.** Vercel's usage API is Pro only and this project is on Hobby, and the signed-in browser is the sauna account, which cannot see the `larry-pm` team at all. So neither an agent nor a script can read Active CPU or Provisioned Memory here. Two consequences, and the second is the better engineering anyway:
+
+1. Fergus can read the dashboard himself, and that is the only route to Vercel's own numbers.
+2. **Every hosted tool measures its own cost and reports it.** Each run records its wall clock and its Node CPU time through `process.cpuUsage()`, and the `tool_run` event already carries a duration. That gives a floor and a ceiling per run from our own instruments, on our own terms, with no dependency on a plan we are not on. The monthly figure is then arithmetic over runs we counted rather than a number we hoped to look up. Where a browser subprocess does the work, the Node figure is a floor and wall clock is the ceiling, and both get printed rather than one being passed off as the cost.
 
 ## 6. Sub-projects
 
@@ -135,7 +140,18 @@ Each has an ID, a size (S about one agent session, M two or three, L four to six
 
 ### Wave 2: hosted tools (parallel)
 
-**T5 On the glass** (L, high risk: fetches URLs on the server). `/tools/on-the-glass`. Paste a URL. The engine S2 chose loads it at 390 and 320 as an iPhone and as a throttled Pixel, scrolls and taps through. Measured, not linted: motion under `prefers-reduced-motion: reduce` by frame differencing over three seconds, drawn as a heat map; per-element composited contrast by sampling screenshot pixels under each text rect; tap targets against 44 by 44 and a one-thumb reach zone; the iOS zoom trap by driving focus; overflow at 320 with the element named; the fetch-only text against the rendered text. Screenshots to Blob, 14 days, a permanent report URL keyed by domain and run, and the second run diffs against the first. Every navigation, including redirects and subresources, goes through `lib/fence.ts`. Budget: 3 a day per IP, 15 a day globally, 40 seconds a run. Can't see: pages behind a login, a real phone GPU, and, if S2 lands on Chromium, WebKit itself, which the report says in its first line.
+**T5 On the glass** (L, high risk: fetches URLs on the server). `/tools/on-the-glass`. Paste a URL. **Rewritten 2026-09-04 after spike S2, which found the tool too expensive as designed.** What S2 settled:
+
+- **The engine is Chromium, not WebKit.** WebKit dies in a Vercel function at `libatk-1.0.so.0`, reproduced twice, and its 298 MB of binary took the bundle to 374 MB and got a deploy refused. So the report's first line is fixed and honest: "Measured in Chromium pretending to be an iPhone 13 at 390 and 320 wide. Not WebKit, so a Safari-only bug is invisible here." The "can't see" list gains WebKit itself. Note the pleasing asymmetry, and say it on the page: this site's own CI does run real WebKit, because GitHub's runners have the system libraries a Vercel function does not.
+- **Drop `--single-process`.** It is in the sparticuz defaults and under Playwright it does not slow the launch, it hangs it: a timeout at 60 seconds against 18 without. Isolated, not guessed. Filter it out of `chromium.args`.
+- **The work per run has to come down.** At the pessimistic ceiling, treating wall clock as CPU, the tool as designed affords about four renders a day against a rule that says to stop below five. The cuts, in the order they cost least:
+  1. **One engine, two widths, one browser.** Reuse a single browser across 390 and 320 rather than a fresh context each, and drop the separate "throttled Pixel" profile: it was Chromium too, so it was never a second engine, only a second viewport, and it bought almost no signal for a third of the cost.
+  2. **Cheaper frame differencing, not none.** Motion under reduced motion is the thing no other tool measures and it stays. It runs at half resolution, over 1.5 seconds rather than 3, at a lower sample rate. A region that only moves at full resolution was never going to be noticed by a person.
+  3. **Screenshot once per width and derive everything from that image.** Contrast, tap targets and overflow all read the same capture.
+- **Tell the visitor about the wait.** One run in five or six is cold at 15 to 20 seconds, and warm is still 11.5 to 16. There is no version where somebody waits through that in one page load without being told what is happening, so the queue and its progress are part of the design, not a polish item.
+- **Nobody should treat four a day as measured.** It is arithmetic on a ceiling. The true cost sits between a Node-only floor of 0.21 seconds and a wall-clock ceiling of 12.5. The tool measures its own cost from the first day it ships (see the meter note in section 5) and the cap moves when there is a real number.
+
+Otherwise unchanged: motion under reduced motion by frame differencing, per-element composited contrast sampled from screenshot pixels, tap targets against 44 by 44 and a one-thumb reach zone, the iOS zoom trap driven rather than read, overflow at 320 with the element named, and the fetch-only text against the rendered text. Screenshots to Blob for 14 days, a permanent report URL that diffs against the last run, and every navigation through `lib/fence.ts`.
 
 **T6 Irish Stack Census** (L, medium risk: a crawler with your name on it). `/tools/census`. The corpus from S4. A monthly crawl on the home machine: one polite fetch per domain (HEAD, then the first 64 KB of the home page, a 2-second cap, `robots.txt` honoured, a named user agent with a contact URL), fingerprinted for platform, host, payments, booking system, newsletter tool, an h1, the copyright year, then classified by industry from schema.org types and page content into about forty buckets, written to Neon with the run id. The site serves a table by industry, a stack-by-industry matrix, and after the second month the diff: who moved, who went dark, who arrived. An honesty layer per row: the evidence URL and the reason for each classification. A JSON API with the same budget as the page. Can't see: sites behind JavaScript, sites that block bots (marked unknown, never custom), businesses without a `.ie` domain. Coverage stated per bucket against a spot check.
 
@@ -212,8 +228,8 @@ The five rules of the coding policy, plus the ones this programme adds:
 
 | Risk | If true, we would see | Mitigation |
 |---|---|---|
-| WebKit will not run in a Vercel function | S2 fails to launch WebKit with missing-library errors | Chromium with device emulation, labelled honestly in the report's first line. The tool is still the only one measuring motion and composited contrast. |
-| WebSockets on Hobby cost too many GB-hours | S1's usage page shows an open socket burning provisioned memory for its whole life | Batched HTTP for Burn, WebRTC for Pong. Both designed in already. |
+| ~~WebKit will not run in a Vercel function~~ Confirmed 2026-09-04 | It failed at `libatk-1.0.so.0`, twice, in under 75 ms, and its 298 MB got a deploy refused | Chromium with iPhone emulation, and the first line of every report says so. The tool is still the only one measuring motion and composited contrast. |
+| ~~WebSockets on Hobby cost too many GB-hours~~ Partly answered 2026-09-04 | They upgrade and hold: `101 Switching Protocols`, an hour held, cut at 299,995 to 299,999 ms every time. The cost could not be measured, because the usage API is Pro only | Batched HTTP for Burn and WebRTC for Pong stand, on the design's reasoning rather than on a measured cost. S1 also found the client stays blind for 10 to 16 seconds after the cut before it notices, which is the finding that matters for Burn either way. |
 | The .ie crawl is too slow or too rude from a home machine | S4 and the first crawl show more than a week of wall clock, or complaints | Lower concurrency, HEAD-first, a sample of the corpus per month with a full pass quarterly. |
 | Redis command budget blown by Burn | The Upstash meter passes 300k mid-month | Poll interval rises from four seconds to eight; the heat map moves to an in-function cache with a ten-second flush. |
 | ~~DuckDB will not take the 0300 SQL~~ Resolved 2026-09-03 | The port agreed to 1.14e-13, so the SQL was never the risk. The engine's size was: 8.1 MB, 82 s at Slow 4G | DuckDB dropped; the model is ported to TypeScript and the DuckDB macros stay as the test oracle. |
