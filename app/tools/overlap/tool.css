@@ -1,0 +1,245 @@
+/* ==========================================================================
+   /tools/overlap
+   --------------------------------------------------------------------------
+   The tool's own rules, per the programme rule that a tool owns
+   app/tools/<slug>/tool.css and the shell keeps globals.css (design
+   2026-09-03, section 2). Imported by ./page.tsx, so it loads on this route
+   only. It reads the shell's custom properties (--green, --green-bright,
+   --green-line, --bg-panel, --amber, --sp-*, --radius); nothing here
+   redefines one.
+
+   Colour rules, both learnt in app/globals.test.ts: --green-dim is borderline
+   on amber (4.45) and ice (4.46) and appears nowhere here; --green-faint
+   appears nowhere at all.
+
+   Two floors are deliberate rather than tasteful. Every control is 16px,
+   because iOS zooms the whole page when a smaller one takes focus, and on
+   this route that would happen while somebody is typing a room code. Every
+   tappable box is 44px, and the labels take their 44px only where there is a
+   finger, which is the pattern app/tools/headline-check/tool.css set.
+   ========================================================================== */
+
+.overlap {
+  display: grid;
+  gap: var(--sp-4);
+  max-width: 68ch;
+  margin-top: var(--sp-5);
+}
+
+.overlap__honesty {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--green);
+  font-size: 0.9rem;
+}
+
+.overlap__hint,
+.overlap__counts,
+.overlap__demo-label {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--green);
+  font-size: 0.82rem;
+}
+
+.overlap__panels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.overlap__tab,
+.overlap__button {
+  min-height: 44px;
+  padding: var(--sp-2) var(--sp-3);
+  font: inherit;
+  /* 16px, and never smaller: a control under it makes iOS zoom the page. */
+  font-size: 16px;
+  color: var(--green-bright);
+  background: var(--bg-panel);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  text-shadow: none;
+  cursor: pointer;
+}
+
+.overlap__tab[aria-pressed="true"] {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+
+.overlap__button[disabled],
+.overlap__tab[disabled] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.overlap__block {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: start;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+  margin: 0;
+  min-width: 0;
+}
+
+.overlap__legend {
+  color: var(--amber);
+  font-size: 0.82rem;
+  padding: 0 var(--sp-2);
+}
+
+.overlap__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  width: 100%;
+  min-width: 0;
+}
+
+/* --green, not --green-dim: a form label is the accessible name of its field,
+   so it is the last thing on the page allowed to be borderline. */
+.overlap__label {
+  color: var(--green);
+  font-size: 0.82rem;
+}
+
+.overlap__input,
+.overlap__select,
+.overlap__file,
+.overlap__blob {
+  min-height: 44px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: var(--sp-2) var(--sp-3);
+  font: inherit;
+  font-size: 16px;
+  color: var(--green-bright);
+  caret-color: var(--green-bright);
+  background: var(--bg-panel);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  text-shadow: none;
+}
+
+.overlap__input:focus-visible,
+.overlap__select:focus-visible,
+.overlap__file:focus-visible,
+.overlap__blob:focus-visible,
+.overlap__tab:focus-visible,
+.overlap__button:focus-visible,
+.overlap__summary:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+/* A pasted session description is one unbroken run of about a thousand
+   base64 characters. Without both of these it sets a minimum content width of
+   roughly a thousand pixels and pushes the whole page sideways at 320. */
+.overlap__blob {
+  min-height: 96px;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  resize: vertical;
+}
+
+.overlap__paste {
+  width: 100%;
+  min-width: 0;
+}
+
+.overlap__paste[open] {
+  display: grid;
+  gap: var(--sp-3);
+  justify-items: start;
+}
+
+.overlap__summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  color: var(--amber);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.overlap__code {
+  font-size: 1.4rem;
+  letter-spacing: 0.18em;
+  color: var(--amber);
+  word-break: break-all;
+}
+
+.overlap__note {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--green);
+  font-size: 0.9rem;
+}
+
+.overlap__note--warn {
+  color: var(--amber);
+}
+
+.overlap__result {
+  border-top: 1px solid var(--green-line);
+  padding-top: var(--sp-4);
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.overlap__heading {
+  margin: 0;
+  color: var(--amber);
+  font-size: 1rem;
+}
+
+.overlap__safety {
+  margin: 0;
+  color: var(--green);
+  font-size: 0.82rem;
+}
+
+.overlap__safety strong {
+  font-size: 1.2rem;
+  letter-spacing: 0.18em;
+  color: var(--amber);
+}
+
+.overlap__names {
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: 2px;
+  color: var(--green-bright);
+  font-size: 0.9rem;
+}
+
+/* The finger, not the width. Every one of these is tapped, and the phone check
+   measures the input and the label that focuses it as well as the buttons. */
+@media (hover: none) {
+  .overlap__label {
+    min-height: 44px;
+    display: flex;
+    align-items: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .overlap__result {
+    animation: overlap-in 240ms ease-out both;
+  }
+
+  @keyframes overlap-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}

@@ -36,6 +36,7 @@ export const overlapCopy = {
   },
 
   demo: {
+    tab: "Demo",
     label: "Demo. Both lists are invented, both are built in this tab, and no connection is opened.",
     save: "Save the two demo files",
     hint: "Save them, open this page in two browsers, and run the real flow with files that belong to nobody.",
@@ -127,6 +128,6 @@ export const overlap: ToolEntry = {
     "Rows with no profile link. LinkedIn leaves the URL out when a connection has restricted it, and those rows are counted and reported rather than guessed at.",
     "Old style /pub/ links from exports taken years ago. They are a different identifier space from an /in/ slug and comparing the two would invent matches.",
   ],
-  status: "soon",
+  status: "live",
   order: 30,
 };

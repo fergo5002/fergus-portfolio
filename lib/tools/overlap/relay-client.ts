@@ -19,6 +19,15 @@ export const POLL_WINDOW_MS = 60_000;
 export type RelayFetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 /**
+ * The default, and the reason every function below takes the implementation
+ * rather than reaching for the global itself. The island used to pass
+ * `(u, i) => fetch(u, i)` at four call sites, which put `fetch(` in the
+ * component and broke the one-door-out grep for a real reason: a second door
+ * is a second door whoever opened it.
+ */
+const platformFetch: RelayFetch = (input, init) => fetch(input, init);
+
+/**
  * Deliberately not the same union as `RelayError` in `lib/relay.ts`. This one
  * adds `gave-up`, which no server ever sends, and drops `bad-request`, which
  * the client cannot cause. Making them one type would put a server-only case
@@ -77,7 +86,7 @@ async function call(
 
 export async function createRoom(
   offer: string,
-  fetchImpl: RelayFetch,
+  fetchImpl: RelayFetch = platformFetch,
 ): Promise<{ ok: true; code: string; ttlSec: number } | RelayFailure> {
   const result = await call(fetchImpl, "/api/relay", JSON_POST({ offer }));
   if (!result.ok) return result;
@@ -86,7 +95,7 @@ export async function createRoom(
 
 export async function fetchOffer(
   code: string,
-  fetchImpl: RelayFetch,
+  fetchImpl: RelayFetch = platformFetch,
 ): Promise<{ ok: true; offer: string } | RelayFailure> {
   const result = await call(fetchImpl, `/api/relay?code=${code}`);
   if (!result.ok) return result;
@@ -96,7 +105,7 @@ export async function fetchOffer(
 export async function sendAnswer(
   code: string,
   answer: string,
-  fetchImpl: RelayFetch,
+  fetchImpl: RelayFetch = platformFetch,
 ): Promise<{ ok: true } | RelayFailure> {
   const result = await call(fetchImpl, "/api/relay/answer", JSON_POST({ code, answer }));
   return result.ok ? { ok: true } : result;
@@ -110,7 +119,7 @@ export type PollOptions = {
 
 export async function pollForAnswer(
   code: string,
-  fetchImpl: RelayFetch,
+  fetchImpl: RelayFetch = platformFetch,
   options: PollOptions = {},
 ): Promise<{ ok: true; answer: string } | RelayFailure> {
   const wait = options.wait ?? ((ms) => new Promise<void>((r) => setTimeout(r, ms)));
