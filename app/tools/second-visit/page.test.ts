@@ -9,6 +9,10 @@ const source = readFileSync(join(process.cwd(), "app", "tools", "second-visit", 
   /\r\n/g,
   "\n",
 );
+const styles = readFileSync(join(process.cwd(), "app", "tools", "second-visit", "tool.css"), "utf8").replace(
+  /\r\n/g,
+  "\n",
+);
 
 describe("the page", () => {
   it("was actually read", () => {
@@ -28,6 +32,11 @@ describe("the page", () => {
   it("owns its own stylesheet and nothing else's", () => {
     expect(source).toContain('import "./tool.css"');
     expect(source).not.toContain("globals.css");
+  });
+
+  it("keeps native file controls inside a 320px WebKit grid", () => {
+    expect(styles).toMatch(/\.sv \{[^}]*min-width: 0;[^}]*\}/);
+    expect(styles).toMatch(/\.sv__input, \.sv__select, \.sv__file \{[^}]*width: 100%;[^}]*min-width: 0;[^}]*\}/);
   });
 
   it("carries the credit as an edge in the graph, when there is one", () => {

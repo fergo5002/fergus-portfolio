@@ -9,12 +9,14 @@
    so it appears on nothing a visitor has to read. Every animation is behind
    prefers-reduced-motion. */
 
-.sv { max-width: 68ch; margin-top: var(--sp-5); }
+.sv { width: 100%; min-width: 0; max-width: 68ch; margin-top: var(--sp-5); }
 .sv__step, .sv__results, .sv__honesty { display: grid; gap: var(--sp-2); margin-top: var(--sp-5); }
 .sv__label { display: grid; gap: var(--sp-1); color: var(--green); font-size: 0.82rem; }
 .sv__input, .sv__select, .sv__file {
   font-size: 16px;
   min-height: 44px;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   background: var(--bg-panel);
   border: 1px solid var(--green-line);
