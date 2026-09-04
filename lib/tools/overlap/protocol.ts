@@ -1,5 +1,6 @@
 import {
   BLOOM_THRESHOLD,
+  bitsFor,
   buildFilter,
   decodeFilter,
   encodeFilter,
@@ -37,6 +38,9 @@ import { OverlapProtocolError, type Entry } from "./types";
 
 /** Comfortably under the 16 KB a data channel message can be relied on to carry. */
 export const MAX_FRAME_CHARS = 12_000;
+export const MAX_CONNECTIONS = 30_000;
+export const MAX_PARTS = 64;
+export const FRAME_WAIT_MS = 30_000;
 const VERSION = 1;
 
 export type Channel = {
@@ -58,6 +62,8 @@ export type ExchangeInput = {
   subtle?: SubtleLike;
   random?: (bytes: Uint8Array) => void;
   bloomThreshold?: number;
+  /** Bounds an absent or stalled peer. Tests lower it; production uses 30s. */
+  receiveTimeoutMs?: number;
   onStage?: (stage: Stage) => void;
   onProgress?: (done: number, total: number) => void;
 };
@@ -143,6 +149,9 @@ export type Frame =
   | { t: "done" };
 
 function parseFrame(text: string): Frame {
+  if (text.length > MAX_FRAME_CHARS + 256) {
+    throw new OverlapProtocolError("a message larger than one frame");
+  }
   let value: unknown;
   try {
     value = JSON.parse(text);
@@ -158,6 +167,46 @@ function parseFrame(text: string): Frame {
   }
   if (frame.t === "meta" && frame.version !== VERSION) {
     throw new OverlapProtocolError(`version ${String(frame.version)}, this page speaks ${VERSION}`);
+  }
+  if (frame.t === "salt" && typeof frame.v !== "string") {
+    throw new OverlapProtocolError("a salt with no value");
+  }
+  if (frame.t === "meta") {
+    if (
+      (frame.mode !== "exact" && frame.mode !== "bloom") ||
+      !Number.isInteger(frame.count) ||
+      frame.count < 0 ||
+      frame.count > MAX_CONNECTIONS
+    ) {
+      throw new OverlapProtocolError("invalid metadata");
+    }
+    if (
+      frame.mode === "bloom" &&
+      (!Number.isInteger(frame.bits) ||
+        frame.bits === undefined ||
+        frame.bits <= 0 ||
+        frame.bits > bitsFor(MAX_CONNECTIONS) ||
+        frame.bits % 8 !== 0 ||
+        !Number.isInteger(frame.k) ||
+        frame.k === undefined ||
+        frame.k < 1 ||
+        frame.k > 64)
+    ) {
+      throw new OverlapProtocolError("invalid filter metadata");
+    }
+  }
+  if (
+    frame.t === "part" &&
+    (!Number.isInteger(frame.i) ||
+      !Number.isInteger(frame.n) ||
+      frame.n < 1 ||
+      frame.n > MAX_PARTS ||
+      frame.i < 0 ||
+      frame.i >= frame.n ||
+      typeof frame.v !== "string" ||
+      frame.v.length > MAX_FRAME_CHARS)
+  ) {
+    throw new OverlapProtocolError("invalid part metadata");
   }
   return frame;
 }
@@ -175,6 +224,13 @@ function partsOf(payload: string): string[] {
 export async function runExchange(input: ExchangeInput): Promise<ExchangeResult> {
   const { side, entries, channel, fingerprints } = input;
   const threshold = input.bloomThreshold ?? BLOOM_THRESHOLD;
+
+  if (!fingerprints.offer || !fingerprints.answer) {
+    throw new OverlapProtocolError("a missing connection fingerprint");
+  }
+  if (entries.length > MAX_CONNECTIONS) {
+    throw new OverlapProtocolError("too many connections");
+  }
 
   const inbox: Frame[] = [];
   let deliver: (() => void) | null = null;
@@ -200,11 +256,18 @@ export async function runExchange(input: ExchangeInput): Promise<ExchangeResult>
   const next = <T extends Frame["t"]>(kind: T): Promise<Extract<Frame, { t: T }>> =>
     new Promise((resolve, reject) => {
       let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        deliver = null;
+        reject(new OverlapProtocolError(`timed out waiting for ${kind}`));
+      }, input.receiveTimeoutMs ?? FRAME_WAIT_MS);
       const pump = () => {
         if (settled) return;
         if (failure) {
           settled = true;
           deliver = null;
+          clearTimeout(timer);
           reject(failure);
           return;
         }
@@ -215,6 +278,7 @@ export async function runExchange(input: ExchangeInput): Promise<ExchangeResult>
         }
         settled = true;
         deliver = null;
+        clearTimeout(timer);
         resolve(inbox.splice(at, 1)[0] as Extract<Frame, { t: T }>);
       };
       pump();
@@ -276,10 +340,12 @@ export async function runExchange(input: ExchangeInput): Promise<ExchangeResult>
   while (expected === -1 || have < expected) {
     const part = await next("part");
     if (expected === -1) expected = part.n;
-    if (chunks[part.i] === undefined) {
-      chunks[part.i] = part.v;
-      have += 1;
+    else if (part.n !== expected) {
+      throw new OverlapProtocolError("part totals that disagree");
     }
+    if (chunks[part.i] !== undefined) throw new OverlapProtocolError("a duplicate part");
+    chunks[part.i] = part.v;
+    have += 1;
   }
   await next("done");
   const theirPayload = chunks.join("");

@@ -16,6 +16,12 @@ export type ToolEntry = {
    */
   privacy: "browser" | "server";
   /**
+   * An honest replacement for the generic line when a tool does peer-to-peer
+   * networking. `privacyNote` is not enough for that case because it would
+   * leave a false bold sentence above the qualification.
+   */
+  privacyLine?: string;
+  /**
    * One extra sentence under the privacy line, for a tool whose two words are
    * not the whole truth. Optional and additive: the frozen `ToolEntry` block in
    * the programme design permits additions.

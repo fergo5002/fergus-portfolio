@@ -63,6 +63,18 @@ describe("createRoom", () => {
     const impl = async () => new Response("<html>", { status: 200 });
     await expect(createRoom(SDP, impl)).resolves.toMatchObject({ ok: false, error: "failed" });
   });
+
+  it("refuses a successful response whose room fields are not real", async () => {
+    for (const body of [
+      {},
+      { code: "not-a-code", ttlSec: 600 },
+      { code: "K4M9F2", ttlSec: 0 },
+      { code: "K4M9F2", ttlSec: "600" },
+    ]) {
+      const { impl } = recorder([{ status: 200, body }]);
+      await expect(createRoom(SDP, impl)).resolves.toMatchObject({ ok: false, error: "failed" });
+    }
+  });
 });
 
 describe("fetchOffer and sendAnswer", () => {
@@ -90,6 +102,17 @@ describe("fetchOffer and sendAnswer", () => {
       ok: false,
       error: "already-joined",
     });
+  });
+
+  it("refuses malformed success bodies instead of handing them to WebRTC", async () => {
+    for (const body of [{}, { offer: "hello" }, { offer: 42 }]) {
+      const { impl } = recorder([{ status: 200, body }]);
+      await expect(fetchOffer("K4M9F2", impl)).resolves.toMatchObject({ ok: false, error: "failed" });
+    }
+    for (const body of [{}, { ok: false }, { ok: "true" }]) {
+      const { impl } = recorder([{ status: 200, body }]);
+      await expect(sendAnswer("K4M9F2", SDP, impl)).resolves.toMatchObject({ ok: false, error: "failed" });
+    }
   });
 });
 
@@ -130,6 +153,17 @@ describe("pollForAnswer", () => {
       error: "budget",
     });
     expect(calls).toHaveLength(1);
+  });
+
+  it("refuses a malformed answer in a successful poll response", async () => {
+    for (const answer of [42, "hello", {}]) {
+      const { impl, calls } = recorder([{ status: 200, body: { answer } }]);
+      await expect(pollForAnswer("K4M9F2", impl, { wait: async () => {} })).resolves.toMatchObject({
+        ok: false,
+        error: "failed",
+      });
+      expect(calls).toHaveLength(1);
+    }
   });
 
   it("keeps the arithmetic the plan budgeted for", () => {

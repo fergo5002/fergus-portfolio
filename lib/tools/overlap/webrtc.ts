@@ -21,14 +21,32 @@ import type { Channel } from "./protocol";
  * outside. One small packet, no part of anybody's file. The page names
  * Cloudflare and offers a same-network-only switch that empties this list, for
  * two people on the same wifi who would rather nothing left the building. There
- * is no TURN server, so a symmetric NAT will fail to connect, and the honest
- * answer to that is the copy and paste route, which always works.
+ * is no TURN server, so a symmetric NAT can defeat both room-code and manual
+ * signalling routes. Manual signalling skips the relay, not the network.
  */
 
 export const ICE_SERVERS: RTCIceServer[] = [{ urls: ["stun:stun.cloudflare.com:3478"] }];
 
 /** Some networks never report gathering as complete. Go with what we have. */
 const ICE_TIMEOUT_MS = 4_000;
+export const CONNECTION_TIMEOUT_MS = 20_000;
+
+/** Once both descriptions exist, a connection either opens promptly or fails visibly. */
+export function waitForConnection<T>(pending: Promise<T>, timeoutMs = CONNECTION_TIMEOUT_MS): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error("overlap: browsers could not connect")), timeoutMs);
+    pending.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
 
 function gathered(pc: RTCPeerConnection): Promise<void> {
   if (pc.iceGatheringState === "complete") return Promise.resolve();
@@ -66,6 +84,7 @@ export type Opened = {
 export async function openAsCreator(options: { sameNetworkOnly?: boolean } = {}): Promise<{
   offer: string;
   finish: (answerSdp: string) => Promise<Opened>;
+  close: () => void;
 }> {
   const pc = new RTCPeerConnection({ iceServers: options.sameNetworkOnly ? [] : ICE_SERVERS });
   const dataChannel = pc.createDataChannel("overlap", { ordered: true });
@@ -74,12 +93,19 @@ export async function openAsCreator(options: { sameNetworkOnly?: boolean } = {})
     else dataChannel.addEventListener("open", () => resolve());
   });
 
-  await pc.setLocalDescription(await pc.createOffer());
-  await gathered(pc);
-  const offer = pc.localDescription?.sdp ?? "";
+  let offer: string;
+  try {
+    await pc.setLocalDescription(await pc.createOffer());
+    await gathered(pc);
+    offer = pc.localDescription?.sdp ?? "";
+  } catch (error) {
+    pc.close();
+    throw error;
+  }
 
   return {
     offer,
+    close: () => pc.close(),
     finish: async (answerSdp: string) => {
       await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
       await open;
@@ -91,7 +117,7 @@ export async function openAsCreator(options: { sameNetworkOnly?: boolean } = {})
 export async function openAsJoiner(
   offerSdp: string,
   options: { sameNetworkOnly?: boolean } = {},
-): Promise<{ answer: string; opened: Promise<Opened> }> {
+): Promise<{ answer: string; opened: Promise<Opened>; close: () => void }> {
   const pc = new RTCPeerConnection({ iceServers: options.sameNetworkOnly ? [] : ICE_SERVERS });
   const channel = new Promise<RTCDataChannel>((resolve) => {
     pc.addEventListener("datachannel", (event) => {
@@ -101,13 +127,20 @@ export async function openAsJoiner(
     });
   });
 
-  await pc.setRemoteDescription({ type: "offer", sdp: offerSdp });
-  await pc.setLocalDescription(await pc.createAnswer());
-  await gathered(pc);
-  const answer = pc.localDescription?.sdp ?? "";
+  let answer: string;
+  try {
+    await pc.setRemoteDescription({ type: "offer", sdp: offerSdp });
+    await pc.setLocalDescription(await pc.createAnswer());
+    await gathered(pc);
+    answer = pc.localDescription?.sdp ?? "";
+  } catch (error) {
+    pc.close();
+    throw error;
+  }
 
   return {
     answer,
+    close: () => pc.close(),
     opened: channel.then((dc) => ({
       channel: channelFrom(dc),
       localSdp: answer,

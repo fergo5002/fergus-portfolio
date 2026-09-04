@@ -16,17 +16,17 @@ export const overlapCopy = {
     notPsi:
       "This is not a private set intersection protocol, and calling it one would be a lie. Both browsers agree a random salt and then swap salted hashes, so the person you are comparing with holds the same salt you do. They can hash a list of people they are curious about and see whether any of them come back. This is a tool for two people who have chosen to compare notes. It is not a defence against the person on the other end.",
     claim:
-      "The honest version of the promise is short: your list never leaves your browser, and the person you are comparing with sees only hashes.",
+      "The honest version of the promise is short: your list never leaves your browser. The other browser receives salted hashes, the salt and a count, never your file or its names.",
     theyLearn:
       "They also learn two things that are not on the list. Roughly how many connections you have, because the number of hashes is the number of names. And your IP address, because the two browsers connect straight to each other and that is what a direct connection is. Nothing about this tool avoids either.",
     relaySees:
-      "The room code service holds one connection blob from each side for ten minutes and a hashed version of your address for a day. It never sees a hash from your list, a name, or the file. The blob does carry your address inside it, because that is how two browsers find each other.",
+      "The room code service holds one connection blob from each side for ten minutes and a daily-changing hash of your address for up to an hour. It never sees a hash from your list, a name, or the file. The blob does carry your address inside it, because that is how two browsers find each other.",
     safety:
-      "The four characters under the result are computed from the salt and both connection fingerprints. Read them aloud to each other. If they match, nobody has put themselves between you and you are in the same room. If you do not read them aloud they do nothing at all.",
+      "The four characters under the result are computed from the salt and both connection fingerprints. Read them aloud to each other. A match is a useful check, not proof: two unrelated sessions have a one in 14,641 chance of matching by accident. If you do not read them aloud they do nothing at all.",
     storage:
       "This tool writes nothing to your machine: no cookie, no local storage, nothing. The forget command has nothing to wipe here.",
     stun:
-      "Unless you turn it off, your browser asks a public address server run by Cloudflare what your address looks like from outside. It sends one small packet and no part of your file. Turn on same network only if you are both on the same wifi and would rather it did not.",
+      "Unless you turn it off, your browser asks a public address server run by Cloudflare what your address looks like from outside. It sends one small packet and no part of your file. Turn on same network only if you are both on the same wifi and would rather it did not. There is no TURN server, so both routes can fail on restrictive networks.",
   },
 
   export: {
@@ -68,19 +68,21 @@ export const overlapCopy = {
     gaveUp:
       "Nobody joined in a minute. The code is dead now; make another one, or use copy and paste below.",
     failed:
-      "The two browsers could not reach each other. That happens on some mobile networks, and copy and paste below always works.",
+      "The two browsers could not reach each other. That happens on some mobile networks. Copy and paste skips the room code service, but it still needs a direct browser connection and can fail on the same restrictive networks.",
     sameNetwork: "Same network only",
-    pasteLegend: "Or copy and paste, with no server at all",
+    pasteLegend: "Or copy and paste, with no room code server",
     pasteStart: "Start here and send this to the other person",
+    pasteOffer: "Send this to the other person",
     pasteReply: "Paste what they send back",
     pasteJoin: "Paste what they sent you",
     pasteAnswer: "Send this back to them",
-    pasteHint: "This route has nothing of mine in it. Two blobs of text, sent however you like.",
+    pasteHint:
+      "This skips my room code server. Unless same network only is on, both browsers still ask Cloudflare for their public address, then try to connect directly. Send the two blobs however you like.",
   },
 
   relay: {
     unavailable:
-      "The room code service is not running, so codes are off right now. Use copy and paste below instead: it needs no server at all, and it is the one I would pick anyway.",
+      "The room code service is not running, so codes are off right now. Use copy and paste below instead: it skips that service, though the two browsers still have to connect directly.",
     budget:
       "Room codes are capped so this stays free to run. Try again later, or use copy and paste below, which is never capped.",
     noRoom:
@@ -117,10 +119,12 @@ export const overlap: ToolEntry = {
   slug: "overlap",
   name: "Overlap",
   blurb:
-    "Two people about to meet find out who they both already know, without either handing over a contact list. Both browsers hash their connections with a shared salt and swap only the hashes.",
+    "Two people about to meet find out who they both already know, without either handing over a contact list. Both browsers hash their connections with a shared salt and compare the hashes rather than the files.",
   privacy: "browser",
+  privacyLine:
+    "Your file and names stay in this browser. Salted profile hashes go directly to the other browser; the room code service sees connection blobs and a daily-changing address hash, never your list.",
   privacyNote:
-    "One server part: a room code service that holds a connection blob from each side for ten minutes so the two browsers can find each other. It never sees a name or a hash, and the copy and paste route skips it entirely.",
+    "For room codes, a service holds one connection blob from each side for ten minutes so the two browsers can find each other. It never sees a name or a hash, and the copy and paste route skips it entirely.",
   cantSee: [
     "Second-degree paths. It compares two lists of people you are each already connected to, so somebody you both reach through a third person is invisible to it.",
     "Warmth. A colleague you speak to weekly and a stranger who sent a request in 2019 look exactly the same in an export, and this tool does not read the connected-on date to guess between them.",

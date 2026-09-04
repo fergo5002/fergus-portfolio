@@ -55,7 +55,7 @@ export default function ToolPage({
         <Scramble text={tool.slug} speed={34} />
       </h1>
       <p className="page__lede">{tool.blurb}</p>
-      <p className="tool__privacy">{toolShellCopy.privacy[tool.privacy]}</p>
+      <p className="tool__privacy">{tool.privacyLine ?? toolShellCopy.privacy[tool.privacy]}</p>
       {tool.privacyNote ? <p className="tool__privacynote">{tool.privacyNote}</p> : null}
 
       {children}

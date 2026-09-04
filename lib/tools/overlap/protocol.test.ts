@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { BLOOM_THRESHOLD } from "./bloom";
-import { newSalt } from "./hash";
+import { encodeSalt, newSalt } from "./hash";
 import { MAX_FRAME_CHARS, fingerprintOf, pairedChannels, runExchange, safetyString } from "./protocol";
 import type { Entry } from "./types";
 
@@ -9,6 +9,7 @@ const person = (slug: string, label = slug): Entry => ({ slug, label });
 const OFFER_FP =
   "AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99";
 const ANSWER_FP = OFFER_FP.split(":").reverse().join(":");
+const FINGERPRINTS = { offer: OFFER_FP, answer: ANSWER_FP };
 
 /** Both sides of one exchange, run to completion, in one process. */
 async function meet(a: Entry[], b: Entry[], overrides: Partial<Parameters<typeof runExchange>[0]> = {}) {
@@ -143,6 +144,14 @@ describe("the safety string", () => {
 });
 
 describe("what it refuses", () => {
+  it("refuses a local file beyond LinkedIn's maximum before opening the protocol", async () => {
+    const [left] = pairedChannels();
+    const entries = Array.from({ length: 30_001 }, (_, i) => person(`p${i}`));
+    await expect(
+      runExchange({ side: "creator", entries, channel: left, fingerprints: FINGERPRINTS }),
+    ).rejects.toThrow(/too many connections/);
+  });
+
   it("refuses a frame it cannot read rather than carrying on", async () => {
     const [left, right] = pairedChannels();
     const fingerprints = { offer: OFFER_FP, answer: ANSWER_FP };
@@ -165,6 +174,65 @@ describe("what it refuses", () => {
     const run = runExchange({ side: "joiner", entries: [person("a")], channel: right, fingerprints });
     left.send(JSON.stringify({ t: "meta", version: 99, mode: "exact", count: 0 }));
     await expect(run).rejects.toThrow(/protocol/);
+  });
+
+  it("refuses missing fingerprints rather than printing a meaningless safety string", async () => {
+    const [left] = pairedChannels();
+    await expect(
+      runExchange({
+        side: "creator",
+        entries: [person("a")],
+        channel: left,
+        fingerprints: { offer: "", answer: ANSWER_FP },
+      }),
+    ).rejects.toThrow(/fingerprint/);
+  });
+
+  it("refuses malformed metadata before it can allocate or wait", async () => {
+    for (const meta of [
+      { t: "meta", version: 1, mode: "exact", count: "1" },
+      { t: "meta", version: 1, mode: "wat", count: 1 },
+      { t: "meta", version: 1, mode: "exact", count: 30_001 },
+      { t: "meta", version: 1, mode: "bloom", count: 1 },
+    ]) {
+      const [left, right] = pairedChannels();
+      const run = runExchange({ side: "joiner", entries: [person("a")], channel: right, fingerprints: FINGERPRINTS });
+      left.send(JSON.stringify({ t: "salt", v: encodeSalt(new Uint8Array(32)) }));
+      left.send(JSON.stringify(meta));
+      await expect(run).rejects.toThrow(/protocol/);
+    }
+  });
+
+  it("refuses impossible part indices and inconsistent part totals", async () => {
+    const start = () => {
+      const [left, right] = pairedChannels();
+      const run = runExchange({ side: "joiner", entries: [person("a")], channel: right, fingerprints: FINGERPRINTS });
+      left.send(JSON.stringify({ t: "salt", v: encodeSalt(new Uint8Array(32)) }));
+      left.send(JSON.stringify({ t: "meta", version: 1, mode: "exact", count: 1 }));
+      return { left, run };
+    };
+
+    const outside = start();
+    outside.left.send(JSON.stringify({ t: "part", i: 2, n: 2, v: "abc" }));
+    await expect(outside.run).rejects.toThrow(/protocol/);
+
+    const disagree = start();
+    disagree.left.send(JSON.stringify({ t: "part", i: 0, n: 2, v: "abc" }));
+    disagree.left.send(JSON.stringify({ t: "part", i: 1, n: 3, v: "def" }));
+    await expect(disagree.run).rejects.toThrow(/protocol/);
+  });
+
+  it("times out when a peer stops mid-protocol instead of hanging forever", async () => {
+    const [left, right] = pairedChannels();
+    const run = runExchange({
+      side: "joiner",
+      entries: [person("a")],
+      channel: right,
+      fingerprints: FINGERPRINTS,
+      receiveTimeoutMs: 5,
+    });
+    left.send(JSON.stringify({ t: "salt", v: encodeSalt(new Uint8Array(32)) }));
+    await expect(run).rejects.toThrow(/timed out/);
   });
 });
 

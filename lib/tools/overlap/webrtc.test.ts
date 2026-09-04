@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { ICE_SERVERS, packSdp, unpackSdp } from "./webrtc";
+import { CONNECTION_TIMEOUT_MS, ICE_SERVERS, packSdp, unpackSdp, waitForConnection } from "./webrtc";
 
 /**
  * A source-coupling check, not a render and not a connection.
@@ -65,5 +65,16 @@ describe("packSdp and unpackSdp", () => {
 
   it("refuses a blob that is not one rather than handing back rubbish", async () => {
     await expect(unpackSdp("not a blob at all")).rejects.toThrow();
+  });
+});
+
+describe("a connection that never opens", () => {
+  it("is bounded once signalling is complete", async () => {
+    expect(CONNECTION_TIMEOUT_MS).toBe(20_000);
+    await expect(waitForConnection(new Promise(() => {}), 5)).rejects.toThrow(/could not connect/);
+  });
+
+  it("passes through a connection that did open", async () => {
+    await expect(waitForConnection(Promise.resolve("open"), 5)).resolves.toBe("open");
   });
 });

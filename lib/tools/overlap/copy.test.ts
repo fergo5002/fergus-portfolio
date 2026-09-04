@@ -17,6 +17,7 @@ import { overlap, overlapCopy } from "@/content/tools/overlap";
 const everything = [
   overlap.name,
   overlap.blurb,
+  overlap.privacyLine ?? "",
   overlap.privacyNote ?? "",
   ...overlap.cantSee,
   ...JSON.stringify(overlapCopy).split('","'),
@@ -37,9 +38,10 @@ describe("overlap copy", () => {
   });
 
   it("makes the one claim it is allowed to make, in those words", () => {
-    expect(everything).toContain(
-      "your list never leaves your browser, and the person you are comparing with sees only hashes",
-    );
+    expect(overlapCopy.honesty.claim).toContain("your list never leaves your browser");
+    expect(overlapCopy.honesty.claim).toContain("salted hashes, the salt and a count");
+    expect(overlapCopy.honesty.claim).toContain("never your file or its names");
+    expect(overlap.blurb).not.toContain("swap only the hashes");
   });
 
   it("says what a salted hash does not do", () => {
@@ -53,8 +55,24 @@ describe("overlap copy", () => {
     expect(overlapCopy.honesty.theyLearn).toContain("how many connections");
   });
 
+  it("states the relay's actual retention rather than borrowing the generic line", () => {
+    expect(overlapCopy.honesty.relaySees).toContain("up to an hour");
+    expect(overlap.privacyLine).toContain("daily-changing address hash");
+  });
+
   it("says the safety string is useless unless it is read aloud", () => {
     expect(overlapCopy.honesty.safety).toContain("read them aloud");
+    expect(overlapCopy.honesty.safety).toContain("one in 14,641");
+    expect(overlapCopy.honesty.safety).not.toMatch(/if they match, nobody/i);
+  });
+
+  it("does not pretend manual signalling removes WebRTC or guarantees a connection", () => {
+    expect(overlapCopy.connect.pasteLegend).toContain("no room code server");
+    expect(overlapCopy.connect.pasteLegend).not.toContain("no server at all");
+    expect(overlapCopy.connect.pasteHint).toContain("Cloudflare");
+    expect(overlapCopy.honesty.stun).toContain("no TURN server");
+    expect(overlapCopy.honesty.stun).toContain("both routes can fail");
+    expect(overlapCopy.connect.failed).not.toContain("always works");
   });
 
   it("tells the visitor that nothing is written to their machine", () => {
@@ -69,6 +87,8 @@ describe("overlap copy", () => {
 
   it("is a browser tool with a note about the one server part", () => {
     expect(overlap.privacy).toBe("browser");
+    expect(overlap.privacyLine).toContain("Salted profile hashes go directly to the other browser");
+    expect(overlap.privacyLine).not.toContain("Nothing leaves this tab");
     expect(overlap.privacyNote).toContain("room code");
   });
 });

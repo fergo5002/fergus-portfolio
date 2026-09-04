@@ -158,6 +158,10 @@
   justify-items: start;
 }
 
+.overlap__paste:not([open]) > :not(summary) {
+  display: none;
+}
+
 .overlap__summary {
   min-height: 44px;
   display: flex;

@@ -66,6 +66,33 @@ describe("the island is wiring and nothing else", () => {
     expect(source).not.toMatch(/FormData|\.upload|XMLHttpRequest/);
   });
 
+  it("clears an old file before reading a replacement", () => {
+    const readFile = source.slice(source.indexOf("const readFile"), source.indexOf("const finish"));
+    expect(readFile).toContain("setEntries([])");
+    expect(readFile).toContain("setCounts(null)");
+    expect(readFile).toContain("setResult(null)");
+    expect(readFile.indexOf("setEntries([])")).toBeLessThan(readFile.indexOf("reader.readAsText"));
+  });
+
+  it("does not let a replacement file race an exchange already in flight", () => {
+    expect(source).toMatch(/id="overlap-file"[\s\S]{0,180}disabled=\{busy\}/);
+  });
+
+  it("labels the manual outbound blob for the side it currently represents", () => {
+    expect(source).toContain(
+      "awaitingAnswer.current ? overlapCopy.connect.pasteOffer : overlapCopy.connect.pasteAnswer",
+    );
+  });
+
+  it("closes each connection after the exchange and catches setup failures", () => {
+    expect(source).toContain("opened.channel.close()");
+    expect(source).toContain("opened.connection.close()");
+    expect(source).toContain("waitForConnection(");
+    expect(source).toMatch(/const create = useCallback\(async \(\) => \{[\s\S]*?try \{/);
+    expect(source).toMatch(/const join = useCallback\(async \(\) => \{[\s\S]*?try \{/);
+    expect(source).toMatch(/const pasteStart = useCallback\(async \(\) => \{[\s\S]*?try \{/);
+  });
+
   it("refuses to connect at all until there are enough usable rows", () => {
     expect(source).toContain("const ready = entries.length >= MIN_USABLE_ROWS;");
     expect(source).toMatch(/<fieldset[^>]*disabled=\{!ready\}/);
@@ -122,6 +149,10 @@ describe("the stylesheet clears the phone floors before the phone check runs", (
     expect(rule(".overlap__blob")).toContain("word-break: break-all");
     expect(rule(".overlap__blob")).toContain("overflow-wrap: anywhere");
     expect(rule(".overlap__blob")).toContain("max-width: 100%");
+  });
+
+  it("removes closed details descendants from the phone check", () => {
+    expect(bare).toMatch(/\.overlap__paste:not\(\[open\]\) > :not\(summary\)\s*\{[^}]*display: none/);
   });
 
   it("uses neither of the two tokens that fail the contrast floor on some theme", () => {

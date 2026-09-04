@@ -15,12 +15,18 @@ import { demoCsv, demoLists, runDemo } from "@/lib/tools/overlap/demo";
 import {
   fingerprintOf,
   runExchange,
-  type Channel,
   type ExchangeResult,
   type Side,
 } from "@/lib/tools/overlap/protocol";
 import { createRoom, fetchOffer, pollForAnswer, sendAnswer } from "@/lib/tools/overlap/relay-client";
-import { openAsCreator, openAsJoiner, packSdp, unpackSdp } from "@/lib/tools/overlap/webrtc";
+import {
+  openAsCreator,
+  openAsJoiner,
+  packSdp,
+  unpackSdp,
+  waitForConnection,
+  type Opened,
+} from "@/lib/tools/overlap/webrtc";
 import type { Entry } from "@/lib/tools/overlap/types";
 
 /**
@@ -44,7 +50,12 @@ import type { Entry } from "@/lib/tools/overlap/types";
 
 type Panel = "demo" | "file";
 type Note = { kind: "info" | "warn"; text: string };
-type Opened = { channel: Channel; localSdp: string; remoteSdp: string };
+type PendingCreator = {
+  complete: (answerSdp: string) => Promise<Opened>;
+  close: () => void;
+};
+
+const MANUAL_CONNECTION_TIMEOUT_MS = 120_000;
 
 const fill = (template: string, values: Record<string, string | number>): string =>
   Object.entries(values).reduce((out, [k, v]) => out.replace(`{${k}}`, String(v)), template);
@@ -77,7 +88,7 @@ export default function OverlapTool() {
 
   const started = useRef(0);
   /** Set once a paste-route offer has been made here, so the reply is an answer. */
-  const awaitingAnswer = useRef<((answerSdp: string) => Promise<Opened>) | null>(null);
+  const awaitingAnswer = useRef<PendingCreator | null>(null);
 
   // The demo runs the real exchange, in this tab, on mount.
   useEffect(() => {
@@ -86,9 +97,13 @@ export default function OverlapTool() {
       .then(({ a }) => {
         if (live) setDemo(a);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (live) setNote({ kind: "warn", text: overlapCopy.errors.other });
+      });
     return () => {
       live = false;
+      awaitingAnswer.current?.close();
+      awaitingAnswer.current = null;
     };
   }, []);
 
@@ -111,6 +126,15 @@ export default function OverlapTool() {
 
   const readFile = useCallback(
     (chosen: File) => {
+      awaitingAnswer.current?.close();
+      awaitingAnswer.current = null;
+      setFile(null);
+      setColumn(-1);
+      setEntries([]);
+      setCounts(null);
+      setResult(null);
+      setOutbound("");
+      setInbound("");
       const reader = new FileReader();
       setNote({ kind: "info", text: overlapCopy.file.reading });
       reader.onerror = () => setNote({ kind: "warn", text: overlapCopy.errors.file });
@@ -140,8 +164,11 @@ export default function OverlapTool() {
         setNote({ kind: "warn", text: overlapCopy.errors.protocol });
         void trackToolRun({ tool: "overlap", outcome: "error", ms: round100(Date.now() - started.current) });
       } finally {
+        opened.channel.close();
+        opened.connection.close();
         awaitingAnswer.current = null;
         setBusy(false);
+        started.current = 0;
       }
     },
     [entries],
@@ -151,35 +178,54 @@ export default function OverlapTool() {
     setBusy(false);
     setNote({ kind: "warn", text });
     void trackToolRun({ tool: "overlap", outcome: "refused", ms: round100(Date.now() - started.current) });
+    started.current = 0;
+  }, []);
+
+  const failed = useCallback((text: string) => {
+    setBusy(false);
+    setNote({ kind: "warn", text });
+    void trackToolRun({ tool: "overlap", outcome: "error", ms: round100(Date.now() - started.current) });
+    started.current = 0;
   }, []);
 
   const create = useCallback(async () => {
     setBusy(true);
     started.current = Date.now();
     setNote({ kind: "info", text: overlapCopy.connect.creating });
-    const { offer, finish: complete } = await openAsCreator({ sameNetworkOnly });
-    const room = await createRoom(offer);
-    if (!room.ok) {
-      if (room.error === "relay-unavailable" || room.error === "budget") {
-        setCodesOff(room.error === "relay-unavailable");
-        setPasteOpen(true);
+    let close: (() => void) | null = null;
+    try {
+      const setup = await openAsCreator({ sameNetworkOnly });
+      close = setup.close;
+      const room = await createRoom(setup.offer);
+      if (!room.ok) {
+        close();
+        if (room.error === "relay-unavailable" || room.error === "budget") {
+          setCodesOff(room.error === "relay-unavailable");
+          setPasteOpen(true);
+        }
+        refused(room.message || overlapCopy.relay.failed);
+        return;
       }
-      refused(room.message || overlapCopy.relay.failed);
-      return;
+      setCode(room.code);
+      setNote({ kind: "info", text: fill(overlapCopy.connect.created, { code: displayCode(room.code) }) });
+      const answer = await pollForAnswer(room.code, undefined, {
+        onTick: (secondsLeft) =>
+          setNote({ kind: "info", text: fill(overlapCopy.connect.waiting, { seconds: secondsLeft }) }),
+      });
+      if (!answer.ok) {
+        close();
+        refused(answer.error === "gave-up" ? overlapCopy.connect.gaveUp : answer.message);
+        return;
+      }
+      setNote({ kind: "info", text: overlapCopy.connect.open });
+      const opened = await waitForConnection(setup.finish(answer.answer));
+      close = null;
+      await finish(opened, "creator");
+    } catch {
+      close?.();
+      failed(overlapCopy.connect.failed);
     }
-    setCode(room.code);
-    setNote({ kind: "info", text: fill(overlapCopy.connect.created, { code: displayCode(room.code) }) });
-    const answer = await pollForAnswer(room.code, undefined, {
-      onTick: (secondsLeft) =>
-        setNote({ kind: "info", text: fill(overlapCopy.connect.waiting, { seconds: secondsLeft }) }),
-    });
-    if (!answer.ok) {
-      refused(answer.error === "gave-up" ? overlapCopy.connect.gaveUp : answer.message);
-      return;
-    }
-    setNote({ kind: "info", text: overlapCopy.connect.open });
-    await finish(await complete(answer.answer), "creator");
-  }, [finish, refused, sameNetworkOnly]);
+  }, [failed, finish, refused, sameNetworkOnly]);
 
   const join = useCallback(async () => {
     const clean = normaliseTypedCode(typed);
@@ -190,34 +236,51 @@ export default function OverlapTool() {
     setBusy(true);
     started.current = Date.now();
     setNote({ kind: "info", text: overlapCopy.connect.joining });
-    const offer = await fetchOffer(clean);
-    if (!offer.ok) {
-      if (offer.error === "relay-unavailable") {
-        setCodesOff(true);
-        setPasteOpen(true);
+    let close: (() => void) | null = null;
+    try {
+      const offer = await fetchOffer(clean);
+      if (!offer.ok) {
+        if (offer.error === "relay-unavailable") {
+          setCodesOff(true);
+          setPasteOpen(true);
+        }
+        refused(offer.message || overlapCopy.relay.failed);
+        return;
       }
-      refused(offer.message || overlapCopy.relay.failed);
-      return;
+      const setup = await openAsJoiner(offer.offer, { sameNetworkOnly });
+      close = setup.close;
+      const posted = await sendAnswer(clean, setup.answer);
+      if (!posted.ok) {
+        close();
+        refused(posted.message || overlapCopy.relay.failed);
+        return;
+      }
+      setNote({ kind: "info", text: overlapCopy.connect.open });
+      const opened = await waitForConnection(setup.opened);
+      close = null;
+      await finish(opened, "joiner");
+    } catch {
+      close?.();
+      failed(overlapCopy.connect.failed);
     }
-    const { answer, opened } = await openAsJoiner(offer.offer, { sameNetworkOnly });
-    const posted = await sendAnswer(clean, answer);
-    if (!posted.ok) {
-      refused(posted.message || overlapCopy.relay.failed);
-      return;
-    }
-    setNote({ kind: "info", text: overlapCopy.connect.open });
-    await finish(await opened, "joiner");
-  }, [finish, refused, sameNetworkOnly, typed]);
+  }, [failed, finish, refused, sameNetworkOnly, typed]);
 
   const pasteStart = useCallback(async () => {
     setBusy(true);
     started.current = Date.now();
-    const { offer, finish: complete } = await openAsCreator({ sameNetworkOnly });
-    awaitingAnswer.current = complete;
-    setOutbound(await packSdp(offer));
-    setNote({ kind: "info", text: overlapCopy.connect.pasteStart });
-    setBusy(false);
-  }, [sameNetworkOnly]);
+    try {
+      awaitingAnswer.current?.close();
+      const setup = await openAsCreator({ sameNetworkOnly });
+      awaitingAnswer.current = { complete: setup.finish, close: setup.close };
+      setOutbound(await packSdp(setup.offer));
+      setNote({ kind: "info", text: overlapCopy.connect.pasteStart });
+      setBusy(false);
+    } catch {
+      awaitingAnswer.current?.close();
+      awaitingAnswer.current = null;
+      failed(overlapCopy.errors.other);
+    }
+  }, [failed, sameNetworkOnly]);
 
   /**
    * One button, two meanings, decided by whether this tab already made an
@@ -227,22 +290,30 @@ export default function OverlapTool() {
   const pasteContinue = useCallback(async () => {
     setBusy(true);
     if (!started.current) started.current = Date.now();
+    let close: (() => void) | null = null;
     try {
       const sdp = await unpackSdp(inbound.trim());
-      const complete = awaitingAnswer.current;
-      if (complete) {
-        await finish(await complete(sdp), "creator");
+      const pending = awaitingAnswer.current;
+      if (pending) {
+        const opened = await waitForConnection(pending.complete(sdp));
+        awaitingAnswer.current = null;
+        await finish(opened, "creator");
         return;
       }
-      const { answer, opened } = await openAsJoiner(sdp, { sameNetworkOnly });
-      setOutbound(await packSdp(answer));
+      const setup = await openAsJoiner(sdp, { sameNetworkOnly });
+      close = setup.close;
+      setOutbound(await packSdp(setup.answer));
       setNote({ kind: "info", text: overlapCopy.connect.pasteAnswer });
-      await finish(await opened, "joiner");
+      const opened = await waitForConnection(setup.opened, MANUAL_CONNECTION_TIMEOUT_MS);
+      close = null;
+      await finish(opened, "joiner");
     } catch {
-      setBusy(false);
-      setNote({ kind: "warn", text: overlapCopy.errors.other });
+      close?.();
+      awaitingAnswer.current?.close();
+      awaitingAnswer.current = null;
+      failed(overlapCopy.connect.failed);
     }
-  }, [finish, inbound, sameNetworkOnly]);
+  }, [failed, finish, inbound, sameNetworkOnly]);
 
   const saveDemoFiles = useCallback(() => {
     const { a, b } = demoLists();
@@ -321,6 +392,7 @@ export default function OverlapTool() {
             className="overlap__file"
             type="file"
             accept=".csv,text/csv"
+            disabled={busy}
             onChange={(event) => {
               const chosen = event.target.files?.[0];
               if (chosen) readFile(chosen);
@@ -413,7 +485,9 @@ export default function OverlapTool() {
             readOnly
             value={outbound}
             rows={4}
-            aria-label={overlapCopy.connect.pasteAnswer}
+            aria-label={
+              awaitingAnswer.current ? overlapCopy.connect.pasteOffer : overlapCopy.connect.pasteAnswer
+            }
           />
           <label className="overlap__label" htmlFor="overlap-inbound">
             {overlapCopy.connect.pasteJoin}
