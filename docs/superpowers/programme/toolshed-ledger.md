@@ -17,15 +17,15 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | S2 | Spike: WebKit in a function | **decided** | `toolshed/s2-webkit` | record on main | WebKit dies at libatk; Chromium 20 of 20, warm 12.5 s; T5 must cut work per run |
 | S3 | Spike: DuckDB in the tab | **decided** | `toolshed/f5-spikes` | record on main | 0 mismatches at 1e-9; 8.1 MB gzip and 82 s at Slow 4G, so DuckDB does not ship: port to TypeScript, keep the macros as the oracle |
 | S4 | Spike: the .ie seed | **decided** | `toolshed/f5-spikes` | record on main | 126,214 registered .ie domains, 17 MB, under a minute, reproduced twice; 38% of the registry figure |
-| T1 | Drift | **queued** | | | |
-| T2 | Relief | **queued** | | | |
-| T3 | Overlap | **queued** | | | |
+| T1 | Drift | **building** | `toolshed/t1-drift` | | |
+| T2 | Relief | **building** | `toolshed/t2-relief` | | |
+| T3 | Overlap | **building** | `toolshed/t3-overlap` | | |
 | T4 | Second Visit | **queued** | | | |
 | T5 | On the glass | **queued** | | | |
 | T6 | Irish Stack Census | **queued** | | | |
 | T7 | Tide | **queued** | | | |
 | X1 | Burn | **queued** | | | |
-| G0 | Arcade runtime | **pr** | `toolshed/g0-arcade-runtime` | | |
+| G0 | Arcade runtime | **pr** | `toolshed/g0-arcade-runtime` | [#8](https://github.com/fergo5002/fergus-portfolio/pull/8) | |
 | G1 | Phosphor Pong | **queued** | | | |
 | G2 | Snake | **queued** | | | |
 | G3 | Under the Terminal | **queued** | | | |
@@ -105,6 +105,9 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-04 01:30: **two things the spikes changed in the design, and both are mine to own.**
   1. **On the glass is too expensive as designed.** At the pessimistic ceiling it affords about four renders a day against a rule that stops below five. Rather than drop the tool or raise the bill, the work per run comes down: one browser reused across both widths, the separate "Pixel" profile dropped because it was Chromium too and so was never a second engine, frame differencing kept but at half resolution over 1.5 seconds, and one screenshot per width feeding every check. Nobody should treat four as measured; it is arithmetic on a ceiling between a 0.21 second Node floor and a 12.5 second wall-clock ceiling.
   2. **The meters cannot be read the way section 5 assumed.** Vercel's usage API is Pro only, this project is Hobby, and the signed-in browser is the sauna account which cannot see `larry-pm` at all. So every hosted tool now measures its own cost, wall clock and Node CPU per run, and reports it. That is better than the original plan anyway: a number from our own instrument beats one we hoped to look up.
+- 2026-09-04 morning: c85dcc3 (the spike docs) reached production READY as `dpl_3oSTTjjegh3ARZEQpoW4M3e3Z43g`. Docs only, so no user-facing flow was exercised and that is all the claim covers.
+- 2026-09-04 morning: retried the Upstash install before assuming the gate was still shut. It still answers `integration_terms_acceptance_required` with no resource created, so F4 stays held and the two clicks remain the critical path for every store-backed tool.
+- 2026-09-04 morning: wave 1 dispatched. Four implementers on Opus, each in its own worktree cut from main at c85dcc3: T1 Drift, T2 Relief, T3 Overlap and G0 the arcade runtime. Four rather than three because every one of them has a finished plan on main and nothing between them shares a file. Each is briefed to build, self-verify, open a PR and stop short of merging.
 - 2026-09-04: G0 started in its own worktree. Plan: `docs/superpowers/plans/2026-09-04-toolshed-g0-arcade-runtime.md`. Baseline on the branch: 56 test files, 1,208 tests, tsc clean. F4 state at start: not merged (`lib/store/redis.ts` absent), which means Task 12 does not run.
 - 2026-09-04: G0 canary. A failing test in `lib/arcade/` is collected, fails with `expected 2 to be 3`, and exits 1; the full run carries it (1 failed, 56 passed) and exits 1 too. Deleting it returns the suite to 1,208 green. Observed, not assumed.
 - 2026-09-04: G0 phone-check predictions, written and committed before any browser was opened.
@@ -113,7 +116,7 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
   - The same route at **320 by 568**: **32 by 16 at scale 1**, 15px type. Working: 80vh is 454, the arcade gets 409, the screen 357. Width 304, so 40 columns (360) are out and 32 (288) are in; 16 rows need 300 against 357. Under the plan's original CSS this size refused, and that refusal is what sent me back to the stylesheet.
   - Home page, inline terminal, **390 by 844**: **32 by 16 at scale 1**. The page container is narrower than the drawer once its own padding is counted, so 40 columns miss.
   - Everywhere: no horizontal overflow on the document, no scrolling inside the grid, every drawn line exactly `cols` characters, the exit control at least 44 by 44, a swipe changing the screen, the arrow keys **not** scrolling the page, Escape returning the prompt with `cd arcade` still in the scrollback and the drawer still open, sampled contrast at least 4.5:1, and zero console errors.
-  - The reading that would falsify the layout change: a refusal at either width, or a grid that scrolls inside itself. If 40 columns come back at 320, or 48 at 390, the advance is narrower than 9px and the predictions were pessimistic rather than the code being wrong.
+  - The reading that would falsify the layout change: a refusal at either width, or a grid that scrolls inside itself. If 40 columns come back at 320, or 48 at 390, the advance is narrower than 9px and the predictions were pessimistic rather than the code being wrong.
 - 2026-09-04: G0 phone readings, real WebKit against a production build of the branch on `localhost:3111`. **Every grid prediction held, to the row and the scale.**
   - **drawer 390 by 844: 40 by 18 at scale 1**, 15px type, `--green-bright` on `#070b07` measured at **15.56:1**. Document overflow 0, grid overflow 0, every drawn line exactly 40 characters, exit control exactly 44 by 44.
   - **drawer 320 by 568: 32 by 16 at scale 1**, same type, same contrast, overflow 0, every line exactly 32 characters, exit 44 by 44.
@@ -135,3 +138,4 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
   restarting Bounce; probe and grid both 15px, exit 44 by 44, keyboard exit and prompt focus green,
   reduced motion declined. Expected local 404s only: Vercel Analytics' development path and the
   deliberately absent board route. Still unverified: CI, preview, production, a real device and Redis.
+
