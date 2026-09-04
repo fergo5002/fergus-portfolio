@@ -752,6 +752,68 @@ const MUTATIONS = [
     pattern: /The room can still be joined until its ten minutes run out/,
     replace: "The code is dead now",
   },
+
+  // -- relief: ten guards, each with the test that bites on it --
+  {
+    name: "relief takes the percentile ceiling upwards into the outlier it exists to ignore",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /Math\.floor\(p \* \(occupied\.length - 1\)\)/,
+    replace: "Math.ceil(p * (occupied.length - 1))",
+  },
+  {
+    name: "relief scales counts linearly, so every real hour lands under half a percent",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /return Math\.min\(1, Math\.log1p\(count\) \/ Math\.log1p\(Math\.max\(1, ceiling\)\)\);/,
+    replace: "  return Math.min(1, count / Math.max(1, ceiling));",
+  },
+  {
+    name: "relief stops wrapping the hour axis, so a ridge across midnight becomes two",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /const u = h\[\(r - 1 \+ rows\) % rows\]\[c\];/,
+    replace: "const u = h[Math.max(0, r - 1)][c];",
+  },
+  {
+    name: "relief wraps the week axis, so the first week of the year touches the last",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /const l = row\[Math\.max\(0, c - 1\)\];/,
+    replace: "const l = row[(c - 1 + cols) % cols];",
+  },
+  {
+    name: "relief draws contours around a handful of events instead of refusing",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /if \(events\.length < MIN_EVENTS\)/,
+    replace: "if (false)",
+  },
+  {
+    name: "relief draws a year piled into a dozen cells instead of refusing",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /if \(cells\.size < MIN_OCCUPIED_CELLS\)/,
+    replace: "if (false)",
+  },
+  {
+    name: "relief paints black on black when a theme token is missing, instead of saying so",
+    file: "lib/tools/relief/draw.ts",
+    pattern: /if \(!value\) throw new ReliefPaletteError\(name\);/,
+    replace: "if (!value) return value;",
+  },
+  {
+    name: "relief lifts the skirt off the base, so the STL is no longer a closed solid",
+    file: "lib/tools/relief/stl.ts",
+    pattern: /const qb: Vec3 = \[b\[0\], b\[1\], 0\];/,
+    replace: "const qb: Vec3 = [b[0], b[1], 0.5];",
+  },
+  {
+    name: "relief's origin fence accepts any path it is handed",
+    file: "lib/tools/relief/github.ts",
+    pattern: /if \(!path\.startsWith\("\/"\) \|\| path\.startsWith\("\/\/"\)\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "relief anchors a CSV's year on today, so a two-year-old export draws 52 empty weeks",
+    file: "lib/tools/relief/csv.ts",
+    pattern: /const endMs = Math\.max\(\.\.\.parsed\.map\(\(p\) => p\.at\)\);/,
+    replace: "  const endMs = Date.now();",
+  },
 ];
 
 let caught = 0;

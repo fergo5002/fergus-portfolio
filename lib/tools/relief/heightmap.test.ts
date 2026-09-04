@@ -122,16 +122,31 @@ describe("smooth", () => {
       }
   });
 
-  it("wraps the hour axis, because 23:00 is next to 00:00", () => {
-    const g = grid(0);
-    g[0][10] = 1;
-    expect(smooth(g, 1)[HOURS - 1][10]).toBeGreaterThan(0);
+  /**
+   * Both directions, and that is the point rather than belt and braces. The
+   * kernel reads an up neighbour and a down neighbour, so a version testing
+   * only one of them survives a mutation to the other: the first run of
+   * `scripts/mutation-check.mjs` proved exactly that, with the wrap taken off
+   * `u` alone and the suite still green.
+   */
+  it("wraps the hour axis both ways, because 23:00 is next to 00:00", () => {
+    const up = grid(0);
+    up[0][10] = 1;
+    expect(smooth(up, 1)[HOURS - 1][10]).toBeGreaterThan(0);
+
+    const down = grid(0);
+    down[HOURS - 1][10] = 1;
+    expect(smooth(down, 1)[0][10]).toBeGreaterThan(0);
   });
 
-  it("clamps the week axis, because the first week of a year is not the last", () => {
-    const g = grid(0);
-    g[5][0] = 1;
-    expect(smooth(g, 1)[5][WEEKS - 1]).toBe(0);
+  it("clamps the week axis both ways, because the first week of a year is not the last", () => {
+    const right = grid(0);
+    right[5][0] = 1;
+    expect(smooth(right, 1)[5][WEEKS - 1]).toBe(0);
+
+    const left = grid(0);
+    left[5][WEEKS - 1] = 1;
+    expect(smooth(left, 1)[5][0]).toBe(0);
   });
 
   it("damps a lone spike and keeps a broad ridge", () => {
