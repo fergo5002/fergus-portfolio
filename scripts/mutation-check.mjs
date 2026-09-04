@@ -610,6 +610,50 @@ const MUTATIONS = [
     pattern: /    record\("refused", started\);\r?\n    return \{ status: "invalid", seq, url: "", message: headlineCopy\.emptyUrl \};/,
     replace: '    return { status: "invalid", seq, url: "", message: headlineCopy.emptyUrl };',
   },
+  // -- drift: the seven guards, each with the test that catches it --
+  {
+    name: "drift prints a distance under the 150-word floor",
+    file: "lib/tools/drift/report.ts",
+    pattern: /if \(count < MIN_DELTA_WORDS\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "drift prints a distance from a reference of three pieces, in units of one piece's accident",
+    file: "lib/tools/drift/report.ts",
+    pattern: /if \(ref\.documents < MIN_REFERENCE_DOCUMENTS \|\| ref\.markers\.length === 0\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "drift keeps a marker whose standard deviation is zero (every Delta becomes NaN)",
+    file: "lib/tools/drift/reference.ts",
+    pattern: /    if \(s === 0\) continue;/,
+    replace: "    if (false) continue;",
+  },
+  {
+    name: "drift accepts a marker from a single document, so topic reads as voice",
+    file: "lib/tools/drift/reference.ts",
+    pattern: />= minDocuments\)/,
+    replace: ">= 0)",
+  },
+  {
+    name: "drift lectures a writer about a word they use themselves",
+    file: "lib/tools/drift/substitutions.ts",
+    pattern: /    if \(counts\.formal > 0\) continue;/,
+    replace: "    if (false) continue;",
+  },
+  {
+    name: "drift blames sentences for words the draft UNDERuses",
+    file: "lib/tools/drift/report.ts",
+    pattern: /if \(gap > 0\) over\[marker\] = gap \/ ref\.markers\.length;/,
+    replace: "over[marker] = Math.abs(gap) / ref.markers.length;",
+  },
+  {
+    name: "drift saves a profile nobody pressed save for",
+    file: "app/tools/drift/DriftTool.tsx",
+    pattern: /      const stored = parseProfile\(window\.localStorage\.getItem\(DRIFT_PROFILE_KEY\)\);/,
+    replace:
+      "      const stored = parseProfile(window.localStorage.getItem(DRIFT_PROFILE_KEY));\n      window.localStorage.setItem(DRIFT_PROFILE_KEY, serialiseProfile(demoReference, demoProfile, demoSpread, new Date().toISOString()));",
+  },
 ];
 
 let caught = 0;
