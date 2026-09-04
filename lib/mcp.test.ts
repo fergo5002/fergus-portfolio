@@ -32,6 +32,9 @@ import { articles } from "@/content/articles";
 import { projects } from "@/content/projects";
 import { experience } from "@/content/experience";
 import { profile } from "@/content/profile";
+import { buildReference } from "@/lib/tools/drift/reference";
+import { profileOf } from "@/lib/tools/drift/profile";
+import { serialiseProfile } from "@/lib/tools/drift/storage";
 
 /** Shorthand: a well-formed JSON-RPC request body. */
 const rpc = (method: string, params?: unknown, id: string | number = 1) => ({
@@ -977,5 +980,99 @@ describe("toolDescriptors", () => {
     const b = toolDescriptors();
     expect(a).not.toBe(b);
     expect(a).toEqual(b);
+  });
+});
+
+describe("check_voice", () => {
+  function doc(joins: number): string {
+    return Array.from({ length: 40 }, (_, i) =>
+      i < joins ? "And the cat was a thing." : "The cat was a thing here.",
+    ).join(" ");
+  }
+
+  const pieces = [doc(1), doc(2), doc(3), doc(4), doc(5), doc(6)];
+  const callerRef = buildReference(pieces);
+  const saved = JSON.parse(
+    serialiseProfile(callerRef, profileOf(pieces, callerRef), null, "2026-09-03T12:00:00.000Z"),
+  );
+
+  const draft = [
+    ...Array.from({ length: 20 }, () => "And the cat was a thing."),
+    ...Array.from({ length: 10 }, () => "The cat was a thing here."),
+  ].join(" ");
+
+  /** The first text block of a tool result, which every case below reads. */
+  function prose(result: Record<string, unknown>): string {
+    return (result.content as { text: string }[])[0].text;
+  }
+
+  it("is listed", () => {
+    expect(TOOL_NAMES).toContain("check_voice");
+  });
+
+  it("measures a draft against a saved profile", () => {
+    const result = call("check_voice", { profile: saved, draft });
+    const payload = result.structuredContent as Record<string, unknown>;
+    expect(payload.status).toBe("ok");
+    expect(typeof payload.delta).toBe("number");
+    expect(Array.isArray(payload.metrics)).toBe(true);
+  });
+
+  it("measures against the caller's own reference, not this site's", () => {
+    // The whole point. The population in the answer is the six documents the
+    // caller's profile was built from, not the eleven articles at /writing.
+    const payload = call("check_voice", { profile: saved, draft }).structuredContent as {
+      reference: { documents: number; totalWords: number; markers: number };
+    };
+    expect(payload.reference.documents).toBe(6);
+    expect(payload.reference.markers).toBe(callerRef.markers.length);
+    expect(payload.reference.totalWords).toBe(callerRef.totalWords);
+  });
+
+  it("refuses a distance under the word floor and says so in words", () => {
+    const result = call("check_voice", { profile: saved, draft: "Short. Far too short." });
+    const payload = result.structuredContent as Record<string, unknown>;
+    expect(payload.status).toBe("too-short");
+    expect(payload.delta).toBeNull();
+    expect(prose(result).toLowerCase()).toContain("150");
+  });
+
+  it("refuses a distance from a reference of three pieces and says so in words", () => {
+    const thinPieces = [doc(1), doc(3), doc(6)];
+    const thinRef = buildReference(thinPieces);
+    const thin = JSON.parse(
+      serialiseProfile(thinRef, profileOf(thinPieces, thinRef), null, "2026-09-03T12:00:00.000Z"),
+    );
+    const result = call("check_voice", { profile: thin, draft });
+    const payload = result.structuredContent as Record<string, unknown>;
+    expect(payload.status).toBe("thin-reference");
+    expect(payload.delta).toBeNull();
+    // The habits survive: none of them was ever measured in the population's units.
+    expect((payload.metrics as unknown[]).length).toBeGreaterThan(0);
+    expect(prose(result)).toContain("5");
+  });
+
+  it("returns a tool error, not a protocol error, for a profile it does not recognise", () => {
+    const result = call("check_voice", { profile: { nope: true }, draft });
+    expect(result.isError).toBe(true);
+    expect(prose(result)).toContain("Drift profile");
+  });
+
+  it("returns a tool error for a profile with its reference stripped out", () => {
+    // A z-score vector with no table behind it has no units. Measuring it
+    // against whatever table was to hand is the exact failure this tool was
+    // rewritten to remove, so it is refused rather than guessed at.
+    const { reference: _dropped, ...noRef } = saved;
+    expect(call("check_voice", { profile: noRef, draft }).isError).toBe(true);
+  });
+
+  it("returns a tool error for an exported profile with impossible rates", () => {
+    const malformed = structuredClone(saved);
+    malformed.profile.joins.and = -1;
+    expect(call("check_voice", { profile: malformed, draft }).isError).toBe(true);
+  });
+
+  it("returns a tool error when the draft is missing", () => {
+    expect(call("check_voice", { profile: saved }).isError).toBe(true);
   });
 });

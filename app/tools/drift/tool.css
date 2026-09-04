@@ -1,0 +1,208 @@
+/* The route's own rules. `app/globals.css` stays the shell's stylesheet
+   (design section 2, rule 2), so nothing here appends to it. */
+
+.drift {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.drift__fields {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .drift__fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.drift__label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+/* `--green`, not `--green-dim`. The dim token measures 4.45 against the
+   background on the amber theme and 4.46 on ice, so it passes on the theme a
+   developer happens to be looking at and fails on the two a visitor reaches by
+   typing four characters at the terminal. `app/globals.test.ts` has the
+   numbers. Hint text is still body text. */
+.drift__hint {
+  color: var(--green);
+  margin: 0 0 var(--sp-2);
+}
+
+/* 16px exactly. Anything smaller and iOS zooms the viewport on focus, which
+   drops the visitor into a horizontally scrolled page they did not ask for. */
+.drift__input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--green);
+  background: var(--bg-panel);
+  border: 1px solid var(--green-line);
+  padding: 0.75rem;
+  resize: vertical;
+}
+
+.drift__input:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.drift__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* 44px is the floor `scripts/phone-check.mjs` fails below. */
+.drift__button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 1rem;
+  font: inherit;
+  font-size: 16px;
+  color: var(--green);
+  background: transparent;
+  border: 1px solid var(--green-line);
+  cursor: pointer;
+}
+
+/* 0.6, not 0.5. At 0.5 the composited ink measured 4.27:1 and 4.21:1 on the two
+   disabled buttons, under the 4.5 floor, because opacity dims the pixels that
+   actually ship whatever the token says. A disabled control still has to be
+   readable: it is telling the visitor why they cannot press it yet. */
+.drift__button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.drift__delta {
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.drift__refusal,
+.drift__note,
+.drift__spread {
+  margin: 0;
+}
+
+/* A measurement updates many table cells. Announce one sentence rather than
+   putting the entire report in a live region and making assistive technology
+   read the report again after every press. */
+.drift__announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* `min-width: 0`, and it is load-bearing rather than tidy.
+
+   `.drift__report` is a grid item of `.drift`, so its automatic minimum size is
+   its min-content size, and a scroll container inside it does not reduce that.
+   The tables below set `white-space: nowrap`, so their min-content came out at
+   468px, the single grid track grew to fit, and every item in the column went
+   with it: the note, the labels, the hints, all 468 wide inside a 390 viewport.
+   The nav then reported the overflow, 110px away from the cause.
+
+   Measured at 390 before the fix: document scrollWidth 484, `.drift` width 358
+   with scrollWidth 468. The scroll container was never scrolling, because it
+   had been stretched to its content instead of clipping it. */
+.drift__report {
+  min-width: 0;
+  /* The phosphor simulation is intentionally visible through the page, but a
+     long report can put a bright persistence streak directly behind a line of
+     measured prose. The phone check caught that on the two final sentences:
+     green ink over a green streak fell as low as 1.01:1. Give the instrument
+     an opaque patch of the same tube background so its readings stay legible
+     regardless of the simulation state behind it. */
+  background: var(--bg);
+}
+
+/* A wide table scrolls inside its own box. The page body never scrolls
+   sideways, which is the thing the phone check fails on. */
+.drift__scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.drift__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.drift__table th,
+.drift__table td {
+  text-align: left;
+  padding: 0.35rem 0.75rem 0.35rem 0;
+  border-bottom: 1px solid var(--green-line);
+  overflow-wrap: anywhere;
+}
+
+/* Half the row belongs to the description and a quarter to each value. This
+   keeps every cell inside the photographed viewport instead of leaving the
+   right-hand value clipped by the horizontal scroll box. At 320px the labels
+   wrap; the figures remain beside the thing they measure. */
+.drift__table th:first-child {
+  width: 50%;
+}
+
+.drift__list {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.drift__sentence {
+  display: block;
+}
+
+.drift__reasons {
+  display: block;
+  color: var(--amber);
+}
+
+/* A label is tapped to focus its field, so a thumb needs 44px of it. The phone
+   check found both at 23px on all three profiles. `(hover: none)` and no width,
+   because this is about the finger and not about running out of room: the same
+   split `app/globals.test.ts` guards for the status bar. The text keeps the
+   baseline it had and takes the room above, which is how `.hcheck__label`
+   solved the identical failure. */
+@media (hover: none) {
+  .drift__label {
+    min-height: 44px;
+    display: flex;
+    align-items: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drift__delta {
+    animation: drift-settle 240ms ease-out both;
+  }
+
+  @keyframes drift-settle {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}

@@ -45,11 +45,11 @@ It is a **distance, not a verdict**. A low Delta says two texts use the commones
 
 **Whose population, and why it is theirs.** The reference is **the visitor's own pieces**, every time. Not this site's articles. The sentence the tool prints is "how far this draft sits from the way *you* write", and a Delta built on my eleven articles would answer a different question: how far this draft sits from the middle of my writing, measured in units of how much my articles vary between themselves, scored on a list of my commonest words. A visitor writing about anything unlike this site would then be graded on markers that barely occur in their prose. Nothing would look broken, the distance would still be monotone, and the number would still belong to the wrong person. So `buildReference` takes documents as an argument and the browser hands it whatever the visitor pasted, and the site's own articles are demoted to what they honestly are: the worked example.
 
-**N, the marker count: 100, and here is why.** Burrows's usual starting point is the 150 most frequent words, and 150 is right for a corpus of novels. Ten pasted pieces is not that, so the standard deviation of a word is computed from ten numbers and a word appearing in two of them has a standard deviation that is mostly an accident. Two rules follow, both enforced in code: a word must appear in **over half the documents** to be a marker, and the list stops at **100** because past roughly the hundredth rank in a set this size the words stop being function words and start being subject words, which would measure what a text is about rather than how it is written. Both are choices, not measurements. `MARKER_COUNT` and `MIN_DOCUMENT_SHARE` are exported constants so changing either is one line and one test.
+**N, the marker count: 100, and here is why.** Burrows's usual starting point is the 150 most frequent words, and 150 is right for a corpus of novels. Ten pasted pieces is not that, so the standard deviation of a word is computed from ten numbers and a word appearing in two of them has a standard deviation that is mostly an accident. Two rules follow, both enforced in code: a word must appear in **at least half the documents** to be a marker, and the list stops at **100** because past roughly the hundredth rank in a set this size the words stop being function words and start being subject words, which would measure what a text is about rather than how it is written. Both are choices, not measurements. `MARKER_COUNT` and `MIN_DOCUMENT_SHARE` are exported constants so changing either is one line and one test.
 
 **The document filter is a share, not a count.** `MIN_DOCUMENT_SHARE = 0.5`, and the threshold is `Math.ceil(documents * MIN_DOCUMENT_SHARE)`. It has to scale, because the visitor decides how many pieces they paste. On eleven documents it lands on six, which is exactly the count the earlier draft of this plan hard-coded, so the worked example's marker set does not move.
 
-**The document floor: 5 pieces.** Every sigma in the table is computed from as many numbers as there are pieces, so below some count the standard deviations are too thin to be units of anything and one odd piece sets the scale for the rest. The tool refuses to print a Delta under this floor and says why, exactly as it refuses under 150 words. Five is the pick because `Math.ceil(5 * 0.5)` is 3, strictly more than half of five, while `Math.ceil(4 * 0.5)` is 2, exactly half: five is the smallest count where "over half the documents" means anything at all, and it leaves five leave-one-out folds of four pieces each behind the self-spread. Guessed, not measured, and one line to change.
+**The document floor: 5 pieces.** Every sigma in the table is computed from as many numbers as there are pieces, so below some count the standard deviations are too thin to be units of anything and one odd piece sets the scale for the rest. The tool refuses to print a Delta under this floor and says why, exactly as it refuses under 150 words. Five is the pick because `Math.ceil(5 * 0.5)` is 3, strictly more than half of five, while `Math.ceil(4 * 0.5)` is 2, exactly half. It leaves five leave-one-out folds of four pieces each behind the self-spread. Guessed, not measured, and one line to change.
 
 **The floor: 150 words.** Under 150 words a Delta is noise, because most markers have a count of zero or one and the z-score is then reporting whether a word happened to occur at all. The tool refuses to print a distance below the floor and says why. What it still prints below the floor is only what is a plain count rather than a statistic: em dashes found, and substitution hits. A count of two em dashes is two em dashes at any length.
 
@@ -397,9 +397,9 @@ A Delta is measured in standard deviations, so it needs a population whose stand
 
 So the maths and the corpus live in two modules. `reference.ts` is generic and pure: hand it documents, get back a table. It imports the tokeniser and nothing else, which is what lets the browser build the visitor's own table in the tab out of what they pasted. `corpus.ts` is the only module under `lib/tools/drift/` that imports `content/articles`, and it exists for one job: the worked example the page renders at build time, a demonstration over a corpus the reader can go and read. Nothing on the visitor's own path imports it, and `app/tools/drift/page.test.ts` fails if the client component ever does.
 
-**Two guards live in `reference.ts` and both get a mutation row in Task 12.** A marker must appear in over half the documents, and a word whose standard deviation is zero is dropped rather than divided by. `MIN_REFERENCE_DOCUMENTS` is declared here too, but the refusal it drives is assembled in Task 7, so its mutation row points at `report.ts`.
+**Two guards live in `reference.ts` and both get a mutation row in Task 12.** A marker must appear in at least half the documents, and a word whose standard deviation is zero is dropped rather than divided by. `MIN_REFERENCE_DOCUMENTS` is declared here too, but the refusal it drives is assembled in Task 7, so its mutation row points at `report.ts`.
 
-**Why the document filter became a share, and why the floor is five.** The old rule was "at least 6 of the 11 documents", a count written for one fixed corpus, and it is meaningless against five pasted pieces. So the rule is `Math.ceil(documents * MIN_DOCUMENT_SHARE)` with `MIN_DOCUMENT_SHARE = 0.5`: over half, whatever half happens to be. On eleven documents that lands on six, the same number as before, so the worked example's marker set does not move. The floor is five because `Math.ceil(5 * 0.5)` is 3, which is strictly more than half of five, while `Math.ceil(4 * 0.5)` is 2, which is exactly half. Five is the smallest number of pieces where "over half the documents" filters anything, and it leaves five leave-one-out folds of four pieces each behind the self-spread.
+**Why the document filter became a share, and why the floor is five.** The old rule was "at least 6 of the 11 documents", a count written for one fixed corpus, and it is meaningless against five pasted pieces. So the rule is `Math.ceil(documents * MIN_DOCUMENT_SHARE)` with `MIN_DOCUMENT_SHARE = 0.5`: at least half, whatever half happens to be. On eleven documents that lands on six, the same number as before, so the worked example's marker set does not move. The floor is five; its `Math.ceil(5 * 0.5)` threshold is 3, which is strictly more than half of five, while four pieces would admit a word from exactly half. Five also leaves five leave-one-out folds of four pieces each behind the self-spread.
 
 - [ ] **Step 1: Write the failing tests for the reference builder**
 
@@ -413,7 +413,7 @@ import {
   buildReference,
 } from "./reference";
 
-/** Six documents, so the over-half threshold is three and a word in two is under it. */
+/** Six documents, so the at-least-half threshold is three and a word in two is under it. */
 function docs(...bodies: string[]): string[] {
   return bodies;
 }
@@ -427,7 +427,7 @@ describe("the constants", () => {
     expect(Math.ceil(5 * MIN_DOCUMENT_SHARE)).toBe(3);
   });
 
-  it("floors the population at five, the smallest count where over-half bites", () => {
+  it("floors the population at five, where ceil-half is a strict majority", () => {
     expect(MIN_REFERENCE_DOCUMENTS).toBe(5);
     expect(Math.ceil(MIN_REFERENCE_DOCUMENTS * MIN_DOCUMENT_SHARE)).toBeGreaterThan(
       MIN_REFERENCE_DOCUMENTS / 2,
@@ -584,7 +584,7 @@ import { words } from "./text";
 export const MARKER_COUNT = 100;
 
 /**
- * A marker must appear in over half the documents it was built from. Below that
+ * A marker must appear in at least half the documents it was built from. Below that
  * the word's standard deviation is computed mostly from zeroes and reports an
  * accident of topic rather than a habit.
  *
@@ -739,7 +739,7 @@ describe("the site's own corpus", () => {
     expect(siteReference()).toBe(siteReference());
   });
 
-  it("keeps every marker in over half the articles", () => {
+  it("keeps every marker in at least half the articles", () => {
     // With eleven documents the share rule asks for six, which is the number an
     // earlier draft of this plan hard-coded. So moving to a share did not move
     // the worked example's marker set.
@@ -4179,16 +4179,16 @@ cd "$WT"
 node --input-type=module -e "$(cat <<'JS'
 import { devices, webkit } from "playwright";
 
-/** Five pieces of about 365 words each, varying between them so the sigmas are real. */
-const piece = (n) =>
-  Array.from({ length: 30 }, (_, i) =>
-    (i + n) % 3 === 0
+/** Five pieces of about 480 words each, with genuinely different join rates so the sigmas are real. */
+const piece = (joins) =>
+  Array.from({ length: 40 }, (_, i) =>
+    i < joins
       ? "So I wrote it down and it turned out fine in the end."
       : "The thing works and I use it every day here without thinking.",
   ).join(" ");
 
-const five = [1, 2, 3, 4, 5].map(piece).join("\n---\n");
-const four = [1, 2, 3, 4].map(piece).join("\n---\n");
+const five = [2, 4, 6, 8, 10].map(piece).join("\n---\n");
+const four = [2, 4, 6, 8].map(piece).join("\n---\n");
 
 const browser = await webkit.launch();
 const context = await browser.newContext(devices["iPhone 13"]);
@@ -4282,7 +4282,7 @@ Set the T1 row to `**live**` with the deployment uid, and write the final log li
   reference carried 5 documents and only single-word markers, the phone check passed at 390 and
   320 and on the throttled Pixel, tools/list carries check_voice, and the tool_run event arrived
   with slug, outcome and milliseconds only.
-  Not verified: the marker count of 100, the over-half document share and the five-piece floor
+  Not verified: the marker count of 100, the at-least-half document share and the five-piece floor
   are all choices and nothing here measures whether any of the three is the right one; the
   leave-one-out spread is computed against a table each held-out piece helped build, so it runs
   slightly tight and by an unmeasured amount; the Delta has not been compared against any

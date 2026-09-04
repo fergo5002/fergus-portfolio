@@ -863,6 +863,123 @@ const MUTATIONS = [
     pattern: / && score <= MAX_PROGRAM_SCORE/,
     replace: "",
   },
+  // -- drift: the seven guards, each with the test that catches it --
+  {
+    name: "drift prints a distance under the 150-word floor",
+    file: "lib/tools/drift/report.ts",
+    pattern: /if \(count < MIN_DELTA_WORDS\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "drift prints a distance from a reference of three pieces, in units of one piece's accident",
+    file: "lib/tools/drift/report.ts",
+    pattern: /if \(ref\.documents < MIN_REFERENCE_DOCUMENTS \|\| ref\.markers\.length === 0\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "drift keeps a marker whose standard deviation is zero (every Delta becomes NaN)",
+    file: "lib/tools/drift/reference.ts",
+    pattern: /    if \(s === 0\) continue;/,
+    replace: "    if (false) continue;",
+  },
+  {
+    name: "drift accepts a marker from a single document, so topic reads as voice",
+    file: "lib/tools/drift/reference.ts",
+    pattern: />= minDocuments\)/,
+    replace: ">= 0)",
+  },
+  {
+    name: "drift lectures a writer about a word they use themselves",
+    file: "lib/tools/drift/substitutions.ts",
+    pattern: /    if \(counts\.formal > 0\) continue;/,
+    replace: "    if (false) continue;",
+  },
+  {
+    name: "drift blames sentences for words the draft UNDERuses",
+    file: "lib/tools/drift/report.ts",
+    pattern: /if \(gap > 0\) over\[marker\] = gap \/ ref\.markers\.length;/,
+    replace: "over[marker] = Math.abs(gap) / ref.markers.length;",
+  },
+  {
+    name: "drift saves a profile nobody pressed save for",
+    file: "app/tools/drift/DriftTool.tsx",
+    pattern: /      const stored = parseProfile\(window\.localStorage\.getItem\(DRIFT_PROFILE_KEY\)\);/,
+    replace:
+      "      const stored = parseProfile(window.localStorage.getItem(DRIFT_PROFILE_KEY));\n      window.localStorage.setItem(DRIFT_PROFILE_KEY, serialiseProfile(demoReference, demoProfile, demoSpread, new Date().toISOString()));",
+  },
+  {
+    name: "drift restores a saved profile but leaves the worked-example report on screen",
+    file: "app/tools/drift/DriftTool.tsx",
+    pattern:
+      /      setReport\(analyse\(stored\.profile, driftDemo\.draft, stored\.reference, stored\.spread\)\);\r?\n/,
+    replace: "",
+  },
+  {
+    name: "drift's marker cap disappears while its test still claims to cover it",
+    file: "lib/tools/drift/reference.ts",
+    pattern: /    if \(markers\.length >= MARKER_COUNT\) break;/,
+    replace: "    if (false) break;",
+  },
+  {
+    name: "drift claims a blocked profile deletion succeeded",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /  } catch \{\r?\n    return false;\r?\n  }/,
+    replace: "  } catch {\n    return true;\n  }",
+  },
+  {
+    name: "drift lets the worked-example reference measure a visitor draft",
+    file: "lib/tools/drift/session.ts",
+    pattern: /  return session\.source === "visitor";/,
+    replace: "  return true;",
+  },
+  {
+    name: "drift hides an older saved profile when a new in-memory profile is built",
+    file: "lib/tools/drift/session.ts",
+    pattern: /  return \{ \.\.\.session, source: "visitor" \};/,
+    replace: '  return { ...session, source: "visitor", savedAt: null };',
+  },
+  {
+    name: "drift claims deletion but retains the visitor's prose in session state",
+    file: "lib/tools/drift/session.ts",
+    pattern: /  return succeeded \? demoSession\(demoDraft\) : session;/,
+    replace: "  return session;",
+  },
+  {
+    name: "drift accepts extra marker statistics in an exported profile",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /  if \(!hasExactKeys\(mean, markers\) \|\| !hasExactKeys\(sd, markers\)\) return false;/,
+    replace: "",
+  },
+  {
+    name: "drift accepts rhythm buckets outside zero-to-one shares",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /  if \(!rhythm\.buckets\.every\(isShare\)\) return false;/,
+    replace: "",
+  },
+  {
+    name: "drift accepts rhythm buckets that do not sum to one",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /  if \(!nearlyEqual\(bucketTotal, sentences === 0 \? 0 : 1\)\) return false;/,
+    replace: "",
+  },
+  {
+    name: "drift accepts an inconsistent combined join share",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /  if \(!nearlyEqual\(joins\.any, joins\.and \+ joins\.but \+ joins\.so\)\) return false;/,
+    replace: "",
+  },
+  {
+    name: "drift accepts a saved spread claiming more pieces than exist",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /    \(reference === undefined \|\| pieces <= reference\.documents\) &&/,
+    replace: "    true &&",
+  },
+  {
+    name: "drift accepts a substitution count larger than the whole profile",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /formal <= wordTotal &&\r?\n      Number\.isInteger\(plain\)/,
+    replace: "true &&\n      Number.isInteger(plain)",
+  },
 
   // ── overlap: fifteen guards, each with the test that bites on it ──
   //

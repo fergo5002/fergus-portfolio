@@ -7,6 +7,7 @@ import { projects } from "@/content/projects";
 import { experience } from "@/content/experience";
 import { skills } from "@/content/skills";
 import { tools, toolShellCopy } from "@/content/tools";
+import { driftCopy } from "@/content/tools/drift";
 import { overlapCopy } from "@/content/tools/overlap";
 
 /**
@@ -109,6 +110,16 @@ describe("house style", () => {
       ...t.cantSee.map((line, i) => ({ where: `tools.${t.slug}.cantSee[${i}]`, text: line })),
       ...(t.privacyNote ? [{ where: `tools.${t.slug}.privacyNote`, text: t.privacyNote }] : []),
     ]),
+    // Every visible string on /tools/drift except the demo draft, which is a
+    // specimen of bad house style on purpose: linting the exhibit would be
+    // linting the point. `content/tools/drift.test.ts` guards it instead.
+    ...Object.entries(driftCopy)
+      .filter(([, value]) => typeof value === "string")
+      .map(([key, value]) => ({ where: `driftCopy.${key}`, text: value as string })),
+    ...Object.entries(driftCopy.metricLabels).map(([key, value]) => ({
+      where: `driftCopy.metricLabels.${key}`,
+      text: value,
+    })),
     // Overlap's honesty paragraphs and the relay's refusals are not fields on
     // ToolEntry, so the spread above cannot reach them, and they are the longest
     // stretch of prose any tool on this site prints.
