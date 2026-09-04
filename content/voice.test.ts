@@ -8,6 +8,7 @@ import { experience } from "@/content/experience";
 import { skills } from "@/content/skills";
 import { tools, toolShellCopy } from "@/content/tools";
 import { driftCopy } from "@/content/tools/drift";
+import { overlapCopy } from "@/content/tools/overlap";
 
 /**
  * Fergus's house style (`~/.claude/LANGUAGE.md`) bans em dashes outright, and by
@@ -104,6 +105,7 @@ describe("house style", () => {
       { where: `tools.${t.slug}.name`, text: t.name },
       { where: `tools.${t.slug}.blurb`, text: t.blurb },
       ...t.cantSee.map((line, i) => ({ where: `tools.${t.slug}.cantSee[${i}]`, text: line })),
+      ...(t.privacyNote ? [{ where: `tools.${t.slug}.privacyNote`, text: t.privacyNote }] : []),
     ]),
     // Every visible string on /tools/drift except the demo draft, which is a
     // specimen of bad house style on purpose: linting the exhibit would be
@@ -114,6 +116,17 @@ describe("house style", () => {
     ...Object.entries(driftCopy.metricLabels).map(([key, value]) => ({
       where: `driftCopy.metricLabels.${key}`,
       text: value,
+    })),
+    // Overlap's honesty paragraphs and the relay's refusals are not fields on
+    // ToolEntry, so the spread above cannot reach them, and they are the longest
+    // stretch of prose any tool on this site prints.
+    ...Object.entries(overlapCopy.honesty).map(([k, text]) => ({
+      where: `overlapCopy.honesty.${k}`,
+      text,
+    })),
+    ...Object.entries(overlapCopy.relay).map(([k, text]) => ({
+      where: `overlapCopy.relay.${k}`,
+      text,
     })),
     { where: "toolShellCopy.privacy.browser", text: toolShellCopy.privacy.browser },
     { where: "toolShellCopy.privacy.server", text: toolShellCopy.privacy.server },
