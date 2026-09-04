@@ -1,0 +1,168 @@
+import type { Channel } from "./protocol";
+
+/**
+ * The only module in this tool that touches `RTCPeerConnection`.
+ *
+ * Everything above it works against the three-method `Channel`, which is why
+ * the protocol is testable in node and this file is not. There is no
+ * `RTCPeerConnection` in vitest's node environment and this plan does not shim
+ * one: `webrtc.test.ts` is a source-coupling check, and the handshake is
+ * proved on two real browsers instead.
+ *
+ * **Non-trickle, on purpose.** The relay holds two blobs, so the whole
+ * candidate list has to be inside the offer before it is handed over. That
+ * means waiting for `icegatheringstate` to reach `complete`, with a timeout,
+ * because some networks never report it and a page that waits for ever is
+ * worse than one that connects with the candidates it has.
+ *
+ * **One public address server, named on the page.** Two browsers on different
+ * networks cannot find each other from host candidates alone, so the browser
+ * asks Cloudflare's public STUN server what its address looks like from
+ * outside. One small packet, no part of anybody's file. The page names
+ * Cloudflare and offers a same-network-only switch that empties this list, for
+ * two people on the same wifi who would rather nothing left the building. There
+ * is no TURN server, so a symmetric NAT will fail to connect, and the honest
+ * answer to that is the copy and paste route, which always works.
+ */
+
+export const ICE_SERVERS: RTCIceServer[] = [{ urls: ["stun:stun.cloudflare.com:3478"] }];
+
+/** Some networks never report gathering as complete. Go with what we have. */
+const ICE_TIMEOUT_MS = 4_000;
+
+function gathered(pc: RTCPeerConnection): Promise<void> {
+  if (pc.iceGatheringState === "complete") return Promise.resolve();
+  return new Promise((resolve) => {
+    const done = () => {
+      pc.removeEventListener("icegatheringstatechange", check);
+      clearTimeout(timer);
+      resolve();
+    };
+    const check = () => {
+      if (pc.iceGatheringState === "complete") done();
+    };
+    const timer = setTimeout(done, ICE_TIMEOUT_MS);
+    pc.addEventListener("icegatheringstatechange", check);
+  });
+}
+
+export function channelFrom(dataChannel: RTCDataChannel): Channel {
+  return {
+    send: (text) => dataChannel.send(text),
+    onMessage: (handler) => {
+      dataChannel.addEventListener("message", (event) => handler(String(event.data)));
+    },
+    close: () => dataChannel.close(),
+  };
+}
+
+export type Opened = {
+  channel: Channel;
+  localSdp: string;
+  remoteSdp: string;
+  connection: RTCPeerConnection;
+};
+
+export async function openAsCreator(options: { sameNetworkOnly?: boolean } = {}): Promise<{
+  offer: string;
+  finish: (answerSdp: string) => Promise<Opened>;
+}> {
+  const pc = new RTCPeerConnection({ iceServers: options.sameNetworkOnly ? [] : ICE_SERVERS });
+  const dataChannel = pc.createDataChannel("overlap", { ordered: true });
+  const open = new Promise<void>((resolve) => {
+    if (dataChannel.readyState === "open") resolve();
+    else dataChannel.addEventListener("open", () => resolve());
+  });
+
+  await pc.setLocalDescription(await pc.createOffer());
+  await gathered(pc);
+  const offer = pc.localDescription?.sdp ?? "";
+
+  return {
+    offer,
+    finish: async (answerSdp: string) => {
+      await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
+      await open;
+      return { channel: channelFrom(dataChannel), localSdp: offer, remoteSdp: answerSdp, connection: pc };
+    },
+  };
+}
+
+export async function openAsJoiner(
+  offerSdp: string,
+  options: { sameNetworkOnly?: boolean } = {},
+): Promise<{ answer: string; opened: Promise<Opened> }> {
+  const pc = new RTCPeerConnection({ iceServers: options.sameNetworkOnly ? [] : ICE_SERVERS });
+  const channel = new Promise<RTCDataChannel>((resolve) => {
+    pc.addEventListener("datachannel", (event) => {
+      const dc = event.channel;
+      if (dc.readyState === "open") resolve(dc);
+      else dc.addEventListener("open", () => resolve(dc));
+    });
+  });
+
+  await pc.setRemoteDescription({ type: "offer", sdp: offerSdp });
+  await pc.setLocalDescription(await pc.createAnswer());
+  await gathered(pc);
+  const answer = pc.localDescription?.sdp ?? "";
+
+  return {
+    answer,
+    opened: channel.then((dc) => ({
+      channel: channelFrom(dc),
+      localSdp: answer,
+      remoteSdp: offerSdp,
+      connection: pc,
+    })),
+  };
+}
+
+/**
+ * An SDP squeezed into something a person can paste into a message.
+ *
+ * `CompressionStream` is platform. Where it is missing the blob is base64 and
+ * longer, which is a worse paste and not a broken one, so the fallback is
+ * silent rather than a refusal.
+ */
+export async function packSdp(sdp: string): Promise<string> {
+  const bytes = new TextEncoder().encode(sdp);
+  if (typeof CompressionStream === "undefined") return base64url(bytes);
+  const stream = blobOf(bytes).stream().pipeThrough(new CompressionStream("deflate"));
+  return `z${base64url(new Uint8Array(await new Response(stream).arrayBuffer()))}`;
+}
+
+export async function unpackSdp(text: string): Promise<string> {
+  const compressed = text.startsWith("z");
+  const bytes = fromBase64url(compressed ? text.slice(1) : text);
+  if (!compressed) return new TextDecoder().decode(bytes);
+  const stream = blobOf(bytes).stream().pipeThrough(new DecompressionStream("deflate"));
+  return new TextDecoder().decode(await new Response(stream).arrayBuffer());
+}
+
+/**
+ * A Blob over these bytes, through a buffer the lib types will accept.
+ *
+ * `BlobPart` wants a view backed by an `ArrayBuffer`, and a `Uint8Array` is
+ * typed as backed by an `ArrayBufferLike`, which a `SharedArrayBuffer`
+ * satisfies too. Copying into a fresh buffer says what is true here rather
+ * than casting the difference away, and both call sites are a few kilobytes.
+ */
+function blobOf(bytes: Uint8Array): Blob {
+  const buffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(buffer).set(bytes);
+  return new Blob([buffer]);
+}
+
+function base64url(bytes: Uint8Array): string {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function fromBase64url(text: string): Uint8Array {
+  const padded = text.replace(/-/g, "+").replace(/_/g, "/");
+  const binary = atob(padded + "=".repeat((4 - (padded.length % 4)) % 4));
+  const out = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+  return out;
+}
