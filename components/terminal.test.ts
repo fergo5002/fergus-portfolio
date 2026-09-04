@@ -40,7 +40,7 @@ describe("Terminal and a program result", () => {
   it("swaps the prompt for the screen and puts it back", () => {
     expect(terminal).toMatch(/program \? \(/);
     expect(terminal).toMatch(/<ArcadeScreen/);
-    expect(terminal).toMatch(/inputRef\.current\?\.focus\(\)/);
+    expect(terminal).toMatch(/hadProgram\.current = false;\s*inputRef\.current\?\.focus\(\);/);
   });
 
   it("keeps the scrollback, and echoes the command that opened the door", () => {

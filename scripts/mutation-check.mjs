@@ -731,6 +731,102 @@ const MUTATIONS = [
     pattern: /const doorName = \(args\[0\] \?\? ""\)\.toLowerCase\(\)\.replace\(\/\^\\\/\+\|\\\/\+\$\/g, ""\);/,
     replace: "const doorName = dest;",
   },
+  {
+    name: "the arcade starts a second animation frame loop",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /const PROBE_LENGTH = 100;/,
+    replace: "const PROBE_LENGTH = 100;\nrequestAnimationFrame(() => {});",
+  },
+  {
+    name: "the arcade starts a timer beside the system frame clock",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /const PROBE_LENGTH = 100;/,
+    replace: "const PROBE_LENGTH = 100;\nsetInterval(() => {}, 16);",
+  },
+  {
+    name: "the running arcade ignores a new reduced-motion preference",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /if \(reducedMotion\) leave\(\[\.\.\.arcadeCopy\.declined\]\);/,
+    replace: "if (false) leave([...arcadeCopy.declined]);",
+  },
+  {
+    name: "the frame loop keeps ticking an instance after it exits",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /if \(runningRef\.current\?\.instance !== instance\) return;/,
+    replace: "if (false) return;",
+  },
+  {
+    name: "the exit button also fires the running game",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /    if \(fromControl\(e\.target\)\) return;\r?\n    const mods/,
+    replace: "    const mods",
+  },
+  {
+    name: "the font probe stops being observed after the webfont swaps in",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /    observer\.observe\(probe\);\r?\n/,
+    replace: "",
+  },
+  {
+    name: "the arcade leaks a frame subscriber after exit",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /      unsubscribe\(\);\r?\n/,
+    replace: "",
+  },
+  {
+    name: "a resize restarts the game instead of updating its world",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /    host\.cols = fit\.cols;\r?\n    host\.rows = fit\.rows;/,
+    replace: "    host.cols = host.cols;\n    host.rows = host.rows;",
+  },
+  {
+    name: "leaving a program no longer restores the prompt focus",
+    file: "components/Terminal.tsx",
+    pattern: /    hadProgram\.current = false;\r?\n    inputRef\.current\?\.focus\(\);/,
+    replace: "    hadProgram.current = false;",
+  },
+  {
+    name: "a zero score is offered to the board",
+    file: "lib/arcade/finish.ts",
+    pattern: /input\.score > 0/,
+    replace: "input.score >= 0",
+  },
+  {
+    name: "a board response can inject a newline through initials",
+    file: "lib/arcade/board-client.ts",
+    pattern: /  if \(normaliseInitials\(row\.initials\) !== row\.initials\) return null;\r?\n/,
+    replace: "",
+  },
+  {
+    name: "an absurd board score reaches exponent notation",
+    file: "lib/arcade/board-client.ts",
+    pattern: /  if \(row\.score < 0 \|\| row\.score > MAX_SCORE\) return null;/,
+    replace: "  if (row.score < 0) return null;",
+  },
+  {
+    name: "the board GET can hang forever",
+    file: "lib/arcade/board-client.ts",
+    pattern: /      signal: AbortSignal\.timeout\(FETCH_TIMEOUT_MS\),\r?\n    \}\);/,
+    replace: "    });",
+  },
+  {
+    name: "the score POST can hang forever",
+    file: "lib/arcade/board-client.ts",
+    pattern: /      signal: AbortSignal\.timeout\(FETCH_TIMEOUT_MS\),\r?\n      body:/,
+    replace: "      body:",
+  },
+  {
+    name: "an onExit render restarts the running program",
+    file: "components/arcade/ArcadeScreen.tsx",
+    pattern: /    onExitRef\.current\(lines\);\r?\n  \}, \[\]\);/,
+    replace: "    onExit(lines);\n  }, [onExit]);",
+  },
+  {
+    name: "the probe and grid stop inheriting the same font size",
+    file: "app/globals.css",
+    pattern: /\.arcade \{\r?\n  \/\* Declared here[\s\S]*?  --arcade-font: 15px;/,
+    replace: ".arcade {",
+  },
 ];
 
 

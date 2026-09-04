@@ -1,5 +1,5 @@
 import { arcadeCopy } from "@/content/arcade";
-import { checkInitials, INITIALS_LENGTH } from "./board";
+import { checkInitials, INITIALS_LENGTH, normaliseInitials } from "./board";
 import type { Board, BoardRow, BoardSnapshot } from "./board";
 
 /**
@@ -22,14 +22,31 @@ export type SubmitResult = { ok: true; board: Board } | { ok: false; reason: str
 
 const UNAVAILABLE: BoardSnapshot = { available: false, boards: [], note: arcadeCopy.board.unavailable[0] };
 
-/** Longer than this cannot be drawn on the narrowest grid, so it is not shown. */
+/**
+ * A server sentence longer than this is not printed. It goes to the scrollback,
+ * which wraps, so this is not a grid constraint: it is a cap on how much text a
+ * server we do not control can put on the page.
+ */
 const MAX_SERVER_REASON = 60;
+
+/** Above this a score is not a score. It also keeps groupDigits away from exponent notation. */
+const MAX_SCORE = 1e12;
+
+/** Long enough for a slow connection, short enough that nobody stares at 'posting...'. */
+const FETCH_TIMEOUT_MS = 6000;
 
 function readRow(value: unknown): BoardRow | null {
   if (typeof value !== "object" || value === null) return null;
   const row = value as { initials?: unknown; score?: unknown };
   if (typeof row.initials !== "string" || row.initials.length !== INITIALS_LENGTH) return null;
+  // The characters, not just the count. "A\nB" is three code units and would
+  // grow the <pre> by a row, which shifts the whole grid and pushes the last
+  // line under the clip. An emoji is two units, so three units can be one and
+  // a half glyphs wide. Reusing normaliseInitials keeps one definition of what
+  // a character is allowed to be.
+  if (normaliseInitials(row.initials) !== row.initials) return null;
   if (typeof row.score !== "number" || !Number.isFinite(row.score)) return null;
+  if (row.score < 0 || row.score > MAX_SCORE) return null;
   return { initials: row.initials, score: row.score };
 }
 
@@ -52,7 +69,12 @@ export function readSnapshot(value: unknown): BoardSnapshot {
 
 export async function fetchBoards(fetchImpl: typeof fetch = fetch): Promise<BoardSnapshot> {
   try {
-    const response = await fetchImpl("/api/board", { headers: { accept: "application/json" } });
+    const response = await fetchImpl("/api/board", {
+      headers: { accept: "application/json" },
+      // A hung request is the one failure "everything becomes one sentence"
+      // does not otherwise cover, and on a phone it is the likely one.
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     if (!response.ok) return UNAVAILABLE;
     return readSnapshot(await response.json());
   } catch {
@@ -72,6 +94,7 @@ export async function submitScore(
     const response = await fetchImpl("/api/board", {
       method: "POST",
       headers: { "content-type": "application/json" },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       body: JSON.stringify({
         game: entry.game,
         initials: check.initials,

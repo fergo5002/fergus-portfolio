@@ -5,6 +5,7 @@ import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent a
 import { arcadeCopy } from "@/content/arcade";
 import { fetchBoards, submitScore } from "@/lib/arcade/board-client";
 import { findGame } from "@/lib/arcade/games";
+import { finishOutcome } from "@/lib/arcade/finish";
 import { fitGrid } from "@/lib/arcade/grid";
 import type { GridFit } from "@/lib/arcade/grid";
 import { createInitialsProgram } from "@/lib/arcade/initials";
@@ -45,6 +46,10 @@ import { useSystem } from "@/components/system/SystemProvider";
 const PROBE_LENGTH = 100;
 const PROBE = "0".repeat(PROBE_LENGTH);
 
+function fromControl(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest("button") !== null;
+}
+
 type Props = {
   program: ProgramSpec;
   /** Lines for the scrollback, and the prompt back. Called exactly once. */
@@ -60,6 +65,9 @@ export default function ArcadeScreen({ program, onExit }: Props) {
   const probeRef = useRef<HTMLSpanElement>(null);
 
   const runningRef = useRef<{ spec: ProgramSpec; instance: ProgramInstance } | null>(null);
+  const hostRef = useRef<ProgramHost | null>(null);
+  const fitRef = useRef<GridFit | null>(null);
+  const onExitRef = useRef(onExit);
   const loopRef = useRef(createLoopState());
   const lastDrawnRef = useRef("");
   const flashesRef = useRef(0);
@@ -72,21 +80,24 @@ export default function ArcadeScreen({ program, onExit }: Props) {
 
   const [fit, setFit] = useState<GridFit | null>(null);
   const [measured, setMeasured] = useState(false);
+  fitRef.current = fit;
+  const ready = measured && fit !== null;
 
   const helpId = `arcade-help-${useId()}`;
 
+  useEffect(() => {
+    onExitRef.current = onExit;
+  }, [onExit]);
+
   /* ── leaving ───────────────────────────────────────────────────────────── */
 
-  const leave = useCallback(
-    (lines: string[]) => {
-      if (exitedRef.current) return;
-      exitedRef.current = true;
-      runningRef.current?.instance.dispose();
-      runningRef.current = null;
-      onExit(lines);
-    },
-    [onExit],
-  );
+  const leave = useCallback((lines: string[]) => {
+    if (exitedRef.current) return;
+    exitedRef.current = true;
+    runningRef.current?.instance.dispose();
+    runningRef.current = null;
+    onExitRef.current(lines);
+  }, []);
 
   /* ── the host ──────────────────────────────────────────────────────────── */
 
@@ -98,7 +109,9 @@ export default function ArcadeScreen({ program, onExit }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!measured || !fit) return;
+    if (!ready) return;
+    const initialFit = fitRef.current;
+    if (!initialFit) return;
 
     const post = (game: string, initials: string, score: number) => {
       postedRef.current = true;
@@ -117,30 +130,35 @@ export default function ArcadeScreen({ program, onExit }: Props) {
       const game = running ? findGame(running.spec.id) : undefined;
       const score = result?.score;
       const boards = arcadeSession().boards;
-      if (
-        !postedRef.current &&
-        game?.board &&
-        typeof score === "number" &&
-        score > 0 &&
-        boards?.available === true
-      ) {
+      const outcome = finishOutcome({
+        posted: postedRef.current,
+        board: Boolean(game?.board),
+        score,
+        available: boards?.available === true,
+        label: result?.label,
+      });
+      if (outcome.kind === "initials") {
+        if (!game) {
+          leave([arcadeCopy.left]);
+          return;
+        }
         startProgram(
           createInitialsProgram({
             game: game.id,
-            score,
+            score: outcome.score,
             seed: seedRef.current,
-            onSubmit: (initials) => post(game.id, initials, score),
+            onSubmit: (initials) => post(game.id, initials, outcome.score),
           }),
           host,
         );
         return;
       }
-      leave([result?.label ?? arcadeCopy.left]);
+      leave(outcome.lines);
     };
 
     const host: ProgramHost = {
-      cols: fit.cols,
-      rows: fit.rows,
+      cols: initialFit.cols,
+      rows: initialFit.rows,
       draw: (lines) => {
         const next = lines.join("\n");
         if (next === lastDrawnRef.current) return;
@@ -177,11 +195,12 @@ export default function ArcadeScreen({ program, onExit }: Props) {
           rectStaleRef.current = false;
         }
         const rect = rectRef.current;
-        if (!rect) return;
+        const currentFit = fitRef.current;
+        if (!rect || !currentFit) return;
         flashesRef.current++;
         pushImpact(frame.current, {
-          x: (rect.left + ((col + 0.5) / fit.cols) * rect.width) / window.innerWidth,
-          y: (rect.top + ((row + 0.5) / fit.rows) * rect.height) / window.innerHeight,
+          x: (rect.left + ((col + 0.5) / currentFit.cols) * rect.width) / window.innerWidth,
+          y: (rect.top + ((row + 0.5) / currentFit.rows) * rect.height) / window.innerHeight,
           energy,
           at: performance.now(),
         });
@@ -190,21 +209,35 @@ export default function ArcadeScreen({ program, onExit }: Props) {
       exit: (result) => finish(result),
     };
 
+    hostRef.current = host;
     startProgram(program, host);
 
     const unsubscribe = onFrame((_time, dt) => {
       const instance = runningRef.current?.instance;
       if (!instance) return;
       flashesRef.current = 0;
-      advance(loopRef.current, dt, (ms) => instance.tick(ms));
+      advance(loopRef.current, dt, (ms) => {
+        if (runningRef.current?.instance !== instance) return;
+        instance.tick(ms);
+      });
     });
 
     return () => {
       unsubscribe();
       runningRef.current?.instance.dispose();
       runningRef.current = null;
+      hostRef.current = null;
     };
-  }, [measured, fit, program, onFrame, audio, frame, leave, startProgram]);
+  }, [ready, program, onFrame, audio, frame, leave, startProgram]);
+
+  /** Resize changes the game's world; it does not erase the game in progress. */
+  useEffect(() => {
+    const host = hostRef.current;
+    if (!host || !fit) return;
+    host.cols = fit.cols;
+    host.rows = fit.rows;
+    rectStaleRef.current = true;
+  }, [fit]);
 
   /* ── measuring ─────────────────────────────────────────────────────────── */
 
@@ -233,6 +266,7 @@ export default function ArcadeScreen({ program, onExit }: Props) {
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(box);
+    observer.observe(probe);
     const onScroll = () => {
       rectStaleRef.current = true;
     };
@@ -285,6 +319,7 @@ export default function ArcadeScreen({ program, onExit }: Props) {
       leave([arcadeCopy.left]);
       return;
     }
+    if (fromControl(e.target)) return;
     const mods = { ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey };
     if (shouldCapture(e.key, mods)) e.preventDefault();
     if (e.repeat) return;
@@ -295,17 +330,26 @@ export default function ArcadeScreen({ program, onExit }: Props) {
 
   const onKeyUp = (e: ReactKeyboardEvent<HTMLDivElement>) => {
     e.stopPropagation();
+    if (fromControl(e.target)) return;
     const key = arcadeKey(e.key, { ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey });
     if (!key) return;
     runningRef.current?.instance.key(key, false);
   };
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (fromControl(e.target)) {
+      pointerRef.current = null;
+      return;
+    }
     wrapRef.current?.focus();
     pointerRef.current = { x: e.clientX, y: e.clientY, t: performance.now() };
   };
 
   const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (fromControl(e.target)) {
+      pointerRef.current = null;
+      return;
+    }
     const start = pointerRef.current;
     pointerRef.current = null;
     const instance = runningRef.current?.instance;
@@ -333,7 +377,9 @@ export default function ArcadeScreen({ program, onExit }: Props) {
       onKeyUp={onKeyUp}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
+      onPointerCancel={() => {
+        pointerRef.current = null;
+      }}
     >
       <div className="arcade__screen" ref={screenRef}>
         <pre

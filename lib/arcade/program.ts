@@ -25,6 +25,12 @@ import type { ArcadeSound } from "./sound";
  *    it buys is an exhaustive switch in every game.
  *
  * `lib/arcade/program.test.ts` is the compile-time proof of both claims.
+ *
+ * A host may update `cols` and `rows` when its measured container changes. A
+ * program reads them when drawing; it must not treat the initial values as a
+ * lifetime constant. A host also stops delivering ticks to an instance as
+ * soon as that instance exits or starts another program, even if one rendered
+ * frame contained several fixed timesteps.
  */
 
 export type ProgramResult = {

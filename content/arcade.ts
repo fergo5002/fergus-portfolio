@@ -83,6 +83,8 @@ export const arcadeCopy = {
     /** Two lines because one that said all of it was 41 columns wide. */
     unavailable: ["boards are unavailable.", "the games still play."],
     empty: "no scores yet. be first.",
+    /** Printed to the scrollback beside a score the board could not take. */
+    scoreLabel: "score",
     /** Printed by neofetch, above the board block, once the door has been found. */
     neofetchHeading: "Arcade",
   },

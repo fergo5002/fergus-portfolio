@@ -15,13 +15,14 @@ import { join } from "node:path";
  */
 
 const read = (...parts: string[]) => readFileSync(join(process.cwd(), ...parts), "utf8");
-const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/^\s*\/\/.*$/gm, " ");
+const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\/\/[^\n]*/g, " ");
 
 const screen = code(read("components", "arcade", "ArcadeScreen.tsx"));
 
 describe("the arcade runs on the one frame clock", () => {
   it("subscribes to the system loop and never starts its own", () => {
     expect(screen).toMatch(/onFrame\(/);
+    expect(screen).toMatch(/unsubscribe\(\)/);
     expect(screen).not.toMatch(/requestAnimationFrame/);
     expect(screen).not.toMatch(/setInterval/);
   });
@@ -33,8 +34,20 @@ describe("the arcade runs on the one frame clock", () => {
   it("never calls setState from inside the frame callback", () => {
     // The rule from AGENTS.md. The frame callback is the arrow passed to
     // onFrame; nothing in it may schedule a render.
-    const body = screen.slice(screen.indexOf("onFrame("), screen.indexOf("onFrame(") + 600);
-    expect(body).not.toMatch(/set[A-Z]\w*\(/);
+    const match = /onFrame\(\([^)]*\) => \{([\s\S]*?)\n {4}\}\);/.exec(screen);
+    expect(match, "frame callback not found").toBeTruthy();
+    expect(match![1]).not.toMatch(/set[A-Z]\w*\(/);
+  });
+
+  it("stops ticking an instance as soon as a tick disposes or replaces it", () => {
+    expect(screen).toMatch(/if \(runningRef\.current\?\.instance !== instance\) return;/);
+  });
+
+  it("updates the running host on resize instead of restarting the program", () => {
+    expect(screen).toMatch(/host\.cols = fit\.cols;\s*host\.rows = fit\.rows;/);
+    const subscription = /const unsubscribe = onFrame[\s\S]*?\}, \[([^\]]+)\]\);/.exec(screen);
+    expect(subscription, "arcade subscription effect not found").toBeTruthy();
+    expect(subscription![1]).not.toMatch(/\bfit\b|\bmeasured\b/);
   });
 });
 
@@ -58,6 +71,7 @@ describe("the screen is measured, not assumed", () => {
 
   it("re-measures when the box changes size", () => {
     expect(screen).toMatch(/new ResizeObserver\(/);
+    expect(screen).toMatch(/observer\.observe\(probe\)/);
     expect(screen).toMatch(/\.disconnect\(\)/);
   });
 });
@@ -99,6 +113,11 @@ describe("input", () => {
   it("routes a gesture through deliverGesture rather than deciding itself", () => {
     expect(screen).toMatch(/deliverGesture\(\s*gestureOf\(/);
   });
+
+  it("does not send button events to the running game", () => {
+    expect(screen.match(/if \(fromControl\(e\.target\)\) return;/g) ?? []).toHaveLength(2);
+    expect(screen.match(/if \(fromControl\(e\.target\)\) \{\s*pointerRef\.current = null;\s*return;/g) ?? []).toHaveLength(2);
+  });
 });
 
 describe("sound and light", () => {
@@ -123,13 +142,18 @@ describe("sound and light", () => {
 
 describe("leaving", () => {
   it("declines when the system asks for reduced motion, even mid-game", () => {
-    expect(screen).toMatch(/reducedMotion/);
-    expect(screen).toMatch(/arcadeCopy\.declined/);
+    expect(screen).toMatch(/if \(reducedMotion\) leave\(\[\.\.\.arcadeCopy\.declined\]\);/);
   });
 
   it("offers the board only when there is a board to offer", () => {
+    expect(screen).toMatch(/finishOutcome\(/);
     expect(screen).toMatch(/createInitialsProgram\(/);
-    expect(screen).toMatch(/\.available/);
+  });
+
+  it("keeps the latest exit callback without restarting the program", () => {
+    expect(screen).toMatch(/onExitRef\.current = onExit/);
+    expect(screen).toMatch(/onExitRef\.current\(lines\)/);
+    expect(screen).toMatch(/const leave = useCallback\([\s\S]*?onExitRef\.current\(lines\);[\s\S]*?\}, \[\]\);/);
   });
 
   it("prints what the server said, not what it hoped", () => {

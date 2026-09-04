@@ -758,10 +758,22 @@ html.crt-off body {
    here uses --green-dim, which app/globals.test.ts documents as under 4.5:1 on
    the amber and ice phosphors. */
 .arcade {
+  /* Declared here and not on .arcade__grid, because .arcade__probe is the
+     grid's SIBLING and a custom property inherits down, never sideways. With
+     it on the grid the probe silently fell back to 15px while the grid drew
+     16px above 600px, so fitGrid was handed a cell 6% too small and would
+     have accepted a board that then clipped. app/globals.test.ts pins the
+     declaring selector. */
+  --arcade-font: 15px;
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
   outline: none;
+  /* A finger anywhere on the arcade is an input, never a scroll. On the grid
+     alone a drag starting in the gap or the padding still scrolled the
+     drawer, and the same handler saw it as a swipe. */
+  touch-action: none;
+  overscroll-behavior: contain;
   /* Inline on the home page the terminal has no height of its own, so the
      arcade asks for one. In the drawer it fills what the drawer allows. */
   height: min(56vh, 440px);
@@ -777,7 +789,6 @@ html.crt-off body {
   overflow: hidden;
 }
 .arcade__grid {
-  --arcade-font: 15px;
   margin: 0;
   font-family: inherit;
   font-size: calc(var(--arcade-font) * var(--arcade-scale, 1));
@@ -786,9 +797,6 @@ html.crt-off body {
   color: var(--green-bright);
   text-shadow: var(--glow);
   white-space: pre;
-  /* A finger on the grid is an input, never a scroll. */
-  touch-action: none;
-  overscroll-behavior: contain;
   -webkit-user-select: none;
   user-select: none;
 }
@@ -801,7 +809,7 @@ html.crt-off body {
   visibility: hidden;
   pointer-events: none;
   font-family: inherit;
-  font-size: var(--arcade-font, 15px);
+  font-size: var(--arcade-font);
   line-height: 1.25;
   white-space: pre;
 }
@@ -839,7 +847,7 @@ html.crt-off body {
   color: var(--green-bright);
 }
 @media (min-width: 601px) {
-  .arcade__grid {
+  .arcade {
     --arcade-font: 16px;
   }
 }

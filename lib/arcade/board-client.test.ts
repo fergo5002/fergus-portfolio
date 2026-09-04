@@ -24,13 +24,35 @@ describe("readSnapshot", () => {
     };
     expect(readSnapshot(body).boards[0].rows).toEqual([{ initials: "FOR", score: 10 }]);
   });
+
+  it("drops delimiter characters, partial glyphs and absurd scores before they reach the grid", () => {
+    const body = {
+      available: true,
+      boards: [{
+        game: "pong",
+        rows: [
+          { initials: "A\nB", score: 1 },
+          { initials: "A😀", score: 2 },
+          { initials: "FOR", score: -1 },
+          { initials: "FOR", score: 1e21 },
+          { initials: "FOR", score: 10 },
+        ],
+      }],
+    };
+    expect(readSnapshot(body).boards[0].rows).toEqual([{ initials: "FOR", score: 10 }]);
+  });
 });
 
 describe("fetchBoards", () => {
   it("returns the boards when the route answers properly", async () => {
+    let signal: AbortSignal | undefined;
     const body = { available: true, boards: [{ game: "pong", rows: [] }] };
-    const snapshot = await fetchBoards(async () => jsonResponse(body));
+    const snapshot = await fetchBoards(async (_url, init) => {
+      signal = init?.signal as AbortSignal | undefined;
+      return jsonResponse(body);
+    });
     expect(snapshot.available).toBe(true);
+    expect(signal).toBeInstanceOf(AbortSignal);
   });
 
   it("says unavailable when the route is not there at all, which is today", async () => {
@@ -71,11 +93,14 @@ describe("submitScore", () => {
 
   it("posts the cleaned initials and a whole score", async () => {
     let sent: unknown = null;
+    let signal: AbortSignal | undefined;
     await submitScore({ game: "pong", initials: " f o r ", score: 42.7 }, async (_url, init) => {
       sent = JSON.parse(String((init as RequestInit).body));
+      signal = init?.signal as AbortSignal | undefined;
       return jsonResponse({ ok: true, board: { game: "pong", rows: [] } });
     });
     expect(sent).toEqual({ game: "pong", initials: "FOR", score: 42 });
+    expect(signal).toBeInstanceOf(AbortSignal);
   });
 
   it("hands back the board the server returned", async () => {
