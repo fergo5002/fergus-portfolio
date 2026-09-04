@@ -17,7 +17,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | S2 | Spike: WebKit in a function | **decided** | `toolshed/s2-webkit` | record on main | WebKit dies at libatk; Chromium 20 of 20, warm 12.5 s; T5 must cut work per run |
 | S3 | Spike: DuckDB in the tab | **decided** | `toolshed/f5-spikes` | record on main | 0 mismatches at 1e-9; 8.1 MB gzip and 82 s at Slow 4G, so DuckDB does not ship: port to TypeScript, keep the macros as the oracle |
 | S4 | Spike: the .ie seed | **decided** | `toolshed/f5-spikes` | record on main | 126,214 registered .ie domains, 17 MB, under a minute, reproduced twice; 38% of the registry figure |
-| T1 | Drift | **queued** | | | |
+| T1 | Drift | **building** | `toolshed/t1-drift` | | |
 | T2 | Relief | **queued** | | | |
 | T3 | Overlap | **queued** | | | |
 | T4 | Second Visit | **queued** | | | |
@@ -105,3 +105,4 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-04 01:30: **two things the spikes changed in the design, and both are mine to own.**
   1. **On the glass is too expensive as designed.** At the pessimistic ceiling it affords about four renders a day against a rule that stops below five. Rather than drop the tool or raise the bill, the work per run comes down: one browser reused across both widths, the separate "Pixel" profile dropped because it was Chromium too and so was never a second engine, frame differencing kept but at half resolution over 1.5 seconds, and one screenshot per width feeding every check. Nobody should treat four as measured; it is arithmetic on a ceiling between a 0.21 second Node floor and a 12.5 second wall-clock ceiling.
   2. **The meters cannot be read the way section 5 assumed.** Vercel's usage API is Pro only, this project is Hobby, and the signed-in browser is the sauna account which cannot see `larry-pm` at all. So every hosted tool now measures its own cost, wall clock and Node CPU per run, and reports it. That is better than the original plan anyway: a number from our own instrument beats one we hoped to look up.
+- 2026-09-04: T1 started in its own worktree on `toolshed/t1-drift`, cut from main at c85dcc3. Baseline before any change: tsc exit 0, 56 test files and 1,208 tests passing. F2 and F3 confirmed present in the worktree by reading `OWNED_PREFIX` from `lib/forget.ts`, `toolShellCopy` from `content/tools/index.ts`, the can't-see list in `components/tools/ToolPage.tsx` and the self-test flag in `scripts/phone-check.mjs`.
