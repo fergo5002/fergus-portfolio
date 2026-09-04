@@ -9,6 +9,7 @@ import { skills } from "@/content/skills";
 import { tools, toolShellCopy } from "@/content/tools";
 import { driftCopy } from "@/content/tools/drift";
 import { overlapCopy } from "@/content/tools/overlap";
+import { secondVisitCopy, TIGH_CREDIT } from "@/content/tools/second-visit";
 
 /**
  * Fergus's house style (`~/.claude/LANGUAGE.md`) bans em dashes outright, and by
@@ -134,6 +135,19 @@ describe("house style", () => {
     { where: "toolShellCopy.privacy.browser", text: toolShellCopy.privacy.browser },
     { where: "toolShellCopy.privacy.server", text: toolShellCopy.privacy.server },
     { where: "toolShellCopy.cantSeeHeading", text: toolShellCopy.cantSeeHeading },
+    ...(function flattenSecondVisit(): { where: string; text: string }[] {
+      const out: { where: string; text: string }[] = [];
+      const walk = (node: unknown, path: string) => {
+        if (typeof node === "string") out.push({ where: `secondVisitCopy.${path}`, text: node });
+        else if (Array.isArray(node)) node.forEach((value, index) => walk(value, `${path}[${index}]`));
+        else if (node && typeof node === "object") {
+          for (const [key, value] of Object.entries(node)) walk(value, path ? `${path}.${key}` : key);
+        }
+      };
+      walk(secondVisitCopy, "");
+      if (TIGH_CREDIT) out.push({ where: "TIGH_CREDIT.line", text: TIGH_CREDIT.line });
+      return out;
+    })(),
   ];
 
   // Restored after being briefly replaced by the file scan above. Checking the

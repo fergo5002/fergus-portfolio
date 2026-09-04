@@ -11,7 +11,9 @@
     "phone-check": "node scripts/phone-check.mjs",
     "phone-check:arcade": "node scripts/arcade-phone-check.mjs",
     "som:report": "node scripts/share-of-model/report.mjs",
-    "som:publish": "node scripts/share-of-model/publish.mjs"
+    "som:publish": "node scripts/share-of-model/publish.mjs",
+    "sv:fixture": "node scripts/second-visit/make-fixture.mjs",
+    "sv:compare": "node scripts/second-visit/compare.mjs"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.3",
