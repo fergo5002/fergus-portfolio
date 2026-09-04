@@ -72,6 +72,11 @@ export default function DriftTool({
       setReference(stored.reference);
       setProfile(stored.profile);
       setSpread(stored.spread);
+      // The server rendered the worked example. Once a saved profile replaces
+      // its reference and profile, replace its report in the same turn too;
+      // otherwise the note says the saved profile is active while the numbers
+      // immediately below still say they were built from my eleven articles.
+      setReport(analyse(stored.profile, driftDemo.draft, stored.reference, stored.spread));
       setSavedAt(stored.savedAt);
       setMine(true);
       setNote(driftCopy.savedNote);

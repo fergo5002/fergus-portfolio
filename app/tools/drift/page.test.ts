@@ -90,6 +90,15 @@ describe("the client component", () => {
     expect(tool).not.toMatch(/"fergusos:/);
   });
 
+  it("re-measures the displayed draft when it restores a saved profile", () => {
+    // Restoring only the reference/profile would leave the worked example's
+    // report on screen under a note claiming the saved profile was active.
+    // The first report after hydration must therefore use the saved table too.
+    expect(tool).toContain(
+      "setReport(analyse(stored.profile, driftDemo.draft, stored.reference, stored.spread))",
+    );
+  });
+
   it("records a run without the text", () => {
     // `tool_run` carries the slug, the outcome and the milliseconds. Not the
     // draft, not the samples, not a hash of either (F3's whitelist).

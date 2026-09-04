@@ -654,6 +654,13 @@ const MUTATIONS = [
     replace:
       "      const stored = parseProfile(window.localStorage.getItem(DRIFT_PROFILE_KEY));\n      window.localStorage.setItem(DRIFT_PROFILE_KEY, serialiseProfile(demoReference, demoProfile, demoSpread, new Date().toISOString()));",
   },
+  {
+    name: "drift restores a saved profile but leaves the worked-example report on screen",
+    file: "app/tools/drift/DriftTool.tsx",
+    pattern:
+      /      setReport\(analyse\(stored\.profile, driftDemo\.draft, stored\.reference, stored\.spread\)\);\r?\n/,
+    replace: "",
+  },
 ];
 
 let caught = 0;
