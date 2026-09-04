@@ -68,7 +68,7 @@ export const secondVisitCopy = {
   honesty: {
     title: "What this is, and what it is not",
     body: [
-      "Your file never leaves this tab. It is read in a background thread in your own browser, the numbers are worked out there, and nothing is uploaded, stored or sent anywhere. The forget command has nothing to wipe here, because this tool writes nothing to your machine at all.",
+      "Your file never leaves this tab. It is read and modelled in your own browser, and the page names whether that happened in a background worker or on the main thread. Nothing is uploaded, stored or sent anywhere. The forget command has nothing to wipe here, because this tool writes nothing to your machine at all.",
       "The distance bands were drawn for a rural Irish sauna. Fifteen kilometres is habit range, ninety-five is the point where Dublin stops being a catchment and starts being a day out. For your business those numbers may be nonsense, which is why every one of them is a slider.",
       "The priors are stated assumptions rather than fitted parameters, and the people who wrote them say so in the code. One venue and eighteen months is not enough history to fit five coefficients without overfitting, so somebody wrote down what they believed and left it arguable.",
       "The model has never been scored against what customers went on to do. Nobody has taken a list of people it called lapsed and checked how many were. It reorganises the dates you already have, which is worth doing, and it is a different thing from knowing what happens next.",
@@ -147,6 +147,7 @@ export const secondVisitCopy = {
     badDates: "None of the values in that column parsed as a date. Pick a different one.",
     tooFew: "Under twenty customers with a booking, there is nothing here a survival curve could honestly say. Come back with more of the file.",
     tooBig: "That file is over 60 MB. Nothing here can hold it. Export a narrower date range.",
+    truncated: "Only the first 500,000 rows were read. Every result and export below is incomplete.",
     failed: "Something went wrong reading that file, and it stopped rather than guessing.",
   },
   labels: {
@@ -154,6 +155,10 @@ export const secondVisitCopy = {
     customers: "customers",
     used: "used",
     ignored: "ignored",
+    skippedRows: "preamble rows skipped before the header",
+    ignoredRows: "rows ignored because a required value could not be read",
+    ambiguousDates: "The dates were ambiguous, so day-first order was used. Check the result before acting on it.",
+    working: "Working in your browser.",
     parseMs: "read in",
     modelMs: "modelled in",
     seasonOff: "Season factor off: this file covers fewer than twelve months.",

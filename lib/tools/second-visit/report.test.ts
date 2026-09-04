@@ -21,7 +21,7 @@ describe("the escaper", () => {
   });
 
   it("leaves ordinary text alone, accents included", () => {
-    expect(escapeHtml("SÃ©an O'Broin, Longford")).toBe("SÃ©an O&#39;Broin, Longford");
+    expect(escapeHtml("Seán O'Broin, Longford")).toBe("Seán O&#39;Broin, Longford");
   });
 });
 
@@ -104,4 +104,3 @@ describe("the curve, drawn as a path", () => {
     expect(stepPath([], 100, 50)).toBe("");
   });
 });
-
