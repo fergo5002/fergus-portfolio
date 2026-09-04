@@ -112,6 +112,80 @@ describe("refusals", () => {
       ...JSON.parse(saved),
       spread: { pieces: 2, min: 0.3, median: 0.2, max: 0.1 },
     }],
+    ["a marker containing prose", (() => {
+      const decoded = JSON.parse(saved);
+      const marker = "not one word";
+      return {
+        ...decoded,
+        reference: { ...ref, markers: [marker], mean: { [marker]: 0.1 }, sd: { [marker]: 0.1 } },
+        profile: { ...profile, freq: { [marker]: 0.1 }, z: { [marker]: 0 } },
+      };
+    })()],
+    ["an extra reference mean", {
+      ...JSON.parse(saved),
+      reference: { ...ref, mean: { ...ref.mean, invented: 0.1 } },
+    }],
+    ["an extra reference deviation", {
+      ...JSON.parse(saved),
+      reference: { ...ref, sd: { ...ref.sd, invented: 0.1 } },
+    }],
+    ["an impossible reference deviation", {
+      ...JSON.parse(saved),
+      reference: { ...ref, sd: Object.fromEntries(ref.markers.map((marker) => [marker, 0.6])) },
+    }],
+    ["an extra profile frequency", {
+      ...JSON.parse(saved),
+      profile: { ...profile, freq: { ...profile.freq, invented: 0.1 } },
+    }],
+    ["an extra profile z-score", {
+      ...JSON.parse(saved),
+      profile: { ...profile, z: { ...profile.z, invented: 0.1 } },
+    }],
+    ["a negative sentence count", {
+      ...JSON.parse(saved),
+      profile: { ...profile, rhythm: { ...profile.rhythm, sentences: -1 } },
+    }],
+    ["rhythm buckets outside shares", {
+      ...JSON.parse(saved),
+      profile: { ...profile, rhythm: { ...profile.rhythm, buckets: [2, -1, 0, 0, 0] } },
+    }],
+    ["rhythm buckets that do not sum to one", {
+      ...JSON.parse(saved),
+      profile: { ...profile, rhythm: { ...profile.rhythm, buckets: [0.1, 0.1, 0.1, 0.1, 0.1] } },
+    }],
+    ["a negative punctuation rate", {
+      ...JSON.parse(saved),
+      profile: { ...profile, punctuation: { ...profile.punctuation, emDash: -1 } },
+    }],
+    ["a join share above one", {
+      ...JSON.parse(saved),
+      profile: { ...profile, joins: { ...profile.joins, and: 2, any: 2 } },
+    }],
+    ["an inconsistent combined join share", {
+      ...JSON.parse(saved),
+      profile: { ...profile, joins: { and: 0.1, but: 0.2, so: 0.3, any: 0.1 } },
+    }],
+    ["a self-spread claiming more pieces than the reference", {
+      ...JSON.parse(saved),
+      spread: { pieces: ref.documents + 1, min: 0.1, median: 0.2, max: 0.3 },
+    }],
+    ["an extra fixed pair", {
+      ...JSON.parse(saved),
+      profile: { ...profile, pairs: { ...profile.pairs, invented: { formal: 0, plain: 0 } } },
+    }],
+    ["a pair count larger than the profile", {
+      ...JSON.parse(saved),
+      profile: {
+        ...profile,
+        pairs: { ...profile.pairs, utilise: { formal: profile.words + 1, plain: 0 } },
+      },
+    }],
+    ["an invalid timestamp", { ...JSON.parse(saved), savedAt: "whenever" }],
+    ["a parseable timestamp that is not the exported ISO shape", {
+      ...JSON.parse(saved),
+      savedAt: "2026-09-03",
+    }],
+    ["an extra envelope field", { ...JSON.parse(saved), prose: "not allowed" }],
   ];
 
   it.each(cases)("returns null for %s", (_name, value) => {

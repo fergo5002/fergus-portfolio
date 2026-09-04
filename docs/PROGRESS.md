@@ -6,6 +6,44 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-04: Drift, final review fixes complete locally
+
+The independent review's eight findings are fixed on `toolshed/t1-drift`. Drift now models the
+active profile source explicitly, so Measure is disabled while Fergus's worked example is active
+and cannot score visitor prose against the wrong reference. Building a new profile retains the
+timestamp and Delete control for an older saved record and says that the new profile is unsaved.
+A successful deletion clears the saved key, both visitor text fields and all derived values before
+claiming success; a refused deletion retains them and says so. Seven pure session-transition tests
+cover those paths because this repository's Vitest environment has no DOM harness. The production
+component is separately coupled to the tested transitions.
+
+Saved and MCP-supplied profiles now require exact envelope, marker/statistic and fixed-pair key
+sets; valid single-word markers; bounded shares; consistent rhythm and join aggregates; nonnegative
+rates; substitution counts no larger than the profile; an ISO timestamp; and a self-spread that
+cannot claim more pieces than the reference. The public copy no longer turns an absent pull or
+substitution row into a conclusion, scopes substitution evidence to the pasted samples, says that
+at most 100 filtered marker words are saved, and labels the 150-word, five-piece and 1,000-word
+choices as conservative and uncalibrated. One concise hidden status announces each action; the
+whole report is no longer a live region.
+
+Observed after the fixes: 68 test files and 1,413 tests pass; `tsc --noEmit` passes; the production
+build completes with 40 static pages and `/tools/drift` at 9.68 kB; and all 104 repository mutations
+are caught, including nine new Drift state/validation mutations, with the tree restored after every
+row. The phone check passes `/tools/drift` on WebKit at 390 and 320 and on the throttled Chromium
+Pixel with zero overflow, input-font, tap-target, contrast, asset or layout-moved failures. A fresh
+WebKit interaction also proved: Measure disabled in demo mode; enabled after Build; Save writes the
+profile; rebuilding retains an enabled Delete control and names the older saved profile; a forced
+storage deletion failure retains the text and record; successful deletion removes the record,
+clears samples, restores the demo draft and disables Measure; the report has no live-region marker;
+and there were no application console errors.
+
+Still not verified: CI, pull request, preview, production, PostHog delivery or a physical iPhone.
+The marker count and all three floors remain uncalibrated; self-spread still runs slightly tight as
+previously documented; and the Delta still has no external implementation oracle. The branch is
+five commits behind current main, including the integrated Overlap tool, and the programme ledger
+will need an ordinary conflict resolution when integrated; it was deliberately not rebased during
+this fix round.
+
 ## 2026-09-04: Drift, ready for review
 
 T1 of the toolshed programme is complete locally on `toolshed/t1-drift`. `/tools/drift` builds a

@@ -17,7 +17,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | S2 | Spike: WebKit in a function | **decided** | `toolshed/s2-webkit` | record on main | WebKit dies at libatk; Chromium 20 of 20, warm 12.5 s; T5 must cut work per run |
 | S3 | Spike: DuckDB in the tab | **decided** | `toolshed/f5-spikes` | record on main | 0 mismatches at 1e-9; 8.1 MB gzip and 82 s at Slow 4G, so DuckDB does not ship: port to TypeScript, keep the macros as the oracle |
 | S4 | Spike: the .ie seed | **decided** | `toolshed/f5-spikes` | record on main | 126,214 registered .ie domains, 17 MB, under a minute, reproduced twice; 38% of the registry figure |
-| T1 | Drift | **review** | `toolshed/t1-drift` | not opened | local production build and all three phone profiles green; CI and live check pending |
+| T1 | Drift | **review** | `toolshed/t1-drift` | not opened | 1,413 tests, 104/104 mutations, production build and all three phone profiles green; CI and live check pending |
 | T2 | Relief | **queued** | | | |
 | T3 | Overlap | **queued** | | | |
 | T4 | Second Visit | **queued** | | | |
@@ -144,3 +144,14 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
   report values with the saved-profile note. The final phone run remained green on all three
   profiles. Review also corrected the method's wording from "over half" to "at least half" to
   match the tested `Math.ceil(documents * 0.5)` rule; the algorithm did not change.
+- 2026-09-04: T1 independent-review fixes complete locally. The active reference is now an explicit
+  `demo | visitor` session state, so Measure cannot run against the worked-example reference.
+  Rebuilding keeps an older saved record visible and deletable; successful Delete clears both text
+  fields and every derived value, while a refused deletion retains them and reports failure. Profile
+  parsing now rejects impossible ranges, inconsistent aggregates, extra marker/statistic keys and a
+  spread larger than its reference. Interpretive and threshold copy is scoped to what was measured,
+  and one concise status replaces the whole-report live region. Observed: 68 files and 1,413 tests,
+  `tsc --noEmit`, production build, 104/104 mutations, and all three phone profiles green. Fresh
+  WebKit interaction exercised build, save, rebuild-over-save, forced deletion failure and successful
+  deletion with zero application console errors. Still unverified: CI, PR, preview, production,
+  PostHog and a physical iPhone; statistical calibration and the external-oracle gap are unchanged.

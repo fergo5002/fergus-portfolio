@@ -69,7 +69,7 @@ describe("the client component", () => {
     // The demo reference is a prop and the initial state. Once the visitor has
     // pressed build, every call has to use theirs, and a stale `demoReference`
     // here would silently score their draft against my articles.
-    expect(tool).toContain("analyse(profile, draft, reference, spread)");
+    expect(tool).toContain("analyse(profile, session.draft, reference, spread)");
     expect(tool).not.toMatch(/analyse\([^)]*demoReference/);
   });
 
@@ -92,6 +92,23 @@ describe("the client component", () => {
 
   it("does not claim deletion when the browser refuses it", () => {
     expect(tool).toMatch(/if \(!removeSavedProfile\(window\.localStorage\)\) \{[\s\S]*?driftCopy\.dropFailed[\s\S]*?return;/);
+  });
+
+  it("returns every derived value to the worked example after a successful deletion", () => {
+    const drop = tool.match(/function onDrop\(\)[\s\S]*?\n  }/)?.[0] ?? "";
+    expect(drop).toContain("afterDelete(current, true, driftDemo.draft)");
+    expect(drop).toContain("setReference(demoReference)");
+    expect(drop).toContain("setProfile(demoProfile)");
+    expect(drop).toContain("setSpread(demoSpread)");
+    expect(drop).toContain("setReport(demoReport)");
+  });
+
+  it("announces one concise status instead of making the whole report live", () => {
+    expect(tool).not.toMatch(/className="drift__report" aria-live=/);
+    expect(tool).not.toMatch(/className="drift__note" role="status"/);
+    expect(tool).toMatch(
+      /className="drift__announcement" role="status" aria-live="polite"/,
+    );
   });
 
   it("re-measures the displayed draft when it restores a saved profile", () => {

@@ -1,4 +1,5 @@
 import type { MetricKey, PullReason } from "@/lib/tools/drift/report";
+import type { Substitution } from "@/lib/tools/drift/substitutions";
 import type { ToolEntry } from "./types";
 
 /**
@@ -22,8 +23,8 @@ export const drift: ToolEntry = {
   cantSee: [
     "Meaning. Every number here counts how often words and marks turn up, and none of them knows what any of it says.",
     "Register shifts inside one writer. A note to a friend and a note to a bank are two voices from the same person, and this would call the second one drift.",
-    "Anything under 150 words. Below that the distance is reporting whether a word happened to occur at all, so the tool refuses to print one and says why.",
-    "Anything from fewer than five pieces. The distance is measured in how much your own writing varies from one piece to the next, and with four or fewer that variation is mostly one piece's accident, so the tool refuses and says so.",
+    "Anything under 150 words. The tool uses that conservative floor because short drafts make marker counts sparse; it refuses to print a distance and says why.",
+    "Anything from fewer than five pieces. Five is a conservative, uncalibrated floor for estimating variation, so the tool refuses a distance below it and says why.",
     "Whether the writing is any good. A low distance means your commonest words turn up at similar rates. That is not praise, and it is not a verdict on the draft.",
     "A substitution that is not on its list. The near-synonyms come from a fixed table written into this page, not from a dictionary and not from a model.",
   ],
@@ -34,10 +35,11 @@ export const drift: ToolEntry = {
 export const driftCopy = {
   samplesLabel: "Things you wrote",
   samplesHint:
-    "Ten pieces is plenty and five is the minimum. Paste them one after another with a line of three dashes between them. A thousand words in total is where the numbers start to settle.",
+    "Five pieces is the conservative minimum and ten is a useful starting point. Paste them one after another with a line of three dashes between them. A thousand words in total is an uncalibrated rule of thumb, not a guarantee that the numbers have settled.",
   samplesPlaceholder: "Paste something you wrote\n---\nAnd another one",
   draftLabel: "The draft",
-  draftHint: "The thing you want measured. Under 150 words it will refuse, and say so.",
+  draftHint:
+    "The thing you want measured. The tool uses 150 words as a conservative, uncalibrated floor; below it, it refuses a distance and says so.",
   draftPlaceholder: "Paste the draft",
 
   build: "Build the profile",
@@ -52,7 +54,7 @@ export const driftCopy = {
   metricsHeading: "Habits, side by side",
   shapeHeading: "Sentence lengths",
   pullsHeading: "The sentences pulling hardest",
-  substitutionsHeading: "Words your own writing does not use",
+  substitutionsHeading: "Words these samples do not use",
   builtFrom: "Built from",
 
   profileColumn: "You",
@@ -61,24 +63,41 @@ export const driftCopy = {
   noProfile: "Build a profile first, or use the worked example below.",
   noSamples: "Nothing to build a profile from yet. Paste something you wrote.",
   thinProfile:
-    "That is a thin profile. Under a thousand words the rarer half of your marker words appear once or not at all, and the distance moves around on nothing.",
+    "That is a thin profile. A thousand words is a conservative rule of thumb, not a calibrated boundary; with less text, sparse marker counts can make the distance less stable.",
   tooShort:
-    "Under 150 words, a distance is noise: most of the marker words appear once or not at all, so the number would be reporting chance. Counts still hold, and they are below.",
+    "This tool uses 150 words as a conservative, uncalibrated floor because marker counts are sparse in short drafts. It will not print a distance below that floor. Counts still hold, and they are below.",
   tooFewPieces:
-    "Fewer than 5 separate pieces. The distance is measured in how far your own pieces sit from each other, so with four or fewer there is not enough of your own variation to measure it in, and printing a number would be inventing the units. Your habits are still below, and so are the counts.",
-  noPulls: "No sentence stands out. The draft is spread evenly against your profile.",
-  noSubstitutions: "Nothing on the list. Every word it checks for, you use yourself.",
+    "Fewer than 5 separate pieces. Five is this tool's conservative, uncalibrated floor for estimating your between-piece variation, so it will not print a distance. Your habits are still below, and so are the counts.",
+  noPulls:
+    "No sentence contains an overused marker word or one of the fixed flags. Underused words contribute to the distance but cannot honestly be assigned to one sentence.",
+  noSubstitutions:
+    "No row has all three pieces of evidence: a listed formal term in this draft, none in these samples, and its listed plain alternative in the samples.",
+  substitutionRow: (row: Substitution) =>
+    `These samples never use "${row.formal}". They use "${row.plain}", ${row.profilePlain} times. This draft uses "${row.formal}" ${row.draftCount} times.`,
 
   savedNote: "Saved on this machine only. The terminal's forget command wipes it.",
   savedContents:
-    "What gets saved is a frequency table: your hundred commonest words, a number beside each, and the rates. Your own words, then, but single ones, in frequency order, never in the order you wrote them. No sentence goes in and none can be got back out.",
-  droppedNote: "Deleted. Nothing of yours is left in this browser.",
+    "What gets saved is a frequency table: up to one hundred marker words that passed the document and variation filters, a number beside each, and the rates. Your own words, then, but single ones, in frequency order, never in the order you wrote them. No sentence goes in and none can be got back out.",
+  droppedNote: "Saved profile deleted. Your pasted samples and draft have also been cleared from this tab.",
   dropFailed:
     "This browser refused the deletion, so the saved profile may still be here. Try the terminal's forget command after storage access is restored.",
   neverSaved: "Nothing is saved unless you press save.",
+  unsavedOverSaved:
+    "This new profile is not saved. An older saved profile is still on this machine until you replace or delete it.",
+
+  announceNoSamples: "No profile was built because no samples were provided.",
+  announceRestored: "Saved Drift profile restored.",
+  announceBuilt: "Visitor profile built. The displayed report now uses your samples.",
+  announceMeasured: "Draft measurement updated.",
+  announceRefused: "Draft measurement updated without a distance; read the explanation below.",
+  announceSaved: "Drift profile saved on this machine.",
+  announceSaveFailed: "This browser refused the save; no new profile was stored.",
+  announceDeleted: "Saved profile and text in this tab cleared.",
+  announceDeleteFailed: "Profile deletion failed; your current text and saved profile were retained.",
+  announceDemo: "Worked example restored. Build your own profile before measuring your draft.",
 
   demoNote:
-    "A worked example, so this page is not an empty form. Everything on screen is my writing measured against my own writing: the profile and the reference are the eleven articles at /writing, and the draft is one of my paragraphs rewritten the way a model tends to rewrite things. Paste your own pieces and every number here is rebuilt from them.",
+    "A worked example, so this page is not an empty form. The report below measures my example draft against a profile and reference built from the eleven articles at /writing. Paste your own pieces and every number in the report is rebuilt from them.",
   referenceNote:
     "The distance is Burrows's Delta, and a Delta is measured in standard deviations, so it needs a population whose standard deviations they are. That population is your pieces: your own commonest words, and your own variation from one piece to the next. Which is why the number reads in units of your writing and not mine, and why the spread of your own pieces is printed beside it.",
   substitutionNote:

@@ -45,7 +45,7 @@
     {
       "name": "check_voice",
       "title": "Measure a draft against a voice profile",
-      "description": "Burrows's Delta, sentence rhythm, punctuation rates, join rates and substitution hits for a draft against a voice profile saved from /tools/drift. Pass the profile object exactly as that tool exports it, reference table included: the z-scores in it were computed against the writer's own pieces, and without that table they have no units, so a profile with it stripped out is refused rather than guessed at. A draft under 150 words gets the counts and no distance, because a Delta under that length reports chance rather than habit. A profile built from fewer than 5 pieces gets the habits and no distance, because the standard deviations behind it come from too few numbers to be units of anything. This is not an AI detector: a low distance means the writer's own commonest words appear at similar rates, and nothing more."
+      "description": "Burrows's Delta, sentence rhythm, punctuation rates, join rates and substitution hits for a draft against a voice profile saved from /tools/drift. Pass the profile object exactly as that tool exports it, reference table included: the z-scores in it were computed against the writer's own pieces, and without that table they have no units, so a profile with it stripped out is refused rather than guessed at. The tool uses conservative, uncalibrated floors of 150 draft words and 5 reference pieces; below either it returns the counts and habits that still hold but no distance. This is not an AI detector: a low distance means the writer's own commonest words appear at similar rates, and nothing more."
     }
   ]
 }

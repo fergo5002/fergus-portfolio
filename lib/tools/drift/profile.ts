@@ -24,10 +24,9 @@ import { words } from "./text";
 export const PROFILE_VERSION = 1;
 
 /**
- * Below this, a profile is thin enough that the rarer half of the marker set
- * has counts of zero or one and the z-scores mostly report chance. Guessed from
- * how Delta behaves rather than measured here; the tool prints the profile's
- * word count either way so the visitor can weigh it themselves.
+ * A conservative warning threshold, not a calibrated boundary. Sparse marker
+ * counts become more likely as a profile gets shorter; this value was chosen
+ * from the expected behaviour of Delta and has not been measured on visitors.
  */
 export const MIN_PROFILE_WORDS = 1000;
 

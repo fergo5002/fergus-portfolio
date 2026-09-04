@@ -14,6 +14,15 @@ import {
   serialiseProfile,
 } from "@/lib/tools/drift/storage";
 import { splitPieces } from "@/lib/tools/drift/text";
+import {
+  afterBuild,
+  afterDelete,
+  afterDemo,
+  afterRestore,
+  afterSave,
+  canMeasure,
+  demoSession,
+} from "@/lib/tools/drift/session";
 import { trackToolRun } from "@/lib/tools/events";
 
 /**
@@ -57,18 +66,13 @@ export default function DriftTool({
   const uid = useId();
   const { audio } = useSystem();
 
-  const [samples, setSamples] = useState("");
-  // Annotated, because `driftDemo` is `as const` and an unannotated `useState`
-  // would infer the demo draft's literal type and then refuse every other
-  // string the visitor types.
-  const [draft, setDraft] = useState<string>(driftDemo.draft);
+  const [session, setSession] = useState(() => demoSession(driftDemo.draft));
   const [reference, setReference] = useState<Reference>(demoReference);
   const [profile, setProfile] = useState<VoiceProfile>(demoProfile);
   const [spread, setSpread] = useState<SelfSpread | null>(demoSpread);
   const [report, setReport] = useState<DriftReport>(demoReport);
-  const [mine, setMine] = useState(false);
   const [note, setNote] = useState<string>(driftCopy.demoNote);
-  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
     try {
@@ -82,18 +86,19 @@ export default function DriftTool({
       // otherwise the note says the saved profile is active while the numbers
       // immediately below still say they were built from my eleven articles.
       setReport(analyse(stored.profile, driftDemo.draft, stored.reference, stored.spread));
-      setSavedAt(stored.savedAt);
-      setMine(true);
+      setSession((current) => afterRestore(current, stored.savedAt));
       setNote(driftCopy.savedNote);
+      setAnnouncement(driftCopy.announceRestored);
     } catch {
       // Storage blocked. Nothing to restore, and nothing to say about it.
     }
   }, []);
 
   function onBuild() {
-    const pieces = splitPieces(samples);
+    const pieces = splitPieces(session.samples);
     if (pieces.length === 0) {
       setNote(driftCopy.noSamples);
+      setAnnouncement(driftCopy.announceNoSamples);
       return;
     }
     // Their pieces, their table. Built before the profile, because the profile
@@ -107,16 +112,27 @@ export default function DriftTool({
     // Re-measure straight away, so the demo's numbers never sit under a profile
     // that has just been replaced. Not a `tool_run`: nothing was measured on a
     // draft the visitor chose to measure.
-    setReport(analyse(made, draft, built, range));
-    setMine(true);
-    setSavedAt(null);
-    setNote(made.words < MIN_PROFILE_WORDS ? driftCopy.thinProfile : driftCopy.neverSaved);
+    setReport(analyse(made, session.draft, built, range));
+    setSession((current) => afterBuild(current));
+    const profileNote = made.words < MIN_PROFILE_WORDS ? driftCopy.thinProfile : "";
+    const persistenceNote =
+      session.savedAt === null ? driftCopy.neverSaved : driftCopy.unsavedOverSaved;
+    setNote(`${profileNote} ${persistenceNote}`.trim());
+    setAnnouncement(driftCopy.announceBuilt);
   }
 
   function onMeasure() {
+    if (!canMeasure(session)) {
+      setNote(driftCopy.noProfile);
+      setAnnouncement(driftCopy.noProfile);
+      return;
+    }
     const started = Date.now();
-    const next = analyse(profile, draft, reference, spread);
+    const next = analyse(profile, session.draft, reference, spread);
     setReport(next);
+    setAnnouncement(
+      next.status === "ok" ? driftCopy.announceMeasured : driftCopy.announceRefused,
+    );
     void trackToolRun({
       tool: "drift",
       outcome: next.status === "ok" ? "ok" : "refused",
@@ -129,20 +145,28 @@ export default function DriftTool({
     const record = serialiseProfile(reference, profile, spread, now);
     try {
       window.localStorage.setItem(DRIFT_PROFILE_KEY, record);
-      setSavedAt(now);
+      setSession((current) => afterSave(current, now));
       setNote(driftCopy.savedNote);
+      setAnnouncement(driftCopy.announceSaved);
     } catch {
       setNote(driftCopy.neverSaved);
+      setAnnouncement(driftCopy.announceSaveFailed);
     }
   }
 
   function onDrop() {
     if (!removeSavedProfile(window.localStorage)) {
       setNote(driftCopy.dropFailed);
+      setAnnouncement(driftCopy.announceDeleteFailed);
       return;
     }
-    setSavedAt(null);
+    setSession((current) => afterDelete(current, true, driftDemo.draft));
+    setReference(demoReference);
+    setProfile(demoProfile);
+    setSpread(demoSpread);
+    setReport(demoReport);
     setNote(driftCopy.droppedNote);
+    setAnnouncement(driftCopy.announceDeleted);
   }
 
   function onDemo() {
@@ -150,9 +174,9 @@ export default function DriftTool({
     setProfile(demoProfile);
     setSpread(demoSpread);
     setReport(demoReport);
-    setDraft(driftDemo.draft);
-    setMine(false);
+    setSession((current) => afterDemo(current, driftDemo.draft));
     setNote(driftCopy.demoNote);
+    setAnnouncement(driftCopy.announceDemo);
   }
 
   const samplesId = `${uid}-samples`;
@@ -161,8 +185,11 @@ export default function DriftTool({
 
   return (
     <div className="drift">
-      <p className="drift__note" role="status">
+      <p className="drift__note">
         {note}
+      </p>
+      <p className="drift__announcement" role="status" aria-live="polite">
+        {announcement}
       </p>
 
       <div className="drift__fields">
@@ -175,19 +202,29 @@ export default function DriftTool({
             id={samplesId}
             className="drift__input"
             rows={8}
-            value={samples}
+            value={session.samples}
             placeholder={driftCopy.samplesPlaceholder}
-            onChange={(e) => setSamples(e.target.value)}
+            onChange={(e) => setSession((current) => ({ ...current, samples: e.target.value }))}
             onKeyDown={() => audio.key()}
           />
           <div className="drift__actions">
             <button type="button" className="drift__button" onClick={onBuild}>
               {driftCopy.build}
             </button>
-            <button type="button" className="drift__button" onClick={onSave} disabled={!mine}>
+            <button
+              type="button"
+              className="drift__button"
+              onClick={onSave}
+              disabled={session.source !== "visitor"}
+            >
               {driftCopy.save}
             </button>
-            <button type="button" className="drift__button" onClick={onDrop} disabled={savedAt === null}>
+            <button
+              type="button"
+              className="drift__button"
+              onClick={onDrop}
+              disabled={session.savedAt === null}
+            >
               {driftCopy.drop}
             </button>
           </div>
@@ -203,13 +240,18 @@ export default function DriftTool({
             id={draftId}
             className="drift__input"
             rows={8}
-            value={draft}
+            value={session.draft}
             placeholder={driftCopy.draftPlaceholder}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => setSession((current) => ({ ...current, draft: e.target.value }))}
             onKeyDown={() => audio.key()}
           />
           <div className="drift__actions">
-            <button type="button" className="drift__button" onClick={onMeasure}>
+            <button
+              type="button"
+              className="drift__button"
+              onClick={onMeasure}
+              disabled={!canMeasure(session)}
+            >
               {driftCopy.measure}
             </button>
             <button type="button" className="drift__button" onClick={onDemo}>
@@ -219,7 +261,7 @@ export default function DriftTool({
         </div>
       </div>
 
-      <section className="drift__report" aria-live="polite">
+      <section className="drift__report">
         <h2 className="drift__heading">{driftCopy.deltaHeading}</h2>
         {report.status === "ok" ? (
           <p className="drift__delta">{number(report.delta ?? 0)}</p>
@@ -250,9 +292,7 @@ export default function DriftTool({
           <ul className="drift__list">
             {report.substitutions.map((row) => (
               <li key={row.id} className="drift__item">
-                You have never written &quot;{row.formal}&quot;. You write &quot;{row.plain}&quot;,{" "}
-                {row.profilePlain} times. This draft uses &quot;{row.formal}&quot; {row.draftCount}{" "}
-                times.
+                {driftCopy.substitutionRow(row)}
               </li>
             ))}
           </ul>

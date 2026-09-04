@@ -29,11 +29,9 @@ import { words } from "./text";
 /**
  * The floor.
  *
- * Under 150 words most markers have a count of zero or one, so the z-score is
- * reporting whether a word happened to occur at all rather than how often
- * somebody reaches for it. The tool refuses to print a distance below this and
- * says why, which is the whole reason the constant is exported rather than
- * buried in a comparison.
+ * A conservative refusal threshold, not a calibrated boundary. Marker counts
+ * are sparse in short drafts, so the tool refuses to print a distance below
+ * this value and says that the value is an explicit design choice.
  */
 export const MIN_DELTA_WORDS = 150;
 

@@ -1066,6 +1066,12 @@ describe("check_voice", () => {
     expect(call("check_voice", { profile: noRef, draft }).isError).toBe(true);
   });
 
+  it("returns a tool error for an exported profile with impossible rates", () => {
+    const malformed = structuredClone(saved);
+    malformed.profile.joins.and = -1;
+    expect(call("check_voice", { profile: malformed, draft }).isError).toBe(true);
+  });
+
   it("returns a tool error when the draft is missing", () => {
     expect(call("check_voice", { profile: saved }).isError).toBe(true);
   });

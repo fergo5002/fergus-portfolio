@@ -673,6 +673,60 @@ const MUTATIONS = [
     pattern: /  } catch \{\r?\n    return false;\r?\n  }/,
     replace: "  } catch {\n    return true;\n  }",
   },
+  {
+    name: "drift lets the worked-example reference measure a visitor draft",
+    file: "lib/tools/drift/session.ts",
+    pattern: /  return session\.source === "visitor";/,
+    replace: "  return true;",
+  },
+  {
+    name: "drift hides an older saved profile when a new in-memory profile is built",
+    file: "lib/tools/drift/session.ts",
+    pattern: /  return \{ \.\.\.session, source: "visitor" \};/,
+    replace: '  return { ...session, source: "visitor", savedAt: null };',
+  },
+  {
+    name: "drift claims deletion but retains the visitor's prose in session state",
+    file: "lib/tools/drift/session.ts",
+    pattern: /  return succeeded \? demoSession\(demoDraft\) : session;/,
+    replace: "  return session;",
+  },
+  {
+    name: "drift accepts extra marker statistics in an exported profile",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /  if \(!hasExactKeys\(mean, markers\) \|\| !hasExactKeys\(sd, markers\)\) return false;/,
+    replace: "",
+  },
+  {
+    name: "drift accepts rhythm buckets outside zero-to-one shares",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /  if \(!rhythm\.buckets\.every\(isShare\)\) return false;/,
+    replace: "",
+  },
+  {
+    name: "drift accepts rhythm buckets that do not sum to one",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /  if \(!nearlyEqual\(bucketTotal, sentences === 0 \? 0 : 1\)\) return false;/,
+    replace: "",
+  },
+  {
+    name: "drift accepts an inconsistent combined join share",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /  if \(!nearlyEqual\(joins\.any, joins\.and \+ joins\.but \+ joins\.so\)\) return false;/,
+    replace: "",
+  },
+  {
+    name: "drift accepts a saved spread claiming more pieces than exist",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /    \(reference === undefined \|\| pieces <= reference\.documents\) &&/,
+    replace: "    true &&",
+  },
+  {
+    name: "drift accepts a substitution count larger than the whole profile",
+    file: "lib/tools/drift/storage.ts",
+    pattern: /formal <= wordTotal &&\r?\n      Number\.isInteger\(plain\)/,
+    replace: "true &&\n      Number.isInteger(plain)",
+  },
 ];
 
 let caught = 0;

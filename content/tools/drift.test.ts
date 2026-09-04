@@ -50,6 +50,7 @@ describe("the copy", () => {
   it("keeps this site's articles in the demo note, where they belong", () => {
     expect(driftCopy.demoNote).toContain("/writing");
     expect(driftCopy.demoNote.toLowerCase()).toContain("example");
+    expect(driftCopy.demoNote).not.toMatch(/everything on screen/i);
   });
 
   it("says the substitution list is fixed and how long it is", () => {
@@ -66,6 +67,29 @@ describe("the copy", () => {
     // The markers are theirs now, so the promise is narrower and has to say so.
     expect(driftCopy.savedContents.toLowerCase()).toContain("word");
     expect(driftCopy.savedContents.toLowerCase()).toContain("no sentence");
+    expect(driftCopy.savedContents).not.toMatch(/your hundred commonest/i);
+  });
+
+  it("does not turn missing evidence into a conclusion", () => {
+    expect(driftCopy.noPulls).not.toMatch(/spread evenly/i);
+    expect(driftCopy.noSubstitutions).not.toMatch(/every word.*you use/i);
+    expect(driftCopy.substitutionsHeading).toMatch(/samples/i);
+    expect(
+      driftCopy.substitutionRow({
+        id: "utilise",
+        formal: "utilise",
+        plain: "use",
+        profilePlain: 3,
+        draftCount: 1,
+      }),
+    ).toContain('These samples never use "utilise"');
+  });
+
+  it("labels its uncalibrated floors as conservative choices", () => {
+    expect(driftCopy.samplesHint).toMatch(/conservative|rule of thumb|starting point/i);
+    expect(driftCopy.draftHint).toMatch(/conservative|rule of thumb|starting point/i);
+    expect(driftCopy.thinProfile).toMatch(/conservative|rule of thumb|starting point/i);
+    expect(driftCopy.tooShort).toMatch(/conservative|rule of thumb|starting point/i);
   });
 });
 

@@ -94,6 +94,21 @@
   margin: 0;
 }
 
+/* A measurement updates many table cells. Announce one sentence rather than
+   putting the entire report in a live region and making assistive technology
+   read the report again after every press. */
+.drift__announcement {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* `min-width: 0`, and it is load-bearing rather than tidy.
 
    `.drift__report` is a grid item of `.drift`, so its automatic minimum size is

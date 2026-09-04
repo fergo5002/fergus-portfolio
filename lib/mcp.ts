@@ -645,7 +645,7 @@ const TOOLS: ToolDefinition[] = [
     name: "check_voice",
     title: "Measure a draft against a voice profile",
     description:
-      "Burrows's Delta, sentence rhythm, punctuation rates, join rates and substitution hits for a draft against a voice profile saved from /tools/drift. Pass the profile object exactly as that tool exports it, reference table included: the z-scores in it were computed against the writer's own pieces, and without that table they have no units, so a profile with it stripped out is refused rather than guessed at. A draft under 150 words gets the counts and no distance, because a Delta under that length reports chance rather than habit. A profile built from fewer than 5 pieces gets the habits and no distance, because the standard deviations behind it come from too few numbers to be units of anything. This is not an AI detector: a low distance means the writer's own commonest words appear at similar rates, and nothing more.",
+      "Burrows's Delta, sentence rhythm, punctuation rates, join rates and substitution hits for a draft against a voice profile saved from /tools/drift. Pass the profile object exactly as that tool exports it, reference table included: the z-scores in it were computed against the writer's own pieces, and without that table they have no units, so a profile with it stripped out is refused rather than guessed at. The tool uses conservative, uncalibrated floors of 150 draft words and 5 reference pieces; below either it returns the counts and habits that still hold but no distance. This is not an AI detector: a low distance means the writer's own commonest words appear at similar rates, and nothing more.",
     inputSchema: {
       type: "object",
       properties: {
@@ -677,7 +677,7 @@ const TOOLS: ToolDefinition[] = [
       if (report.status === "too-short") {
         return {
           content: text(
-            `${report.words} words, and the floor is ${report.floor}. Under ${report.floor} words a Delta reports whether a word happened to occur at all, so no distance is printed. The counts still hold: ${report.emDashes} em dash(es), ${report.substitutions.length} substitution(s).`,
+            `${report.words} words, below this tool's conservative, uncalibrated floor of ${report.floor}, so no distance is printed. The counts still hold: ${report.emDashes} em dash(es), ${report.substitutions.length} substitution(s).`,
           ),
           structuredContent: report,
         };
@@ -685,7 +685,7 @@ const TOOLS: ToolDefinition[] = [
       if (report.status === "thin-reference") {
         return {
           content: text(
-            `The profile was built from ${report.reference.documents} piece(s) and ${report.reference.markers} marker word(s), and the floor is ${report.documentFloor} pieces. Every standard deviation behind the distance would come from that many numbers, so no distance is printed. The habits, the em dashes and the substitutions are all in the structured result.`,
+            `The profile was built from ${report.reference.documents} piece(s) and ${report.reference.markers} marker word(s), below this tool's conservative, uncalibrated floor of ${report.documentFloor} pieces, so no distance is printed. The habits, the em dashes and the substitutions are all in the structured result.`,
           ),
           structuredContent: report,
         };
