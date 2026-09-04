@@ -843,7 +843,20 @@ html.crt-off body {
     --arcade-font: 16px;
   }
 }
-/* In the drawer the height comes from the drawer, not from the arcade. */
+/* A program takes the whole box, so it gets the padding back as glass. */
+.term--program {
+  padding: var(--sp-2);
+}
+/* The drawer grows for a program, because a game is the point of the screen
+   while it runs and a scrollback is not. `:has()` is the only way the drawer
+   can know: `term--program` is set on the terminal inside it. A browser without
+   `:has()` keeps the 60vh drawer and the var() fallback below keeps the
+   arithmetic honest, so the worst case is the arcade refusing on a short phone
+   with the sentence it already has, never a clipped grid. */
+.shell:has(.term--program) {
+  --shell-program-h: min(80vh, 620px);
+  max-height: var(--shell-program-h);
+}
 .shell .term--program {
   display: flex;
   flex-direction: column;
@@ -851,9 +864,11 @@ html.crt-off body {
   min-height: 0;
 }
 .shell .term--program .arcade {
-  height: auto;
-  flex: 1 1 auto;
-  min-height: 0;
+  /* Definite, and not `auto`. The drawer is `position: fixed` with no height,
+     so it sizes to its content: an `auto` arcade wraps an empty `<pre>`,
+     measures a box a few pixels tall, and refuses a screen that is really
+     there. 45px is the drawer's bar plus this terminal's padding. */
+  height: calc(var(--shell-program-h, min(60vh, 520px)) - 45px);
 }
 
 /* ----- hero -------------------------------------------------------------- */
