@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { OWNED_PREFIX, forget, isOwnedKey, listKeys, ownedKeys, removeKeys } from "./forget";
 import type { StorageLike } from "./forget";
 import { SETTINGS_KEY } from "./system";
+import { DRIFT_PROFILE_KEY } from "./tools/drift/storage";
 
 /** An in-memory Storage with the three members the module is allowed to use. */
 function fake(initial: Record<string, string> = {}): StorageLike & { keys(): string[] } {
@@ -129,6 +130,7 @@ describe("every key the site writes is a key the site owns", () => {
    */
   const KNOWN: Record<string, { value: string; session: boolean }> = {
     SETTINGS_KEY: { value: SETTINGS_KEY, session: false },
+    DRIFT_PROFILE_KEY: { value: DRIFT_PROFILE_KEY, session: false },
     // The boot marker. Session storage, so it dies with the tab and `forget`
     // is not the thing that removes it. `lib/forget.ts`'s docblock says so.
     SESSION_KEY: { value: "fergusos_booted", session: true },
