@@ -123,3 +123,15 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
   - **Two console 404s, both explained and neither the arcade's fault to fix.** `/_vercel/insights/script.js` is on every page and AGENTS.md already documents that pretty path as a meaningless 404. `/api/board` is the route F4 has not merged yet; `fetchBoards` reads it as unavailable and the sentence above is the result. It goes when F4 lands.
   - **The frame rate here is the instrument, not the page, and I checked that before saying so.** Control reading on a page with no arcade running at all: **5 rAF callbacks in 2,448ms**, tab visible, `document.hidden` false. This headless WebKit throttles the frame clock to about two a second. Under it `bounce` still moved: the glyph went from row 9 column 20 to row 11 column 22 across 4 frames in 3,807ms, which is the fixed-step loop doing exactly what it should with the frames it was given. So: the loop runs and the game animates, **observed**; how it feels at 60fps on a real phone is **not measured here and is not claimed**.
   - Not measured: a real device, a phone GPU, the shader's cost with a game running, audio (`sound on` was never typed), and the board against a real Redis. One engine, WebKit, emulating an iPhone 13 on a desktop kernel.
+- 2026-09-04: G0 review recovery. The interrupted reviewer-fix agent had stopped after introducing
+  a syntax error in a comment while hardening board responses. The comment was repaired, then the
+  review was completed with behaviour-first guards: stable exit callback and host dimensions,
+  no ticks after disposal, controls excluded from game input, probe and box both observed, bounded
+  and validated board rows, six-second fetch timeouts, and a pure finish decision that says where
+  an unposted score went. A deliberately invalid early mutation run was stopped after the coordinator
+  noticed it was editing the same worktree; the transient shader mutation was restored and discarded.
+  On the frozen commit: 1,425 tests, TypeScript and production build green, **121/121 mutations caught**,
+  clean tree. Local WebKit reproduced 40 by 18 at 390 and 32 by 16 after resizing to 320 without
+  restarting Bounce; probe and grid both 15px, exit 44 by 44, keyboard exit and prompt focus green,
+  reduced motion declined. Expected local 404s only: Vercel Analytics' development path and the
+  deliberately absent board route. Still unverified: CI, preview, production, a real device and Redis.

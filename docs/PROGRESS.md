@@ -21,6 +21,16 @@ looked its door up on every argument joined, so `cd arcade bounce` asked the reg
 called "arcade bounce" and got nothing; it looks up the first word now. And three lines of copy were
 wider than the 32-column grid they are drawn into, which the copy's own test caught.
 
+The first whole-branch review found the runtime could restart a live game on an ordinary React
+render or a resize, could keep ticking an instance after that instance had exited, and sent exit
+button events to the game before leaving. Those paths now have guards that fail when removed.
+Board responses are bounded and checked for real three-character initials, both requests time out,
+and the hidden measuring probe inherits the exact font token the grid draws. Final-tree evidence:
+1,425 tests, clean TypeScript and production build, 121/121 mutations caught. In local WebKit the
+390-wide drawer measured 40 by 18, the 320-wide drawer resized in place to 32 by 16 without
+restarting Bounce, both font readings were 15px, the grid fitted, the exit control was 44 by 44,
+Enter on that control left the arcade, Escape restored the prompt, and reduced motion declined it.
+
 Not verified: the board against a real Redis, because F4 is still unmerged and Upstash is not
 provisioned; the live board therefore reads "boards are unavailable", which is the path that was
 tested. No real device, only WebKit emulating an iPhone at 390 and 320, where the headless engine
