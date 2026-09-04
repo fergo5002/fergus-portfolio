@@ -93,6 +93,20 @@ export const secondVisitCopy = {
     stalls: { name: "Stall risks", file: "stall-risks.csv", note: "Two or three visits and drifting. The point where a habit either forms or does not." },
     assumesConsent: "This ranking assumes you are allowed to contact these people. Your export does not say whether you are, and the model in production refuses to guess.",
   },
+  slots: {
+    title: "Slots",
+    note: "Counted from your own bookings, so a slot nobody booked is not in the file and is not in this grid. The sold-out share below is the share of the slots that had at least one booking.",
+    weekdays: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    heatLabel: "Visits",
+    fullLabel: "Sold out",
+    missing: "No slot time column, so there is nothing to draw. Map one and this fills in.",
+  },
+  products: {
+    title: "Reorder radar",
+    note: "Anybody who has bought the same thing at least twice, with their own rhythm for that one thing, and how far past it they are.",
+    missing: "No product column, so there is nothing to compare. Map one and this fills in.",
+    columns: { product: "Product", customers: "Customers", median: "Median gap, days", overdue: "Overdue now" },
+  },
   report: {
     button: "Save the report",
     file: "second-visit-report.html",
