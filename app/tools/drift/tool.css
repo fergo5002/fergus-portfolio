@@ -1,0 +1,143 @@
+/* The route's own rules. `app/globals.css` stays the shell's stylesheet
+   (design section 2, rule 2), so nothing here appends to it. */
+
+.drift {
+  display: grid;
+  gap: var(--sp-4);
+}
+
+.drift__fields {
+  display: grid;
+  gap: var(--sp-4);
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 900px) {
+  .drift__fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.drift__label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+/* `--green`, not `--green-dim`. The dim token measures 4.45 against the
+   background on the amber theme and 4.46 on ice, so it passes on the theme a
+   developer happens to be looking at and fails on the two a visitor reaches by
+   typing four characters at the terminal. `app/globals.test.ts` has the
+   numbers. Hint text is still body text. */
+.drift__hint {
+  color: var(--green);
+  margin: 0 0 var(--sp-2);
+}
+
+/* 16px exactly. Anything smaller and iOS zooms the viewport on focus, which
+   drops the visitor into a horizontally scrolled page they did not ask for. */
+.drift__input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--green);
+  background: var(--bg-panel);
+  border: 1px solid var(--green-line);
+  padding: 0.75rem;
+  resize: vertical;
+}
+
+.drift__input:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.drift__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* 44px is the floor `scripts/phone-check.mjs` fails below. */
+.drift__button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 1rem;
+  font: inherit;
+  font-size: 16px;
+  color: var(--green);
+  background: transparent;
+  border: 1px solid var(--green-line);
+  cursor: pointer;
+}
+
+.drift__button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.drift__delta {
+  font-size: 2.5rem;
+  margin: 0;
+}
+
+.drift__refusal,
+.drift__note,
+.drift__spread {
+  margin: 0;
+}
+
+/* A wide table scrolls inside its own box. The page body never scrolls
+   sideways, which is the thing the phone check fails on. */
+.drift__scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.drift__table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 20rem;
+}
+
+.drift__table th,
+.drift__table td {
+  text-align: left;
+  padding: 0.35rem 0.75rem 0.35rem 0;
+  border-bottom: 1px solid var(--green-line);
+  white-space: nowrap;
+}
+
+.drift__list {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.drift__sentence {
+  display: block;
+}
+
+.drift__reasons {
+  display: block;
+  color: var(--amber);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drift__delta {
+    animation: drift-settle 240ms ease-out both;
+  }
+
+  @keyframes drift-settle {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
