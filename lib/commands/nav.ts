@@ -45,8 +45,15 @@ export const nav = [
         return { type: "navigate", href: `/#${dest}` };
       // Doors. A hidden command is reachable as `cd <name>` and listed nowhere:
       // not in help, not in completion, not in ls. Anything after the name goes
-      // to the door, so `cd arcade pong` can mean something once G0 exists.
-      const door = findCommand(dest);
+      // to the door, so `cd arcade bounce` starts a game without the list.
+      //
+      // The door is looked up on the FIRST word, not on `dest`. `dest` is every
+      // argument joined, which is what a section needs, and it meant
+      // `cd arcade bounce` asked the registry for a command called
+      // "arcade bounce" and got nothing. The refusal below still prints the
+      // whole thing, because that is what the visitor typed.
+      const doorName = (args[0] ?? "").toLowerCase().replace(/^\/+|\/+$/g, "");
+      const door = findCommand(doorName);
       if (door?.hidden) return door.run(args.slice(1), ctx, raw);
       return ok([`cd: no such section: ${dest}`]);
     },
