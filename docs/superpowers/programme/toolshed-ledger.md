@@ -19,7 +19,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | S4 | Spike: the .ie seed | **decided** | `toolshed/f5-spikes` | record on main | 126,214 registered .ie domains, 17 MB, under a minute, reproduced twice; 38% of the registry figure |
 | T1 | Drift | **building** | `toolshed/t1-drift` | | |
 | T2 | Relief | **building** | `toolshed/t2-relief` | | |
-| T3 | Overlap | **building** | `toolshed/t3-overlap` | | |
+| T3 | Overlap | **review** | `toolshed/t3-overlap` | not opened | local only; browser, phone and failure-path audit green |
 | T4 | Second Visit | **queued** | | | |
 | T5 | On the glass | **queued** | | | |
 | T6 | Irish Stack Census | **queued** | | | |
@@ -47,6 +47,8 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 
 ## Log
 
+- 2026-09-04: T3 Overlap recovered and audited on `toolshed/t3-overlap`; it is in review, not pushed or live. The audit corrected the privacy claim (file and names stay local, but the peer receives the salt, hashes and count and sees the connecting address), removed the claim that the matching phrase proves no interception, made the no-room-code route honest about still using WebRTC/STUN, validated every successful relay response, bounded connection and protocol waits, rejected malformed or oversized peer frames, closed abandoned connections, and made every setup failure visible. Missing Redis is an intentional 503 with copy-and-paste opened, not a silent or generic 500. Evidence on the recovered tree: 1,461 of 1,461 full tests, TypeScript clean, production build clean, 100 of 100 mutations caught; phone check green at iPhone 390, iPhone 320 and throttled Pixel; two Chromium contexts exchanged five matches by copy and paste with zero relay requests both with Cloudflare STUN and in same-network-only mode. A real LinkedIn export, a real cross-network/NAT pair, a configured Redis room-code round trip, WebKit's actual WebRTC flow, CI and production remain unverified.
+- 2026-09-04: T3's copied F4 subset reconciled against recovered F4 tip `47f6964` without modifying F4. `lib/store/errors.ts`, `lib/store/redis.ts`, `lib/budget.ts` and the two store tests are byte-identical; both locks carry the same `@upstash/redis` 1.38.3 tarball and integrity. Neon and Blob remain F4-only because T3 imports neither; Playwright remains T3-only because it arrived on main with the required phone check after F4 branched. T3 keeps its non-flaky budget assertion instead of F4's date-dependent ban on the coincidental hex substring `203`. The 94 state, budget, relay, missing-Redis fallback and copy tests pass.
 - 2026-09-03: programme designed, decisions taken, ledger opened. Nothing built yet.
 - 2026-09-03: F0 Task 1 done. gitleaks over 82 commits: one finding, the IndexNow key, public by design. Verdict clean, record in `f0-sweep-2026-09-03.md`.
 - 2026-09-03: found pre-existing uncommitted work in the checkout dated 2026-08-22: an `analytics` script line in `package.json` and an untracked `scripts/analytics.mjs`. Not part of F0, left untouched and unstaged. Fergus to decide whether it ships.

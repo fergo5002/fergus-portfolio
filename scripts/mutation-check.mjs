@@ -610,6 +610,148 @@ const MUTATIONS = [
     pattern: /    record\("refused", started\);\r?\n    return \{ status: "invalid", seq, url: "", message: headlineCopy\.emptyUrl \};/,
     replace: '    return { status: "invalid", seq, url: "", message: headlineCopy.emptyUrl };',
   },
+
+  // ── overlap: fifteen guards, each with the test that bites on it ──
+  //
+  // Two of these are not in the plan that specified this tool, and both replace
+  // a row that would have survived. The Bloom step guard the plan asked for
+  // (`|| 1` on `h2 % bits`) cannot fire, because h2 is forced odd and the bit
+  // count is always even; taking it out left the whole suite green. What was
+  // actually broken there was the signedness, and that is the row below. The
+  // second addition is `pairedChannels` holding a message sent before the far
+  // side has a handler, which is the difference between an exchange and a hang.
+  {
+    name: "overlap decodes before splitting a URL, so a %23 in a slug cuts it in half",
+    file: "lib/tools/overlap/slug.ts",
+    pattern: /s = s\.split\("#", 1\)\[0\];/,
+    replace: 's = decodeURIComponent(s).split("#", 1)[0];',
+  },
+  {
+    name: "overlap turns an old /pub/ link into an /in/ slug, inventing matches",
+    file: "lib/tools/overlap/slug.ts",
+    pattern: /if \(\/\^pub\(\\\/\|\$\)\/i\.test\(s\)\) return \{ ok: false, reason: "legacy-pub" \};/,
+    replace: 's = s.replace(/^pub\\//i, "");',
+  },
+  {
+    name: "overlap stops composing accents, so one name hashes two ways",
+    file: "lib/tools/overlap/slug.ts",
+    pattern: /s = s\.normalize\("NFC"\)\.toLowerCase\(\);/,
+    replace: "s = s.toLowerCase();",
+  },
+  {
+    name: "overlap accepts any host, so a lookalike domain becomes a LinkedIn profile",
+    file: "lib/tools/overlap/slug.ts",
+    pattern: /if \(!LINKEDIN_HOST\.test\(host\)\) return \{ ok: false, reason: "not-a-profile" \};/,
+    replace: 'if (false) return { ok: false, reason: "not-a-profile" };',
+  },
+  {
+    name: "overlap strips the suffix, so two people called John Smith become one",
+    file: "lib/tools/overlap/slug.ts",
+    pattern: /s = s\.replace\(\/\^in\\\/\/i, ""\);/,
+    replace: 's = s.replace(/^in\\//i, "").replace(/-[0-9a-z]+$/, "");',
+  },
+  {
+    name: "overlap truncates to 48 bits, where a big pair of lists gets a wrong name",
+    file: "lib/tools/overlap/hash.ts",
+    pattern: /export const HASH_HEX_CHARS = 16;/,
+    replace: "export const HASH_HEX_CHARS = 12;",
+  },
+  {
+    name: "overlap hashes the slug before the salt, so the two sides still agree and the salt does nothing",
+    file: "lib/tools/overlap/hash.ts",
+    pattern: /buffer\.set\(salt, 0\);/,
+    replace: "buffer.set(salt, text.length);",
+  },
+  {
+    name: "overlap lets a bloom step re-sign, so half of all hashes walk off the front of the filter",
+    file: "lib/tools/overlap/bloom.ts",
+    pattern: /const h2 = \(\(Number\.parseInt\(hash\.slice\(8, 16\), 16\) >>> 0\) \| 1\) >>> 0;/,
+    replace: "const h2 = (Number.parseInt(hash.slice(8, 16), 16) >>> 0) | 1;",
+  },
+  {
+    name: "overlap sizes a filter at 8 bits an entry, ten thousand times its stated rate",
+    file: "lib/tools/overlap/bloom.ts",
+    pattern: /export const BITS_PER_ENTRY = 29;/,
+    replace: "export const BITS_PER_ENTRY = 8;",
+  },
+  {
+    name: "overlap takes the remainder without rejecting, biasing the room code towards 2, 3 and 4",
+    file: "lib/tools/overlap/code.ts",
+    pattern: /const REJECT_AT = 253;/,
+    replace: "const REJECT_AT = 256;",
+  },
+  {
+    name: "overlap measures an SDP in code units, so an astral blob is three times the cap",
+    file: "lib/relay.ts",
+    pattern: /return encoder\.encode\(value\)\.length <= MAX_SDP_BYTES;/,
+    replace: "  return value.length <= MAX_SDP_BYTES;",
+  },
+  {
+    name: "overlap dresses a missing Redis up as a server fault, so nobody is told to use copy and paste",
+    file: "app/api/relay/route.ts",
+    pattern: /if \(error instanceof StoreUnavailableError\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "overlap always sends a filter, so a small list gets false positives for nothing",
+    file: "lib/tools/overlap/protocol.ts",
+    pattern: /const mode: Mode = mine\.length > threshold \? "bloom" : "exact";/,
+    replace: 'const mode: Mode = "bloom";',
+  },
+  {
+    name: "overlap drops a message sent before the far side is listening, which is how a handshake hangs",
+    file: "lib/tools/overlap/protocol.ts",
+    pattern: /else waiting\[far\]\.push\(text\);/,
+    replace: "else return;",
+  },
+  {
+    name: "overlap softens the paragraph that says what a salted hash does not do",
+    file: "content/tools/overlap.ts",
+    pattern: /not a private set intersection protocol/,
+    replace: "a careful way to compare lists",
+  },
+  {
+    name: "overlap address pseudonyms stop using the server secret, so IPv4 can be enumerated offline",
+    file: "lib/budget.ts",
+    pattern: /createHmac\("sha256", secret\)/,
+    replace: 'createHmac("sha256", "public")',
+  },
+  {
+    name: "overlap accepts a missing address-key secret instead of failing closed",
+    file: "lib/budget.ts",
+    pattern: /if \(!secret \|\| new TextEncoder\(\)\.encode\(secret\)\.byteLength < 32\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "overlap relay requests lose their abort signal and can occupy a tab forever",
+    file: "lib/tools/overlap/relay-client.ts",
+    pattern: /return await fetchImpl\(url, \{ \.\.\.init, signal: controller\.signal \}\);/,
+    replace: "return await fetchImpl(url, init);",
+  },
+  {
+    name: "overlap decodes an oversized manual paste before refusing it",
+    file: "lib/tools/overlap/webrtc.ts",
+    pattern: /if \(text\.length > MAX_PACKED_SDP_CHARS\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "overlap hands decoded base64 to WebRTC without proving it is SDP",
+    file: "lib/tools/overlap/webrtc.ts",
+    pattern: /const sdp = new TextDecoder\(\)\.decode\(bytes\);\r?\n  if \(!validSdp\(sdp\)\)/,
+    replace: "const sdp = new TextDecoder().decode(bytes);\n  if (false)",
+  },
+  {
+    name: "overlap lets a peer grow the protocol inbox without a bound",
+    file: "lib/tools/overlap/protocol.ts",
+    pattern: /if \(inbox\.length >= MAX_INBOX_FRAMES\) \{/,
+    replace: "if (false) {",
+  },
+  {
+    name: "overlap calls a live ten-minute room dead when one tab stops polling",
+    file: "content/tools/overlap.ts",
+    pattern: /The room can still be joined until its ten minutes run out/,
+    replace: "The code is dead now",
+  },
 ];
 
 let caught = 0;

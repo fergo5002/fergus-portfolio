@@ -6,6 +6,61 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-04: Overlap recovery audit
+
+The follow-up security review found seven gaps and they are now implemented locally on the same
+branch. Address budget keys use HMAC-SHA-256 with the server-only `BUDGET_HASH_SECRET`, rather
+than a public-date digest that could be searched across the IPv4 space; room codes fail closed if
+that variable is absent while manual copy and paste remains available. Relay requests have a
+ten-second bound and share an abort signal with the component lifecycle. Manual blobs are capped
+before base64 decoding, capped again while decompression is streamed, and must be valid SDP before
+WebRTC sees them. The peer inbox holds at most one maximum exchange. Copy now says that a safety
+string cannot detect somebody who guessed the room code, and that a tab stopping after one minute
+does not kill the ten-minute room. `.env.example` and the opt-in real-Upstash integration proof are
+included. F4 must take the same HMAC and environment contract before its shared state branch is
+integrated; T3 does not alter F4's worktree.
+
+Final local evidence after those changes: 1,473 tests passed and the two opt-in real-Upstash tests
+skipped because no Redis variables are present; `tsc --noEmit` and the production build passed;
+the full 107-mutation run went red throughout, and after tightening the secret to a 32-byte minimum
+the updated fail-open mutation was applied separately and made both secret tests fail; the
+phone-check self-test caught every planted fault, and `/tools/overlap` passed at iPhone 390, iPhone
+320 and throttled Pixel sizes. Against the built API
+with neither Redis nor `BUDGET_HASH_SECRET`, room creation returned 503 `relay-unavailable` and the
+manual-signalling sentence without exposing the variable name. Not verified remains unchanged: a
+real Redis room, a real LinkedIn export, separate physical networks, symmetric NAT, real WebKit
+WebRTC, CI and production.
+
+T3 is implemented on `toolshed/t3-overlap` and is in review. It has not been pushed, opened as a
+pull request or deployed. The recovered commits did not satisfy the plan on their own: successful
+relay responses were trusted without shape checks, peer frames and waits were effectively
+unbounded, several setup failures escaped the UI, abandoned peer connections stayed open, and the
+page understated what the other browser and room service learn. Those paths now fail closed and
+visibly, and the page says precisely that the file and names stay local while the peer receives the
+salted hashes, salt and count and sees the connecting address. The matching phrase is described as
+a useful check rather than proof against interception. Manual copy and paste is accurately described
+as skipping the room-code service while still requiring a direct WebRTC connection, Cloudflare STUN
+by default, and no TURN relay.
+
+Observed on the recovered tree: 1,461 of 1,461 full tests passed; `tsc --noEmit` and the production
+build passed; all 100 deliberate mutations went red; the phone check passed at iPhone 390, iPhone
+320 and throttled Pixel; and two local Chromium contexts exchanged five matches by copy and paste
+without one side's spellings leaving that side. That browser proof passed once with the default STUN
+configuration and once in same-network-only mode, with zero `/api/relay` requests in both runs. With
+Redis absent, the room endpoint returned the intended 503 `relay-unavailable`, removed the dead room
+button and opened copy and paste. Not verified: a real LinkedIn export, browsers on separate real
+networks or symmetric NAT, a configured Redis room-code exchange, the WebRTC flow in real WebKit,
+CI or production.
+
+The minimum F4 store subset has now been reconciled against recovered F4 tip `47f6964`. The three
+production files (`lib/store/errors.ts`, `lib/store/redis.ts` and `lib/budget.ts`) and their store
+tests are byte-for-byte identical. Both lockfiles resolve `@upstash/redis` 1.38.3 from the same
+tarball with the same integrity. T3 deliberately does not copy F4's Neon and Blob dependencies,
+which Overlap does not import, and keeps the newer mainline Playwright phone-check dependency. The
+only behavioural-test difference stays on T3: a hash test no longer rejects the substring `203`,
+which a daily-changing hexadecimal digest contains by chance about once in three hundred runs.
+The 94 state, budget, relay, fallback and copy tests pass after that comparison.
+
 ## 2026-09-03: the shell everywhere
 
 F2 of the toolshed programme. The terminal is a drawer on every route (backtick, the status bar
