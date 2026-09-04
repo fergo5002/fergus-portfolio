@@ -25,7 +25,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | T6 | Irish Stack Census | **queued** | | | |
 | T7 | Tide | **queued** | | | |
 | X1 | Burn | **queued** | | | |
-| G0 | Arcade runtime | **queued** | | | |
+| G0 | Arcade runtime | **building** | `toolshed/g0-arcade-runtime` | | |
 | G1 | Phosphor Pong | **queued** | | | |
 | G2 | Snake | **queued** | | | |
 | G3 | Under the Terminal | **queued** | | | |
@@ -105,3 +105,4 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 - 2026-09-04 01:30: **two things the spikes changed in the design, and both are mine to own.**
   1. **On the glass is too expensive as designed.** At the pessimistic ceiling it affords about four renders a day against a rule that stops below five. Rather than drop the tool or raise the bill, the work per run comes down: one browser reused across both widths, the separate "Pixel" profile dropped because it was Chromium too and so was never a second engine, frame differencing kept but at half resolution over 1.5 seconds, and one screenshot per width feeding every check. Nobody should treat four as measured; it is arithmetic on a ceiling between a 0.21 second Node floor and a 12.5 second wall-clock ceiling.
   2. **The meters cannot be read the way section 5 assumed.** Vercel's usage API is Pro only, this project is Hobby, and the signed-in browser is the sauna account which cannot see `larry-pm` at all. So every hosted tool now measures its own cost, wall clock and Node CPU per run, and reports it. That is better than the original plan anyway: a number from our own instrument beats one we hoped to look up.
+- 2026-09-04: G0 started in its own worktree. Plan: `docs/superpowers/plans/2026-09-04-toolshed-g0-arcade-runtime.md`. Baseline on the branch: 56 test files, 1,208 tests, tsc clean. F4 state at start: not merged (`lib/store/redis.ts` absent), which means Task 12 does not run.
