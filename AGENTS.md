@@ -407,6 +407,30 @@ docs/
 
 ## The terminal is a real subsystem
 
+**Arcade update, 2026-09-05.** Fergus's rebuild request supersedes the character-only
+arcade presentation described below. `ArcadeExperience` loads on demand from Terminal,
+opens a native modal, runs a skippable phosphor corridor and presents six illustrated
+cabinets. Gameplay remains pure in `lib/arcade/engine.ts`; `renderer.ts` draws the canvas;
+`CanvasGame` subscribes to the one SystemProvider clock at fixed 60Hz. CSS is isolated in
+`components/arcade/arcade.css`. The old `ArcadeScreen` remains the ProgramSpec fallback.
+The shared contracts still apply: Escape restores the prompt, resize preserves the run,
+pause/blur releases held inputs, reduced motion declines, sound is explicit and no
+game state is persisted. `content/arcade-collection.ts` owns cabinet descriptions.
+
+Boards use the dedicated **private** Blob store through `ARCADE_READ_WRITE_TOKEN`, never
+the tools' public store. `useCache: false` only gives consistent origin reads on private
+Blob, a distinction proven by the failing public-store integration test. ETag writes,
+signed run receipts, bounded bodies and global write budgets live in `score-service.ts`,
+`score-request.ts` and `blob-board.ts`. Keep the production/preview/development namespaces
+separate. Scores are casual client reports, not verified competition. Only the API exposes
+board rows; replay receipts stay private. The opt-in real-store test writes development
+rows only. Never use the canonical production domain for generated test scores.
+
+Pong and Ouroboros multiplayer reuse Overlap's WebRTC primitives with manual signalling.
+The host is authoritative; bounded peer packets are validated in `lib/arcade/network.ts`.
+No TURN relay is promised. Two local Chromium browsers prove the connection, not arbitrary
+networks. CI runs phone, multiplayer and game-over/replay/sound/forget flows.
+
 `lib/commands.ts` stays **pure**, and since 2026-09-03 it is a thin dispatcher over a registry.
 Every command is a `defineCommand({ name, aliases, help, hidden, argPool, run })` in one of the
 modules under `lib/commands/` (`nav`, `info`, `effects`, `sudo`, `hidden`, and whatever a later

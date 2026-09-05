@@ -95,6 +95,14 @@ jobs:
         run: node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap --out .phone-check
       - name: phone check through the hidden arcade door
         run: node scripts/arcade-phone-check.mjs --base http://localhost:3000 --out .phone-check/arcade
+      - name: two-browser arcade multiplayer
+        run: node scripts/arcade-multiplayer-check.mjs
+        env:
+          ARCADE_BASE: http://localhost:3000
+      - name: arcade game over, replay, sound and forget
+        run: node scripts/arcade-flow-check.mjs
+        env:
+          ARCADE_BASE: http://localhost:3000
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

@@ -1,5 +1,6 @@
 import { GAME_TITLES } from "@/content/arcade";
 import { bounce } from "./bounce";
+import { vectorProgram } from "./vector-program";
 import type { ProgramSpec } from "./program";
 
 /**
@@ -29,10 +30,11 @@ export type ArcadeGame = {
 
 export const ARCADE_GAMES: readonly ArcadeGame[] = [
   { id: "bounce", title: GAME_TITLES.bounce, spec: bounce, board: true },
-  { id: "poker", title: GAME_TITLES.poker, spec: null, board: true },
-  { id: "pong", title: GAME_TITLES.pong, spec: null, board: true },
-  { id: "snake", title: GAME_TITLES.snake, spec: null, board: true },
-  { id: "under", title: GAME_TITLES.under, spec: null, board: true },
+  { id: "poker", title: GAME_TITLES.poker, spec: vectorProgram("poker"), board: true },
+  { id: "pong", title: GAME_TITLES.pong, spec: vectorProgram("pong"), board: true },
+  { id: "signal", title: GAME_TITLES.signal, spec: vectorProgram("signal"), board: true },
+  { id: "snake", title: GAME_TITLES.snake, spec: vectorProgram("snake"), board: true },
+  { id: "under", title: GAME_TITLES.under, spec: vectorProgram("under"), board: true },
 ];
 
 export function isReady(game: ArcadeGame): boolean {

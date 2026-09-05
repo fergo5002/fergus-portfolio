@@ -6,6 +6,34 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-05: arcade rebuild
+
+Fergus authorised the complete arcade rebuild through production deployment. The active
+delivery record is `docs/arcade-rebuild.md`. `codex/arcade-rebuild` owns this work; the
+concurrent `codex/tools-rebuild` task owns tools.
+
+The hidden `cd arcade` door now opens a full-screen phosphor corridor and a gallery of
+six original vector cabinets. Breakpoint replaces the Bounce prototype; Phosphor Pong,
+Ouroboros, Under the Terminal, Dead Signal and Circuit Poker are playable. The new visual
+host loads on demand, runs its pure engines on SystemProvider's clock, and leaves the
+character ProgramSpec host available for compatibility. Pong and Ouroboros support a
+shared keyboard and manual-signalled direct WebRTC; no room service is required.
+
+`/api/board` and `/api/board/run` now exist. The dedicated private Dublin Blob store
+uses `ARCADE_READ_WRITE_TOKEN`, independently of tools' public `BLOB_READ_WRITE_TOKEN`.
+Its origin reads and ETag writes passed a real two-writer concurrency test, after that
+test rejected the public-store caching approach. Boards are capped, solo-only and openly
+client-reported. Signed receipts expire after two hours, retries are idempotent, and a
+global daily/monthly posting budget keeps arcade writes within the free allocation.
+The dungeon has a daily UTC board; other boards are all-time. Test scores are confined
+to the development namespace.
+
+Current evidence: 2,450 unit tests pass, TypeScript passes, all six games run in Chromium,
+and two-browser Pong/Snake checks prove connection, controls, shared pause and visible
+disconnects. The production-build, phone, complete mutation and deployment checks are
+tracked in the active delivery record. Real separate networks and physical phones remain
+outside the browser emulation evidence.
+
 ## 2026-09-04: the arcade runtime
 
 G0 of the toolshed programme. `cd arcade` opens a cabinet instead of printing an apology.

@@ -36,11 +36,11 @@ describe("the door", () => {
     expect(res.program.id).toBe("bounce");
   });
 
-  it("says so, rather than opening the cabinet, when the game is not built", () => {
+  it("opens the implemented Pong cabinet", () => {
     const res = runCommand("arcade pong");
-    expect(res.type).toBe("output");
-    if (res.type !== "output") return;
-    expect(res.lines.join(" ")).toContain(GAME_TITLES.pong);
+    expect(res.type).toBe("program");
+    if (res.type !== "program") return;
+    expect(res.program.title).toBe(GAME_TITLES.pong);
   });
 
   it("says so when the name is not a game at all", () => {

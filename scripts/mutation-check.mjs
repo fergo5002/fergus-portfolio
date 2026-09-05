@@ -40,6 +40,34 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Each: break one guard, expect the suite to notice. */
 const MUTATIONS = [
+  {
+    name: "arcade rebuild: accepts a tampered signed run receipt",
+    file: "lib/arcade/score-service.ts",
+    pattern: /if \(!timingSafeEqual\(Buffer\.from\(sig\), Buffer\.from\(expected\)\)\)/,
+    replace: "if (false)",
+    tests: "lib/arcade/score-service.test.ts",
+  },
+  {
+    name: "arcade rebuild: silently accepts a fractional score",
+    file: "lib/arcade/score-service.ts",
+    pattern: /!Number\.isSafeInteger\(e\.score\)/,
+    replace: "false",
+    tests: "lib/arcade/score-service.test.ts",
+  },
+  {
+    name: "arcade rebuild: reports success after losing an optimistic write race",
+    file: "lib/arcade/score-service.ts",
+    pattern: /if \(await repo\.write\(ledger, current\.version\)\) return board;/,
+    replace: "await repo.write(ledger, current.version); return board;",
+    tests: "lib/arcade/score-service.test.ts",
+  },
+  {
+    name: "arcade rebuild: reads a stale cached board before an update",
+    file: "lib/arcade/blob-board.ts",
+    pattern: /useCache: false/,
+    replace: "useCache: true",
+    tests: "lib/arcade/blob-board.test.ts",
+  },
   // ── the regression a code review caught: timing allowed to discard again ──
   {
     name: "THE REGRESSION: a fast submission silently dropped instead of marked",
@@ -1261,8 +1289,16 @@ const MUTATIONS = [
 
 let caught = 0;
 const survived = [];
+const filterIndex = process.argv.indexOf("--filter");
+const selected = filterIndex < 0 ? MUTATIONS : MUTATIONS.filter(m => m.name.includes(process.argv[filterIndex + 1] ?? ""));
+if (!selected.length) throw new Error("No mutations matched the requested filter");
 
-for (const mutation of MUTATIONS) {
+// A pre-existing failure must never be mistaken for a caught mutation.
+// Bound workers so browser checks sharing a workstation do not starve protocol timers.
+const testCommand = "npx vitest run --silent --maxWorkers=4 --minWorkers=2";
+execSync(testCommand, { cwd: ROOT, stdio: "inherit" });
+
+for (const mutation of selected) {
   const path = join(ROOT, mutation.file);
   const original = readFileSync(path, "utf8");
   const mutated = original.replace(mutation.pattern, mutation.replace);
@@ -1278,7 +1314,7 @@ for (const mutation of MUTATIONS) {
   writeFileSync(path, mutated, "utf8");
   let red = false;
   try {
-    execSync("npx vitest run --silent", { cwd: ROOT, stdio: "pipe" });
+    execSync(`${testCommand} ${mutation.tests ?? ""}`, { cwd: ROOT, stdio: "pipe" });
   } catch {
     red = true;
   } finally {
@@ -1290,7 +1326,7 @@ for (const mutation of MUTATIONS) {
   console.log(`${red ? "RED  " : "GREEN"}  ${mutation.name}`);
 }
 
-console.log(`\n${caught}/${MUTATIONS.length} mutations caught.`);
+console.log(`\n${caught}/${selected.length} mutations caught${filterIndex < 0 ? "" : " (filtered run)"}.`);
 if (survived.length) {
   console.log("Survived (each one is a guard that does nothing):");
   for (const name of survived) console.log(` - ${name}`);
