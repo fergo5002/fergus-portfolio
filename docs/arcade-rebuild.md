@@ -76,3 +76,11 @@ when focus moves, and prevent cached HTTP board reads after a post. The updated 
 passes 2,455 tests and five focused mutations. The initial PR's complete phone gate passed
 in 10m6s, including both multiplayer games. Final-head CI repeats those flows. The preview
 posting check now also requires the submitted score on the immediately following API read.
+
+The full 195-case catalogue now runs in four independent CI checkouts behind the original
+named `mutation` gate. Its first complete run caught 194 cases and blocked release because
+the old unfinished-game refusal no longer had an unfinished fixture once every game shipped.
+An explicit future-game fixture restores that proof: the baseline passes 2,456 tests and
+deleting the refusal goes red. No mutation was removed. Both multiplayer cases passed in CI;
+the result driver now uses the real Enter control to avoid mouse-target races during the
+result transition. Failure screenshots are retained by including the hidden output folder.

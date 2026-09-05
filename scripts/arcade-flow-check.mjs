@@ -5,6 +5,7 @@ const base = process.env.ARCADE_BASE || "http://localhost:3210", posting = proce
 if (posting && new URL(base).hostname === "fergusoreilly.dev") throw new Error("Test scores must never be posted to the public production board");
 const out = resolve(".phone-check/arcade-flow"); await mkdir(out, { recursive: true });
 const browser = await chromium.launch();
+let debugPage;
 try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 920 }, reducedMotion: "no-preference" });
   await context.addInitScript(() => {
@@ -12,6 +13,7 @@ try {
     AudioContext.prototype.createOscillator = function () { window.__arcadeOscillators++; return original.call(this); };
   });
   const page = await context.newPage(), errors = []; page.on("pageerror", e => errors.push(e.message));
+  debugPage = page;
   if (process.env.ARCADE_PREVIEW_BYPASS) {
     if (!new URL(base).hostname.endsWith(".vercel.app")) throw new Error("Preview authentication requires a Vercel deployment URL");
     // Only the selected deployment receives its existing protection credential.
@@ -21,11 +23,11 @@ try {
   await page.locator(".statusbar__prompt").click(); await page.locator(".term__input").fill("cd arcade poker"); await page.locator(".term__input").press("Enter");
   await page.getByRole("button", { name: "Sound off", exact: true }).click(); await page.getByRole("button", { name: "Sound on", exact: true }).waitFor();
   await page.getByRole("button", { name: /Start solo run/ }).click(); await page.waitForTimeout(8500);
+  await page.locator(".arcade-stage").focus();
   for (let i = 0; i < 32 && !await page.locator(".arcade-results").count(); i++) {
-    try { await page.getByRole("button", { name: "BANK HAND", exact: true }).click({ timeout: 3000 }); }
-    catch (error) { if (await page.locator(".arcade-results").count()) break; throw error; }
-    // Completion is an asynchronous UI event. It may replace the button between
-    // the loop's condition and the next action on a loaded browser.
+    // Exercise the real keyboard control. When completion moves focus to the
+    // result, a late Enter is harmless instead of targeting a removed button.
+    await page.keyboard.press("Enter");
     await page.waitForTimeout(400);
   }
   await page.getByRole("region", { name: "Run result", exact: true }).waitFor();
@@ -46,4 +48,7 @@ try {
   if (await page.evaluate(() => localStorage.getItem("fergusos:arcade.initials")) !== null) throw new Error("forget did not remove initials");
   if (errors.length) throw new Error(errors.join("\n"));
   const evidence = { score, posting, oscillators, replay: true, forget: true, errors }; await writeFile(resolve(out, "evidence.json"), JSON.stringify(evidence, null, 2)); console.log(JSON.stringify(evidence));
+} catch (error) {
+  await debugPage?.screenshot({ path: resolve(out, "failure.png") }).catch(() => {});
+  throw error;
 } finally { await browser.close(); }

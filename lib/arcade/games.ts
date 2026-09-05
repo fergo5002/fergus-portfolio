@@ -6,10 +6,10 @@ import type { ProgramSpec } from "./program";
 /**
  * Every game the cabinet knows about.
  *
- * **This is the file a game plan edits, and it edits two lines: an import and
- * an entry.** G1 adds `import { pong } from "./pong";` and swaps `spec: null`
- * for `spec: pong` on the `pong` row. Nothing else in the runtime, the
- * terminal, the stylesheet or the route changes when a game arrives.
+ * The hidden command still returns a ProgramSpec. The six collection IDs open
+ * ArcadeExperience; vectorProgram keeps a character-host compatibility bridge.
+ * A new collection game also needs its engine, renderer and content entry.
+ * Third-party ProgramSpecs can continue to use the legacy character host.
  *
  * The list is alphabetical by id for the same reason `lib/commands/index.ts`
  * is: four game branches will be open at once and two pull requests that touch

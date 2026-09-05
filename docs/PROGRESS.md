@@ -28,7 +28,7 @@ global daily/monthly posting budget keeps arcade writes within the free allocati
 The dungeon has a daily UTC board; other boards are all-time. Test scores are confined
 to the development namespace.
 
-Current evidence: 2,455 unit tests pass, TypeScript and the production build pass, all six games run in Chromium,
+Current evidence: 2,456 unit tests pass, TypeScript and the production build pass, all six games run in Chromium,
 and two-browser Pong/Snake checks prove connection, controls, shared pause and visible
 disconnects. PR #15's initial full phone gate and actual preview score posting pass. Final-head phone, complete mutation and deployment checks are
 tracked in the active delivery record. Real separate networks and physical phones remain

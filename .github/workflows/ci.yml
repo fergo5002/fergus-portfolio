@@ -125,3 +125,4 @@ jobs:
           name: phone-check-screenshots
           path: .phone-check/
           if-no-files-found: ignore
+          include-hidden-files: true
