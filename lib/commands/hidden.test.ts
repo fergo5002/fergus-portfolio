@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { COMMANDS, HELP_LINES, complete, runCommand } from "@/lib/commands";
 import { hidden, ARCADE_DECLINED } from "./hidden";
-import { GAME_TITLES } from "@/content/arcade";
+import { arcadeCopy, GAME_TITLES } from "@/content/arcade";
+import * as games from "@/lib/arcade/games";
 
 describe("the hidden module", () => {
   it("holds the arcade door, hidden, with no help and no completion", () => {
@@ -36,11 +37,20 @@ describe("the door", () => {
     expect(res.program.id).toBe("bounce");
   });
 
-  it("says so, rather than opening the cabinet, when the game is not built", () => {
+  it("opens the implemented Pong cabinet", () => {
     const res = runCommand("arcade pong");
-    expect(res.type).toBe("output");
-    if (res.type !== "output") return;
-    expect(res.lines.join(" ")).toContain(GAME_TITLES.pong);
+    expect(res.type).toBe("program");
+    if (res.type !== "program") return;
+    expect(res.program.title).toBe(GAME_TITLES.pong);
+  });
+
+  it("refuses a future registered game whose implementation is still missing", () => {
+    const lookup = vi.spyOn(games, "findGame").mockReturnValue({ id: "future", title: "Future", spec: null, board: false });
+    try {
+      const res = runCommand("arcade future");
+      expect(res.type).toBe("output");
+      if (res.type === "output") expect(res.lines.join(" ")).toContain(arcadeCopy.cabinet.notReady);
+    } finally { lookup.mockRestore(); }
   });
 
   it("says so when the name is not a game at all", () => {

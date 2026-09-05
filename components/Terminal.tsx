@@ -3,12 +3,12 @@
 import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import { complete, runCommand } from "@/lib/commands";
 import type { SystemEffect } from "@/lib/commands";
 import { historyStore, initialHistory } from "@/lib/history";
 import { listKeys, removeKeys } from "@/lib/forget";
 import { localPresence } from "@/lib/presence";
-import ArcadeScreen from "@/components/arcade/ArcadeScreen";
 import { arcadeSession, markArcadeSeen } from "@/lib/arcade/session";
 import type { ProgramSpec } from "@/lib/arcade/program";
 import { profile } from "@/content/profile";
@@ -16,6 +16,7 @@ import Magnetic from "@/components/motion/Magnetic";
 import { useSystem } from "@/components/system/SystemProvider";
 
 const HINTS = ["gravity", "eject", "sound on", "neofetch", "sudo hire-me"];
+const ArcadeScreen = dynamic(() => import("@/components/arcade/ArcadeExperience"), { ssr: false });
 
 /**
  * The server never dispatches, so its snapshot is the welcome line, built once

@@ -32,9 +32,42 @@ in `scripts/headline-url-check.mjs`, and the real two-context manual WebRTC proo
 without room storage or STUN. Two local contexts do not prove two real networks. No physical
 phone, plotter or printer has been exercised.
 
-The CI mutation timeout is extended to 60 minutes because the catalogue runs the entire suite
-193 times and the previous consolidated release's 30-minute job never completed. Three added
-mutations cover the new profile bound, non-duplicating headline fix and worker failure listener.
+The full 193-case tools mutation run passed at `e7acf1f`. The integration with the arcade
+release preserves its four-part CI runner and all five arcade guards, giving 198 total cases.
+Three tools mutations cover the profile bound, non-duplicating headline fix and worker failure
+listener. Both suites of browser workflows remain in CI.
+
+## 2026-09-05: arcade rebuild live
+
+Fergus authorised the complete arcade rebuild through production deployment. The active
+delivery record is `docs/arcade-rebuild.md`. `codex/arcade-rebuild` owns this work; the
+concurrent `codex/tools-rebuild` task owns tools.
+
+The hidden `cd arcade` door now opens a full-screen phosphor corridor and a gallery of
+six original vector cabinets. Breakpoint replaces the Bounce prototype; Phosphor Pong,
+Ouroboros, Under the Terminal, Dead Signal and Circuit Poker are playable. The new visual
+host loads on demand, runs its pure engines on SystemProvider's clock, and leaves the
+character ProgramSpec host available for compatibility. Pong and Ouroboros support a
+shared keyboard and manual-signalled direct WebRTC; no room service is required.
+
+`/api/board` and `/api/board/run` now exist. The dedicated private Dublin Blob store
+uses `ARCADE_READ_WRITE_TOKEN`, independently of tools' public `BLOB_READ_WRITE_TOKEN`.
+Its origin reads and ETag writes passed a real two-writer concurrency test, after that
+test rejected the public-store caching approach. Boards are capped, solo-only and openly
+client-reported. Signed receipts expire after two hours, retries are idempotent, and a
+global daily/monthly posting budget keeps arcade writes within the free allocation.
+The dungeon has a daily UTC board; other boards are all-time. Test scores are confined
+to development and preview namespaces.
+
+PR #15 merged as `347a314` after all final-head gates passed: 2,456 tests,
+TypeScript, production build, all six games in the phone/browser checks, and 195/195
+mutations across four independent CI partitions. Real two-browser Pong/Snake checks
+prove connection, remote controls, shared pause and visible disconnects. A completed
+preview run proves posting, immediate board reads, audio, replay and `forget`.
+Production `dpl_BR9awzTSeN11xSrjhf7R5vR48TDF` is READY and aliased to the canonical
+domain with the exact merge SHA. The public browser proof enters through `cd arcade`,
+plays Breakpoint to a scored hit and reads all six available boards without posting
+test scores. Real separate networks and physical phones remain outside the evidence.
 
 ## 2026-09-04: the arcade runtime
 

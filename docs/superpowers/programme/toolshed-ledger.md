@@ -25,17 +25,22 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | T6 | Irish Stack Census | **queued** | | | |
 | T7 | Tide | **queued** | | | |
 | X1 | Burn | **queued** | | | |
-| G0 | Arcade runtime | **pr** | `toolshed/g0-arcade-runtime` | [#8](https://github.com/fergo5002/fergus-portfolio/pull/8) | |
-| G1 | Phosphor Pong | **queued** | | | |
-| G2 | Snake | **queued** | | | |
-| G3 | Under the Terminal | **queued** | | | |
-| G4 | Six-max poker | **queued** | | | |
+| G0 | Arcade runtime, gallery, Breakpoint and Dead Signal | **live** | `codex/arcade-rebuild` | [#15](https://github.com/fergo5002/fergus-portfolio/pull/15) merged 347a314 | READY, aliased; canonical `cd arcade`, six cabinets, scored Breakpoint hit and six boards |
+| G1 | Phosphor Pong | **live** | `codex/arcade-rebuild` | #15 | Solo, local and direct WebRTC; browser/phone and actual two-peer checks pass |
+| G2 | Ouroboros (Snake) | **live** | `codex/arcade-rebuild` | #15 | Solo, local and direct WebRTC; browser/phone and actual two-peer checks pass |
+| G3 | Under the Terminal | **live** | `codex/arcade-rebuild` | #15 | Seeded daily UTC dungeon and daily board; browser/phone checks pass |
+| G4 | Circuit Poker (replaces planned six-max poker) | **live** | `codex/arcade-rebuild` | #15 | Single-player draw; real preview completion, persisted posting, audio, replay and forget |
 | P1 | Play your website | **queued** | | | |
 | L1 | Launch | **queued** | | | |
 
 ## Decisions that changed the design after 2026-09-03
 
-(none yet)
+- 2026-09-05: Fergus explicitly commissioned the complete arcade through deployment.
+  PR #15 replaces the character-only gallery with six illustrated canvas cabinets and
+  a phosphor corridor, keeping the legacy ProgramSpec host available. Circuit Poker
+  replaces the unbuilt six-max hold'em proposal with a single-player draw game, no money.
+  Boards use the dedicated private Blob store and do not wait for F4/Redis. The other
+  programme rows retain their historical state until their owning task updates them.
 
 ## Meters
 
@@ -46,6 +51,16 @@ Filled in monthly from the Vercel, Upstash and Neon usage pages. Rule from the d
 | 2026-09 | | | | | |
 
 ## Log
+
+- 2026-09-05: Arcade PR #15 merged at `347a314` after final reviewed head `da3ad69`
+  passed CI run `33976233522`: 2,456 tests, TypeScript, build, all six games on the
+  phone profiles, two actual WebRTC peers for both multiplayer games, and 195/195
+  mutations. Vercel `dpl_BR9awzTSeN11xSrjhf7R5vR48TDF` is READY, aliased and tied to
+  the exact merge SHA. The canonical public browser launches all six cabinets, scores
+  a Breakpoint hit and reads six available boards. No synthetic production score was
+  posted. Private Blob competing writes/retry and preview result posting were proved
+  separately. Physical phones and separate real networks remain unverified; direct
+  WebRTC has no TURN fallback. Full evidence and storage limits: `docs/arcade-rebuild.md`.
 
 - 2026-09-04: G0 PR #8 merged `origin/main` at `20892de` normally after Overlap landed. The two real conflicts, `docs/PROGRESS.md` and `scripts/mutation-check.mjs`, preserve both complete sections and both mutation sets. Combined local evidence: 456 focused tests and 1,699 full tests passed, with two opt-in Upstash integration tests skipped; TypeScript, production build, the hidden Arcade WebKit flow and all three Overlap phone profiles passed. The first 76 of the merged catalogue's 149 mutations were caught locally before stopping the duplicate run to free the machine; the required GitHub job will run all 149. PR #8 remains open and nothing was deployed.
 - 2026-09-04: T3 Overlap recovered and audited on `toolshed/t3-overlap`; it is in review, not pushed or live. The audit corrected the privacy claim (file and names stay local, but the peer receives the salt, hashes and count and sees the connecting address), removed the claim that the matching phrase proves no interception, made the no-room-code route honest about still using WebRTC/STUN, validated every successful relay response, bounded connection and protocol waits, rejected malformed or oversized peer frames, closed abandoned connections, and made every setup failure visible. Missing Redis is an intentional 503 with copy-and-paste opened, not a silent or generic 500. Evidence on the recovered tree: 1,461 of 1,461 full tests, TypeScript clean, production build clean, 100 of 100 mutations caught; phone check green at iPhone 390, iPhone 320 and throttled Pixel; two Chromium contexts exchanged five matches by copy and paste with zero relay requests both with Cloudflare STUN and in same-network-only mode. A real LinkedIn export, a real cross-network/NAT pair, a configured Redis room-code round trip, WebKit's actual WebRTC flow, CI and production remain unverified.

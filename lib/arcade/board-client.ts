@@ -83,7 +83,7 @@ export async function fetchBoards(fetchImpl: typeof fetch = fetch): Promise<Boar
 }
 
 export async function submitScore(
-  entry: { game: string; initials: string; score: number },
+  entry: { game: string; initials: string; score: number; ticket?: string },
   fetchImpl: typeof fetch = fetch,
 ): Promise<SubmitResult> {
   // Checked here so the visitor is told before anything is sent. Checked again
@@ -99,6 +99,7 @@ export async function submitScore(
         game: entry.game,
         initials: check.initials,
         score: Math.max(0, Math.floor(entry.score)),
+        ...(entry.ticket ? { ticket: entry.ticket } : {}),
       }),
     });
     const body: unknown = await response.json().catch(() => null);

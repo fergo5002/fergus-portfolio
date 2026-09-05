@@ -11,6 +11,8 @@ import { ingestRewrites } from "./lib/analytics";
  * loads `next.config.ts` natively; there is no build step to add.
  */
 const nextConfig: NextConfig = {
+  // Managed Windows worktrees sit below an unrelated user-level lockfile.
+  outputFileTracingRoot: process.cwd(),
   // ESLint is not configured in this project; skip it during builds.
   eslint: { ignoreDuringBuilds: true },
   // OGL publishes raw ES modules from `src/` rather than a built bundle, so Next

@@ -3,8 +3,8 @@ import { ARCADE_GAMES, BOARD_GAMES, findGame, isReady } from "@/lib/arcade/games
 import { GAME_TITLES } from "@/content/arcade";
 
 describe("the game list", () => {
-  it("holds the four games the design names, plus the worked example", () => {
-    expect(ARCADE_GAMES.map((g) => g.id)).toEqual(["bounce", "poker", "pong", "snake", "under"]);
+  it("holds all six games in the rebuilt collection", () => {
+    expect(ARCADE_GAMES.map((g) => g.id)).toEqual(["bounce", "poker", "pong", "signal", "snake", "under"]);
   });
 
   it("stays alphabetical by id, so two game pull requests rarely collide", () => {
@@ -20,8 +20,8 @@ describe("the game list", () => {
     for (const g of ARCADE_GAMES) expect(g.title).toBe(GAME_TITLES[g.id]);
   });
 
-  it("has exactly one game ready today, and it is the worked example", () => {
-    expect(ARCADE_GAMES.filter(isReady).map((g) => g.id)).toEqual(["bounce"]);
+  it("has every cabinet ready to play", () => {
+    expect(ARCADE_GAMES.every(isReady)).toBe(true);
   });
 
   it("gives every game a board, because every game plan wants one", () => {
