@@ -155,8 +155,11 @@ type HNode = TextNode | ElementNode;
  * One tag. The attribute group steps over quoted values so a `>` inside an
  * attribute (`data-sel="a > b"`) does not end the tag early, which it did in the
  * first version of this and quietly truncated the heading.
+ * The alternatives must be disjoint: letting the plain branch consume quotes
+ * makes an unfinished tag backtrack exponentially. The name boundary likewise
+ * stops a long unfinished name being retried as every possible name/attribute split.
  */
-const TAG = /<(\/?)([a-zA-Z][a-zA-Z0-9:-]*)((?:"[^"]*"|'[^']*'|[^>])*)>/y;
+const TAG = /<(\/?)([a-zA-Z][a-zA-Z0-9:-]*)(?=[\s/>])((?:"[^"]*"|'[^']*'|[^>"'])*)>/y;
 
 /**
  * Parses a fragment into a shallow tree.
@@ -306,7 +309,7 @@ function strip(html: string): string {
 
 /** The inner HTML of the first heading at this rank, or null if there is none. */
 function headingInner(source: string, level: number): string | null {
-  const open = new RegExp(`<h${level}(?:\\s(?:"[^"]*"|'[^']*'|[^>])*)?>`, "i");
+  const open = new RegExp(`<h${level}(?:\\s(?:"[^"]*"|'[^']*'|[^>"'])*)?>`, "i");
   const found = open.exec(source);
   if (!found) return null;
 

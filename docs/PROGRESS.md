@@ -14,12 +14,13 @@ tools. Active plan: `docs/superpowers/plans/2026-09-05-tools-rebuild.md`. Branch
 
 - [x] Live audit and implementation plan. Room-code storage is still absent in Vercel metadata.
 - [x] Outcome-led tools index and shared workbench with tool previews, visible controls and compact explanations.
-- [x] Headline HTML playground and a corrected, escaped fix snippet that does not duplicate the heading.
+- [x] Headline HTML playground, a corrected escaped fix snippet, and an iterative reader that handles deeply nested HTML without crashing or exponential work.
 - [x] Drift input bounds/counts, stale-report state, own-range interpretation and Markdown export.
 - [x] Relief keyboard/pointer exploration, source attribution and export refusal after a failed import.
 - [x] Overlap exact local comparison, search and CSV export; peer mode loaded separately, room controls gated by configuration.
 - [x] Second Visit one-click demo/recognised-file analysis, progressive mapping, selectable horizon, labelled chart, customer groups and visible asynchronous failures.
-- [ ] Final production-build and phone checks, mutation catalogue, PR merge and live deployment verification.
+- [x] Production build, 2,436 tests, type checks, all six local phone routes and the phone instrument's planted-fault proof.
+- [ ] Final mutation catalogue, PR #14 merge and live deployment verification.
 
 Tests first reproduced the old headline snippet duplicating text and failing to escape HTML, and
 Second Visit hanging on worker failure/disposal. The new local comparison and Drift bounds have

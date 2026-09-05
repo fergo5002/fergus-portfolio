@@ -19,12 +19,21 @@ Live Chromium audit at 1440 × 1000, reduced motion, commit 2be67e7: all six rou
 
 - [x] Add failing behavioural tests for local comparison, input/readiness bounds and asynchronous failure handling.
 - [x] Implement shared workbench, index and clearer tool copy.
-- [x] Implement and verify all five workflows with synthetic inputs in Chromium; phone/build verification follows.
-- [ ] Production build, full tests/types, required mutation check and phone checks (WebKit 390/320 and slow Chromium).
-- [ ] Browser regression script: examples, import failures, stale results, downloads, mobile overflow and console errors. Inspect screenshots.
+- [x] Implement and verify all five workflows with synthetic inputs in Chromium.
+- [x] Production build, full tests/types and phone checks (WebKit 390/320 and slow Chromium).
+- [x] Browser regression script: examples, successful imports, import failures, stale results, downloads, mobile overflow and console errors. Inspect screenshots.
+- [ ] Required mutation catalogue on the final release commit.
 - [ ] Commit, push review branch, open PR, complete GitHub checks, merge normally and verify Vercel production SHA/READY/alias.
 - [ ] Repeat changed workflows on the public domain; update progress and durable personal-site memory.
 
 ## Boundaries
 
 No new paid service, tracking, automatic saves or dependency. Local comparison requires two files the visitor is entitled to use and makes no peer privacy claim. Peer mode remains direct WebRTC without TURN; local automated two-context proof does not prove two real networks. Statistical estimates remain uncalibrated and show their limits. Emulated browsers do not prove physical phones or physical printers. Code goes through the existing pull-request route; deployment is explicitly authorised in this request.
+
+## Verification record
+
+Full local suite: 2,436 passed, two existing Redis-gated skips; 138 passing files. Production build generates 43 routes. The local phone instrument caught every planted fault; all six tool/index routes passed all three profiles. GitHub `check` and `phone` passed at `85c83b1` and `0fce3d3`; the final parser correction in PR #14 requires another complete gate before release.
+
+The headline regressions were seen red: 6,000 nested spans caused a stack overflow, and unfinished quoted attributes exceeded a two-second worker deadline. The iterative reader and disjoint tag-scanning alternatives pass these cases and the existing interpretation cases. Browser checks assert the actual extracted words after nested and malformed inputs. The URL form passes with JavaScript on and off, preserving the URL. Local CSV comparison, profile editing, report downloads, all three terrain exports, successful historical CSV import, retention demo/file equivalence and stale-result refusals have browser proof. No synthetic visitor text appeared in POST bodies during these workflows.
+
+Windows' default headless Chromium graphics driver produced a reflected textarea artefact in the CRT background. Repeating the same page with SwiftShader removed it without a site change. Windows WebKit also reports cancelled prefetches as access-control exceptions during forced cross-page replacement; its individual workflows complete, while the complete Linux CI WebKit suites pass. A separate WebKit check followed all five actual index links and their back links with no application errors. These are recorded limits of the local harness, not a claim of physical-device coverage. Vercel previews require sign-in, so public smoke verification follows the production merge.
