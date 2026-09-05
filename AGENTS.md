@@ -236,6 +236,36 @@ this programme earns, each with the reason on its own PR: `@duckdb/duckdb-wasm` 
 `playwright-core` plus `@sparticuz/chromium` (On the glass), and `playwright` as a devDependency
 for the phone check. Nothing else without an argument.
 
+## The arcade room sits inside the tube (2026-09-05)
+
+`cd arcade` opens a room that is part of the machine, not a page over it. `ArcadeExperience.tsx`
+portals a fixed panel to `<body>` at `z-index: 8990`: above the page, below the flicker (8999),
+the glass sheen (8997) and the scanlines (9000), so every glass layer falls across the arcade the
+way it falls across a page. While it is up, `html.arcade-open` hides `.crt__screen`, the nav, the
+drawer and the status strip. The last two sit above 9000 and would draw over the room, and the
+strip's prompt button toggles the drawer that hosts the terminal the room was launched from, so
+leaving it clickable would unmount the arcade from underneath itself. Nothing in
+`components/arcade/arcade.css` may go above 9000; `components/arcade/arcade.test.ts` checks.
+
+**The room carries `data-lenis-prevent`, and that is the scroll fix, not decoration.** The room
+locks the document behind it through `setScrollLocked`, which stops Lenis. A stopped Lenis calls
+`preventDefault()` on every wheel event it sees unless an ancestor of the target carries that
+attribute. Measured on the 5 September release build with a real wheel: the page moved 599px, the
+room moved 0px, PageDown moved it 538px. `scripts/arcade-scroll-check.mjs` drives the same three
+readings in CI and fails if the room does not move; `--expect-broken` is the revert-to-confirm run.
+
+The entrance is a power-cycle told with the tube's own machinery: `frame.bootTarget` driven to
+zero and back, the same `--boot-open` variable the site's boot uses, the degauss, the channel
+static. Full once per page lifetime (`arcadeSession().entered`, module state, no storage), short
+after that. Anything that unmounts the entrance part-way must leave `bootTarget` at 1, and both the
+entrance and the room do, because a dark tube with no room over it is the worst state on the site.
+
+The cabinets play themselves. `lib/arcade/attract.ts` is a deterministic unattended player for all
+six engines and `AttractScreen.tsx` runs it from the one frame clock, only while on screen, at
+half rate and without the persistence layer on a coarse pointer. The renderer takes its colours
+from `lib/arcade/theme.ts`, read off the site's tokens, and holds no colour literal; the games
+follow the amber and ice phosphors for that reason alone.
+
 ## Stack & conventions
 
 - **Next.js 15 (App Router) + React 19 + TypeScript.** Server Components by default; only

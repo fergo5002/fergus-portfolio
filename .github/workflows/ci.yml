@@ -122,6 +122,8 @@ jobs:
         run: node scripts/arcade-flow-check.mjs
         env:
           ARCADE_BASE: http://localhost:3000
+      - name: the arcade room scrolls under a real wheel
+        run: node scripts/arcade-scroll-check.mjs --base http://localhost:3000
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

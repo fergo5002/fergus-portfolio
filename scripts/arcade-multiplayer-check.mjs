@@ -18,15 +18,15 @@ try {
     await Promise.all(pages.map(async page => {
       await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
       await page.locator(".statusbar__prompt").click(); await page.locator(".term__input").fill(`cd arcade ${game}`); await page.locator(".term__input").press("Enter");
-      await page.getByRole("button", { name: "Connect a friend", exact: true }).click();
+      await page.getByRole("button", { name: /connect a friend/i }).click();
     }));
     const [host, guest] = pages;
-    await host.getByRole("button", { name: "Create invite", exact: true }).click(); await host.getByRole("textbox", { name: "Outgoing connection code" }).waitFor();
-    await guest.locator("#arcade-link-input").fill(await host.getByRole("textbox", { name: "Outgoing connection code" }).inputValue());
-    await guest.getByRole("button", { name: "Answer invite", exact: true }).click(); await guest.getByRole("textbox", { name: "Outgoing connection code" }).waitFor();
-    await host.locator("#arcade-link-input").fill(await guest.getByRole("textbox", { name: "Outgoing connection code" }).inputValue());
-    await host.getByRole("button", { name: "Connect cabinets", exact: true }).click();
-    await host.getByRole("button", { name: "Start linked match", exact: true }).waitFor({ timeout: 30000 }); await host.getByRole("button", { name: "Start linked match", exact: true }).click();
+    await host.getByRole("button", { name: /create invite/i }).click(); await host.getByRole("textbox", { name: /outgoing connection code/i }).waitFor();
+    await guest.locator("#arcade-link-input").fill(await host.getByRole("textbox", { name: /outgoing connection code/i }).inputValue());
+    await guest.getByRole("button", { name: /answer invite/i }).click(); await guest.getByRole("textbox", { name: /outgoing connection code/i }).waitFor();
+    await host.locator("#arcade-link-input").fill(await guest.getByRole("textbox", { name: /outgoing connection code/i }).inputValue());
+    await host.getByRole("button", { name: /connect cabinets/i }).click();
+    await host.getByRole("button", { name: /start linked match/i }).waitFor({ timeout: 30000 }); await host.getByRole("button", { name: /start linked match/i }).click();
     await Promise.all(pages.map(p => p.locator(".arcade-canvas").waitFor()));
     await host.waitForFunction(() => !!window.__arcadeLatestState);
     const before = await host.evaluate(id => id === "pong" ? window.__arcadeLatestState.rival.y : window.__arcadeLatestState.snake2[0].y, game);
@@ -35,7 +35,7 @@ try {
     await guest.keyboard.up("ArrowDown");
     // Pause immediately after the proven input. Snake reaches a wall in seconds;
     // extra focus/stability waits would test the driver rather than the connection.
-    await host.getByRole("button", { name: "Pause", exact: true }).evaluate(button => button.click());
+    await host.getByRole("button", { name: /^pause$/i }).evaluate(button => button.click());
     await guest.getByRole("heading", { name: "SYSTEM PAUSED", exact: true }).waitFor();
     const status = await Promise.all(pages.map(p => p.locator(".arcade-live-hud").textContent()));
     await host.screenshot({ path: resolve(out, `${game}-host.png`) }); await guest.screenshot({ path: resolve(out, `${game}-guest.png`) });

@@ -185,3 +185,133 @@ describe("leaving", () => {
     expect(screen).toMatch(/arcadeCopy\.exitLabel/);
   });
 });
+
+/* ── the room, inside the tube (2026-09-05 overhaul) ──────────────────────── */
+
+const room = code(read("components", "arcade", "ArcadeExperience.tsx"));
+const css = read("components", "arcade", "arcade.css");
+const attract = code(read("components", "arcade", "AttractScreen.tsx"));
+const entrance = code(read("components", "arcade", "ArcadeEntrance.tsx"));
+const game = code(read("components", "arcade", "CanvasGame.tsx"));
+
+describe("the room sits inside the tube", () => {
+  it("is portaled to the body and carries data-lenis-prevent, which is the scroll fix", () => {
+    // Lenis, stopped, cancels every wheel event unless an ancestor carries this.
+    // Measured on the release build: 0px of movement without it.
+    expect(room).toMatch(/createPortal\(/);
+    expect(room).toMatch(/data-lenis-prevent=""/);
+  });
+
+  it("locks the document behind it and unlocks on the way out", () => {
+    expect(room).toMatch(/setScrollLocked\(true\)/);
+    expect(room).toMatch(/setScrollLocked\(false\)/);
+  });
+
+  it("stacks below every glass layer and never above 9000", () => {
+    const z = /\.arcade-room\s*\{[^}]*z-index:\s*(\d+)/.exec(css);
+    expect(z, "room z-index not found").toBeTruthy();
+    expect(Number(z![1])).toBeLessThan(8997);
+    for (const m of css.matchAll(/z-index:\s*(\d+)/g)) expect(Number(m[1])).toBeLessThan(9000);
+  });
+
+  it("hides the page, nav, drawer and status strip while it is up, and puts them back", () => {
+    expect(css).toMatch(/html\.arcade-open \.crt__screen,\s*html\.arcade-open \.nav,\s*html\.arcade-open \.shell,\s*html\.arcade-open \.statusbar\s*\{\s*visibility:\s*hidden;/);
+    expect(room).toMatch(/classList\.add\("arcade-open"\)/);
+    expect(room).toMatch(/classList\.remove\("arcade-open"\)/);
+  });
+
+  it("owns every key that reaches it, so the drawer sees neither Escape nor a backtick", () => {
+    expect(room.match(/e\.stopPropagation\(\)/g) ?? []).toHaveLength(2);
+    expect(room).toMatch(/e\.key === "Escape"/);
+  });
+
+  it("never leaves the tube dark on the way out", () => {
+    expect(room).toMatch(/frame\.current\.bootTarget = 1;/);
+    expect(entrance).toMatch(/f\.bootTarget = 1;/);
+  });
+
+  it("uses no colour literal of its own: every colour is a token", () => {
+    const rules = css.replace(/\/\*[\s\S]*?\*\//g, " ");
+    // The two rgba literals mirror `.window` in globals.css exactly, so a
+    // cabinet and a window panel are the same object. Nothing else may add one.
+    const literals = rules.match(/rgba?\([^)]*\)/g) ?? [];
+    for (const l of literals) expect(["rgba(51, 255, 102, 0.015)", "rgba(51, 255, 102, 0.04)", "rgba(51, 255, 102, 0.08)", "rgba(0, 0, 0, 0.4)"]).toContain(l);
+    expect(rules).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+  });
+
+  it("does not use the banned typefaces or an eyebrow", () => {
+    expect(css).not.toMatch(/Arial|Helvetica|Inter|Roboto/);
+    expect(css).not.toMatch(/eyebrow/i);
+    expect(room + attract + entrance).not.toMatch(/eyebrow/i);
+  });
+});
+
+describe("the attract screen runs on the one frame clock", () => {
+  it("subscribes to onFrame and never starts its own loop", () => {
+    expect(attract).toMatch(/onFrame\(/);
+    expect(attract).toMatch(/unsubscribe\(\)/);
+    expect(attract).not.toMatch(/requestAnimationFrame/);
+    expect(attract).not.toMatch(/setInterval/);
+  });
+
+  it("never calls setState from inside the frame callback", () => {
+    const match = /onFrame\(\([^)]*\) => \{([\s\S]*?)\n {4}\}\);/.exec(attract);
+    expect(match, "frame callback not found").toBeTruthy();
+    expect(match![1]).not.toMatch(/set[A-Z]\w*\(/);
+  });
+
+  it("runs only while on screen and while the tab is visible", () => {
+    expect(attract).toMatch(/new IntersectionObserver\(/);
+    expect(attract).toMatch(/if \(!visibleRef\.current \|\| !liveRef\.current\) return;/);
+  });
+
+  it("drops the persistence layer and halves its rate on a coarse pointer", () => {
+    expect(attract).toMatch(/\(pointer: coarse\)/);
+    expect(attract).toMatch(/coarse \? null : document\.createElement\("canvas"\)/);
+    expect(attract).toMatch(/if \(coarse && parity\) return;/);
+  });
+});
+
+describe("the entrance is a power-cycle told with the tube's own machinery", () => {
+  it("drives the shader's power ramp down and back up rather than fading a div", () => {
+    expect(entrance).toMatch(/frame\.current\.bootTarget = 0;/);
+    expect(entrance).toMatch(/frame\.current\.bootTarget = 1;/);
+    expect(entrance).toMatch(/audio\.powerOn\(\)/);
+    expect(entrance).toMatch(/degauss\(\)/);
+  });
+
+  it("runs the long form once per page lifetime and the short form after", () => {
+    expect(room).toMatch(/!arcadeSession\(\)\.entered/);
+    expect(room).toMatch(/markArcadeEntered\(\)/);
+    expect(entrance).toMatch(/if \(!long\) \{/);
+  });
+
+  it("types lines that are true: the cabinet count and the boards' real state", () => {
+    expect(entrance).toMatch(/biosLines\(cabinetCount, boardsRef\.current\)/);
+    expect(room).toMatch(/boards === null \? "checking" : boards\.available \? "online" : "offline"/);
+  });
+
+  it("advances its bar from the one clock through a ref, never a second loop", () => {
+    expect(entrance).toMatch(/onFrame\(/);
+    expect(entrance).not.toMatch(/requestAnimationFrame/);
+    expect(entrance).toMatch(/barRef\.current\.textContent = /);
+  });
+});
+
+describe("a running game lights the tube where things happen", () => {
+  it("pushes an impact at the engine's event position, projected through the canvas rect", () => {
+    expect(game).toMatch(/pushImpact\(frame\.current,/);
+    expect(game).toMatch(/state\.eventAt\.x \/ WORLD\.w/);
+    expect(game).toMatch(/state\.eventAt\.y \/ WORLD\.h/);
+  });
+
+  it("draws through a ghost layer so motion has phosphor memory", () => {
+    expect(game).toMatch(/document\.createElement\("canvas"\)/);
+    expect(game).toMatch(/\{ compact, ghost \}/);
+  });
+
+  it("takes its colours from the theme the room read, never a literal", () => {
+    expect(game).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(game).toMatch(/themeRef\.current/);
+  });
+});

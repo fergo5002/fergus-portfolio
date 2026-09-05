@@ -346,21 +346,21 @@ describe("neofetch and the boards", () => {
   };
 
   it("says nothing about the arcade to somebody who has not found it", () => {
-    const res = runCommand("neofetch", { arcade: { seen: false, boards } });
+    const res = runCommand("neofetch", { arcade: { seen: false, entered: false, boards, lastPosted: null } });
     expect(res.type).toBe("output");
     if (res.type !== "output") return;
     expect(res.lines.join("\n")).not.toContain("FOR");
   });
 
   it("prints the boards once the door has been opened", () => {
-    const res = runCommand("neofetch", { arcade: { seen: true, boards } });
+    const res = runCommand("neofetch", { arcade: { seen: true, entered: true, boards, lastPosted: null } });
     expect(res.type).toBe("output");
     if (res.type !== "output") return;
     expect(res.lines.join("\n")).toContain("FOR");
   });
 
   it("says the boards are unavailable rather than printing a gap", () => {
-    const res = runCommand("neofetch", { arcade: { seen: true, boards: null } });
+    const res = runCommand("neofetch", { arcade: { seen: true, entered: true, boards: null, lastPosted: null } });
     expect(res.type).toBe("output");
     if (res.type !== "output") return;
     expect(res.lines.join("\n")).toContain("unavailable");
@@ -368,7 +368,7 @@ describe("neofetch and the boards", () => {
 
   it("is unchanged for a context with no arcade at all", () => {
     const before = runCommand("neofetch", {});
-    const after = runCommand("neofetch", { arcade: { seen: false, boards: null } });
+    const after = runCommand("neofetch", { arcade: { seen: false, entered: false, boards: null, lastPosted: null } });
     expect(before).toEqual(after);
   });
 });

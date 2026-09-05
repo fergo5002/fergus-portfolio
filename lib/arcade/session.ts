@@ -17,11 +17,20 @@ import type { BoardSnapshot } from "./board";
  * explicitly saved and nothing used to recognise them.
  */
 
-export type ArcadeSession = { seen: boolean; boards: BoardSnapshot | null };
+export type PostedRun = { game: string; initials: string; score: number };
+
+export type ArcadeSession = {
+  /** The door has been found: the Terminal marks this as the program starts. */
+  seen: boolean;
+  /** The room has finished its power-cycle once in this page lifetime; later entries get the short form. */
+  entered: boolean;
+  boards: BoardSnapshot | null;
+  lastPosted: PostedRun | null;
+};
 
 export const INITIALS_KEY = "fergusos:arcade.initials";
 
-let session: ArcadeSession = { seen: false, boards: null };
+let session: ArcadeSession = { seen: false, entered: false, boards: null, lastPosted: null };
 
 export function arcadeSession(): ArcadeSession {
   return session;
@@ -32,13 +41,23 @@ export function markArcadeSeen(): void {
   session = { ...session, seen: true };
 }
 
+export function markArcadeEntered(): void {
+  if (session.entered) return;
+  session = { ...session, entered: true };
+}
+
 export function setArcadeBoards(boards: BoardSnapshot): void {
   session = { ...session, boards };
 }
 
+/** The row to light in the table. Module state: it dies with the tab and touches no storage. */
+export function rememberPosted(run: PostedRun): void {
+  session = { ...session, lastPosted: { ...run } };
+}
+
 /** Tests only. Module state that cannot be reset makes every test order-dependent. */
 export function resetArcadeSession(): void {
-  session = { seen: false, boards: null };
+  session = { seen: false, entered: false, boards: null, lastPosted: null };
 }
 
 export function loadInitials(storage: Pick<Storage, "getItem">): string | null {

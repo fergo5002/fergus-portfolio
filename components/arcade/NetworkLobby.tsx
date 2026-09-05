@@ -54,12 +54,12 @@ export default function NetworkLobby({ game, onStart }: { game: GameId; onStart(
       <label htmlFor="arcade-link-input">{copy.invite}</label>
       <textarea id="arcade-link-input" value={incoming} onChange={e => setIncoming(e.target.value.slice(0, 16384))} rows={3} spellCheck={false} autoComplete="off" />
       <div className="arcade-actions">
-        <button type="button" onClick={() => void create()} disabled={busy || !!linked}>{copy.create}</button>
-        <button type="button" onClick={() => void (hosting && creator.current ? finish() : answer())} disabled={busy || !!linked || !incoming.trim()}>{hosting && creator.current ? copy.connect : copy.join}</button>
+        <button type="button" className="arcade-btn" onClick={() => void create()} disabled={busy || !!linked}>{copy.create}</button>
+        <button type="button" className="arcade-btn" onClick={() => void (hosting && creator.current ? finish() : answer())} disabled={busy || !!linked || !incoming.trim()}>{hosting && creator.current ? copy.connect : copy.join}</button>
       </div>
-      {outgoing && <label className="arcade-link-output">{hosting ? "Send this invite to your friend" : "Send this answer back to the host"}<textarea aria-label="Outgoing connection code" readOnly value={outgoing} rows={3} onFocus={e => e.target.select()} /><button type="button" onClick={() => { if (!navigator.clipboard) { setStatus("Select the code above and copy it."); return; } void navigator.clipboard.writeText(outgoing).then(() => setCopied(true)).catch(() => setStatus("Copy failed. Select the code above and copy it.")); }}>{copied ? copy.copied : copy.copy}</button></label>}
+      {outgoing && <label className="arcade-link__output">{hosting ? copy.outgoingHost : copy.outgoingGuest}<textarea aria-label={copy.outgoing} readOnly value={outgoing} rows={3} onFocus={e => e.target.select()} /><button type="button" className="arcade-btn" onClick={() => { if (!navigator.clipboard) { setStatus(copy.selectToCopy); return; } void navigator.clipboard.writeText(outgoing).then(() => setCopied(true)).catch(() => setStatus(copy.copyFailed)); }}>{copied ? copy.copied : copy.copy}</button></label>}
       <p role="status">{status}</p>
-      {linked?.host && <button type="button" className="arcade-primary" onClick={() => {
+      {linked?.host && <button type="button" className="arcade-btn arcade-primary" onClick={() => {
         const seed = crypto.getRandomValues(new Uint32Array(1))[0];
         try { linked.opened.channel.send(JSON.stringify({ type: "start", seed })); handedOff.current = true; onStart(linked, seed); } catch { fail(attempt.current); }
       }}>{copy.match}</button>}

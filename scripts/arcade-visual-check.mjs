@@ -10,15 +10,15 @@ try {
   await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
   await page.locator(".statusbar__prompt").click();
   await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
-  await page.locator(".arcade-arrival").waitFor();
+  await page.locator(".arcade-entrance").waitFor();
   await page.screenshot({ path: resolve(out, "01-arrival.png") });
-  await page.getByRole("button", { name: /Skip sequence/ }).click();
+  await page.getByRole("button", { name: /skip/i }).click();
   await page.locator(".arcade-cabinet").first().waitFor();
   await page.screenshot({ path: resolve(out, "02-gallery.png") });
   const evidence = [];
   for (const id of ["bounce", "pong", "snake", "under", "signal", "poker"]) {
     await page.locator(`.arcade-cabinet[data-game=${id}]`).click();
-    await page.getByRole("button", { name: /Start solo run/ }).click();
+    await page.getByRole("button", { name: /start solo run/i }).click();
     await page.locator(".arcade-stage").focus();
     await page.keyboard.press("Space");
     if (id === "under") for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowRight");
@@ -28,7 +28,7 @@ try {
     const status = await page.locator(".arcade-live-hud").textContent();
     await page.screenshot({ path: resolve(out, `game-${id}.png`) });
     evidence.push({ id, status });
-    await page.getByRole("button", { name: "All cabinets", exact: true }).first().click();
+    await page.getByRole("button", { name: /all cabinets/i }).first().click();
   }
   await page.keyboard.press("Escape");
   if (!await page.locator(".term__input").evaluate(e => e === document.activeElement)) throw new Error("Prompt focus was not restored");
