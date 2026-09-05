@@ -41,6 +41,13 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 /** Each: break one guard, expect the suite to notice. */
 const MUTATIONS = [
   {
+    name: "arcade rebuild: caches an old board after a successful score post",
+    file: "app/api/board/route.ts",
+    pattern: /"cache-control": "no-store"/,
+    replace: '"cache-control": "public, s-maxage=60"',
+    tests: "app/api/board/route.test.ts",
+  },
+  {
     name: "arcade rebuild: accepts a tampered signed run receipt",
     file: "lib/arcade/score-service.ts",
     pattern: /if \(!timingSafeEqual\(Buffer\.from\(sig\), Buffer\.from\(expected\)\)\)/,

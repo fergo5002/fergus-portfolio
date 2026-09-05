@@ -30,11 +30,13 @@ try {
     await Promise.all(pages.map(p => p.locator(".arcade-canvas").waitFor()));
     await host.waitForFunction(() => !!window.__arcadeLatestState);
     const before = await host.evaluate(id => id === "pong" ? window.__arcadeLatestState.rival.y : window.__arcadeLatestState.snake2[0].y, game);
-    await guest.locator(".arcade-stage").focus(); await guest.keyboard.down("ArrowDown");
+    await guest.locator(".arcade-stage").evaluate(stage => stage.focus()); await guest.keyboard.down("ArrowDown");
     await host.waitForFunction(({ id, before }) => (id === "pong" ? window.__arcadeLatestState.rival.y : window.__arcadeLatestState.snake2[0].y) > before, { id: game, before });
     await guest.keyboard.up("ArrowDown");
-    await host.locator(".arcade-stage").focus(); await host.keyboard.press("ArrowUp");
-    await host.getByRole("button", { name: "Pause", exact: true }).click(); await guest.getByRole("heading", { name: "SYSTEM PAUSED", exact: true }).waitFor();
+    // Pause immediately after the proven input. Snake reaches a wall in seconds;
+    // extra focus/stability waits would test the driver rather than the connection.
+    await host.getByRole("button", { name: "Pause", exact: true }).evaluate(button => button.click());
+    await guest.getByRole("heading", { name: "SYSTEM PAUSED", exact: true }).waitFor();
     const status = await Promise.all(pages.map(p => p.locator(".arcade-live-hud").textContent()));
     await host.screenshot({ path: resolve(out, `${game}-host.png`) }); await guest.screenshot({ path: resolve(out, `${game}-guest.png`) });
     await contexts[0].close(); await guest.getByRole("alert").filter({ hasText: "disconnected" }).waitFor({ timeout: 15000 });

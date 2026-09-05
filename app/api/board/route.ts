@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const { ledger } = await blobRepository().read();
-    return Response.json(boardSnapshot(ledger, boardNamespace()), { headers: { "cache-control": "public, s-maxage=60, stale-while-revalidate=120" } });
+    return Response.json(boardSnapshot(ledger, boardNamespace()), { headers: { "cache-control": "no-store" } });
   } catch (e) { return scoreFailure(e); }
 }
 export async function POST(request: Request) {

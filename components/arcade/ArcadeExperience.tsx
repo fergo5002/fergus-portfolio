@@ -32,7 +32,10 @@ function Room({ program, onExit }: Props) {
   useEffect(() => { if (reducedMotion) exitRef.current([...arcadeCopy.declined]); }, [reducedMotion]);
   useEffect(() => { if (!arriving) return; const timer = setTimeout(() => setArriving(false), 3200); return () => clearTimeout(timer); }, [arriving]);
   useEffect(() => {
-    if (!arriving && !run) dialogRef.current?.querySelector<HTMLElement>(selected ? ".arcade-primary" : ".arcade-cabinet")?.focus();
+    if (!arriving && !run && dialogRef.current) {
+      dialogRef.current.scrollTop = 0;
+      dialogRef.current.querySelector<HTMLElement>(selected ? ".arcade-primary" : ".arcade-cabinet")?.focus({ preventScroll: true });
+    }
   }, [arriving, selected, run]);
   const cabinet = cabinets.find(c => c.id === selected);
   const begin = (mode: GameMode, link: Link | null = null, netSeed?: number) => {

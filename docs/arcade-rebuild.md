@@ -37,7 +37,8 @@ offer retry. Two-player results do not enter the solo boards.
 - [x] Corridor, gallery, keyboard/touch controls, pause/retry and sound toggle.
 - [x] Two-player Pong/Snake, WebRTC setup and disconnection handling.
 - [x] Persistent boards, validation/concurrency tests and real-store proof.
-- [ ] Production build, full tests, mutation gate and phone/browser playthroughs.
+- [x] Production build, full tests and focused mutation checks; first PR phone gate.
+- [ ] Final-head full mutation gate and browser checks after the release refinements.
 - [ ] PR, required checks, merge, Vercel READY + alias + live browser verification.
 - [ ] Update programme evidence and durable personal-site memory.
 
@@ -54,10 +55,24 @@ private origin reads and conditional ETag writes. Two competing writes and an id
 retry pass against the dedicated store. Test rows live only in the development namespace.
 The private store is `fergusos-arcade`, Dublin, `store_j62Tcw0BlIWpNLjm`, connected only
 to the personal project through `ARCADE_READ_WRITE_TOKEN` in all three environments.
-The public tools store is unchanged. Strict `npm ci --dry-run` passes.
+The existing tools data and public-store connection are unchanged. Strict `npm ci --dry-run` passes.
 
 Before the production-build checks: 2,450 tests passed; three opt-in real-store tests
 were skipped by the default suite. One isolated run under high browser/build load timed
 out in an unchanged Overlap protocol test; the subsequent complete suite with four
 workers passed. Dev-server phone measurements were discarded after hot reload invalidated
 the DOM during a click. Final phone evidence must come from a fixed production build.
+
+PR #15 is open at `ab223ab`. The final local production build and TypeScript pass;
+the baseline suite passes 2,453 tests and all four new leaderboard mutations are caught.
+Vercel preview `dpl_GsBG2y3Bi4x9zCxB64nigGVZmBTG` is READY. A real browser completed a
+Circuit Poker run, posted 110 points to the preview namespace, verified chosen-initial
+persistence, replay and `forget`, with six synthesis events and no browser exceptions.
+Preview access used the project's existing automation credential, scoped only to that
+deployment; no protection setting was changed. Complete phone and mutation CI remain pending.
+
+The release refinements add the Snake ready countdown, preserve the gallery's top position
+when focus moves, and prevent cached HTTP board reads after a post. The updated local build
+passes 2,455 tests and five focused mutations. The initial PR's complete phone gate passed
+in 10m6s, including both multiplayer games. Final-head CI repeats those flows. The preview
+posting check now also requires the submitted score on the immediately following API read.

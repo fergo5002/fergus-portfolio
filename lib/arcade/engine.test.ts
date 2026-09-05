@@ -71,19 +71,26 @@ describe("Pong", () => {
   });
 });
 describe("Ouroboros", () => {
+  it("lets players choose a direction during the ready countdown", () => {
+    const s = createGame("snake", 1); s.serve = 0.1; s.moveClock = 0.2;
+    const head = { ...s.snake[0] }; pressGame(s, "up");
+    stepGame(s, 0.05, new Set()); stepGame(s, 0.05, new Set());
+    expect(s.snake[0]).toEqual(head);
+    stepGame(s, 0.05, new Set()); expect(s.snake[0]).toEqual({ x: head.x, y: head.y - 1 });
+  });
   it("rejects reversing into its own neck", () => {
     const s = createGame("snake", 1); pressGame(s, "left");
     expect(s.direction).toEqual({ x: 1, y: 0 });
   });
   it("eating grows the snake and earns charge", () => {
-    const s = createGame("snake", 2); s.food = { x: s.snake[0].x + 1, y: s.snake[0].y };
+    const s = createGame("snake", 2); s.serve = 0; s.food = { x: s.snake[0].x + 1, y: s.snake[0].y };
     const n = s.snake.length; stepGame(s, 0.05, new Set()); stepGame(s, 0.05, new Set()); stepGame(s, 0.05, new Set());
     expect(s.snake.length).toBe(n + 1); expect(s.score).toBeGreaterThan(0);
   });
   it("ends on a wall without phase and wraps while phase is active", () => {
-    const s = createGame("snake", 2); s.snake[0] = { x: 29, y: 8 }; s.moveClock = 0.2;
+    const s = createGame("snake", 2); s.serve = 0; s.snake[0] = { x: 29, y: 8 }; s.moveClock = 0.2;
     stepGame(s, 0.01, new Set()); expect(s.over).toBe(true);
-    const p = createGame("snake", 2); p.snake[0] = { x: 29, y: 8 }; p.moveClock = 0.2;
+    const p = createGame("snake", 2); p.serve = 0; p.snake[0] = { x: 29, y: 8 }; p.moveClock = 0.2;
     pressGame(p, "action"); stepGame(p, 0.01, new Set());
     expect(p.over).toBe(false); expect(p.snake[0].x).toBe(0);
   });

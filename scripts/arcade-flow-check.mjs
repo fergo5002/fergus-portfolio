@@ -12,6 +12,11 @@ try {
     AudioContext.prototype.createOscillator = function () { window.__arcadeOscillators++; return original.call(this); };
   });
   const page = await context.newPage(), errors = []; page.on("pageerror", e => errors.push(e.message));
+  if (process.env.ARCADE_PREVIEW_BYPASS) {
+    if (!new URL(base).hostname.endsWith(".vercel.app")) throw new Error("Preview authentication requires a Vercel deployment URL");
+    // Only the selected deployment receives its existing protection credential.
+    await page.route(`${new URL(base).origin}/**`, route => route.continue({ headers: { ...route.request().headers(), "x-vercel-protection-bypass": process.env.ARCADE_PREVIEW_BYPASS } }));
+  }
   await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
   await page.locator(".statusbar__prompt").click(); await page.locator(".term__input").fill("cd arcade poker"); await page.locator(".term__input").press("Enter");
   await page.getByRole("button", { name: "Sound off", exact: true }).click(); await page.getByRole("button", { name: "Sound on", exact: true }).waitFor();
@@ -25,6 +30,8 @@ try {
     await page.getByRole("textbox", { name: "Your three initials", exact: true }).fill("DEV"); await page.getByRole("button", { name: "Post score", exact: true }).click();
     await page.getByRole("status").filter({ hasText: "Your score is on the board." }).waitFor();
     if (await page.evaluate(() => localStorage.getItem("fergusos:arcade.initials")) !== "DEV") throw new Error("Posting did not remember chosen initials");
+    const persisted = await page.evaluate(async () => (await fetch("/api/board")).json());
+    if (!persisted.boards.find(board => board.game === "poker")?.rows.some(row => row.initials === "DEV" && row.score === Number(score.replaceAll(",", "")))) throw new Error("The posted score disappeared on the next board read");
   }
   const oscillators = await page.evaluate(() => window.__arcadeOscillators); if (oscillators <= 0) throw new Error("Sound on did not create any game synthesis");
   await page.screenshot({ path: resolve(out, "result.png") });

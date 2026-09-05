@@ -20,27 +20,28 @@ for (const profile of [{ name: "webkit-390", engine: webkit, device: "iPhone 12"
   const page = await context.newPage(); const errors = []; page.on("pageerror", error => errors.push(error.message));
   try {
     await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
-    await page.locator(".statusbar__prompt").click(); await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
+    await page.locator(".statusbar__prompt").tap(); await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
     await page.locator(".arcade-room").waitFor();
     await page.locator(".arcade-arrival").waitFor({ state: "hidden", timeout: 12000 });
     check(await page.locator(".arcade-cabinet").count() === 6, "The gallery must have six live cabinets");
+    check(await page.locator(".arcade-room").evaluate(room => room.scrollTop === 0), "Focus skipped the arcade entrance heading");
     await page.screenshot({ path: resolve(out, `${profile.name}-gallery.png`) });
     const gallery = await inspect(page); check(gallery.overflow <= 0, `${profile.name} gallery overflow`);
     for (const id of games) {
-      await page.locator(`.arcade-cabinet[data-game=${id}]`).click();
+      await page.locator(`.arcade-cabinet[data-game=${id}]`).tap();
       const detail = await inspect(page); check(detail.overflow <= 0 && !detail.smallTargets.length && !detail.smallInputs.length, `${profile.name}/${id} detail: ${JSON.stringify(detail)}`);
-      await page.getByRole("button", { name: /Start solo run/ }).click(); await page.locator(".arcade-canvas").waitFor();
-      if (id === "poker") { await page.getByRole("button", { name: "Hold card 1", exact: true }).click(); check(await page.getByRole("button", { name: "Hold card 1", exact: true }).getAttribute("aria-pressed") === "true", "Poker hold did not respond"); await page.getByRole("button", { name: "REDRAW", exact: true }).click(); }
+      await page.getByRole("button", { name: /Start solo run/ }).tap(); await page.locator(".arcade-canvas").waitFor();
+      if (id === "poker") { await page.getByRole("button", { name: "Hold card 1", exact: true }).tap(); check(await page.getByRole("button", { name: "Hold card 1", exact: true }).getAttribute("aria-pressed") === "true", "Poker hold did not respond"); await page.getByRole("button", { name: "REDRAW", exact: true }).tap(); }
       else { await page.locator(".arcade-action-button").tap(); if (id === "under") for (const key of ["→", "↓", "←", "↑"]) await page.locator(".arcade-dpad").getByRole("button", { name: key, exact: true }).tap(); }
-      await page.getByRole("button", { name: "Pause", exact: true }).click();
+      await page.getByRole("button", { name: "Pause", exact: true }).tap();
       check(await page.getByRole("heading", { name: "SYSTEM PAUSED" }).isVisible(), "Pause did not cover the game");
-      await page.locator(".arcade-pause").getByRole("button", { name: "Resume", exact: true }).click();
+      await page.locator(".arcade-pause").getByRole("button", { name: "Resume", exact: true }).tap();
       if (profile.width === 390 && id === "bounce") { await page.setViewportSize({ width: 320, height: 568 }); check(await page.locator(".arcade-play-header h2").textContent() === "BREAKPOINT", "Resize reset the active game"); }
       const play = await inspect(page); check(play.overflow <= 0 && !play.smallTargets.length && !play.smallInputs.length, `${profile.name}/${id} play: ${JSON.stringify(play)}`);
       check(play.canvas?.width > 100 && play.canvas?.height > 80, "The game canvas was not measured");
       await page.screenshot({ path: resolve(out, `${profile.name}-${id}.png`) }); evidence.push({ profile: profile.name, game: id, ...play });
       if (profile.width === 390 && id === "bounce") await page.setViewportSize({ width: 390, height: 844 });
-      await page.getByRole("button", { name: "All cabinets", exact: true }).first().click();
+      await page.getByRole("button", { name: "All cabinets", exact: true }).first().tap();
     }
     await page.keyboard.press("Escape"); await page.locator(".term__input").waitFor({ state: "visible" });
     check(await page.locator(".term__input").evaluate(el => el === document.activeElement), "Escape did not restore prompt focus");
@@ -48,7 +49,7 @@ for (const profile of [{ name: "webkit-390", engine: webkit, device: "iPhone 12"
     check(await page.locator("#shell-drawer").isVisible(), "Escape closed the drawer as well as the arcade"); check(!errors.length, `Browser errors: ${errors.join("; ")}`);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.reload({ waitUntil: "networkidle" });
-    await page.locator(".statusbar__prompt").click(); await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
+    await page.locator(".statusbar__prompt").tap(); await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
     await page.waitForFunction(() => document.querySelector(".term__scroll")?.textContent.includes("reduced motion"));
     check(await page.locator(".arcade-room").count() === 0, "Reduced motion opened the arcade");
     check((await page.locator(".term__scroll").textContent()).includes("reduced motion"), "Reduced motion did not explain the refusal");

@@ -106,7 +106,7 @@ export function createGame(id: GameId, seed: number, mode: GameMode = "solo"): G
   };
   if (id === "bounce") { s.player.y = WORLD.h - 36; brickField(s); }
   if (id === "pong") s.player.x = 38;
-  if (id === "snake") placeFood(s);
+  if (id === "snake") { placeFood(s); s.serve = 2.2; }
   if (id === "under") dungeon(s);
   if (id === "poker") deal(s);
   return s;
@@ -168,6 +168,7 @@ function pong(s: GameState, dt: number, keys: ReadonlySet<string>) {
   s.charge = Math.min(100, s.charge + dt * 15); s.charge2 = Math.min(100, s.charge2 + dt * 15);
 }
 function snakes(s: GameState, dt: number) {
+  if (s.serve > 0) { s.serve = Math.max(0, s.serve - dt); return; }
   s.moveClock += dt;
   const interval = Math.max(0.075, 0.15 - Math.floor(s.score / 100) * 0.007);
   if (s.moveClock < interval) return; s.moveClock -= interval;

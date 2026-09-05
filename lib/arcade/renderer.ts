@@ -71,6 +71,11 @@ export function renderGame(c: CanvasRenderingContext2D, s: GameState, width: num
     }
     polygon(c, ox + s.food.x * cell + 14, oy + s.food.y * cell + 14, 11, 4, s.time, A);
     circle(c, ox + s.food.x * cell + 14, oy + s.food.y * cell + 14, 3, A, true);
+    if (s.serve > 0) {
+      c.fillStyle = "#06100cee"; c.fillRect(225, 235, 450, 90);
+      text(c, `READY ${Math.ceil(s.serve)}`, 450, 273, 30, G, "center");
+      text(c, "CHOOSE YOUR DIRECTION", 450, 303, 14, A, "center");
+    }
   }
   if (s.id === "under") {
     const cell = 29, ox = 29, oy = 43;
