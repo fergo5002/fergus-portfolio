@@ -3,7 +3,7 @@ import ToolPage from "@/components/tools/ToolPage";
 import { profile } from "@/content/profile";
 import { overlap } from "@/content/tools/overlap";
 import { OG_IMAGE, canonical, toolPath } from "@/lib/seo";
-import OverlapTool from "./OverlapTool";
+import OverlapTool from "./OverlapWorkbench";
 import "./tool.css";
 
 const PATH = toolPath(overlap.slug);
@@ -38,7 +38,11 @@ export const metadata: Metadata = {
 export default function OverlapPage() {
   return (
     <ToolPage tool={overlap} talk="If this found somebody unexpected, I would like to hear who.">
-      <OverlapTool />
+      <OverlapTool roomsAvailable={Boolean(
+        (process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL) &&
+        (process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN) &&
+        process.env.BUDGET_HASH_SECRET
+      )} />
     </ToolPage>
   );
 }

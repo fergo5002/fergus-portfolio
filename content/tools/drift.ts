@@ -35,11 +35,11 @@ export const drift: ToolEntry = {
 export const driftCopy = {
   samplesLabel: "Things you wrote",
   samplesHint:
-    "Five pieces is the conservative minimum and ten is a useful starting point. Paste them one after another with a line of three dashes between them. A thousand words in total is an uncalibrated rule of thumb, not a guarantee that the numbers have settled.",
+    "Paste at least five pieces, separated by a line of three dashes. A thousand words is a useful starting point, not a calibrated threshold.",
   samplesPlaceholder: "Paste something you wrote\n---\nAnd another one",
   draftLabel: "The draft",
   draftHint:
-    "The thing you want measured. The tool uses 150 words as a conservative, uncalibrated floor; below it, it refuses a distance and says so.",
+    "Paste the draft you want to compare. The conservative minimum is 150 words; shorter drafts get counts, but no distance.",
   draftPlaceholder: "Paste the draft",
 
   build: "Build the profile",
@@ -97,7 +97,7 @@ export const driftCopy = {
   announceDemo: "Worked example restored. Build your own profile before measuring your draft.",
 
   demoNote:
-    "A worked example, so this page is not an empty form. The report below measures my example draft against a profile and reference built from the eleven articles at /writing. Paste your own pieces and every number in the report is rebuilt from them.",
+    "Example: my draft measured against the eleven articles at /writing. Build a profile from your pieces to compare your own draft.",
   referenceNote:
     "The distance is Burrows's Delta, and a Delta is measured in standard deviations, so it needs a population whose standard deviations they are. That population is your pieces: your own commonest words, and your own variation from one piece to the next. Which is why the number reads in units of your writing and not mine, and why the spread of your own pieces is printed beside it.",
   substitutionNote:

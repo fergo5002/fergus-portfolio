@@ -44,3 +44,31 @@
   .sv__results { animation: sv-in 240ms ease-out both; }
   @keyframes sv-in { from { opacity: 0; } to { opacity: 1; } }
 }
+.sv__step:first-child { margin-top: 0; }
+.sv__step h2, .sv__results h2 { font-family: var(--font-screen); font-size: 1.8rem; color: var(--green-bright); margin: 0 0 8px; }
+.sv__step p, .sv__results p { margin: 4px 0 12px; }
+.sv__button { padding: 10px 16px; cursor: pointer; }
+.sv__primary { color: var(--bg); background: var(--amber); border-color: var(--amber); }
+.sv__results { border-top: 1px solid var(--green-line); padding-top: 24px; }
+.sv__results .sv__big { font-family: var(--font-screen); font-size: 5rem; color: var(--amber); margin: 12px 0 0; }
+.sv__chart { background: var(--bg); padding: 16px; border: 1px solid var(--green-line); margin: 16px 0; }
+.sv__table { border-collapse: collapse; font-size: .82rem; width: 100%; }
+.sv__table th, .sv__table td { text-align: left; padding: 12px; border-bottom: 1px solid var(--green-line); }
+.sv__results > p:has(.sv__button) { padding: 16px; border: 1px solid var(--green-line); display: grid; gap: 10px; background: var(--bg); }
+.sv__results > .bench-details { margin-top: 0; }
+.sv__setup > .sv__step { margin-top: 16px; }
+.sv__label { margin-bottom: 12px; }
+.sv__select, .sv__input { padding: 10px; }
+.sv__chart text { font: 15px var(--font-body); fill: var(--green); }
+.sv__gridline { stroke: var(--green-line); stroke-width: 1; }
+.sv__horizon { stroke: var(--green); stroke-dasharray: 4 5; stroke-width: 1; }
+.sv__groups { margin: 0 0 16px; }
+.sv__groups > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; border-bottom: 1px solid var(--green-line); padding: 16px 0 20px; position: relative; }
+.sv__groups dt > span { display: block; margin-top: 4px; }
+.sv__groups dd { font: 2rem var(--font-screen); color: var(--amber); margin: 0; }
+.sv__group-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--green); }
+.sv__chart-frame { display: grid; grid-template-columns: 4ch minmax(0, 1fr); gap: 8px; padding: 16px; background: var(--bg); border: 1px solid var(--green-line); margin: 16px 0; font-size: .8rem; }
+.sv__chart-frame .sv__chart { padding: 0; margin: 0; border: none; }
+.sv__axis-y { display: flex; flex-direction: column; justify-content: space-between; align-items: end; }
+.sv__axis-x { display: flex; justify-content: space-between; grid-column: 2; }
+.sv__chart-frame .sv__axis-title { grid-column: 1 / -1; text-align: center; margin: 0; }

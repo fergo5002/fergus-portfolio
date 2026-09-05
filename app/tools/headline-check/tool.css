@@ -438,3 +438,11 @@
     align-items: flex-end;
   }
 }
+.headline-lab { border-top: 1px solid var(--green-line); margin-top: 32px; padding-top: 24px; }
+.headline-lab h2 { font-family: var(--font-screen); font-size: 1.75rem; color: var(--green-bright); margin: 0 0 12px; }
+.headline-lab__source { font-size: 14px; line-height: 1.5; }
+.headline-lab__verdict { font-family: var(--font-screen); font-size: 1.8rem; color: var(--amber); margin: 20px 0 12px; }
+.headline-lab__fix { margin-top: 20px; }
+.headline-lab__fix h3 { margin-bottom: 8px; }
+.headline-lab .hcheck__views { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 620px) { .headline-lab .hcheck__views { grid-template-columns: minmax(0, 1fr); } }

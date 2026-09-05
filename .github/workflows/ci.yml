@@ -47,7 +47,9 @@ jobs:
 
   mutation:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # The catalogue now runs the full suite 193 times. The previous 30-minute
+    # ceiling cancelled the integrated release before it finished its proof.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -95,6 +97,13 @@ jobs:
         run: node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap --out .phone-check
       - name: phone check through the hidden arcade door
         run: node scripts/arcade-phone-check.mjs --base http://localhost:3000 --out .phone-check/arcade
+      - name: tools workflows on desktop and phones
+        run: |
+          node scripts/tools-check.mjs --base http://localhost:3000
+          node scripts/tools-check.mjs --base http://localhost:3000 --engine webkit --width 390
+          node scripts/tools-check.mjs --base http://localhost:3000 --engine webkit --width 320
+      - name: Overlap through two actual peer connections
+        run: node scripts/overlap-peer-check.mjs http://localhost:3000
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

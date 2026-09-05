@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { workbenchCopy } from "@/content/tool-workbench";
+import "./workbench.css";
 import JsonLd from "@/components/JsonLd";
 import PromptLine from "@/components/PromptLine";
 import Scramble from "@/components/Scramble";
@@ -39,7 +42,7 @@ export default function ToolPage({
   talk?: string;
 }) {
   return (
-    <div className="stack">
+    <div className="stack tool-workbench">
       <JsonLd
         nodes={[
           toolPageSchema(tool, extraSchema),
@@ -51,19 +54,22 @@ export default function ToolPage({
         ]}
       />
       <PromptLine command={`./${tool.slug}`} path={toolShellCopy.indexPath} />
+      <Link className="bench-back" href="/tools">{workbenchCopy.back}</Link>
       <h1 className="page__title">
         <Scramble text={tool.slug} speed={34} />
       </h1>
       <p className="page__lede">{tool.blurb}</p>
       <p className="tool__privacy">{tool.privacyLine ?? toolShellCopy.privacy[tool.privacy]}</p>
-      {tool.privacyNote ? <p className="tool__privacynote">{tool.privacyNote}</p> : null}
+      {tool.privacyNote ? <details className="bench-privacy-details"><summary>{workbenchCopy.privacyDetails}</summary><p className="tool__privacynote">{tool.privacyNote}</p></details> : null}
 
-      {children}
+      <div className="bench-surface">{children}</div>
 
       <section className="tool__cantsee" aria-labelledby="tool-cantsee">
         <h2 id="tool-cantsee" className="tool__cantsee-title">
           {toolShellCopy.cantSeeHeading}
         </h2>
+        <details className="bench-details">
+        <summary>{workbenchCopy.details}</summary>
         <ul className="tool__cantsee-list">
           {tool.cantSee.map((line) => (
             <li key={line} className="tool__cantsee-item">
@@ -71,6 +77,7 @@ export default function ToolPage({
             </li>
           ))}
         </ul>
+        </details>
       </section>
 
       {talk ? <Talk line={talk} /> : null}

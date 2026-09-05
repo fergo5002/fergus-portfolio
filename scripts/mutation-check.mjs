@@ -40,6 +40,24 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Each: break one guard, expect the suite to notice. */
 const MUTATIONS = [
+  {
+    name: "Drift accepts more sample pieces than the browser workbench can safely analyse",
+    file: "lib/tools/drift/readiness.ts",
+    pattern: / && pieces\.length <= 50/,
+    replace: "",
+  },
+  {
+    name: "the headline fix duplicates the words it was meant to preserve",
+    file: "app/tools/headline-check/state.ts",
+    pattern: /return `<h1>\$\{text\}<\/h1>`;/,
+    replace: "return `<h1>${text}${text}</h1>`;",
+  },
+  {
+    name: "Second Visit ignores a failed worker and leaves the visitor waiting",
+    file: "app/tools/second-visit/run-client.ts",
+    pattern: /worker\.addEventListener\("error", onError\);/,
+    replace: "// worker error listener removed by mutation",
+  },
   // ── the regression a code review caught: timing allowed to discard again ──
   {
     name: "THE REGRESSION: a fast submission silently dropped instead of marked",

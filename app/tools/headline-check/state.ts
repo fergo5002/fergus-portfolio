@@ -60,11 +60,11 @@ export const headlineCopy = {
   browserLabel: "What a person sees",
   crawlerLabel: "What a tag stripper gets",
 
-  fixTitle: "The fix, from the article",
+  fixTitle: "Start with a readable heading",
   fixLead:
-    "Render the text twice. Once fragmented for the animation, once whole for everything that reads text.",
+    "Send one whole heading in the server HTML. If you animate individual letters, replace the visible layer only after the page mounts, and keep the complete accessible name.",
   fixNote:
-    "Use the clip-rect pattern for the hidden copy, not display:none or visibility:hidden. Both of those remove it from the accessibility tree and are fairly read as content you have chosen not to show.",
+    "Do not send a second hidden copy alongside fragmented letters: text extractors can join the two copies together. This plain HTML is the safe starting point; check the server response after adding your animation.",
   fixCopy: "Copy the snippet",
   fixCopied: "Copied",
   fixCopyFailed: "The clipboard refused. Select the snippet and copy it by hand.",
@@ -77,7 +77,7 @@ export const headlineCopy = {
 export const VERDICTS: Record<Verdict, { title: string; body: string }> = {
   clean: {
     title: "Clean",
-    body: "The heading comes through as one contiguous string. Whatever it is doing visually, it is not costing you the words.",
+    body: "This source passes the two text models used here. It does not prove how every crawler will read the page, or what JavaScript and external styles do after load.",
   },
   fragmented: {
     title: "Fragmented",
@@ -102,14 +102,6 @@ function forSnippet(text: string): string {
  * instruction everybody agrees with and nobody acts on.
  */
 export function fixSnippet(headline: string): string {
-  const text = forSnippet(headline);
-  const [first = "A", second = "B"] = [...text];
-  return [
-    "<h1>",
-    `  <span class="visually-hidden">${text}</span>`,
-    '  <span aria-hidden="true">',
-    `    <span class="ch">${first}</span><span class="ch">${second}</span>...`,
-    "  </span>",
-    "</h1>",
-  ].join("\n");
+  const text = forSnippet(headline).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  return `<h1>${text}</h1>`;
 }

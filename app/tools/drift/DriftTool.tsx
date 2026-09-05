@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useDeferredValue, useEffect, useId, useMemo, useState } from "react";
+import { driftWorkbenchCopy as workbench } from "@/content/tool-workbench";
+import { draftReadiness, profileReadiness } from "@/lib/tools/drift/readiness";
 import { useSystem } from "@/components/system/SystemProvider";
 import { driftCopy, driftDemo } from "@/content/tools/drift";
 import { buildReference, type Reference } from "@/lib/tools/drift/reference";
@@ -73,6 +75,12 @@ export default function DriftTool({
   const [report, setReport] = useState<DriftReport>(demoReport);
   const [note, setNote] = useState<string>(driftCopy.demoNote);
   const [announcement, setAnnouncement] = useState("");
+  const [measured, setMeasured] = useState<{ samples: string; draft: string }>({ samples: "", draft: driftDemo.draft });
+  const deferredSamples = useDeferredValue(session.samples);
+  const deferredDraft = useDeferredValue(session.draft);
+  const sampleReady = useMemo(() => profileReadiness(deferredSamples), [deferredSamples]);
+  const draftReady = useMemo(() => draftReadiness(deferredDraft), [deferredDraft]);
+  const stale = session.samples !== measured.samples || session.draft !== measured.draft;
 
   useEffect(() => {
     try {
@@ -95,6 +103,9 @@ export default function DriftTool({
   }, []);
 
   function onBuild() {
+    if (!profileReadiness(session.samples).bounded || !draftReadiness(session.draft).bounded) {
+      setNote(workbench.oversized); setAnnouncement(workbench.oversized); return;
+    }
     const pieces = splitPieces(session.samples);
     if (pieces.length === 0) {
       setNote(driftCopy.noSamples);
@@ -113,6 +124,7 @@ export default function DriftTool({
     // that has just been replaced. Not a `tool_run`: nothing was measured on a
     // draft the visitor chose to measure.
     setReport(analyse(made, session.draft, built, range));
+    setMeasured({ samples: session.samples, draft: session.draft });
     setSession((current) => afterBuild(current));
     const profileNote = made.words < MIN_PROFILE_WORDS ? driftCopy.thinProfile : "";
     const persistenceNote =
@@ -122,6 +134,8 @@ export default function DriftTool({
   }
 
   function onMeasure() {
+    if (!draftReadiness(session.draft).bounded) { setNote(workbench.oversized); return; }
+    if (session.samples !== measured.samples) { onBuild(); return; }
     if (!canMeasure(session)) {
       setNote(driftCopy.noProfile);
       setAnnouncement(driftCopy.noProfile);
@@ -130,6 +144,7 @@ export default function DriftTool({
     const started = Date.now();
     const next = analyse(profile, session.draft, reference, spread);
     setReport(next);
+    setMeasured({ samples: session.samples, draft: session.draft });
     setAnnouncement(
       next.status === "ok" ? driftCopy.announceMeasured : driftCopy.announceRefused,
     );
@@ -165,6 +180,7 @@ export default function DriftTool({
     setProfile(demoProfile);
     setSpread(demoSpread);
     setReport(demoReport);
+    setMeasured({ samples: "", draft: driftDemo.draft });
     setNote(driftCopy.droppedNote);
     setAnnouncement(driftCopy.announceDeleted);
   }
@@ -174,6 +190,7 @@ export default function DriftTool({
     setProfile(demoProfile);
     setSpread(demoSpread);
     setReport(demoReport);
+    setMeasured({ samples: session.samples, draft: driftDemo.draft });
     setSession((current) => afterDemo(current, driftDemo.draft));
     setNote(driftCopy.demoNote);
     setAnnouncement(driftCopy.announceDemo);
@@ -182,6 +199,25 @@ export default function DriftTool({
   const samplesId = `${uid}-samples`;
   const draftId = `${uid}-draft`;
   const number = (value: number) => value.toFixed(2);
+
+  function onDownload() {
+    try {
+      const text = [
+        `# ${session.source === "demo" ? workbench.demo : workbench.yours}`,
+        `${driftCopy.deltaHeading}: ${report.delta === null ? report.status : number(report.delta)}`,
+        workbench.rangeNote,
+        `\n## ${driftCopy.metricsHeading}`,
+        ...report.metrics.map(row => `${driftCopy.metricLabels[row.key]}: ${number(row.profile)} → ${number(row.draft)}`),
+        `\n## ${driftCopy.substitutionsHeading}`,
+        ...report.substitutions.map(row => driftCopy.substitutionRow(row)),
+        `\n## ${driftCopy.pullsHeading}`,
+        ...report.pulls.map(pull => `${pull.text}\n${pull.reasons.map(reason => driftCopy.reasonLabels[reason]).join(", ")}`),
+      ].join("\n\n");
+      const url = URL.createObjectURL(new Blob([text], { type: "text/markdown;charset=utf-8" }));
+      const link = document.createElement("a"); link.href = url; link.download = "drift-report.md"; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch { setNote(workbench.downloadFailed); }
+  }
 
   return (
     <div className="drift">
@@ -207,10 +243,19 @@ export default function DriftTool({
             onChange={(e) => setSession((current) => ({ ...current, samples: e.target.value }))}
             onKeyDown={() => audio.key()}
           />
+          <p className="drift__readiness">{sampleReady.bounded ? workbench.samples(sampleReady.pieces, sampleReady.words) : workbench.oversized}</p>
           <div className="drift__actions">
             <button type="button" className="drift__button" onClick={onBuild}>
               {driftCopy.build}
             </button>
+            <button type="button" className="drift__button" onClick={() => {
+              setSession(current => ({ ...current, samples: current.samples.trimEnd() + "\n\n---\n\n" }));
+              document.getElementById(samplesId)?.focus();
+            }}>{workbench.addPiece}</button>
+          </div>
+          <details className="bench-details">
+          <summary>{workbench.storage}</summary>
+          <div className="drift__actions">
             <button
               type="button"
               className="drift__button"
@@ -229,6 +274,7 @@ export default function DriftTool({
             </button>
           </div>
           <p className="drift__hint">{driftCopy.savedContents}</p>
+          </details>
         </div>
 
         <div className="drift__field">
@@ -245,6 +291,7 @@ export default function DriftTool({
             onChange={(e) => setSession((current) => ({ ...current, draft: e.target.value }))}
             onKeyDown={() => audio.key()}
           />
+          <p className="drift__readiness">{draftReady.bounded ? workbench.draft(draftReady.words) : workbench.oversized}</p>
           <div className="drift__actions">
             <button
               type="button"
@@ -262,6 +309,8 @@ export default function DriftTool({
       </div>
 
       <section className="drift__report">
+        <div className="drift__report-top"><p>{session.source === "demo" ? workbench.demo : workbench.yours}</p><button type="button" className="bench-button" onClick={onDownload} disabled={stale}>{workbench.download}</button></div>
+        {stale ? <p className="bench-warning" role="status">{workbench.stale}</p> : null}
         <h2 className="drift__heading">{driftCopy.deltaHeading}</h2>
         {report.status === "ok" ? (
           <p className="drift__delta">{number(report.delta ?? 0)}</p>
@@ -270,6 +319,16 @@ export default function DriftTool({
             {report.status === "too-short" ? driftCopy.tooShort : driftCopy.tooFewPieces}
           </p>
         )}
+        {report.status === "ok" && report.selfSpread && report.delta !== null ? <div className="drift__reading">
+          <strong>{report.delta > report.selfSpread.max ? workbench.above : report.delta < report.selfSpread.min ? workbench.below : workbench.within}</strong>
+          <p className="bench-note">{workbench.rangeNote}</p>
+          <div className="drift__range" role="img" aria-label={`${driftCopy.spreadHeading}: ${number(report.selfSpread.min)} to ${number(report.selfSpread.max)}. ${driftCopy.deltaHeading}: ${number(report.delta)}`}>
+            <span style={{ left: `${Math.min(95, 100 * report.selfSpread.min / Math.max(report.selfSpread.max, report.delta, .01) / 1.1)}%`, width: `${Math.min(95, 100 * (report.selfSpread.max - report.selfSpread.min) / Math.max(report.selfSpread.max, report.delta, .01) / 1.1)}%` }} />
+            <i style={{ left: `${Math.min(98, 100 * report.delta / Math.max(report.selfSpread.max, report.delta, .01) / 1.1)}%` }} />
+          </div>
+        </div> : null}
+        <details className="bench-details">
+        <summary>{workbench.method}</summary>
         <p className="drift__hint">{driftCopy.referenceNote}</p>
         <p className="drift__hint">
           {driftCopy.builtFrom}: {report.reference.documents} pieces, {report.reference.totalWords}{" "}
@@ -284,6 +343,7 @@ export default function DriftTool({
             {number(report.delta ?? 0)}.
           </p>
         ) : null}
+        </details>
 
         <h2 className="drift__heading">{driftCopy.substitutionsHeading}</h2>
         {report.substitutions.length === 0 ? (
@@ -300,7 +360,8 @@ export default function DriftTool({
         <p className="drift__hint">{driftCopy.substitutionNote}</p>
 
         {report.metrics.length > 0 ? (
-          <>
+          <details className="bench-details">
+            <summary>{driftCopy.metricsHeading}</summary>
             <h2 className="drift__heading">{driftCopy.metricsHeading}</h2>
             <div className="drift__scroll">
               <table className="drift__table">
@@ -345,7 +406,7 @@ export default function DriftTool({
               </table>
             </div>
             <p className="drift__hint">{driftCopy.splitterNote}</p>
-          </>
+          </details>
         ) : null}
 
         {report.status === "ok" ? (

@@ -206,3 +206,16 @@
     }
   }
 }
+.drift__hint { font-size: .84rem; line-height: 1.6; }
+.drift__field { min-width: 0; }
+.drift__fields { align-items: start; }
+.drift__readiness { margin: 8px 0; font-size: .8rem; color: var(--amber); }
+.drift__actions > button:first-child { border-color: var(--amber); color: var(--amber); }
+.drift__report { border-top: 1px solid var(--green-line); padding-top: 24px; }
+.drift__report-top { display: flex; justify-content: space-between; gap: 16px; align-items: center; flex-wrap: wrap; }
+.drift__report-top p { color: var(--amber); margin: 0; }
+.drift__range { height: 40px; position: relative; margin: 20px 0; background: var(--bg); border: 1px solid var(--green-line); }
+.drift__range span { position: absolute; top: 9px; height: 20px; background: var(--green-line); border: 1px solid var(--green); }
+.drift__range i { position: absolute; top: 3px; bottom: 3px; width: 3px; background: var(--amber); }
+.drift__reading strong { color: var(--green-bright); }
+.drift__report .drift__delta { font-size: 4.5rem; line-height: 1.1; margin: 12px 0; }

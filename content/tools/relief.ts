@@ -10,7 +10,7 @@ export const relief: ToolEntry = {
   slug: "relief",
   name: "Relief",
   blurb:
-    "A year of your activity drawn as contour ground, the way an Ordnance sheet draws a hillside. Out comes a PNG, a strokes-only SVG in millimetres, and a binary STL closed by the mesh edge check.",
+    "Turn a year of your activity into a contour landscape. Explore the busy hours and quiet weeks, then take it away as an image, a pen-plotter drawing or a 3D mesh.",
   privacy: "browser",
   privacyLine:
     "Runs in your browser. CSV contents and generated exports are never sent over the network. On the GitHub path, your browser sends the username and pasted token directly to api.github.com; the token is never written to storage.",
@@ -67,7 +67,7 @@ export const reliefCopy = {
   plotterNote:
     "The SVG contains strokes and no fills, reports its dimensions in millimetres, and groups paths by contour level. It contains no text or font dependency.",
   stlNote:
-    "The binary STL is 102mm by 46mm, with 2mm of base and up to 12mm of relief. Its directed edges close exactly in the mesh check: two triangles a cell on top, the same grid underneath, and a wall joining them.",
+    "The binary STL is 102mm by 46mm, with 2mm of base and up to 12mm of relief. Its directed edges close exactly in the edge check: two triangles a cell on top, the same grid underneath, and a wall joining them.",
 
   /* Added with the page. The pure modules return keys and throw named errors;
      every sentence a visitor reads is in this object. */
