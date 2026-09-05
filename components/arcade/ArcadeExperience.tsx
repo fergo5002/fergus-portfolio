@@ -125,6 +125,11 @@ function Room({ program, onExit }: Props) {
   const cabinet = screen.kind === "detail" || screen.kind === "play" ? cabinets.find((c) => c.id === screen.game) : undefined;
   const boardsState = boards === null ? "checking" : boards.available ? "online" : "offline";
 
+  // The door already declines under reduced motion (lib/commands/hidden.ts), and the effect
+  // above leaves if the preference arrives mid-session. This makes the same commit render
+  // nothing, so six attract screens never mount for a frame on the way out.
+  if (reducedMotion) return null;
+
   return createPortal(
     <section
       className="arcade-room"
