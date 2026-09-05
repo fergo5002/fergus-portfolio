@@ -34,7 +34,7 @@ try {
   if (await page.evaluate(() => localStorage.getItem("fergusos:arcade.initials")) !== null) throw new Error("Initials were stored before a post");
   if (posting) {
     await page.getByRole("textbox", { name: "Your three initials", exact: true }).fill("DEV"); await page.getByRole("button", { name: "Post score", exact: true }).click();
-    await page.getByRole("status").filter({ hasText: "Your score is on the board." }).waitFor();
+    await page.getByRole("status").filter({ hasText: "Run submitted." }).waitFor();
     if (await page.evaluate(() => localStorage.getItem("fergusos:arcade.initials")) !== "DEV") throw new Error("Posting did not remember chosen initials");
     const persisted = await page.evaluate(async () => (await fetch("/api/board")).json());
     if (!persisted.boards.find(board => board.game === "poker")?.rows.some(row => row.initials === "DEV" && row.score === Number(score.replaceAll(",", "")))) throw new Error("The posted score disappeared on the next board read");
