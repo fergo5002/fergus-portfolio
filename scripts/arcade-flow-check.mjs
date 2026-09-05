@@ -21,7 +21,13 @@ try {
   await page.locator(".statusbar__prompt").click(); await page.locator(".term__input").fill("cd arcade poker"); await page.locator(".term__input").press("Enter");
   await page.getByRole("button", { name: "Sound off", exact: true }).click(); await page.getByRole("button", { name: "Sound on", exact: true }).waitFor();
   await page.getByRole("button", { name: /Start solo run/ }).click(); await page.waitForTimeout(8500);
-  for (let i = 0; i < 32 && !await page.locator(".arcade-results").count(); i++) { await page.getByRole("button", { name: "BANK HAND", exact: true }).click(); await page.waitForTimeout(400); }
+  for (let i = 0; i < 32 && !await page.locator(".arcade-results").count(); i++) {
+    try { await page.getByRole("button", { name: "BANK HAND", exact: true }).click({ timeout: 3000 }); }
+    catch (error) { if (await page.locator(".arcade-results").count()) break; throw error; }
+    // Completion is an asynchronous UI event. It may replace the button between
+    // the loop's condition and the next action on a loaded browser.
+    await page.waitForTimeout(400);
+  }
   await page.getByRole("region", { name: "Run result", exact: true }).waitFor();
   const score = await page.locator(".arcade-result-summary>strong").textContent();
   if (!(Number(score.replaceAll(",", "")) > 0)) throw new Error("The completed run has no score");
