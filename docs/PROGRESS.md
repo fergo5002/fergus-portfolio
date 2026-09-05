@@ -6,11 +6,11 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
-## 2026-09-05: public tools rebuild
+## 2026-09-05: public tools rebuild live
 
 Fergus requested an audit, redesign, implementation and production deployment of all five public
-tools. Active plan: `docs/superpowers/plans/2026-09-05-tools-rebuild.md`. Branch
-`codex/tools-rebuild` starts at the consolidated release `2be67e7` in a managed Codex worktree.
+tools. Delivery record: `docs/superpowers/plans/2026-09-05-tools-rebuild.md`. PR #14 merged as
+`0b1cabb31c1dadc8d0cca049995d40c4fba5a214`, preserving the concurrent arcade release.
 
 - [x] Live audit and implementation plan. Room-code storage is still absent in Vercel metadata.
 - [x] Outcome-led tools index and shared workbench with tool previews, visible controls and compact explanations.
@@ -19,23 +19,35 @@ tools. Active plan: `docs/superpowers/plans/2026-09-05-tools-rebuild.md`. Branch
 - [x] Relief keyboard/pointer exploration, source attribution and export refusal after a failed import.
 - [x] Overlap exact local comparison, search and CSV export; peer mode loaded separately, room controls gated by configuration.
 - [x] Second Visit one-click demo/recognised-file analysis, progressive mapping, selectable horizon, labelled chart, customer groups and visible asynchronous failures.
-- [x] Production build, 2,436 tests, type checks, all six local phone routes and the phone instrument's planted-fault proof.
-- [ ] Final mutation catalogue, PR #14 merge and live deployment verification.
+- [x] Integrated production build, 2,473 tests, type checks, all six local phone routes and the phone instrument's planted-fault proof.
+- [x] All 198 mutations caught, PR #14 merged and production SHA/READY/canonical alias verified.
+- [x] Public desktop workflows, independent mobile WebKit workflows, real link navigation, no-JS URL submission and manual peer connection verified.
 
 Tests first reproduced the old headline snippet duplicating text and failing to escape HTML, and
 Second Visit hanging on worker failure/disposal. The new local comparison and Drift bounds have
-behavioural tests. The first full pass had 2,433 passing tests and two existing Redis-gated skips.
-Later test/browser passes continue as the UI is refined; this entry is not a final release record.
+behavioural tests. Deep nesting and unfinished quoted attributes also failed before their fixes.
+The integrated suite has 2,473 passes and three opt-in integration skips; TypeScript and the
+production build pass, with 44 static pages generated.
 Synthetic browser workflows are committed in `scripts/tools-check.mjs`, the public URL/no-JS proof
 in `scripts/headline-url-check.mjs`, and the real two-context manual WebRTC proof in
 `scripts/overlap-peer-check.mjs`. The latter passed with three shared profiles and matching codes,
 without room storage or STUN. Two local contexts do not prove two real networks. No physical
 phone, plotter or printer has been exercised.
 
-The full 193-case tools mutation run passed at `e7acf1f`. The integration with the arcade
-release preserves its four-part CI runner and all five arcade guards, giving 198 total cases.
+The full 193-case tools mutation run passed at `e7acf1f`. Final integrated head `b06391c`
+passed every gate in CI run `33977636090`, including 198/198 mutations in partitions of
+50, 50, 49 and 49. The integration preserves the arcade's four-part runner and all five guards.
 Three tools mutations cover the profile bound, non-duplicating headline fix and worker failure
 listener. Both suites of browser workflows remain in CI.
+
+Production deployment `dpl_68W5SexZ1ozHCqSMeEamgAhB5ncD` was verified READY with the exact
+merged SHA and `fergusoreilly.dev` alias. Public desktop and independent WebKit 390px checks
+pass for all tools, imports, rejected inputs, stale results and downloads, with no synthetic
+visitor text observed in POST bodies. Actual WebKit index/back-link navigation passes without
+errors. The forced multi-page Windows WebKit run completed the workflows but reported a chunk
+load failure; that chunk returned 200 and the isolated workflows passed. Complete Linux CI
+WebKit suites pass. This harness limitation remains recorded, without claiming physical-device
+coverage. Optional room storage is still unconfigured; local and manual peer comparison work.
 
 ## 2026-09-05: arcade rebuild live
 

@@ -22,9 +22,9 @@ Live Chromium audit at 1440 × 1000, reduced motion, commit 2be67e7: all six rou
 - [x] Implement and verify all five workflows with synthetic inputs in Chromium.
 - [x] Production build, full tests/types and phone checks (WebKit 390/320 and slow Chromium).
 - [x] Browser regression script: examples, successful imports, import failures, stale results, downloads, mobile overflow and console errors. Inspect screenshots.
-- [ ] Required mutation catalogue on the final release commit.
-- [ ] Commit, push review branch, open PR, complete GitHub checks, merge normally and verify Vercel production SHA/READY/alias.
-- [ ] Repeat changed workflows on the public domain; update progress and durable personal-site memory.
+- [x] Required mutation catalogue on the final integrated review commit: 198/198 caught.
+- [x] Commit, push review branch, open PR, complete GitHub checks, merge normally and verify Vercel production SHA/READY/alias.
+- [x] Repeat changed workflows on the public domain and update the release record.
 
 ## Boundaries
 
@@ -32,8 +32,12 @@ No new paid service, tracking, automatic saves or dependency. Local comparison r
 
 ## Verification record
 
-Full local suite: 2,436 passed, two existing Redis-gated skips; 138 passing files. Production build generates 43 routes. The local phone instrument caught every planted fault; all six tool/index routes passed all three profiles. GitHub `check` and `phone` passed at `85c83b1` and `0fce3d3`; the final parser correction in PR #14 requires another complete gate before release.
+Final integrated local suite: 2,473 passed, three opt-in integration skips; 145 passing files and two skipped files. TypeScript and the production build pass, generating 44 static pages. The local phone instrument caught every planted fault; all six tool/index routes passed all three profiles. Final integrated review head `b06391c7ef86b47f04b969763b52d652dfabf537` passed every gate in GitHub run `33977636090`, including desktop and WebKit 390/320 workflows, the tools and arcade peer checks, and 198/198 mutations across partitions of 50, 50, 49 and 49. The earlier tools-only head `e7acf1f` also caught all 193 mutations before the arcade integration.
+
+PR #14 merged as `0b1cabb31c1dadc8d0cca049995d40c4fba5a214`. Personal Vercel production `dpl_68W5SexZ1ozHCqSMeEamgAhB5ncD` was independently verified READY, alias assigned, attached to that exact Git SHA and serving `fergusoreilly.dev`. The canonical root's dirty checkout remains untouched at `2be67e7`; all implementation used the managed worktree. No force-push, account-setting change, new service or synthetic production arcade score was needed.
 
 The headline regressions were seen red: 6,000 nested spans caused a stack overflow, and unfinished quoted attributes exceeded a two-second worker deadline. The iterative reader and disjoint tag-scanning alternatives pass these cases and the existing interpretation cases. Browser checks assert the actual extracted words after nested and malformed inputs. The URL form passes with JavaScript on and off, preserving the URL. Local CSV comparison, profile editing, report downloads, all three terrain exports, successful historical CSV import, retention demo/file equivalence and stale-result refusals have browser proof. No synthetic visitor text appeared in POST bodies during these workflows.
 
-Windows' default headless Chromium graphics driver produced a reflected textarea artefact in the CRT background. Repeating the same page with SwiftShader removed it without a site change. Windows WebKit also reports cancelled prefetches as access-control exceptions during forced cross-page replacement; its individual workflows complete, while the complete Linux CI WebKit suites pass. A separate WebKit check followed all five actual index links and their back links with no application errors. These are recorded limits of the local harness, not a claim of physical-device coverage. Vercel previews require sign-in, so public smoke verification follows the production merge.
+Public-domain verification after the merge passed all five desktop workflows, every individual WebKit 390px workflow, uploads, downloads, rejected/stale inputs, the JavaScript-on/off URL form and manual WebRTC with three shared profiles and matching codes. No application exceptions or synthetic visitor text in POST bodies were observed in those passing runs. Actual WebKit navigation through all five index links and their back links also passed cleanly. Room storage remains unconfigured, and the supported local/manual workflows expose that boundary.
+
+Windows' default headless Chromium graphics driver produced a reflected textarea artefact in the CRT background. Repeating the same page with SwiftShader removed it without a site change. Windows WebKit reports cancelled prefetches during forced cross-page replacement: the full public run completed all workflows but reported a chunk-load error. The referenced chunk returned HTTP 200; each isolated workflow and actual link navigation passed without application errors. Complete Linux CI WebKit suites pass. These are recorded limits of the local harness, not a claim of physical-device coverage. Vercel previews require sign-in; public checks used the canonical production domain.
