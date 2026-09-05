@@ -102,7 +102,8 @@ function Room({ program, onExit }: Props) {
     room.scrollTop = 0;
     // Play focuses the stage, never the back button: this effect runs after the game has
     // focused its own stage, and a back button under focus turns the first Space, the
-    // launch key, into "all cabinets". Found by hand on the live site, 2026-09-05.
+    // launch key, into "all cabinets". Found by hand on the live site, 2026-09-05. The game
+    // focuses the same node itself; two calls on one node are deliberate, not two owners.
     const target = screen.kind === "gallery" ? ".arcade-cabinet" : screen.kind === "detail" ? ".arcade-start" : screen.kind === "play" ? ".arcade-stage" : ".arcade-back";
     room.querySelector<HTMLElement>(target)?.focus({ preventScroll: true });
   }, [entering, screen]);

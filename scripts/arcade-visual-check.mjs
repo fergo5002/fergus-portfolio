@@ -22,6 +22,11 @@ try {
     // No explicit focus: the first Space after starting must reach the game, not a button.
     // Pre-focusing the stage here hid a live bug where Space activated "all cabinets".
     await page.locator(".arcade-canvas").waitFor();
+    // The assertion is that focus ENDS on the stage after start. Waiting for it (rather than
+    // pressing at once) closes the gap where Space could fire before either focus effect ran
+    // and pass for the wrong reason; on the old code this times out on the back button.
+    await page.waitForFunction(() => document.activeElement?.classList.contains("arcade-stage"), null, { timeout: 3000 })
+      .catch(() => { throw new Error(`${id}: focus did not land on the stage after start `); });
     await page.keyboard.press("Space");
     await page.waitForTimeout(200);
     if (!await page.locator(".arcade-play").count()) throw new Error(`${id}: the first Space after start left the game`);
