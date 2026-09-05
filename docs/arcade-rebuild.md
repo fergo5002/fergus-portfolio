@@ -38,15 +38,48 @@ offer retry. Two-player results do not enter the solo boards.
 - [x] Two-player Pong/Snake, WebRTC setup and disconnection handling.
 - [x] Persistent boards, validation/concurrency tests and real-store proof.
 - [x] Production build, full tests and focused mutation checks; first PR phone gate.
-- [ ] Final-head full mutation gate and browser checks after the release refinements.
-- [ ] PR, required checks, merge, Vercel READY + alias + live browser verification.
-- [ ] Update programme evidence and durable personal-site memory.
+- [x] Final-head full mutation gate and browser checks after the release refinements.
+- [x] PR, required checks, merge, Vercel READY + alias + live browser verification.
+- [x] Update programme evidence and durable personal-site memory.
 
 The new request supersedes the original character-only cabinet and the unbuilt
 six-max poker label. Circuit Poker is explicitly a single-player draw game with no
 money or betting, not a claim to implement six-max hold'em.
 
-## Evidence so far
+## Release evidence
+
+PR [#15](https://github.com/fergo5002/fergus-portfolio/pull/15) was squash-merged on
+5 September 2026 at 16:10 UTC as `347a314c610a48c3d3b733ed25ab810f338cfc95`.
+Final reviewed head `da3ad6999ad81f957e1a440a3a78c391ae38672b` passed
+[CI run 33976233522](https://github.com/fergo5002/fergus-portfolio/actions/runs/33976233522):
+TypeScript, 2,456 tests, production build, phone/browser flows and every mutation.
+The four mutation partitions caught 49 + 49 + 49 + 48 = **195/195**, with the named
+`mutation` aggregation gate passing. Three Node partition tests also passed. The
+default suite skips three credential-gated integration cases; real private Blob
+concurrency and retry were separately exercised against the configured store.
+
+Vercel production `dpl_BR9awzTSeN11xSrjhf7R5vR48TDF` is READY, `aliasAssigned: true`,
+and its Git SHA exactly matches the merge. Its aliases include `fergusoreilly.dev`
+and `www.fergusoreilly.dev`. The canonical-domain browser proof entered through
+`cd arcade`, saw all six cabinets, played Breakpoint to a scored hit, paused and
+returned focus to the terminal. The live board API returned all six available
+boards with uncached reads. No generated scores were posted to production.
+The canonical Circuit Poker result flow also passed: 110 points, six synthesis
+events, replay, `forget` and zero browser exceptions, with posting disabled.
+
+Final CI exercises all six games in WebKit at 390/320 and Chromium, including touch,
+resize, pause, Escape and reduced motion. Two independent browsers connect over real
+WebRTC for Pong and Ouroboros; guest inputs change the host state, pauses are shared
+and disconnections are visible. A real preview browser completed Circuit Poker,
+posted 160 points, immediately read the persisted score, synthesised audio, replayed
+and removed saved initials through `forget`. Preview rows are isolated from production.
+
+Limits: no physical phone or two-network/NAT pair was tested. Direct WebRTC has no
+TURN relay and can fail on restrictive networks. Scores are client-reported casual
+boards, not verified competitive results. Dungeon boards reset by UTC date. Storage
+has bounded free-tier posting budgets, rather than an unlimited-write promise.
+
+## Diagnosis and implementation evidence
 
 All six cabinets exercised in Chromium. Real two-browser WebRTC matches connect,
 exchange inputs, pause together and show disconnects for both Pong and Ouroboros.
@@ -63,13 +96,13 @@ out in an unchanged Overlap protocol test; the subsequent complete suite with fo
 workers passed. Dev-server phone measurements were discarded after hot reload invalidated
 the DOM during a click. Final phone evidence must come from a fixed production build.
 
-PR #15 is open at `ab223ab`. The final local production build and TypeScript pass;
+At the initial PR #15 head `ab223ab`, the local production build and TypeScript passed;
 the baseline suite passes 2,453 tests and all four new leaderboard mutations are caught.
 Vercel preview `dpl_GsBG2y3Bi4x9zCxB64nigGVZmBTG` is READY. A real browser completed a
 Circuit Poker run, posted 110 points to the preview namespace, verified chosen-initial
 persistence, replay and `forget`, with six synthesis events and no browser exceptions.
 Preview access used the project's existing automation credential, scoped only to that
-deployment; no protection setting was changed. Complete phone and mutation CI remain pending.
+deployment; no protection setting was changed. Later final-head evidence is recorded above.
 
 The release refinements add the Snake ready countdown, preserve the gallery's top position
 when focus moves, and prevent cached HTTP board reads after a post. The updated local build

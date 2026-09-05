@@ -6,7 +6,7 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
-## 2026-09-05: arcade rebuild
+## 2026-09-05: arcade rebuild live
 
 Fergus authorised the complete arcade rebuild through production deployment. The active
 delivery record is `docs/arcade-rebuild.md`. `codex/arcade-rebuild` owns this work; the
@@ -26,13 +26,17 @@ test rejected the public-store caching approach. Boards are capped, solo-only an
 client-reported. Signed receipts expire after two hours, retries are idempotent, and a
 global daily/monthly posting budget keeps arcade writes within the free allocation.
 The dungeon has a daily UTC board; other boards are all-time. Test scores are confined
-to the development namespace.
+to development and preview namespaces.
 
-Current evidence: 2,456 unit tests pass, TypeScript and the production build pass, all six games run in Chromium,
-and two-browser Pong/Snake checks prove connection, controls, shared pause and visible
-disconnects. PR #15's initial full phone gate and actual preview score posting pass. Final-head phone, complete mutation and deployment checks are
-tracked in the active delivery record. Real separate networks and physical phones remain
-outside the browser emulation evidence.
+PR #15 merged as `347a314` after all final-head gates passed: 2,456 tests,
+TypeScript, production build, all six games in the phone/browser checks, and 195/195
+mutations across four independent CI partitions. Real two-browser Pong/Snake checks
+prove connection, remote controls, shared pause and visible disconnects. A completed
+preview run proves posting, immediate board reads, audio, replay and `forget`.
+Production `dpl_BR9awzTSeN11xSrjhf7R5vR48TDF` is READY and aliased to the canonical
+domain with the exact merge SHA. The public browser proof enters through `cd arcade`,
+plays Breakpoint to a scored hit and reads all six available boards without posting
+test scores. Real separate networks and physical phones remain outside the evidence.
 
 ## 2026-09-04: the arcade runtime
 
