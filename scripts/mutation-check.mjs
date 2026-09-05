@@ -35,6 +35,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { selectShard } from "./mutation-shards.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -1297,7 +1298,9 @@ const MUTATIONS = [
 let caught = 0;
 const survived = [];
 const filterIndex = process.argv.indexOf("--filter");
-const selected = filterIndex < 0 ? MUTATIONS : MUTATIONS.filter(m => m.name.includes(process.argv[filterIndex + 1] ?? ""));
+const filtered = filterIndex < 0 ? MUTATIONS : MUTATIONS.filter(m => m.name.includes(process.argv[filterIndex + 1] ?? ""));
+const shardIndex = process.argv.indexOf("--shard");
+const selected = selectShard(filtered, shardIndex < 0 ? undefined : process.argv[shardIndex + 1] ?? "");
 if (!selected.length) throw new Error("No mutations matched the requested filter");
 
 // A pre-existing failure must never be mistaken for a caught mutation.
@@ -1333,7 +1336,7 @@ for (const mutation of selected) {
   console.log(`${red ? "RED  " : "GREEN"}  ${mutation.name}`);
 }
 
-console.log(`\n${caught}/${selected.length} mutations caught${filterIndex < 0 ? "" : " (filtered run)"}.`);
+console.log(`\n${caught}/${selected.length} mutations caught${filterIndex < 0 ? "" : " (filtered run)"}${shardIndex < 0 ? "" : ` (shard ${process.argv[shardIndex + 1]})`}.`);
 if (survived.length) {
   console.log("Survived (each one is a guard that does nothing):");
   for (const name of survived) console.log(` - ${name}`);
