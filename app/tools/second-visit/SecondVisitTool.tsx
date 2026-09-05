@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { secondVisitCopy, TIGH_CREDIT } from "@/content/tools/second-visit";
+import { secondVisitWorkbenchCopy as workbench } from "@/content/tool-workbench";
 import { trackToolRun } from "@/lib/tools/events";
 import type { Analysis } from "@/lib/tools/second-visit/analyse";
 import { MAX_BYTES } from "@/lib/tools/second-visit/csv";
@@ -65,7 +66,7 @@ function save(name: string, body: string, type: string) {
   link.href = url;
   link.download = name;
   link.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export default function SecondVisitTool() {
@@ -81,12 +82,18 @@ export default function SecondVisitTool() {
   const [conversion, setConversion] = useState<{ ignored: number; ambiguousDates: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [timing, setTiming] = useState({ parseMs: 0, modelMs: 0 });
+  const [example, setExample] = useState(false);
+  const [horizonDay, setHorizonDay] = useState(90);
+  const generation = useRef(0);
+  const sliderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const made = makeRunner();
     runner.current = made;
     setWhere(made.where);
     return () => {
+      generation.current++;
+      if (sliderTimer.current) clearTimeout(sliderTimer.current);
       made.dispose();
       runner.current = null;
     };
@@ -94,40 +101,64 @@ export default function SecondVisitTool() {
 
   const towns = useMemo(() => townOptions(), []);
 
-  async function read(text: string, defaultTown: string) {
+  async function read(text: string, defaultTown: string, ticket = ++generation.current) {
+    if (sliderTimer.current) clearTimeout(sliderTimer.current);
     const active = runner.current;
     if (!active) return;
     setBusy(true);
     setMessage(null);
     setAnalysis(null);
     setConversion(null);
+    setParsed(null);
+    setRoles(null);
+    setParams(PRODUCTION_PARAMS);
+    setExample(defaultTown === DEMO_VENUE_TOWN);
     try {
       const result = await active.parse(text);
+      if (ticket !== generation.current) return;
       setParsed(result);
       setRoles(result.roles);
       setVenueTown(defaultTown);
       setAsOfIso("");
       setTiming({ parseMs: result.ms, modelMs: 0 });
+      if (result.roles.customer >= 0 && result.roles.date >= 0) {
+        const analysed = await active.analyse({ type: "analyse", roles: result.roles, asOfDay: null, venueTown: defaultTown || null, params: PRODUCTION_PARAMS });
+        if (ticket !== generation.current) return;
+        setConversion({ ignored: analysed.ignored, ambiguousDates: analysed.ambiguousDates });
+        if (analysed.used === 0) { setMessage(secondVisitCopy.refusals.badDates); }
+        else {
+          setAnalysis(analysed.analysis);
+          setTiming({ parseMs: result.ms, modelMs: analysed.ms });
+        }
+      }
     } catch (cause) {
+      if (ticket !== generation.current) return;
       const kind = cause && typeof cause === "object" && "kind" in cause ? String(cause.kind) : "failed";
-      setMessage(kind === "empty" ? secondVisitCopy.refusals.empty : secondVisitCopy.refusals.failed);
+      setMessage(kind === "empty" ? secondVisitCopy.refusals.empty : workbench.failed);
       void trackToolRun({ tool: "second-visit", outcome: "error", ms: 0 });
     } finally {
-      setBusy(false);
+      if (ticket === generation.current) setBusy(false);
     }
   }
 
   async function onFile(file: File | undefined) {
     if (!file) return;
+    const ticket = ++generation.current;
+    if (sliderTimer.current) clearTimeout(sliderTimer.current);
+    setAnalysis(null); setParsed(null); setRoles(null); setConversion(null); setMessage(null); setExample(false);
     if (file.size > MAX_BYTES) {
       setMessage(secondVisitCopy.refusals.tooBig);
+      setBusy(false);
       void trackToolRun({ tool: "second-visit", outcome: "refused", ms: 0 });
       return;
     }
     setBusy(true);
     try {
-      await read(await file.text(), "");
+      const text = await file.text();
+      if (ticket !== generation.current) return;
+      await read(text, "", ticket);
     } catch {
+      if (ticket !== generation.current) return;
       setMessage(secondVisitCopy.refusals.failed);
       setBusy(false);
       void trackToolRun({ tool: "second-visit", outcome: "error", ms: 0 });
@@ -137,6 +168,7 @@ export default function SecondVisitTool() {
   async function run(next: ModelParams) {
     const active = runner.current;
     if (!active || !roles) return;
+    const ticket = ++generation.current;
     if (roles.customer < 0) {
       setMessage(secondVisitCopy.refusals.noCustomer);
       void trackToolRun({ tool: "second-visit", outcome: "refused", ms: 0 });
@@ -157,8 +189,10 @@ export default function SecondVisitTool() {
         venueTown: venueTown === "" ? null : venueTown,
         params: next,
       });
+      if (ticket !== generation.current) return;
       setConversion({ ignored: result.ignored, ambiguousDates: result.ambiguousDates });
       if (result.used === 0) {
+        setAnalysis(null);
         setMessage(secondVisitCopy.refusals.badDates);
         void trackToolRun({ tool: "second-visit", outcome: "refused", ms: round100(result.ms) });
         return;
@@ -167,22 +201,39 @@ export default function SecondVisitTool() {
       setTiming((current) => ({ ...current, modelMs: result.ms }));
       void trackToolRun({ tool: "second-visit", outcome: "ok", ms: round100(result.ms) });
     } catch {
-      setMessage(secondVisitCopy.refusals.failed);
+      if (ticket !== generation.current) return;
+      setAnalysis(null);
+      setMessage(workbench.failed);
       void trackToolRun({ tool: "second-visit", outcome: "error", ms: 0 });
     } finally {
-      setBusy(false);
+      if (ticket === generation.current) setBusy(false);
     }
   }
 
   function moveSlider(key: keyof ModelParams, value: number) {
     const next = { ...params, [key]: value };
     setParams(next);
-    void run(next);
+    setBusy(true);
+    if (sliderTimer.current) clearTimeout(sliderTimer.current);
+    sliderTimer.current = setTimeout(() => void run(next), 200);
   }
 
-  const horizon = analysis?.secondVisit.horizons.find((h) => !h.beyondFile && h.defined)
+  function invalidate() {
+    generation.current++;
+    if (sliderTimer.current) clearTimeout(sliderTimer.current);
+    setAnalysis(null); setConversion(null); setBusy(false);
+  }
+
+  function download(name: string, body: string, type: string) {
+    try { save(name, body, type); }
+    catch { setMessage(workbench.downloadFailed); }
+  }
+
+  const horizon = analysis?.secondVisit.horizons.find((h) => h.day === horizonDay && !h.beyondFile && h.defined)
+    ?? analysis?.secondVisit.horizons.find((h) => !h.beyondFile && h.defined)
     ?? analysis?.secondVisit.horizons[0];
   const percent = (value: number) => `${(value * 100).toFixed(1)}%`;
+  const chartEnd = analysis?.secondVisit.curve.reduce((max, point) => Math.max(max, point.day), 1) ?? 1;
 
   return (
     <div className="sv" aria-busy={busy}>
@@ -196,7 +247,7 @@ export default function SecondVisitTool() {
           aria-label={secondVisitCopy.steps.file.button}
           onChange={(event) => void onFile(event.target.files?.[0])}
         />
-        <button className="sv__button" type="button" onClick={() => void read(demoCsv(), DEMO_VENUE_TOWN)}>
+        <button className="sv__button sv__primary" type="button" disabled={busy} onClick={() => void read(demoCsv(), DEMO_VENUE_TOWN)}>
           {secondVisitCopy.steps.file.demo}
         </button>
         <p className="sv__hint">{secondVisitCopy.steps.file.demoNote}</p>
@@ -204,6 +255,8 @@ export default function SecondVisitTool() {
         {busy ? <p className="sv__hint" role="status">{secondVisitCopy.labels.working}</p> : null}
       </section>
 
+      {parsed && roles ? <details className="bench-details sv__setup" open={!analysis}>
+      <summary>{workbench.setup}</summary>
       {parsed && roles ? (
         <section className="sv__step">
           <h2>{secondVisitCopy.steps.columns.title}</h2>
@@ -218,26 +271,32 @@ export default function SecondVisitTool() {
           ) : null}
           {(["customer", "date"] as const).map((role) => (
             <label className="sv__label" key={role}>
-              {role}
+              {workbench.mappings[role]}
               <select
                 className="sv__select"
+                aria-label={workbench.mappings[role]}
                 value={roles[role]}
-                onChange={(event) => setRoles({ ...roles, [role]: Number(event.target.value) })}
+                onChange={(event) => { invalidate(); setRoles({ ...roles, [role]: Number(event.target.value) }); }}
               >
+                <option value={-1}>{workbench.chooseColumn}</option>
                 {parsed.header.map((name, index) => (
                   <option key={`${name}-${index}`} value={index}>{name}</option>
                 ))}
               </select>
             </label>
           ))}
+          <details className="bench-details"><summary>{workbench.optional}</summary>
+          <div className="bench-columns">
           {OPTIONAL_ROLES.map((role) => (
             <label className="sv__label" key={role}>
-              {role}
+              {workbench.mappings[role]}
               <select
                 className="sv__select"
+                aria-label={workbench.mappings[role]}
                 value={roles[role] ?? -1}
                 onChange={(event) => {
                   const index = Number(event.target.value);
+                  invalidate();
                   setRoles({ ...roles, [role]: index < 0 ? null : index });
                 }}
               >
@@ -248,6 +307,7 @@ export default function SecondVisitTool() {
               </select>
             </label>
           ))}
+          </div></details>
         </section>
       ) : null}
 
@@ -256,7 +316,7 @@ export default function SecondVisitTool() {
           <h2>{secondVisitCopy.steps.where.title}</h2>
           <label className="sv__label">
             {secondVisitCopy.steps.where.townLabel}
-            <select className="sv__select" value={venueTown} onChange={(event) => setVenueTown(event.target.value)}>
+            <select className="sv__select" value={venueTown} onChange={(event) => { invalidate(); setVenueTown(event.target.value); }}>
               <option value="">{secondVisitCopy.labels.unknownTown}</option>
               {towns.map((town) => (
                 <option key={town.name} value={town.name}>{town.name}</option>
@@ -266,7 +326,7 @@ export default function SecondVisitTool() {
           <p className="sv__hint">{secondVisitCopy.steps.where.townHint} {TOWNS_ATTRIBUTION}</p>
           <label className="sv__label">
             {secondVisitCopy.steps.where.asOfLabel}
-            <input className="sv__input" type="date" value={asOfIso} onChange={(event) => setAsOfIso(event.target.value)} />
+            <input className="sv__input" type="date" value={asOfIso} onChange={(event) => { invalidate(); setAsOfIso(event.target.value); }} />
           </label>
           <p className="sv__hint">{secondVisitCopy.steps.where.asOfHint}</p>
           <button className="sv__button" type="button" disabled={busy} onClick={() => void run(params)}>
@@ -274,10 +334,20 @@ export default function SecondVisitTool() {
           </button>
         </section>
       ) : null}
+      </details> : null}
 
       {analysis && horizon ? (
         <section className="sv__results">
+          <p className="bench-subline">{example ? workbench.example : workbench.results}</p>
+          <dl className="bench-metrics">
+            <div><dt>{workbench.customers}</dt><dd>{analysis.counts.customers.toLocaleString("en-IE")}</dd></div>
+            <div><dt>{workbench.visits}</dt><dd>{analysis.counts.attended.toLocaleString("en-IE")}</dd></div>
+            <div><dt>{workbench.returned}</dt><dd>{analysis.secondVisit.events.toLocaleString("en-IE")}</dd></div>
+          </dl>
           <h2>{secondVisitCopy.headline.title}</h2>
+          <div className="bench-actions" role="group" aria-label={workbench.horizon}>
+            {analysis.secondVisit.horizons.map(h => <button key={h.day} type="button" className="bench-button" disabled={h.beyondFile || !h.defined} aria-pressed={h.day === horizon.day} onClick={() => setHorizonDay(h.day)}>{h.day} {workbench.days}</button>)}
+          </div>
           {analysis.secondVisit.enough ? (
             <>
               <p className="sv__big">{percent(horizon.estimate)}</p>
@@ -293,9 +363,16 @@ export default function SecondVisitTool() {
                   ? secondVisitCopy.headline.medianNotReached
                   : analysis.secondVisit.medianDays}
               </p>
-              <svg className="sv__chart" viewBox="0 0 640 200" role="img" aria-label={secondVisitCopy.headline.kmLabel}>
-                <path d={stepPath(analysis.secondVisit.curve, 640, 200)} fill="none" stroke="currentColor" strokeWidth="2" />
-              </svg>
+              <div className="sv__chart-frame">
+                <div className="sv__axis-y"><span>100%</span><span>50%</span><span>0%</span></div>
+                <svg className="sv__chart" viewBox="0 0 640 200" role="img" aria-label={secondVisitCopy.headline.kmLabel}>
+                  {[0, .5, 1].map(v => <path key={v} className="sv__gridline" d={`M0 ${200 - v * 200}H640`} />)}
+                  <path d={stepPath(analysis.secondVisit.curve, 640, 200)} fill="none" stroke="currentColor" strokeWidth="2" />
+                  <path d={`M${Math.min(640, horizon.day / chartEnd * 640)} 0V200`} className="sv__horizon" />
+                </svg>
+                <div className="sv__axis-x"><span>0</span><span>{Math.round(chartEnd / 2)}</span><span>{chartEnd}</span></div>
+                <p className="sv__axis-title">{workbench.chartDays}</p>
+              </div>
             </>
           ) : (
             <p>{secondVisitCopy.refusals.tooFew}</p>
@@ -310,7 +387,17 @@ export default function SecondVisitTool() {
             <p className="sv__hint" key={line}>{line}</p>
           ))}
 
-          <h3>{secondVisitCopy.slots.title}</h3>
+          <h3>{workbench.groups}</h3>
+          <p className="sv__hint">{workbench.groupNote}</p>
+          <dl className="sv__groups">
+            {analysis.verdicts.filter(group => group.count > 0).map(group => <div key={group.lifecycle}>
+              <dt>{secondVisitCopy.verdicts[group.lifecycle].label}<span className="sv__hint">{secondVisitCopy.verdicts[group.lifecycle].note}</span></dt>
+              <dd>{group.count}</dd>
+              <span className="sv__group-bar" aria-hidden="true" style={{ width: `${100 * group.count / Math.max(1, analysis.counts.customers)}%` }} />
+            </div>)}
+          </dl>
+
+          <details className="bench-details"><summary>{secondVisitCopy.slots.title}</summary>
           {analysis.slots.length === 0 ? (
             <p>{secondVisitCopy.slots.missing}</p>
           ) : (
@@ -337,7 +424,8 @@ export default function SecondVisitTool() {
             </>
           )}
 
-          <h3>{secondVisitCopy.products.title}</h3>
+          </details>
+          <details className="bench-details"><summary>{secondVisitCopy.products.title}</summary>
           {analysis.products.length === 0 ? (
             <p>{secondVisitCopy.products.missing}</p>
           ) : (
@@ -363,7 +451,8 @@ export default function SecondVisitTool() {
             </table>
           )}
 
-          <h3>{secondVisitCopy.sliders.title}</h3>
+          </details>
+          <details className="bench-details"><summary>{workbench.settings}</summary>
           {SLIDERS.map((slider) => (
             <label className="sv__label" key={slider.key}>
               {slider.label} ({params[slider.key]})
@@ -381,11 +470,12 @@ export default function SecondVisitTool() {
           <button className="sv__button" type="button" onClick={() => { setParams(PRODUCTION_PARAMS); void run(PRODUCTION_PARAMS); }}>
             {secondVisitCopy.sliders.reset}
           </button>
+          </details>
 
-          <h3>{secondVisitCopy.exports.lapsed.name}</h3>
+          <h3>{workbench.actions}</h3>
           {exportFiles(analysis).map((file) => (
             <p key={file.file}>
-              <button className="sv__button" type="button" onClick={() => save(file.file, file.csv, "text/csv;charset=utf-8")}>
+              <button className="sv__button" type="button" disabled={busy} onClick={() => download(file.file, file.csv, "text/csv;charset=utf-8")}>
                 {file.name}
               </button>
               <span className="sv__hint">{file.note}</span>
@@ -394,7 +484,8 @@ export default function SecondVisitTool() {
           <button
             className="sv__button"
             type="button"
-            onClick={() => save(secondVisitCopy.report.file, reportHtml(analysis), "text/html;charset=utf-8")}
+            disabled={busy}
+            onClick={() => download(secondVisitCopy.report.file, reportHtml(analysis), "text/html;charset=utf-8")}
           >
             {secondVisitCopy.report.button}
           </button>
@@ -405,9 +496,11 @@ export default function SecondVisitTool() {
 
       <section className="sv__honesty">
         <h2>{secondVisitCopy.honesty.title}</h2>
+        <details className="bench-details"><summary>{workbench.settings}</summary>
         {secondVisitCopy.honesty.body.map((line) => (
           <p key={line}>{line}</p>
         ))}
+        </details>
         {TIGH_CREDIT ? (
           <p>
             {TIGH_CREDIT.line}{" "}

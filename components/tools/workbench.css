@@ -1,0 +1,81 @@
+/* Shared tools furniture. The shell, its shaders and its settings remain its own. */
+.tool-workbench, .tools-workbench { gap: 24px; text-shadow: none; }
+.tool-workbench > .prompt, .tools-workbench > .prompt { margin: 0; }
+.tool-workbench .page__title { margin: 0; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; }
+.tool-workbench .page__lede { margin: 0; max-width: 72ch; }
+.bench-back { display: inline-flex; min-height: 44px; align-items: center; color: var(--green); width: fit-content; gap: 12px; font-size: .85rem; }
+.bench-back::before { content: "\2190"; }
+.bench-heading { display: grid; gap: 14px; }
+.bench-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px; padding: 28px 0; border-bottom: 1px solid var(--green-line); }
+.bench-intro h1 { font-family: var(--font-screen); color: var(--green-bright); font-size: clamp(2.7rem, 6vw, 4.8rem); max-width: 17ch; line-height: 1; margin: 0 0 22px; }
+.bench-intro h1 { max-width: 23ch; }
+.bench-intro p { max-width: 60ch; margin: 8px 0 0; }
+.bench-intro__count { font-family: var(--font-screen); font-size: 7rem; color: var(--amber); line-height: 1; }
+.bench-subline { color: var(--amber); font-size: .85rem; }
+.bench-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; list-style: none; padding: 0; margin: 0; }
+.bench-card { min-width: 0; background: var(--bg-panel); border: 1px solid var(--green-line); position: relative; }
+.bench-card:last-child { grid-column: 1 / -1; }
+.bench-card__link { display: grid; height: 100%; text-decoration: none; color: var(--green); padding: 24px; gap: 14px; }
+.bench-card__link:hover, .bench-card__link:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; background: var(--bg-panel-2); }
+.bench-card__top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.bench-card h2 { color: var(--green-bright); font-family: var(--font-screen); font-size: 1.85rem; margin: 0; }
+.bench-card p { margin: 0; }
+.bench-card__purpose { font-size: 1.04rem; color: var(--amber); }
+.bench-card__category, .bench-card__input { font-size: .78rem; color: var(--green); }
+.bench-card__open { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--green-line); padding-top: 16px; color: var(--amber); }
+.bench-card__open::after { content: "\2197"; font-size: 1.3rem; }
+.bench-preview { display: block; width: 100%; height: 135px; stroke: var(--green); stroke-width: 1.6; background: var(--bg); }
+.bench-preview__grid { stroke: var(--green-line); stroke-width: .5; }
+.bench-preview__secondary { stroke: var(--amber); }
+.tool-workbench > .tool__privacy { margin: 0; padding: 12px 16px; border-left: 2px solid var(--green); background: var(--bg-panel); font-size: .8rem; max-width: none; }
+.tool-workbench > .tool__privacynote { margin: -12px 0 0; font-size: .8rem; }
+.bench-surface { padding: clamp(16px, 3vw, 32px); background: var(--bg-panel); border: 1px solid var(--green-line); min-width: 0; }
+.bench-surface > :first-child { margin-top: 0; max-width: none; }
+.bench-surface :is(input, textarea, select, button) { font-size: 16px; max-width: 100%; }
+.bench-surface :is(button, select, input:not([type="hidden"]), summary) { min-height: 44px; }
+.bench-surface button { touch-action: manipulation; }
+.bench-surface :is(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+.bench-surface textarea { resize: vertical; }
+.bench-surface button:disabled { cursor: not-allowed; }
+.bench-details { margin-top: 20px; border-top: 1px solid var(--green-line); padding-top: 12px; }
+.bench-details > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--amber); gap: 12px; }
+.bench-details > summary::before { content: "+"; }
+.bench-details[open] > summary::before { content: "\2212"; }
+.bench-details > summary::-webkit-details-marker { display: none; }
+/* Closed details can still expose descendant geometry through the browser's
+   content-visibility implementation. Give closed panels ordinary hidden layout
+   as well, so layout measurements and assistive visibility agree. */
+.bench-details:not([open]) > :not(summary),
+.bench-privacy-details:not([open]) > :not(summary) { display: none; }
+.bench-privacy-details { margin-top: -16px; font-size: .8rem; }
+.bench-privacy-details summary { cursor: pointer; color: var(--green); min-height: 44px; display: flex; align-items: center; }
+.bench-privacy-details summary::after { content: " +"; margin-left: 8px; }
+.bench-privacy-details p { margin: 0; max-width: 75ch; }
+.bench-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 16px 0; }
+.bench-button { min-height: 44px; border: 1px solid var(--green-line); padding: 10px 16px; background: var(--bg); color: var(--green-bright); font: inherit; cursor: pointer; }
+.bench-button:hover, .bench-button[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); }
+.bench-button--primary { background: var(--amber); border-color: var(--amber); color: var(--bg); }
+.bench-button--primary:hover { background: var(--green-bright); color: var(--bg); border-color: var(--green-bright); }
+.bench-input { width: 100%; min-height: 44px; background: var(--bg); border: 1px solid var(--green-line); color: var(--green-bright); padding: 12px; font: inherit; }
+.bench-label { display: flex; align-items: center; min-height: 44px; color: var(--green-bright); }
+.bench-note { font-size: .82rem; color: var(--green); line-height: 1.6; }
+.bench-warning { color: var(--amber); border-left: 2px solid var(--amber); padding: 12px 16px; background: var(--bg-panel-2); }
+.bench-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--green-line); margin: 24px 0; }
+.bench-metrics > div { padding: 18px; min-width: 0; }
+.bench-metrics dt { font-size: .8rem; color: var(--green); }
+.bench-metrics dd { font-family: var(--font-screen); font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.2; margin: 8px 0 0; color: var(--amber); }
+.bench-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.bench-columns > * { min-width: 0; }
+.tool-workbench .tool__cantsee { max-width: none; margin-top: 0; }
+.tool-workbench .tool__cantsee-title { margin: 0; }
+@media (max-width: 620px) {
+  .bench-grid, .bench-columns { grid-template-columns: minmax(0, 1fr); }
+  .bench-card:last-child { grid-column: auto; }
+  .bench-card__link { padding: 20px; }
+  .bench-intro { grid-template-columns: minmax(0, 1fr); padding-top: 12px; }
+  .bench-intro__count { display: none; }
+  .bench-metrics > div { padding: 12px 8px; }
+  .bench-metrics dt { font-size: .72rem; overflow-wrap: anywhere; }
+  .bench-surface { padding: 16px; }
+  .bench-actions > button { flex: 1 1 auto; }
+}

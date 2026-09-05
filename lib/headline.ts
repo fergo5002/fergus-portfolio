@@ -155,8 +155,11 @@ type HNode = TextNode | ElementNode;
  * One tag. The attribute group steps over quoted values so a `>` inside an
  * attribute (`data-sel="a > b"`) does not end the tag early, which it did in the
  * first version of this and quietly truncated the heading.
+ * The alternatives must be disjoint: letting the plain branch consume quotes
+ * makes an unfinished tag backtrack exponentially. The name boundary likewise
+ * stops a long unfinished name being retried as every possible name/attribute split.
  */
-const TAG = /<(\/?)([a-zA-Z][a-zA-Z0-9:-]*)((?:"[^"]*"|'[^']*'|[^>])*)>/y;
+const TAG = /<(\/?)([a-zA-Z][a-zA-Z0-9:-]*)(?=[\s/>])((?:"[^"]*"|'[^']*'|[^>"'])*)>/y;
 
 /**
  * Parses a fragment into a shallow tree.
@@ -243,39 +246,50 @@ function nonInlineDisplay(node: ElementNode): boolean {
   return m ? m[1].toLowerCase() !== "inline" : false;
 }
 
-function render(nodes: HNode[], crawler: boolean): string {
-  const singles = nodes.filter((n) => n.kind === "element" && isCharacterElement(n)).length;
-  const split = singles >= CHARACTER_ELEMENT_FLOOR;
+type Reading = { browser: string; crawler: string; characters: number; single: boolean };
 
-  let out = "";
-  for (const node of nodes) {
-    if (node.kind === "text") {
-      out += node.text;
-      continue;
-    }
-    const inner = render(node.children, crawler);
-    const boundary =
-      breaksForEveryone(node) ||
-      (crawler && (nonInlineDisplay(node) || (split && isCharacterElement(node))));
-    out += boundary ? ` ${inner} ` : inner;
-  }
-  return out;
-}
-
-/** An element whose entire visible content is one non-space character. */
-function isCharacterElement(node: ElementNode): boolean {
-  return normalise(render(node.children, false)).length === 1;
-}
-
-/** Every character element in the subtree, however deeply it is wrapped. */
-function countCharacterElements(nodes: HNode[]): number {
-  let n = 0;
-  for (const node of nodes) {
+/**
+ * Read each element once, from its leaves upwards. Re-rendering a child's text
+ * to decide whether it is one character used to recurse exponentially through
+ * nested spans. An explicit stack also accepts deep markup without consuming
+ * the JavaScript call stack, including in the live browser editor.
+ */
+function readTree(nodes: HNode[]): Reading {
+  const readings = new Map<ElementNode, Reading>();
+  const order: ElementNode[] = [];
+  const pending = [...nodes];
+  while (pending.length) {
+    const node = pending.pop()!;
     if (node.kind !== "element") continue;
-    if (isCharacterElement(node)) n++;
-    n += countCharacterElements(node.children);
+    order.push(node);
+    for (const child of node.children) pending.push(child);
   }
-  return n;
+
+  function combine(children: HNode[]): Reading {
+    const singles = children.filter((n) => n.kind === "element" && readings.get(n)!.single).length;
+    const split = singles >= CHARACTER_ELEMENT_FLOOR;
+    const browser: string[] = [];
+    const crawler: string[] = [];
+    let characters = 0;
+    for (const node of children) {
+      if (node.kind === "text") {
+        browser.push(node.text);
+        crawler.push(node.text);
+        continue;
+      }
+      const inner = readings.get(node)!;
+      const boundary = breaksForEveryone(node);
+      const crawlerBoundary = boundary || nonInlineDisplay(node) || (split && inner.single);
+      browser.push(boundary ? ` ${inner.browser} ` : inner.browser);
+      crawler.push(crawlerBoundary ? ` ${inner.crawler} ` : inner.crawler);
+      characters += inner.characters + Number(inner.single);
+    }
+    const visible = browser.join("");
+    return { browser: visible, crawler: crawler.join(""), characters, single: normalise(visible).length === 1 };
+  }
+
+  for (let i = order.length - 1; i >= 0; i--) readings.set(order[i], combine(order[i].children));
+  return combine(nodes);
 }
 
 /**
@@ -295,7 +309,7 @@ function strip(html: string): string {
 
 /** The inner HTML of the first heading at this rank, or null if there is none. */
 function headingInner(source: string, level: number): string | null {
-  const open = new RegExp(`<h${level}(?:\\s(?:"[^"]*"|'[^']*'|[^>])*)?>`, "i");
+  const open = new RegExp(`<h${level}(?:\\s(?:"[^"]*"|'[^']*'|[^>"'])*)?>`, "i");
   const found = open.exec(source);
   if (!found) return null;
 
@@ -327,13 +341,14 @@ export function extractHeading(html: string): Heading | null {
     const inner = headingInner(source, level);
     if (inner === null) continue;
     const nodes = parse(inner);
+    const reading = readTree(nodes);
     return {
       tag: `h${level}`,
       level,
-      browserText: normalise(render(nodes, false)),
-      crawlerText: normalise(render(nodes, true)),
+      browserText: normalise(reading.browser),
+      crawlerText: normalise(reading.crawler),
       childElements: nodes.filter((n) => n.kind === "element").length,
-      characterElements: countCharacterElements(nodes),
+      characterElements: reading.characters,
     };
   }
 

@@ -1,11 +1,7 @@
-# Three jobs. `check` is the gate every pull request waits on: types, tests,
-# build. `mutation` runs scripts/mutation-check.mjs, which breaks each guard
-# on purpose and reruns the suite once per mutation (75 at the time of
-# writing; count them with `grep -c '^\s*name: "' scripts/mutation-check.mjs`
-# rather than trusting this comment), so it gets its own job and its own
-# timeout rather than slowing the gate. `phone` builds the site, serves it,
-# proves the phone check can fail on its own fixtures, and then runs it on
-# every live tool route the sitemap lists.
+# Three release gates. `check` covers types, tests and the production build.
+# `mutation` requires every part of the catalogue to pass in separate checkouts.
+# `phone` proves its instrument can fail, then checks the tools and arcade
+# layouts, actual workflows, downloads and local multiplayer connections.
 #
 # The build needs no secrets. NEXT_PUBLIC_POSTHOG_KEY absent compiles
 # analytics to a no-op (see lib/analytics.ts), and RESEND_API_KEY is read at
@@ -111,6 +107,13 @@ jobs:
         run: node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap --out .phone-check
       - name: phone check through the hidden arcade door
         run: node scripts/arcade-phone-check.mjs --base http://localhost:3000 --out .phone-check/arcade
+      - name: tools workflows on desktop and phones
+        run: |
+          node scripts/tools-check.mjs --base http://localhost:3000
+          node scripts/tools-check.mjs --base http://localhost:3000 --engine webkit --width 390
+          node scripts/tools-check.mjs --base http://localhost:3000 --engine webkit --width 320
+      - name: Overlap through two actual peer connections
+        run: node scripts/overlap-peer-check.mjs http://localhost:3000
       - name: two-browser arcade multiplayer
         run: node scripts/arcade-multiplayer-check.mjs
         env:

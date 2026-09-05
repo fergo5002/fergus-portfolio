@@ -42,6 +42,24 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 /** Each: break one guard, expect the suite to notice. */
 const MUTATIONS = [
   {
+    name: "Drift accepts more sample pieces than the browser workbench can safely analyse",
+    file: "lib/tools/drift/readiness.ts",
+    pattern: / && pieces\.length <= 50/,
+    replace: "",
+  },
+  {
+    name: "the headline fix duplicates the words it was meant to preserve",
+    file: "app/tools/headline-check/state.ts",
+    pattern: /return `<h1>\$\{text\}<\/h1>`;/,
+    replace: "return `<h1>${text}${text}</h1>`;",
+  },
+  {
+    name: "Second Visit ignores a failed worker and leaves the visitor waiting",
+    file: "app/tools/second-visit/run-client.ts",
+    pattern: /worker\.addEventListener\("error", onError\);/,
+    replace: "// worker error listener removed by mutation",
+  },
+  {
     name: "arcade rebuild: caches an old board after a successful score post",
     file: "app/api/board/route.ts",
     pattern: /"cache-control": "no-store"/,

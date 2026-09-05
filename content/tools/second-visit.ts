@@ -35,7 +35,7 @@ export const secondVisitCopy = {
       hint: "A CSV from your booking system, your till or your shop. One row per booking or order. Your file never leaves this tab.",
       button: "Choose a file",
       demo: "Or try it on a made-up sauna",
-      demoNote: "A generated file, 180 customers over two years. Nothing in it is a real person.",
+      demoNote: "A generated file covering two years. Nothing in it is a real person.",
     },
     columns: {
       title: "2. Which column is which",

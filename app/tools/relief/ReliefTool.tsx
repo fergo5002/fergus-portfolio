@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useSystem } from "@/components/system/SystemProvider";
 import { reliefCopy } from "@/content/tools/relief";
+import { reliefWorkbenchCopy as workbench } from "@/content/tool-workbench";
 import { contourLayers } from "@/lib/tools/relief/contour";
 import {
   type CsvTable,
@@ -123,6 +124,12 @@ export default function ReliefTool() {
   const [table, setTable] = useState<CsvTable | null>(null);
   const [column, setColumn] = useState(-1);
   const [width, setWidth] = useState(720);
+  const [plateSource, setPlateSource] = useState<PlateSource>("demo");
+  const [exportReady, setExportReady] = useState(true);
+  const [selectedWeek, setSelectedWeek] = useState(26);
+  const [selectedHour, setSelectedHour] = useState(12);
+  const fileVersion = useRef(0);
+  const demoVersion = useRef(20260903);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -157,7 +164,7 @@ export default function ReliefTool() {
     if (!canvas) return;
 
     const context = canvas.getContext("2d");
-    if (!context) return;
+    if (!context) { setNote(reliefCopy.errors.paint); setExportReady(false); return; }
 
     // One computed-style read for both the colours and the face. Two would be
     // two layout reads in one paint for no gain.
@@ -165,6 +172,7 @@ export default function ReliefTool() {
     const palette = safePalette(style);
     if (!palette) {
       setNote(reliefCopy.errors.paint);
+      setExportReady(false);
       return;
     }
 
@@ -189,6 +197,7 @@ export default function ReliefTool() {
   function accept(next: ReliefEvent[], warning?: string): boolean {
     const density = checkDensity(next);
     if (!density.ok) {
+      setExportReady(false);
       setNote(
         warning
           ? `${warning} ${reliefCopy.refusal[density.reason]}`
@@ -197,6 +206,7 @@ export default function ReliefTool() {
       return false;
     }
     setEvents(next);
+    setExportReady(true);
     return true;
   }
 
@@ -206,6 +216,7 @@ export default function ReliefTool() {
     const controller = new AbortController();
     runRef.current = controller;
     setBusy(true);
+    setExportReady(false);
     // `WINDOWS`, not a literal 13, so the line cannot drift from the loop.
     setNote(fill(reliefCopy.drawing, { done: 0, total: WINDOWS, commits: 0 }));
 
@@ -225,6 +236,7 @@ export default function ReliefTool() {
       const ok = accept(found, truncated ? reliefCopy.truncated : undefined);
       if (ok) {
         setSource("github");
+        setPlateSource("github");
         setNote(
           truncated
             ? reliefCopy.truncated
@@ -252,7 +264,9 @@ export default function ReliefTool() {
 
   async function onFile(chosen: File | undefined) {
     if (!chosen) return;
+    const version = ++fileVersion.current;
     setSource("csv");
+    setExportReady(false);
     if (!csvFileAllowed(chosen.size)) {
       setTable(null);
       setColumn(-1);
@@ -266,6 +280,7 @@ export default function ReliefTool() {
       setNote(reliefCopy.errors.csvRead);
       return;
     }
+    if (version !== fileVersion.current) return;
     const parsed = parseCsv(text);
     const guess = dateColumnGuess(parsed.headers, parsed.rows);
     setTable(parsed);
@@ -282,11 +297,13 @@ export default function ReliefTool() {
   }
 
   function readColumn(rows: string[][], index: number, capped = false) {
+    setExportReady(false);
     const started = Date.now();
     const reading = eventsFromCsv(rows, index);
     const warning = capped ? reliefCopy.csvCapped : undefined;
     const ok = accept(reading.events, warning);
     if (ok) {
+      setPlateSource("csv");
       const result = fill(reliefCopy.csvRead, { read: reading.read, skipped: reading.skipped });
       setNote(warning ? `${warning} ${result}` : result);
     }
@@ -294,7 +311,11 @@ export default function ReliefTool() {
   }
 
   function onDemo() {
+    fileVersion.current++;
+    runRef.current?.abort();
     setSource("demo");
+    setPlateSource("demo");
+    setExportReady(true);
     setEvents(demoEvents());
     setNote(reliefCopy.demoCaption);
   }
@@ -312,8 +333,9 @@ export default function ReliefTool() {
   );
 
   async function onExport(kind: PlateKind) {
+    if (!exportReady || busy) { setNote(workbench.stale); return; }
     try {
-      const name = plateFilename(source, kind, new Date().toISOString());
+      const name = plateFilename(plateSource, kind, new Date().toISOString());
       audio.key();
       if (kind === "svg") {
         saveBlob(svgBlob(plotterSvg(layers)), name, saveEnv);
@@ -347,6 +369,7 @@ export default function ReliefTool() {
             type="button"
             className="relief__button"
             aria-pressed={source === key}
+            disabled={busy}
             onClick={() => (key === "demo" ? onDemo() : setSource(key))}
           >
             {reliefCopy.sources[key]}
@@ -437,6 +460,8 @@ export default function ReliefTool() {
       <p className="relief__note" role="status">
         {flat ? reliefCopy.refusal.flat : note}
       </p>
+      {!exportReady && <p className="bench-warning">{workbench.stale}</p>}
+      <p className="bench-subline">{workbench.source}: {reliefCopy.sources[plateSource]}</p>
 
       <div className="relief__frame" ref={frameRef}>
         <canvas
@@ -444,8 +469,30 @@ export default function ReliefTool() {
           className="relief__plate"
           role="img"
           aria-label={reliefCopy.plateAlt}
+          onPointerDown={event => {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const x = (event.clientX - rect.left) * geometry.width / rect.width;
+            const y = (event.clientY - rect.top) * geometry.height / rect.height;
+            setSelectedWeek(Math.max(1, Math.min(WEEKS, 1 + Math.round((x - geometry.padLeft) / geometry.plotWidth * (WEEKS - 1)))));
+            setSelectedHour(Math.max(0, Math.min(HOURS - 1, Math.round((y - geometry.padTop) / geometry.plotHeight * (HOURS - 1)))));
+          }}
         />
+        <span className="relief__crosshair" aria-hidden="true" style={{
+          left: `${100 * (geometry.padLeft + (selectedWeek - 1) / (WEEKS - 1) * geometry.plotWidth) / geometry.width}%`,
+          top: `${100 * (geometry.padTop + selectedHour / (HOURS - 1) * geometry.plotHeight) / geometry.height}%`,
+        }} />
       </div>
+
+      <section className="relief__explorer" aria-label={workbench.explore}>
+        <h2 className="relief__heading">{workbench.explore}</h2>
+        <p className="bench-note">{workbench.guide}</p>
+        <output className="relief__cell">{workbench.cell(selectedWeek, selectedHour, heightmap.counts[selectedHour][selectedWeek - 1])}</output>
+        <div className="bench-columns">
+          <label className="relief__explore-label">{workbench.week} {selectedWeek}<input type="range" min={1} max={WEEKS} value={selectedWeek} onChange={e => setSelectedWeek(Number(e.target.value))} /></label>
+          <label className="relief__explore-label">{workbench.hour} {selectedHour}:00<input type="range" min={0} max={HOURS - 1} value={selectedHour} onChange={e => setSelectedHour(Number(e.target.value))} /></label>
+        </div>
+        {source === "demo" && <button type="button" className="bench-button" onClick={() => { setEvents(demoEvents(++demoVersion.current)); setPlateSource("demo"); setExportReady(true); setNote(reliefCopy.demoCaption); }}>{workbench.newDemo}</button>}
+      </section>
 
       <h2 className="relief__heading">{reliefCopy.readout.heading}</h2>
       <dl className="relief__readout">
@@ -471,22 +518,24 @@ export default function ReliefTool() {
           <dd>{heightmap.ceiling}</dd>
         </div>
       </dl>
-      <p className="relief__hint">{reliefCopy.method}</p>
 
       <h2 className="relief__heading">{reliefCopy.exportsHeading}</h2>
       <div className="relief__actions">
-        <button type="button" className="relief__button" onClick={() => void onExport("png")}>
+        <button type="button" className="relief__button" disabled={!exportReady || busy} onClick={() => void onExport("png")}>
           {reliefCopy.downloads.png}
         </button>
-        <button type="button" className="relief__button" onClick={() => void onExport("svg")}>
+        <button type="button" className="relief__button" disabled={!exportReady || busy} onClick={() => void onExport("svg")}>
           {reliefCopy.downloads.svg}
         </button>
-        <button type="button" className="relief__button" onClick={() => void onExport("stl")}>
+        <button type="button" className="relief__button" disabled={!exportReady || busy} onClick={() => void onExport("stl")}>
           {reliefCopy.downloads.stl}
         </button>
       </div>
+      <details className="bench-details"><summary>{workbench.details}</summary>
+      <p className="relief__hint">{reliefCopy.method}</p>
       <p className="relief__hint">{reliefCopy.plotterNote}</p>
       <p className="relief__hint">{reliefCopy.stlNote}</p>
+      </details>
     </div>
   );
 }

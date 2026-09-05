@@ -5,6 +5,7 @@ import { profile } from "@/content/profile";
 import { headlineCheck as tool } from "@/content/tools/headline-check";
 import { OG_IMAGE, absolute, canonical, toolPath } from "@/lib/seo";
 import HeadlineForm from "./HeadlineForm";
+import HeadlineLab from "./HeadlineLab";
 import { ARTICLE_PATH } from "./state";
 import "./tool.css";
 
@@ -51,6 +52,7 @@ export default function HeadlineCheckPage() {
       talk="If this found something on your site, I'd genuinely like to know what it was."
     >
       <HeadlineForm />
+      <HeadlineLab />
 
       <section className="hcheck__why" aria-labelledby="why-this-matters">
         <h2 id="why-this-matters" className="cdirect__title">

@@ -247,3 +247,12 @@
     }
   }
 }
+.overlap-workbench { min-width: 0; }
+.overlap-workbench > .bench-actions:first-child { margin-top: 0; }
+.overlap-upload { border: 1px solid var(--green-line); padding: 16px; background: var(--bg); }
+.overlap-upload input { padding: 8px; }
+.overlap-local-list { list-style: none; padding: 0; margin: 0; }
+.overlap-local-list li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--green-line); overflow-wrap: anywhere; }
+.overlap-local-list li span { min-width: 0; }
+.overlap-empty { padding: 40px 16px; border: 1px dashed var(--green-line); color: var(--green); text-align: center; }
+@media (max-width: 620px) { .overlap-local-list li { flex-direction: column; gap: 4px; } }

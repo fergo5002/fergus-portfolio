@@ -163,3 +163,15 @@
     }
   }
 }
+.relief__frame { position: relative; border: 1px solid var(--green-line); background: var(--bg); }
+.relief__crosshair { position: absolute; width: 14px; height: 14px; transform: translate(-50%, -50%); border: 2px solid var(--amber); border-radius: 50%; pointer-events: none; }
+.relief__crosshair::after { content: ""; position: absolute; inset: 3px; background: var(--amber); border-radius: 50%; }
+.relief__explorer { padding: 20px; background: var(--bg); border: 1px solid var(--green-line); margin-top: 16px; }
+.relief__explore-label { display: grid; gap: 8px; font-size: .85rem; margin: 16px 0; }
+.relief__explore-label input { width: 100%; min-height: 44px; accent-color: var(--amber); }
+.relief__cell { color: var(--amber); font-family: var(--font-screen); font-size: 1.5rem; display: block; }
+.relief__readout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.relief__readout .relief__row { display: grid; align-content: start; gap: 8px; padding: 16px; border: 1px solid var(--green-line); }
+.relief__readout dd { font-family: var(--font-screen); font-size: 1.6rem; margin: 0; }
+.relief__hint { font-size: .84rem; line-height: 1.6; }
+@media (max-width: 620px) { .relief__readout { grid-template-columns: minmax(0, 1fr); } .relief__explorer { padding: 16px; } }

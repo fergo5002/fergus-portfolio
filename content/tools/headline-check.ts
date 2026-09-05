@@ -15,6 +15,7 @@ export const headlineCheck: ToolEntry = {
   blurb:
     "Paste a URL and see how its h1 comes out for something that reads HTML without running it. Catches split-text animations that turn a headline into loose letters.",
   privacy: "server",
+  privacyLine: "URL checks fetch the public page on the server. The HTML playground runs entirely in this browser; pasted source is never uploaded.",
   cantSee: [
     "Your stylesheet. It reads the served HTML and the style attributes in it, so a class that sets display:inline-block is invisible to it. One element per character is the signal that survives that.",
     "Anything JavaScript renders after load. If the heading arrives from a script, the served HTML has no h1 and that is what it reports.",

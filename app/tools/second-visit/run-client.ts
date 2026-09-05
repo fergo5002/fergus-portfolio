@@ -30,10 +30,13 @@ export type Runner = {
 
 function mainThreadRunner(): Runner {
   let sheet: ReturnType<typeof parseCsv> | null = null;
+  let disposed = false;
   return {
     where: "main",
     async parse(text) {
+      if (disposed) throw new Error("runner disposed");
       const started = Date.now();
+      sheet = null;
       sheet = parseCsv(text);
       return {
         type: "parsed",
@@ -47,6 +50,7 @@ function mainThreadRunner(): Runner {
       };
     },
     async analyse(request) {
+      if (disposed) throw new Error("runner disposed");
       const started = Date.now();
       if (!sheet) throw new Error("no file read yet");
       const read = toBookings(sheet, request.roles);
@@ -65,6 +69,7 @@ function mainThreadRunner(): Runner {
       };
     },
     dispose() {
+      disposed = true;
       sheet = null;
     },
   };
@@ -80,9 +85,10 @@ export function makeRunner(): Runner {
   }
 
   let nextId = 0;
+  let stopped: Error | null = null;
   const pending = new Map<
     number,
-    { expected: FromWorker["type"]; resolve: (value: FromWorker) => void; reject: (reason: Error) => void }
+    { expected: FromWorker["type"]; resolve: (value: FromWorker) => void; reject: (reason: Error) => void; timer: ReturnType<typeof setTimeout> }
   >();
 
   const onMessage = (event: MessageEvent<FromWorker>) => {
@@ -90,6 +96,7 @@ export function makeRunner(): Runner {
     const request = pending.get(event.data.id);
     if (!request) return;
     pending.delete(event.data.id);
+    clearTimeout(request.timer);
     if (event.data.type === "failed") {
       request.reject(Object.assign(new Error(event.data.message), { kind: event.data.kind }));
     }
@@ -98,15 +105,34 @@ export function makeRunner(): Runner {
   };
   worker.addEventListener("message", onMessage);
 
+  const stop = (error: Error) => {
+    stopped = error;
+    for (const request of pending.values()) {
+      clearTimeout(request.timer);
+      request.reject(error);
+    }
+    pending.clear();
+    worker.terminate();
+  };
+  const onError = (event: Event) => {
+    event.preventDefault();
+    stop(new Error("analysis worker failed; reload to retry"));
+  };
+  worker.addEventListener("error", onError);
+  worker.addEventListener("messageerror", onError);
+
   const send = <T extends FromWorker["type"]>(message: ToWorker, expected: T) =>
     new Promise<Extract<FromWorker, { type: T }>>((resolve, reject) => {
+      if (stopped) { reject(stopped); return; }
       const id = ++nextId;
       pending.set(id, {
         expected,
         resolve: (value) => resolve(value as Extract<FromWorker, { type: T }>),
         reject,
+        timer: setTimeout(() => stop(new Error("analysis worker timed out; reload to retry")), 60_000),
       });
-      worker.postMessage({ ...message, id });
+      try { worker.postMessage({ ...message, id }); }
+      catch { stop(new Error("analysis worker could not receive the file")); }
     });
 
   return {
@@ -115,9 +141,9 @@ export function makeRunner(): Runner {
     analyse: (request) => send(request, "analysed"),
     dispose: () => {
       worker.removeEventListener("message", onMessage);
-      for (const request of pending.values()) request.reject(new Error("runner disposed"));
-      pending.clear();
-      worker.terminate();
+      worker.removeEventListener("error", onError);
+      worker.removeEventListener("messageerror", onError);
+      stop(new Error("runner disposed"));
     },
   };
 }

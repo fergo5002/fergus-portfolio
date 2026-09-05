@@ -24,8 +24,8 @@ class FakeWorker {
     FakeWorker.latest = this;
   }
 
-  addEventListener(_type: string, listener: (event: MessageEvent) => void) {
-    this.listeners.add(listener);
+  addEventListener(type: string, listener: (event: MessageEvent) => void) {
+    if (type === "message") this.listeners.add(listener);
   }
 
   removeEventListener(_type: string, listener: (event: MessageEvent) => void) {

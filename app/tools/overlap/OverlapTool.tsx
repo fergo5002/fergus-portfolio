@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { overlapCopy } from "@/content/tools/overlap";
+import { localOverlapCopy } from "@/content/tool-workbench";
 import { trackToolRun } from "@/lib/tools/events";
 import {
   MIN_USABLE_ROWS,
@@ -66,10 +67,10 @@ const fill = (template: string, values: Record<string, string | number>): string
  */
 const round100 = (ms: number) => Math.round(ms / 100) * 100;
 
-export default function OverlapTool() {
+export default function OverlapTool({ roomsAvailable = false }: { roomsAvailable?: boolean }) {
   const [panel, setPanel] = useState<Panel>("demo");
   const [sameNetworkOnly, setSameNetworkOnly] = useState(false);
-  const [codesOff, setCodesOff] = useState(false);
+  const [codesOff, setCodesOff] = useState(!roomsAvailable);
   const [pasteOpen, setPasteOpen] = useState(false);
 
   const [demo, setDemo] = useState<ExchangeResult | null>(null);
@@ -455,11 +456,15 @@ export default function OverlapTool() {
 
   return (
     <div className="overlap">
+      <p className="bench-note">{localOverlapCopy.peerIntro}</p>
+      <details className="bench-details">
+      <summary>{localOverlapCopy.peerDetails}</summary>
       <p className="overlap__honesty">{overlapCopy.honesty.notPsi}</p>
       <p className="overlap__honesty">{overlapCopy.honesty.claim}</p>
       <p className="overlap__honesty">{overlapCopy.honesty.theyLearn}</p>
       <p className="overlap__honesty">{overlapCopy.honesty.relaySees}</p>
       <p className="overlap__honesty">{overlapCopy.honesty.storage}</p>
+      </details>
 
       <div className="overlap__panels" role="group" aria-label={overlapCopy.title}>
         <button
@@ -551,7 +556,7 @@ export default function OverlapTool() {
         </section>
       )}
 
-      <fieldset className="overlap__block" disabled={!ready}>
+      {panel === "file" ? <fieldset className="overlap__block" disabled={!ready}>
         <legend className="overlap__legend">{overlapCopy.connect.legend}</legend>
 
         <button
@@ -564,7 +569,7 @@ export default function OverlapTool() {
         </button>
         <p className="overlap__hint">{overlapCopy.honesty.stun}</p>
 
-        {codesOff ? null : (
+        {codesOff ? <p className="bench-warning">{overlapCopy.relay.unavailable}</p> : (
           <div className="overlap__row">
             <button type="button" className="overlap__button" onClick={create} disabled={busy}>
               {overlapCopy.connect.create}
@@ -625,7 +630,7 @@ export default function OverlapTool() {
             {overlapCopy.connect.pasteReply}
           </button>
         </details>
-      </fieldset>
+      </fieldset> : null}
 
       {note ? (
         <p className={`overlap__note overlap__note--${note.kind}`} role="status">
