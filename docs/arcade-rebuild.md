@@ -198,6 +198,13 @@ Revert-to-confirm for the scroll fix: `data-lenis-prevent` was taken off the roo
 and `scripts/arcade-scroll-check.mjs --expect-broken` read the room at 0px under the same five wheel
 ticks, then the source was restored. With the attribute the room moves 474px; without it, 0px.
 
+**Found live, after the merge.** Clicking through production by hand: after "start solo run", the first Space
+press went back to the gallery. The room's focus effect runs after the game has focused its own stage and
+moved focus onto the back button, so the launch key activated that. Every gate had passed because the
+desktop check focused the stage before pressing Space. Fixed by focusing the stage on the play screen,
+guarded in `arcade.test.ts`, and the visual check now presses Space with no prior focus and fails if the
+game screen is gone. Shipped as the follow-up PR.
+
 Limits: no physical phone, no two-network WebRTC pair, no real board post (the local build has no
 Blob token, so every board read "offline" and the BIOS line said so). The boards' online path is the
 release's unchanged code. Headless Chromium runs the tube in software, so nothing here is a frame-rate

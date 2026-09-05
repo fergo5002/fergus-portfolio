@@ -220,6 +220,11 @@ describe("the room sits inside the tube", () => {
     expect(room).toMatch(/classList\.remove\("arcade-open"\)/);
   });
 
+  it("puts focus on the stage when a game starts, never on the back button", () => {
+    // The first Space is the launch key. With the back button under focus it was "all cabinets".
+    expect(room).toMatch(/screen\.kind === "play" \? "\.arcade-stage"/);
+  });
+
   it("owns every key that reaches it, so the drawer sees neither Escape nor a backtick", () => {
     expect(room.match(/e\.stopPropagation\(\)/g) ?? []).toHaveLength(2);
     expect(room).toMatch(/e\.key === "Escape"/);

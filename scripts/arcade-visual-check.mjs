@@ -19,8 +19,17 @@ try {
   for (const id of ["bounce", "pong", "snake", "under", "signal", "poker"]) {
     await page.locator(`.arcade-cabinet[data-game=${id}]`).click();
     await page.getByRole("button", { name: /start solo run/i }).click();
-    await page.locator(".arcade-stage").focus();
+    // No explicit focus: the first Space after starting must reach the game, not a button.
+    // Pre-focusing the stage here hid a live bug where Space activated "all cabinets".
+    await page.locator(".arcade-canvas").waitFor();
+    // The assertion is that focus ENDS on the stage after start. Waiting for it (rather than
+    // pressing at once) closes the gap where Space could fire before either focus effect ran
+    // and pass for the wrong reason; on the old code this times out on the back button.
+    await page.waitForFunction(() => document.activeElement?.classList.contains("arcade-stage"), null, { timeout: 3000 })
+      .catch(() => { throw new Error(`${id}: focus did not land on the stage after start `); });
     await page.keyboard.press("Space");
+    await page.waitForTimeout(200);
+    if (!await page.locator(".arcade-play").count()) throw new Error(`${id}: the first Space after start left the game`);
     if (id === "under") for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowRight");
     if (id === "poker") { await page.keyboard.press("1"); await page.keyboard.press("Space"); await page.keyboard.press("Enter"); }
     if (["bounce", "signal"].includes(id)) { await page.keyboard.down("ArrowRight"); await page.waitForTimeout(250); await page.keyboard.up("ArrowRight"); }
