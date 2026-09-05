@@ -81,7 +81,7 @@ export default function CanvasGame({ cabinet, mode, seed, link, onBack, onReplay
       hudClock += dt;
       if (hudClock > 150 && hudRef.current) {
         hudClock = 0;
-        const detail = state.id === "pong" ? `GREEN ${state.points[0]} : ${state.points[1]} AMBER` : state.id === "poker" ? `${state.handName} · ${state.handPoints} PTS · TARGET ${state.bank}/${state.target} · ${state.redraws} REDRAWS` : state.id === "under" ? `DEPTH ${state.level} · HEALTH ${state.lives} · TURN ${state.turn} · ${state.hasKey ? "KEY SECURED" : "FIND THE KEY"}` : state.id === "snake" ? `LENGTH ${state.snake.length} · PHASE ${Math.floor(state.charge)}%` : `HULL ${state.lives} · CHARGE ${Math.floor(state.charge)}%`;
+        const detail = state.id === "pong" ? `GREEN ${state.points[0]} : ${state.points[1]} AMBER · POWER ${Math.floor(state.charge)}%${mode === "solo" ? "" : ` / ${Math.floor(state.charge2)}%`}` : state.id === "poker" ? `${state.handName} · ${state.handPoints} PTS · TARGET ${state.bank}/${state.target} · ${state.redraws} REDRAWS` : state.id === "under" ? `DEPTH ${state.level} · HEALTH ${state.lives} · TURN ${state.turn} · PULSE ${Math.floor(state.charge)}% · ${state.hasKey ? "KEY SECURED" : "FIND THE KEY"}` : state.id === "snake" ? mode === "solo" ? `LENGTH ${state.snake.length} · PHASE ${Math.floor(state.charge)}%` : `GREEN ${state.snake.length} / ${Math.floor(state.charge)}% · AMBER ${state.snake2.length} / ${Math.floor(state.charge2)}%` : `HULL ${state.lives} · CHARGE ${Math.floor(state.charge)}%`;
         hudRef.current.textContent = `${String(state.score).padStart(6, "0")} PTS  /  ${detail}`;
       }
       if (link?.host) {
