@@ -97,7 +97,7 @@ export const secondVisitWorkbenchCopy = {
   settings: "Adjust the model assumptions",
   setup: "Review the file and column mapping",
   results: "Your retention report",
-  example: "Example report from 180 invented customers",
+  example: "Example report from invented customers",
   horizon: "Return within",
   days: "days",
   chooseColumn: "Choose a column",

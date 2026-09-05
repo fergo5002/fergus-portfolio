@@ -85,7 +85,7 @@ export const reliefCopy = {
     heading: "What is on the sheet",
     events: "Events",
     occupied: "Hours with anything in them",
-    busiest: "Busiest hour",
+    busiest: "Highest smoothed peak",
     ceiling: "The top of the scale",
   },
   drawn: "Drawn. {events} events across {occupied} of the 1,248 hours in the year.",

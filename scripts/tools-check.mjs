@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import { chromium, webkit } from "playwright";
 import { mkdir, readFile } from "node:fs/promises";
+import { demoCsv } from "../lib/tools/second-visit/demo.ts";
 
 const args = process.argv.slice(2);
 const option = (key, fallback) => args.includes(key) ? args[args.indexOf(key) + 1] : fallback;
@@ -52,6 +53,8 @@ try {
   await page.locator("#headline-source").fill('<h1>WorkbenchFixture &amp; readable words</h1><script>window.__unsafeHeadline = true</script>');
   await page.waitForFunction(() => document.querySelector(".headline-lab .hcheck__string")?.textContent === "WorkbenchFixture & readable words");
   assert.equal(await page.evaluate(() => window.__unsafeHeadline), undefined);
+  await page.locator("#headline-source").fill(`<h1>${"<span>".repeat(6000)}WorkbenchFixture still readable${"</span>".repeat(6000)}</h1>`);
+  await page.waitForFunction(() => document.querySelector(".headline-lab__verdict")?.textContent === "Clean");
   await page.getByRole("button", { name: "Split-letter example", exact: true }).click();
   await page.waitForFunction(() => document.querySelector(".headline-lab__verdict")?.textContent === "Fragmented");
   await shot("headline");
@@ -119,6 +122,12 @@ try {
   }
   await shot("relief");
   await page.getByRole("button", { name: "CSV", exact: true }).click();
+  const dates = Array.from({ length: 400 }, (_, i) => new Date(Date.UTC(2024, 0, 1) + i * 19 * 3600_000).toISOString());
+  await page.getByLabel("CSV file", { exact: true }).setInputFiles(upload("dated-events.csv", "date,note\n" + dates.map(date => `${date},WorkbenchFixture`).join("\n")));
+  await page.waitForFunction(() => Array.from(document.querySelectorAll("button")).some(button => button.textContent?.trim() === "SVG in millimetres" && !button.disabled));
+  const csvPlate = await download(page.getByRole("button", { name: "SVG in millimetres", exact: true }));
+  assert.match(csvPlate.name, /csv/);
+  assert.match(csvPlate.bytes.toString(), /<svg/);
   await page.getByLabel("CSV file", { exact: true }).setInputFiles(upload("too-thin.csv", "date\n2026-08-01"));
   await page.getByText("No new landscape is ready.", { exact: false }).waitFor();
   assert.equal(await page.getByRole("button", { name: "PNG", exact: true }).isDisabled(), true);
@@ -138,6 +147,11 @@ try {
   await shot("second-visit");
   const html = await download(page.getByRole("button", { name: /report/i }).last());
   assert.match(html.bytes.toString(), /<!doctype html>/i);
+  const customerCount = await page.locator(".sv__results .bench-metrics dd").first().innerText();
+  const fileCsv = demoCsv().trimEnd().split("\n").map((line, i) => `${line},${i === 0 ? "note" : "WorkbenchFixture"}`).join("\n");
+  await page.getByLabel("Choose a file", { exact: true }).setInputFiles(upload("bookings.csv", fileCsv));
+  await page.getByText("Your retention report", { exact: true }).waitFor();
+  assert.equal(await page.locator(".sv__results .bench-metrics dd").first().innerText(), customerCount);
   await page.getByText("Review the file and column mapping", { exact: true }).click();
   await page.getByLabel("Visit or order date", { exact: true }).selectOption("-1");
   assert.equal(await page.locator(".sv__results").count(), 0);
