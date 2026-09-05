@@ -45,9 +45,13 @@ jobs:
         env:
           NEXT_PUBLIC_POSTHOG_KEY: ""
 
-  mutation:
+  mutation-cases:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,7 +59,19 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: node scripts/mutation-check.mjs
+      - run: node --test scripts/mutation-shards.test.mjs
+      - run: node scripts/mutation-check.mjs --shard ${{ matrix.shard }}/4
+
+  # Preserve the named gate. Every mutation runs, in separate checkouts, and a
+  # skipped, cancelled or failed shard can never produce a green release gate.
+  mutation:
+    runs-on: ubuntu-latest
+    needs: mutation-cases
+    if: ${{ always() }}
+    steps:
+      - run: test "$MUTATION_RESULT" = success
+        env:
+          MUTATION_RESULT: ${{ needs.mutation-cases.result }}
 
   phone:
     runs-on: ubuntu-latest
@@ -95,9 +111,18 @@ jobs:
         run: node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap --out .phone-check
       - name: phone check through the hidden arcade door
         run: node scripts/arcade-phone-check.mjs --base http://localhost:3000 --out .phone-check/arcade
+      - name: two-browser arcade multiplayer
+        run: node scripts/arcade-multiplayer-check.mjs
+        env:
+          ARCADE_BASE: http://localhost:3000
+      - name: arcade game over, replay, sound and forget
+        run: node scripts/arcade-flow-check.mjs
+        env:
+          ARCADE_BASE: http://localhost:3000
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: phone-check-screenshots
           path: .phone-check/
           if-no-files-found: ignore
+          include-hidden-files: true
