@@ -138,3 +138,22 @@ describe("Dead Signal", () => {
     pressGame(s, "action"); expect(s.charge).toBe(35);
   });
 });
+describe("where the last event happened", () => {
+  it("puts a brick hit inside the brick, so the tube can be lit where the ball struck", () => {
+    const s = createGame("bounce", 1);
+    pressGame(s, "action");
+    const brick = s.bricks[30];
+    s.ball.x = brick.x + 31; s.ball.y = brick.y + 40; s.ball.vx = 0; s.ball.vy = -600;
+    stepGame(s, 1 / 30, new Set());
+    expect(brick.hp).toBe(0);
+    expect(s.eventAt.x).toBeGreaterThanOrEqual(brick.x); expect(s.eventAt.x).toBeLessThanOrEqual(brick.x + 62);
+    expect(s.eventAt.y).toBeGreaterThanOrEqual(brick.y); expect(s.eventAt.y).toBeLessThanOrEqual(brick.y + 22);
+  });
+  it("puts an eaten signal at the food's place on the screen, in world pixels not grid cells", () => {
+    const s = createGame("snake", 1);
+    s.serve = 0; s.food = { x: 7, y: 8 }; s.queued = { x: 1, y: 0 };
+    for (let i = 0; i < 12 && s.score === 0; i++) stepGame(s, 0.15, new Set());
+    expect(s.score).toBe(50);
+    expect(s.eventAt.x).toBeGreaterThan(200); expect(s.eventAt.y).toBeGreaterThan(200);
+  });
+});

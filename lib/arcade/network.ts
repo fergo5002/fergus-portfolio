@@ -3,7 +3,7 @@ import type { Opened } from "@/lib/tools/overlap/webrtc";
 
 export type Link = { opened: Opened; host: boolean; game: GameId; close(): void };
 const KEYS = new Set(["p2up", "p2down", "p2left", "p2right", "p2action"]);
-const FIELDS = ["seed", "time", "score", "over", "won", "level", "lives", "combo", "charge", "event", "player", "rival", "ball", "points", "rally", "serve", "snake", "snake2", "direction", "direction2", "queued", "queued2", "food", "moveClock", "phase", "phase2", "charge2", "snakesAlive"] as const;
+const FIELDS = ["seed", "time", "score", "over", "won", "level", "lives", "combo", "charge", "event", "player", "rival", "ball", "points", "rally", "serve", "snake", "snake2", "direction", "direction2", "queued", "queued2", "food", "moveClock", "phase", "phase2", "charge2", "snakesAlive", "eventAt"] as const;
 export function snapshotFor(s: GameState) {
   const base = createGame(s.id, 0, "online");
   for (const k of FIELDS) Object.assign(base, { [k]: s[k] });

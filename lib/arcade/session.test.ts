@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  arcadeSession, INITIALS_KEY, loadInitials, markArcadeSeen, resetArcadeSession,
+  arcadeSession, INITIALS_KEY, loadInitials, markArcadeEntered, markArcadeSeen, rememberPosted, resetArcadeSession,
   saveInitials, setArcadeBoards,
 } from "@/lib/arcade/session";
 import { OWNED_PREFIX, isOwnedKey } from "@/lib/forget";
@@ -9,7 +9,7 @@ beforeEach(() => resetArcadeSession());
 
 describe("the session", () => {
   it("starts with the door unfound and no boards", () => {
-    expect(arcadeSession()).toEqual({ seen: false, boards: null });
+    expect(arcadeSession()).toEqual({ seen: false, entered: false, boards: null, lastPosted: null });
   });
 
   it("remembers that the door was opened", () => {
@@ -51,5 +51,28 @@ describe("the one key the arcade may write", () => {
   it("survives storage that throws, because private mode does", () => {
     expect(() => saveInitials({ setItem: () => { throw new Error("quota"); } }, "FOR")).not.toThrow();
     expect(loadInitials({ getItem: () => { throw new Error("blocked"); } })).toBeNull();
+  });
+});
+
+describe("the run the visitor just posted", () => {
+  it("is remembered for the tab so the table can light that row, and nowhere else", () => {
+    resetArcadeSession();
+    expect(arcadeSession().lastPosted).toBeNull();
+    rememberPosted({ game: "bounce", initials: "FOR", score: 1200 });
+    expect(arcadeSession().lastPosted).toEqual({ game: "bounce", initials: "FOR", score: 1200 });
+    resetArcadeSession();
+    expect(arcadeSession().lastPosted).toBeNull();
+  });
+});
+
+describe("the power-cycle", () => {
+  it("runs in full once per page lifetime: the Terminal marks the door seen before the room exists, so this is its own flag", () => {
+    resetArcadeSession();
+    markArcadeSeen();
+    expect(arcadeSession().seen).toBe(true);
+    expect(arcadeSession().entered).toBe(false);
+    markArcadeEntered();
+    markArcadeEntered();
+    expect(arcadeSession().entered).toBe(true);
   });
 });

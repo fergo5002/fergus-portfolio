@@ -1310,6 +1310,42 @@ const MUTATIONS = [
     pattern: /const topologyA = saddle > 0 \|\| \(saddle === 0 && k === 10\);/,
     replace: "const topologyA = k === 10;",
   },
+  // ── the room inside the tube (2026-09-05 overhaul) ──
+  {
+    name: "the arcade room loses data-lenis-prevent, so a stopped Lenis eats every wheel event",
+    file: "components/arcade/ArcadeExperience.tsx",
+    pattern: /data-lenis-prevent=""/,
+    replace: 'data-lenis-prevent-removed=""',
+    tests: "components/arcade/arcade.test.ts",
+  },
+  {
+    name: "the arcade room rises above the glass and stops being part of the machine",
+    file: "components/arcade/arcade.css",
+    pattern: /z-index: 8990;/,
+    replace: "z-index: 10000;",
+    tests: "components/arcade/arcade.test.ts",
+  },
+  {
+    name: "the attract screens keep simulating off screen and in a hidden tab",
+    file: "components/arcade/AttractScreen.tsx",
+    pattern: /if \(!visibleRef\.current \|\| !liveRef\.current\) return;/,
+    replace: ";",
+    tests: "components/arcade/arcade.test.ts",
+  },
+  {
+    name: "the entrance never powers the tube down, so the power-cycle is a fade",
+    file: "components/arcade/ArcadeEntrance.tsx",
+    pattern: /frame\.current\.bootTarget = 0;/,
+    replace: "frame.current.bootTarget = 1;",
+    tests: "components/arcade/arcade.test.ts",
+  },
+  {
+    name: "the renderer paints a colour of its own instead of the theme",
+    file: "lib/arcade/renderer.ts",
+    pattern: /c\.fillStyle = p\.bg;/,
+    replace: 'c.fillStyle = "#000";',
+    tests: "lib/arcade/renderer.test.ts",
+  },
 ];
 
 

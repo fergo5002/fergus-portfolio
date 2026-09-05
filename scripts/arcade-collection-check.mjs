@@ -22,7 +22,7 @@ for (const profile of [{ name: "webkit-390", engine: webkit, device: "iPhone 12"
     await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
     await page.locator(".statusbar__prompt").tap(); await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
     await page.locator(".arcade-room").waitFor();
-    await page.locator(".arcade-arrival").waitFor({ state: "hidden", timeout: 12000 });
+    await page.locator(".arcade-entrance").waitFor({ state: "hidden", timeout: 12000 });
     check(await page.locator(".arcade-cabinet").count() === 6, "The gallery must have six live cabinets");
     check(await page.locator(".arcade-room").evaluate(room => room.scrollTop === 0), "Focus skipped the arcade entrance heading");
     await page.screenshot({ path: resolve(out, `${profile.name}-gallery.png`) });
@@ -30,18 +30,18 @@ for (const profile of [{ name: "webkit-390", engine: webkit, device: "iPhone 12"
     for (const id of games) {
       await page.locator(`.arcade-cabinet[data-game=${id}]`).tap();
       const detail = await inspect(page); check(detail.overflow <= 0 && !detail.smallTargets.length && !detail.smallInputs.length, `${profile.name}/${id} detail: ${JSON.stringify(detail)}`);
-      await page.getByRole("button", { name: /Start solo run/ }).tap(); await page.locator(".arcade-canvas").waitFor();
+      await page.getByRole("button", { name: /start solo run/i }).tap(); await page.locator(".arcade-canvas").waitFor();
       if (id === "poker") { await page.getByRole("button", { name: "Hold card 1", exact: true }).tap(); check(await page.getByRole("button", { name: "Hold card 1", exact: true }).getAttribute("aria-pressed") === "true", "Poker hold did not respond"); await page.getByRole("button", { name: "REDRAW", exact: true }).tap(); }
       else { await page.locator(".arcade-action-button").tap(); if (id === "under") for (const key of ["→", "↓", "←", "↑"]) await page.locator(".arcade-dpad").getByRole("button", { name: key, exact: true }).tap(); }
-      await page.getByRole("button", { name: "Pause", exact: true }).tap();
+      await page.getByRole("button", { name: /^pause$/i }).tap();
       check(await page.getByRole("heading", { name: "SYSTEM PAUSED" }).isVisible(), "Pause did not cover the game");
-      await page.locator(".arcade-pause").getByRole("button", { name: "Resume", exact: true }).tap();
-      if (profile.width === 390 && id === "bounce") { await page.setViewportSize({ width: 320, height: 568 }); check(await page.locator(".arcade-play-header h2").textContent() === "BREAKPOINT", "Resize reset the active game"); }
+      await page.locator(".arcade-pause").getByRole("button", { name: /^resume$/i }).tap();
+      if (profile.width === 390 && id === "bounce") { await page.setViewportSize({ width: 320, height: 568 }); check(await page.locator(".arcade-play__title").textContent() === "BREAKPOINT", "Resize reset the active game"); }
       const play = await inspect(page); check(play.overflow <= 0 && !play.smallTargets.length && !play.smallInputs.length, `${profile.name}/${id} play: ${JSON.stringify(play)}`);
       check(play.canvas?.width > 100 && play.canvas?.height > 80, "The game canvas was not measured");
       await page.screenshot({ path: resolve(out, `${profile.name}-${id}.png`) }); evidence.push({ profile: profile.name, game: id, ...play });
       if (profile.width === 390 && id === "bounce") await page.setViewportSize({ width: 390, height: 844 });
-      await page.getByRole("button", { name: "All cabinets", exact: true }).first().tap();
+      await page.getByRole("button", { name: /all cabinets/i }).first().tap();
     }
     await page.keyboard.press("Escape"); await page.locator(".term__input").waitFor({ state: "visible" });
     check(await page.locator(".term__input").evaluate(el => el === document.activeElement), "Escape did not restore prompt focus");

@@ -21,8 +21,8 @@ try {
   }
   await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
   await page.locator(".statusbar__prompt").click(); await page.locator(".term__input").fill("cd arcade poker"); await page.locator(".term__input").press("Enter");
-  await page.getByRole("button", { name: "Sound off", exact: true }).click(); await page.getByRole("button", { name: "Sound on", exact: true }).waitFor();
-  await page.getByRole("button", { name: /Start solo run/ }).click(); await page.waitForTimeout(8500);
+  await page.getByRole("button", { name: /^sound off$/i }).click(); await page.getByRole("button", { name: /^sound on$/i }).waitFor();
+  await page.getByRole("button", { name: /start solo run/i }).click(); await page.waitForTimeout(8500);
   await page.locator(".arcade-stage").focus();
   for (let i = 0; i < 32 && !await page.locator(".arcade-results").count(); i++) {
     // Exercise the real keyboard control. When completion moves focus to the
@@ -31,19 +31,19 @@ try {
     await page.waitForTimeout(400);
   }
   await page.getByRole("region", { name: "Run result", exact: true }).waitFor();
-  const score = await page.locator(".arcade-result-summary>strong").textContent();
+  const score = await page.locator(".arcade-result__score").textContent();
   if (!(Number(score.replaceAll(",", "")) > 0)) throw new Error("The completed run has no score");
   if (await page.evaluate(() => localStorage.getItem("fergusos:arcade.initials")) !== null) throw new Error("Initials were stored before a post");
   if (posting) {
-    await page.getByRole("textbox", { name: "Your three initials", exact: true }).fill("DEV"); await page.getByRole("button", { name: "Post score", exact: true }).click();
-    await page.getByRole("status").filter({ hasText: "Run submitted." }).waitFor();
+    await page.getByRole("textbox", { name: /your three initials/i }).fill("DEV"); await page.getByRole("button", { name: /^post score$/i }).click();
+    await page.getByRole("status").filter({ hasText: /posted\./i }).waitFor();
     if (await page.evaluate(() => localStorage.getItem("fergusos:arcade.initials")) !== "DEV") throw new Error("Posting did not remember chosen initials");
     const persisted = await page.evaluate(async () => (await fetch("/api/board")).json());
     if (!persisted.boards.find(board => board.game === "poker")?.rows.some(row => row.initials === "DEV" && row.score === Number(score.replaceAll(",", "")))) throw new Error("The posted score disappeared on the next board read");
   }
   const oscillators = await page.evaluate(() => window.__arcadeOscillators); if (oscillators <= 0) throw new Error("Sound on did not create any game synthesis");
   await page.screenshot({ path: resolve(out, "result.png") });
-  await page.getByRole("button", { name: "Play again", exact: true }).click(); await page.locator(".arcade-stage").waitFor();
+  await page.getByRole("button", { name: /^play again$/i }).click(); await page.locator(".arcade-stage").waitFor();
   await page.keyboard.press("Escape"); await page.locator(".term__input").fill("forget"); await page.locator(".term__input").press("Enter");
   if (await page.evaluate(() => localStorage.getItem("fergusos:arcade.initials")) !== null) throw new Error("forget did not remove initials");
   if (errors.length) throw new Error(errors.join("\n"));

@@ -2,11 +2,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent } from "react";
 import { collectionCopy as copy, type Cabinet } from "@/content/arcade-collection";
+import type { BoardSnapshot } from "@/lib/arcade/board";
 import { createGame, pressGame, stepGame, WORLD, type GameMode, type GameState } from "@/lib/arcade/engine";
 import { renderGame } from "@/lib/arcade/renderer";
 import { decodePacket, snapshotFor, type Link } from "@/lib/arcade/network";
+import type { ArcadeTheme } from "@/lib/arcade/theme";
+import { pushImpact } from "@/lib/system";
 import { useSystem } from "@/components/system/SystemProvider";
 import ScoreBoard from "./ScoreBoard";
+
+/**
+ * One game, running. The simulation, the input routing and the network code
+ * are the release's; what changed is where it draws and what it lights.
+ *
+ *  - The canvas sits in a window panel whose title bar carries the live HUD.
+ *  - The world is drawn through a ghost layer, so it has phosphor memory.
+ *  - Every engine event lights the tube where it happened: `state.eventAt` is
+ *    projected from world space through the canvas's rect into the viewport
+ *    and pushed onto the frame the shader already reads. One a frame at most.
+ *  - Colours come from the theme the room read off the site's tokens.
+ */
 
 function inputFor(key: string, mode: GameMode, guest: boolean) {
   const k = key.toLowerCase();
@@ -19,11 +34,27 @@ function inputFor(key: string, mode: GameMode, guest: boolean) {
   if (/^[1-5]$/.test(k)) return k;
   return null;
 }
-type Props = { cabinet: Cabinet; mode: GameMode; seed: number; link: Link | null; onBack(): void; onReplay(): void };
-export default function CanvasGame({ cabinet, mode, seed, link, onBack, onReplay }: Props) {
-  const { onFrame, audio } = useSystem();
-  const canvasRef = useRef<HTMLCanvasElement>(null), stageRef = useRef<HTMLDivElement>(null), hudRef = useRef<HTMLParagraphElement>(null);
+
+const IMPACT_ENERGY: Record<GameState["sound"], number> = { hurt: 0.9, score: 0.6, start: 0.5, hit: 0.35 };
+
+type Props = {
+  cabinet: Cabinet;
+  mode: GameMode;
+  seed: number;
+  link: Link | null;
+  theme: ArcadeTheme;
+  boards: BoardSnapshot | null;
+  onBack(): void;
+  onReplay(): void;
+  onBoards(): void;
+};
+
+export default function CanvasGame({ cabinet, mode, seed, link, theme, boards, onBack, onReplay, onBoards }: Props) {
+  const { onFrame, audio, frame } = useSystem();
+  const canvasRef = useRef<HTMLCanvasElement>(null), stageRef = useRef<HTMLDivElement>(null), hudRef = useRef<HTMLSpanElement>(null);
   const stateRef = useRef<GameState>(createGame(cabinet.id, seed, mode));
+  const themeRef = useRef(theme);
+  themeRef.current = theme;
   const keys = useRef(new Set<string>()), physical = useRef(new Map<string, string>()), remote = useRef(new Set<string>());
   const pausedRef = useRef(false), [paused, setPaused] = useState(false), [result, setResult] = useState<GameState | null>(null);
   const [error, setError] = useState(""), [ticket, setTicket] = useState<string | null>(null);
@@ -55,16 +86,24 @@ export default function CanvasGame({ cabinet, mode, seed, link, onBack, onReplay
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext("2d", { alpha: false });
-    if (!ctx) { setError("This browser could not open the game display."); return; }
+    if (!ctx) { setError(copy.displayFailed); return; }
+    const coarse = window.matchMedia("(pointer: coarse)").matches;
+    const ghostCanvas = document.createElement("canvas");
+    const ghost = ghostCanvas.getContext("2d");
     let live = true, acc = 0, netClock = 0, finished = false, finishTimer: ReturnType<typeof setTimeout> | undefined;
     let lastEvent = 0, hudClock = 0, compact = false;
+    let rect = canvas.getBoundingClientRect(), rectStale = true;
     const measure = () => {
-      const rect = canvas.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+      rect = canvas.getBoundingClientRect(); rectStale = false;
+      const dpr = Math.min(coarse ? 1.5 : 2, window.devicePixelRatio || 1);
       compact = rect.width < 600;
-      canvas.width = Math.max(1, Math.round(rect.width * dpr)); canvas.height = Math.max(1, Math.round(rect.height * dpr));
-      renderGame(ctx, stateRef.current, canvas.width, canvas.height, compact);
+      const w = Math.max(1, Math.round(rect.width * dpr)), h = Math.max(1, Math.round(rect.height * dpr));
+      if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; ghostCanvas.width = w; ghostCanvas.height = h; }
+      renderGame(ctx, stateRef.current, canvas.width, canvas.height, themeRef.current, { compact, ghost });
     };
     measure(); const observer = new ResizeObserver(measure); observer.observe(canvas);
+    const onScroll = () => { rectStale = true; };
+    window.addEventListener("scroll", onScroll, { passive: true, capture: true });
     stageRef.current?.focus(); audio.relay();
     const unsubscribe = onFrame((_time, dt) => {
       if (!live) return;
@@ -73,10 +112,20 @@ export default function CanvasGame({ cabinet, mode, seed, link, onBack, onReplay
         acc = Math.min(100, acc + dt);
         while (acc >= 1000 / 60) { stepGame(state, 1 / 60, new Set([...keys.current, ...remote.current])); acc -= 1000 / 60; }
       } else acc = 0;
-      renderGame(ctx, state, canvas.width, canvas.height, compact);
+      renderGame(ctx, state, canvas.width, canvas.height, themeRef.current, { compact, ghost });
       if (state.event !== lastEvent) {
         lastEvent = state.event;
         if (state.sound === "hurt") audio.thud(); else if (state.sound === "score") audio.key(); else if (state.sound === "start") audio.relay(); else audio.hover();
+        // Light the phosphor where it happened. The rect is re-read only after a scroll, not per event.
+        if (rectStale) { rect = canvas.getBoundingClientRect(); rectStale = false; }
+        if (rect.width > 0 && window.innerWidth > 0 && window.innerHeight > 0) {
+          pushImpact(frame.current, {
+            x: (rect.left + (state.eventAt.x / WORLD.w) * rect.width) / window.innerWidth,
+            y: (rect.top + (state.eventAt.y / WORLD.h) * rect.height) / window.innerHeight,
+            energy: IMPACT_ENERGY[state.sound],
+            at: performance.now(),
+          });
+        }
       }
       hudClock += dt;
       if (hudClock > 150 && hudRef.current) {
@@ -94,8 +143,8 @@ export default function CanvasGame({ cabinet, mode, seed, link, onBack, onReplay
         finishTimer = setTimeout(() => { if (live) setResult(structuredClone(state)); }, 350);
       }
     });
-    return () => { live = false; unsubscribe(); observer.disconnect(); clearTimeout(finishTimer); release(); };
-  }, [audio, onFrame, guest, link, release]);
+    return () => { live = false; unsubscribe(); observer.disconnect(); window.removeEventListener("scroll", onScroll, { capture: true }); clearTimeout(finishTimer); release(); };
+  }, [audio, onFrame, frame, guest, link, release]);
   useEffect(() => {
     const blur = () => { if (!stateRef.current.over) pause(true); };
     const visibility = () => { if (document.hidden) blur(); };
@@ -144,34 +193,52 @@ export default function CanvasGame({ cabinet, mode, seed, link, onBack, onReplay
   const touchButton = (label: string, key: string, cls = "") => {
     const actual = guest ? `p2${key}` : key;
     const releaseButton = () => { keys.current.delete(actual); transmit(); };
-    return <button type="button" className={cls} aria-label={label}
+    return <button type="button" className={`arcade-btn ${cls}`.trim()} aria-label={label}
       onPointerDown={e => { e.preventDefault(); e.currentTarget.setPointerCapture(e.pointerId); keys.current.add(actual); press(actual); stageRef.current?.focus(); }}
       onPointerUp={e => { e.preventDefault(); releaseButton(); }}
       onPointerCancel={releaseButton} onLostPointerCapture={releaseButton}
       onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (!e.repeat) { keys.current.add(actual); press(actual); } } }}
       onKeyUp={releaseButton}>{label}</button>;
   };
+  const verdict = result && (mode !== "solo"
+    ? result.id === "snake" && !result.snakesAlive[0] && !result.snakesAlive[1] ? copy.draw : result.won ? copy.greenWins : copy.amberWins
+    : result.won ? copy.won : copy.over);
   return <div className="arcade-play">
-    <div className="arcade-play-header"><div><span>{cabinet.genre}</span><h2>{cabinet.title}</h2></div><div className="arcade-actions"><button type="button" onClick={onBack}>{copy.back}</button><button type="button" onClick={() => pause(!pausedRef.current)} disabled={!!result || !!error}>{paused ? copy.resume : copy.pause}</button></div></div>
-    <p className="arcade-live-hud" ref={hudRef}>000000 PTS / READY</p>
-    <div ref={stageRef} className="arcade-stage" tabIndex={0} role="application" aria-label={`${cabinet.title}. ${cabinet.objective} ${cabinet.controls}`} onKeyDown={keyDown} onKeyUp={keyUp}>
-      <canvas ref={canvasRef} className="arcade-canvas" width={900} height={560} aria-label={cabinet.objective}
-        onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); stageRef.current?.focus(); if (cabinet.id === "poker") { const rect = e.currentTarget.getBoundingClientRect(), x = (e.clientX - rect.left) / rect.width * WORLD.w, y = (e.clientY - rect.top) / rect.height * WORLD.h; const card = Math.floor((x - 118) / 137); if (card >= 0 && card < 5 && y > 165 && y < 351) press(String(card + 1)); } else pointer(e); }} onPointerMove={pointer} onPointerUp={() => release()} onPointerCancel={() => release()} />
-      {(paused || error) && !result && <div className="arcade-pause"><span className="arcade-pause-symbol" aria-hidden="true" /><h3>{copy.paused}</h3>{error && <p role="alert">{error}</p>}<button type="button" className="arcade-primary" onClick={() => { if (error) onBack(); else { pause(false); stageRef.current?.focus(); } }}>{error ? copy.back : copy.resume}</button></div>}
+    <div className="arcade-play__head">
+      <button type="button" className="arcade-btn arcade-back" onClick={onBack}>← {copy.back}</button>
+      <h2 className="arcade-play__title">{cabinet.title}</h2>
+      <button type="button" className="arcade-btn" onClick={() => pause(!pausedRef.current)} disabled={!!result || !!error}>{paused ? copy.resume : copy.pause}</button>
+    </div>
+    <div className="arcade-frame window">
+      <div className="window__bar">
+        <span className="window__title">~/arcade/{cabinet.id}</span>
+        <span className="arcade-live-hud" ref={hudRef}>000000 PTS  /  READY</span>
+      </div>
+      <div ref={stageRef} className="arcade-stage" tabIndex={0} role="application" aria-label={`${cabinet.title}. ${cabinet.objective} ${cabinet.controls}`} onKeyDown={keyDown} onKeyUp={keyUp}>
+        <canvas ref={canvasRef} className="arcade-canvas" width={900} height={560} aria-label={cabinet.objective}
+          onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); stageRef.current?.focus(); if (cabinet.id === "poker") { const rect = e.currentTarget.getBoundingClientRect(), x = (e.clientX - rect.left) / rect.width * WORLD.w, y = (e.clientY - rect.top) / rect.height * WORLD.h; const card = Math.floor((x - 118) / 137); if (card >= 0 && card < 5 && y > 165 && y < 351) press(String(card + 1)); } else pointer(e); }} onPointerMove={pointer} onPointerUp={() => release()} onPointerCancel={() => release()} />
+        {(paused || error) && !result && <div className="arcade-pause"><span className="arcade-pause__symbol" aria-hidden="true" /><h3>{copy.paused}</h3>{error && <p role="alert">{error}</p>}<button type="button" className="arcade-btn arcade-primary" onClick={() => { if (error) onBack(); else { pause(false); stageRef.current?.focus(); } }}>{error ? copy.back : copy.resume}</button></div>}
+      </div>
     </div>
     {!result && <>
       <div className="arcade-controls">
-        {cabinet.id === "poker" ? <><div className="arcade-hold-cards">{held.map((h, i) => <button type="button" key={i} aria-label={`Hold card ${i + 1}`} aria-pressed={h} onClick={() => press(String(i + 1))}>{i + 1}{h ? " ✓" : ""}</button>)}</div><button type="button" className="arcade-primary" onClick={() => press("action")}>{cabinet.action}</button><button type="button" onClick={() => press("bank")}>BANK HAND</button></> : <>
+        {cabinet.id === "poker" ? <><div className="arcade-hold">{held.map((h, i) => <button type="button" className="arcade-btn" key={i} aria-label={`Hold card ${i + 1}`} aria-pressed={h} onClick={() => press(String(i + 1))}>{i + 1}{h ? " ✓" : ""}</button>)}</div><button type="button" className="arcade-btn arcade-primary arcade-action-button" onClick={() => press("action")}>{cabinet.action}</button><button type="button" className="arcade-btn" onClick={() => press("bank")}>BANK HAND</button></> : <>
           <div className="arcade-dpad">{touchButton("↑", "up", "arcade-up")}{touchButton("←", "left", "arcade-left")}{touchButton("↓", "down", "arcade-down")}{touchButton("→", "right", "arcade-right")}</div>
           {touchButton(cabinet.action, "action", "arcade-primary arcade-action-button")}
-          {mode === "local" && <div className="arcade-p2-controls"><span>AMBER</span><div>{touchButton("↑", "p2up")}{touchButton("←", "p2left")}{touchButton("↓", "p2down")}{touchButton("→", "p2right")}{touchButton("ACTION", "p2action")}</div></div>}
+          {mode === "local" && <div className="arcade-p2"><span>AMBER</span><div>{touchButton("↑", "p2up")}{touchButton("←", "p2left")}{touchButton("↓", "p2down")}{touchButton("→", "p2right")}{touchButton("ACTION", "p2action")}</div></div>}
         </>}
       </div>
-      <p className="arcade-game-help">{cabinet.controls}</p>
+      <p className="arcade-help">{cabinet.controls}</p>
     </>}
     {result && <div className="arcade-results" ref={resultRef} tabIndex={-1} role="region" aria-label="Run result">
-      <div className="arcade-result-summary"><span>{mode === "solo" ? copy.score : "MATCH RESULT"}</span><h3>{mode !== "solo" ? result.id === "snake" && !result.snakesAlive[0] && !result.snakesAlive[1] ? "DRAW" : result.won ? "GREEN WINS" : "AMBER WINS" : result.won ? copy.won : copy.over}</h3><strong>{result.score.toLocaleString("en-IE")}</strong><div className="arcade-actions">{!link && <button className="arcade-primary" type="button" onClick={onReplay}>{copy.restart}</button>}<button type="button" onClick={onBack}>{copy.back}</button></div>{mode !== "solo" && <p>{copy.notRanked}</p>}</div>
-      {mode === "solo" && <ScoreBoard game={cabinet.id} score={result.score} ticket={ticket} />}
+      <div className="arcade-result">
+        <p className="arcade-result__label">{mode === "solo" ? copy.score : copy.matchResult}</p>
+        <h3 className="arcade-result__verdict">{verdict}</h3>
+        <strong className="arcade-result__score">{result.score.toLocaleString("en-IE")}</strong>
+        <div className="arcade-actions">{!link && <button className="arcade-btn arcade-primary" type="button" onClick={onReplay}>{copy.restart}</button>}<button type="button" className="arcade-btn" onClick={onBack}>{copy.back}</button></div>
+        {mode !== "solo" && <p className="arcade-small">{copy.notRanked}</p>}
+      </div>
+      {mode === "solo" && <ScoreBoard game={cabinet.id} boards={boards} score={result.score} ticket={ticket} onBoards={onBoards} />}
     </div>}
   </div>;
 }
