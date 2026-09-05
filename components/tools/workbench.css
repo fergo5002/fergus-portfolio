@@ -42,6 +42,11 @@
 .bench-details > summary::before { content: "+"; }
 .bench-details[open] > summary::before { content: "\2212"; }
 .bench-details > summary::-webkit-details-marker { display: none; }
+/* Closed details can still expose descendant geometry through the browser's
+   content-visibility implementation. Give closed panels ordinary hidden layout
+   as well, so layout measurements and assistive visibility agree. */
+.bench-details:not([open]) > :not(summary),
+.bench-privacy-details:not([open]) > :not(summary) { display: none; }
 .bench-privacy-details { margin-top: -16px; font-size: .8rem; }
 .bench-privacy-details summary { cursor: pointer; color: var(--green); min-height: 44px; display: flex; align-items: center; }
 .bench-privacy-details summary::after { content: " +"; margin-left: 8px; }

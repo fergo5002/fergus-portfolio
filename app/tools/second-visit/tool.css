@@ -69,6 +69,6 @@
 .sv__group-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--green); }
 .sv__chart-frame { display: grid; grid-template-columns: 4ch minmax(0, 1fr); gap: 8px; padding: 16px; background: var(--bg); border: 1px solid var(--green-line); margin: 16px 0; font-size: .8rem; }
 .sv__chart-frame .sv__chart { padding: 0; margin: 0; border: none; }
-.sv__axis-y { display: flex; flex-direction: column; justify-content: space-between; align-items: end; }
+.sv__axis-y { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; }
 .sv__axis-x { display: flex; justify-content: space-between; grid-column: 2; }
 .sv__chart-frame .sv__axis-title { grid-column: 1 / -1; text-align: center; margin: 0; }

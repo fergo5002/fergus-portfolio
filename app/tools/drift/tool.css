@@ -219,3 +219,4 @@
 .drift__range i { position: absolute; top: 3px; bottom: 3px; width: 3px; background: var(--amber); }
 .drift__reading strong { color: var(--green-bright); }
 .drift__report .drift__delta { font-size: 4.5rem; line-height: 1.1; margin: 12px 0; }
+.drift__button:disabled { opacity: 1; color: var(--green); border-color: var(--green-line); cursor: not-allowed; }
