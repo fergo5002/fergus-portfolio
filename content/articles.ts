@@ -9,9 +9,11 @@
  * with an HTML-injection surface this site does not otherwise have.
  *
  * `content/articles.test.ts` guards the shape of every entry: unique slugs,
- * titles that fit a search result, descriptions in the range a search engine
- * will actually show, and a body long enough to be worth publishing. A thin or
- * malformed post fails the suite rather than reaching production.
+ * metadata, dates, links and rendering. Length and heading style are editorial
+ * decisions, not publishing quotas.
+ *
+ * The September 2026 edit retired six entries from this registry. Their source
+ * modules remain for reference; only entries below are published or indexed.
  */
 
 export type Article = {
@@ -35,14 +37,8 @@ export type Article = {
   body: string;
 };
 
-import { agentsShipping } from "./articles/shipping-with-ai-agents";
-import { verificationGap } from "./articles/agents-will-tell-you-it-works";
-import { webhookSecret } from "./articles/one-webhook-secret-two-tenants";
-import { multiTenantShopify } from "./articles/multi-tenant-shopify-apps";
 import { presterlyPostMortem } from "./articles/why-presterly-wound-down";
-import { acceleratorWorth } from "./articles/what-an-accelerator-is-for";
 import { crtThatBehaves } from "./articles/a-crt-that-behaves-like-a-crt";
-import { splitTextSeo } from "./articles/split-text-is-costing-you-search";
 import { splitTextAudit } from "./articles/split-text-audit-2026";
 import { uuidsAgreed } from "./articles/the-test-passed-because-the-uuids-agreed";
 import { qualcommOverlay } from "./articles/a-qualcomm-overlay-appeared-in-our-dungeon";
@@ -52,14 +48,8 @@ export const articles: Article[] = [
   uuidsAgreed,
   qualcommOverlay,
   splitTextAudit,
-  splitTextSeo,
-  agentsShipping,
-  webhookSecret,
   presterlyPostMortem,
   crtThatBehaves,
-  verificationGap,
-  multiTenantShopify,
-  acceleratorWorth,
 ].sort((a, b) => b.date.localeCompare(a.date));
 
 export function articleBySlug(slug: string): Article | undefined {

@@ -154,6 +154,18 @@ describe("the prose rules use the token that passes", () => {
     expect(rule(".cform__label")).not.toMatch(/color:\s*var\(--green-dim\)/);
   });
 
+  it.each([".writing__meta", ".writing__tags li", ".post__meta", ".post__toc-title", ".post__back"])(
+    "%s keeps small writing text on the readable token",
+    (selector) => {
+      expect(rule(selector)).toMatch(/color:\s*var\(--green\)/);
+      expect(rule(selector)).toMatch(/text-shadow:\s*none/);
+    },
+  );
+
+  it("keeps the global link glow out of prose", () => {
+    expect(rule(".prose__link")).toMatch(/text-shadow:\s*none/);
+  });
+
   it("records why --green-dim cannot be a label, theme by theme", () => {
     const dim = (name: string) => {
       const vars = THEMES.find((t) => t[0] === name)?.[1];

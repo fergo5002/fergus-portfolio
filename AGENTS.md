@@ -5,6 +5,17 @@ before touching code. (Claude Code, Cursor, Copilot, and others read `AGENTS.md`
 
 ## What this is
 
+**Writing edit, 2026-09-06.** Fergus approved reducing `/writing` to five stories:
+the UUID deadlock, Qualcomm overlay, server-HTML survey, CRT and Presterly pieces.
+Six old modules remain as unpublished reference material, outside the registry in
+`content/articles.ts`. The split-text explainer now redirects to the corrected survey;
+the other five withdrawn URLs return 404. Article length and heading style are editorial
+decisions: the old 600-word, question-heading, section-length and link-count quotas
+were removed at Fergus's request. Keep metadata, links and rendering valid. FAQ markup
+is optional and appears only when the prose contains suitable questions and answers.
+The Drift worked example uses only the published collection. See
+`docs/writing-edit-2026-09-06.md` for the scope and verification.
+
 **FergusOS Terminal**: Patrick Fergus O'Reilly's personal portfolio, styled as a retro CRT
 computer terminal (green phosphor + amber accent, scanlines, boot sequence, interactive
 command line). Ten routes: landing (`/`), experience (`/experience`), projects

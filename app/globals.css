@@ -2427,7 +2427,8 @@ html.is-gravity .statusbar {
 }
 
 .writing__meta {
-  color: var(--green-dim);
+  color: var(--green);
+  text-shadow: none;
   font-size: 0.8rem;
   margin: 0 0 var(--sp-2);
   text-transform: lowercase;
@@ -2451,7 +2452,7 @@ html.is-gravity .statusbar {
 
 .writing__tags li {
   font-size: 0.72rem;
-  color: var(--green-dim);
+  color: var(--green);
   border: 1px solid var(--green-line);
   border-radius: var(--radius);
   padding: 2px var(--sp-2);
@@ -2462,6 +2463,20 @@ html.is-gravity .statusbar {
   margin-top: var(--sp-5);
   font-size: 0.85rem;
   color: var(--green-dim);
+}
+
+.writing__feed a,
+.post__foot a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  min-width: 44px;
+  max-width: 100%;
+  text-shadow: none;
+}
+
+.writing__separator::before {
+  content: " · ";
 }
 
 /* ── article ───────────────────────────────────────────────────────────── */
@@ -2482,7 +2497,8 @@ html.is-gravity .statusbar {
 }
 
 .post__meta {
-  color: var(--green-dim);
+  color: var(--green);
+  text-shadow: none;
   font-size: 0.82rem;
   margin: 0 0 var(--sp-3);
 }
@@ -2497,7 +2513,8 @@ html.is-gravity .statusbar {
 }
 
 .post__toc-title {
-  color: var(--green-dim);
+  color: var(--green);
+  text-shadow: none;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -2515,6 +2532,9 @@ html.is-gravity .statusbar {
 }
 
 .post__toc a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   color: var(--green);
   text-decoration: none;
   text-shadow: none;
@@ -2536,7 +2556,8 @@ html.is-gravity .statusbar {
 .post__next,
 .post__back {
   margin: var(--sp-2) 0;
-  color: var(--green-dim);
+  color: var(--green);
+  text-shadow: none;
 }
 
 .post__foot a {
@@ -2628,6 +2649,7 @@ h4.prose__h {
 
 .prose__link {
   color: var(--amber);
+  text-shadow: none;
   text-underline-offset: 3px;
 }
 

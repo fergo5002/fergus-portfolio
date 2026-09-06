@@ -97,7 +97,7 @@ export const driftCopy = {
   announceDemo: "Worked example restored. Build your own profile before measuring your draft.",
 
   demoNote:
-    "Example: my draft measured against the eleven articles at /writing. Build a profile from your pieces to compare your own draft.",
+    "Example: a deliberately overwritten draft measured against the published articles at /writing. Build a profile from your pieces to compare your own draft.",
   referenceNote:
     "The distance is Burrows's Delta, and a Delta is measured in standard deviations, so it needs a population whose standard deviations they are. That population is your pieces: your own commonest words, and your own variation from one piece to the next. Which is why the number reads in units of your writing and not mine, and why the spread of your own pieces is printed beside it.",
   substitutionNote:

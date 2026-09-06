@@ -44,7 +44,7 @@ export type ToolState =
  */
 export const INITIAL_TOOL_STATE: ToolState = { status: "idle", seq: 0 };
 
-export const ARTICLE_PATH = "/writing/split-text-is-costing-you-search";
+export const ARTICLE_PATH = "/writing/split-text-audit-2026";
 
 export const headlineCopy = {
   label: "Page URL",

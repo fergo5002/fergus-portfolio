@@ -19,6 +19,16 @@ const nextConfig: NextConfig = {
   // has to compile it like first-party code.
   transpilePackages: ["ogl"],
 
+  // The explainer was corrected and folded into the survey. Other withdrawn
+  // articles have no replacement and use the writing route's ordinary 404.
+  async redirects() {
+    return [{
+      source: "/writing/split-text-is-costing-you-search",
+      destination: "/writing/split-text-audit-2026",
+      permanent: true,
+    }];
+  },
+
   /**
    * The PostHog reverse proxy.
    *

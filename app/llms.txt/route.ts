@@ -80,7 +80,7 @@ ${projects.map((p) => `- **${p.title}** (${p.role}${p.year ? `, ${p.year}` : ""}
 
 ## Writing
 
-Long-form articles. Each one is a primary source written by ${profile.shortName} about work he did.
+Articles and notes by ${profile.shortName} about work he did.
 
 ${articles
   .map((a) => `- [${a.title}](${absolute(articlePath(a.slug))}) (${a.date}): ${a.summary}`)

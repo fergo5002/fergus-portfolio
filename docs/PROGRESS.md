@@ -6,6 +6,26 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-06: writing edit, local review
+
+Fergus approved the writing audit's cuts. On `codex/writing-edit`, the public
+registry now has five edited stories. Five advice pieces are withdrawn, and the
+split-text explainer is corrected and merged into the survey with a permanent
+redirect. Retired source modules remain unpublished in the repository.
+
+- [x] Edited all five retained bodies, descriptions and summaries; added revision dates.
+- [x] Removed length, heading and link-count quotas; FAQ output is optional.
+- [x] Updated the writing description, headline-checker link and Drift example.
+- [x] Five new regression tests failed first; 119 focused checks pass.
+- [x] Full suite: 2,469 passes and three opt-in skips; production build and types pass.
+- [x] Local production HTTP, desktop navigation, metadata, social images and discovery checks.
+- [x] Initial phone checks covered eight routes; both tools passed. Fixed the
+  writing contrast and touch-target failures, verified all article layouts in
+  three themes, and passed the final representative phone contrast checks.
+
+Scope, withdrawal details and evidence: `docs/writing-edit-2026-09-06.md`.
+No push or deployment has been made for this edit.
+
 ## 2026-09-06: five selected studios
 
 Fergus selected Group Lore, Pocket Redact, Prove It and Resonance for a deeper build, plus an

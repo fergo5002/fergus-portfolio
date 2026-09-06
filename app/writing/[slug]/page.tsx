@@ -112,13 +112,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               in the BlogPosting graph is already built from this field. */}
           {article.updated && article.updated !== article.date ? (
             <>
-              <span aria-hidden="true"> · </span>
+              {" "}<span className="writing__separator" aria-hidden="true" />{" "}
               updated <time dateTime={article.updated}>{formatDate(article.updated)}</time>
             </>
           ) : null}
-          <span aria-hidden="true"> · </span>
+          {" "}<span className="writing__separator" aria-hidden="true" />{" "}
           {readingMinutes(article.body)} min read
-          <span aria-hidden="true"> · </span>
+          {" "}<span className="writing__separator" aria-hidden="true" />{" "}
           {profile.shortName}
         </p>
         <ul className="writing__tags" aria-label="Tags">

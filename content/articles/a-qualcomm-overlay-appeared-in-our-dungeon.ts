@@ -3,54 +3,34 @@ import type { Article } from "../articles";
 export const qualcommOverlay: Article = {
   slug: "a-qualcomm-overlay-appeared-in-our-dungeon",
   title: "A Qualcomm overlay appeared in our dungeon",
-  description:
-    "Two bugs from one game's lighting work that were both the measuring instrument rather than the thing being measured, and the habit that catches them.",
+  description: "A vendor logo appeared over our roguelike during lighting work. Then a benchmark said it ran at two frames per second. Neither result was straightforward.",
   date: "2026-09-01",
-  tags: ["WebGL", "Graphics", "Debugging", "Phaser"],
-  summary:
-    "Two debugging stories from the lighting system of a Phaser 3 roguelike: a vendor-branded debug overlay that turned out to be the engine's own bloom pass leaking GPU state rather than a driver fault, and a frame-rate benchmark that returned the same number for every quality tier because headless Chromium throttles requestAnimationFrame. Both were faults in the instrument, not the renderer.",
-  body: `I wrote the lighting for a top-down roguelike set under Trinity's Campanile, built by a team of eight and mentored by a graphics engineer from Qualcomm. Partway through the shader work a Qualcomm-branded debug overlay started rendering on top of the game. Not in the art. Painted over the finished frame, in a build where nobody had asked for a debugger.
+  updated: "2026-09-06",
+  tags: ["WebGL","Graphics","Debugging","Phaser"],
+  summary: "Two debugging incidents from a Phaser roguelike: an unexpected overlay required both the custom lighting pipeline and bloom, and a headless frame-rate reading barely responded to changes in rendering quality. The binding-level cause and hardware performance remained unverified.",
+  body: `Partway through building the lighting for a roguelike, a Qualcomm-branded overlay appeared on top of the game.
 
-## Where did the overlay actually come from?
+The game was set under Trinity's Campanile. There were eight of us on the team, and our mentor was a graphics engineer from Qualcomm. So a Qualcomm logo turning up in the dungeon felt like a fairly strong clue.
 
-The tempting read was the obvious one. A vendor name on screen, in a test environment running an ANGLE software renderer, points at the graphics stack, and the mentor sitting across from us worked at that vendor. Every arrow lined up.
+## Turning the lighting off
 
-The arrows were wrong, and one test settled it. The overlay was only present when my lighting pipeline was attached. Detach it and the artefact went, and the engine's built-in bloom pass on its own was clean. So the fault needed both, which rules out a driver rendering a logo at us and points squarely at two pieces of code fighting over the same GPU state.
+The test environment was using an ANGLE software renderer. Between that and the logo, I initially suspected the graphics stack.
 
-The best explanation I had was texture-unit crosstalk. My lighting pass binds units 1 to 3 for its occluder, normal and emissive textures, and the engine's bloom in that version reads from a unit it does not own. I want to be careful here: that is a mechanism consistent with what I saw, not one I proved by instrumenting the binding calls. What I did prove is that the vendor was innocent.
+I detached my lighting pipeline. The overlay disappeared. I tried the engine's built-in bloom on its own, and that was clean too. The artefact needed both passes together.
 
-## Why is a headless frame rate not a frame rate?
+My best explanation was texture-unit crosstalk. The lighting pass used units 1 to 3 for occluder, normal and emissive textures; I suspected bloom was reading a binding left behind by that pass.
 
-The second one was worse, because it produced a number and numbers are persuasive. I wired up frame-rate sampling in a headless browser to check the shader chain against its budget, and it came back between 1.1 and 2.4 frames per second.
+I didn't instrument the binding calls to prove it. The control narrowed the problem to the combination of pipelines. It didn't establish exactly which call was responsible, and the logo on its own hadn't helped.
 
-Read that as a performance result and you would tear the renderer apart. It is not a performance result. Headless Chromium throttles \`requestAnimationFrame\` to roughly 1 Hz when the page is not focused, so I was timing the browser's power-saving behaviour with the game attached as a passenger.
+## The two-frame-per-second benchmark
 
-The tell was in the shape of the data, not the size of it. The figure barely moved across four quality tiers that add and remove entire passes. A renderer that renders the same speed with the expensive work switched off is not a renderer you are measuring.
+I also set up frame-rate sampling in a headless browser. The result came back between 1.1 and 2.4 frames per second.
 
-## What did we ship on the strength of estimates?
+That looked disastrous. But the rate barely changed across four quality tiers, even when switching off entire rendering passes.
 
-Having thrown the benchmark away, I had no hardware numbers at all, so the budget came from counting texture taps per pixel per tier and comparing against a published reference figure for an older integrated GPU.
+The callbacks in that test setup were being throttled. Counting them wasn't giving me a useful measure of the shader's cost. I discarded the benchmark rather than treating those numbers as the game's frame rate.
 
-\`\`\`chart
-{
-  "kind": "bar",
-  "title": "Estimated post-processing cost per quality tier",
-  "unit": "ms",
-  "categories": ["q=0", "q=1", "q=2", "q=3"],
-  "series": [{ "label": "PostFX", "values": [0, 0.6, 1.0, 1.6] }],
-  "baseline": 16.6,
-  "baselineLabel": "60fps frame budget",
-  "caption": "Estimated by counting texture taps against a reference figure for a 2018 integrated GPU. Never confirmed on real hardware."
-}
-\`\`\`
+That left a gap. I estimated the cost of each quality tier by counting texture taps and comparing them against a reference figure for an older integrated GPU. I didn't get a hardware measurement to confirm the estimate. A chart of those estimates appeared in the first version of this article; I've removed it because it looked more conclusive than the evidence was.
 
-That is a comfortable-looking chart and it is entirely arithmetic. The honest version of the sign-off says the budget was met in theory and the measurement was deferred, which is what we wrote down at the time. It is a weaker claim than a green bar chart implies, and the gap between those two things is exactly where a team talks itself into believing it has tested something.
-
-## What is the rule?
-
-Prove the instrument before you accuse the object. A timeout, a null, an odd reading or a logo on your dungeon floor is evidence about the measuring path until you have shown that path is healthy, and taking one control reading is usually enough to tell you which.
-
-Both of these cost me a day and both were findable in minutes. Detaching one pipeline told me the overlay needed my code to appear. Looking across the quality tiers instead of at the headline number told me the frame counter was not responding to the thing it was supposed to be counting. Neither of those is clever, and I did the clever thing first in both cases.
-
-The one that still catches me is the second, because a broken instrument that returns a plausible number is far more dangerous than one that errors. A blank reading makes you suspicious. A confident wrong reading makes you productive in the wrong direction for a day.`,
+Both investigations took me about a day. Detaching the lighting pass and comparing the quality tiers were small checks, but I tried them after spending time on much more elaborate explanations.`,
 };

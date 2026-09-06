@@ -23,8 +23,8 @@ import { words } from "./text";
  * of novels. Ten pasted pieces is not that: past roughly the hundredth rank the
  * words stop being function words and start being subject words, and a subject
  * word measures what a text is about rather than how it is written. The cap
- * also means a visitor with ten short pieces and this site's eleven articles
- * are scored on lists of the same length. A choice, not a measurement.
+ * applies to visitor samples and the site's published example alike. A smaller
+ * vocabulary can yield fewer markers. A choice, not a measurement.
  */
 export const MARKER_COUNT = 100;
 

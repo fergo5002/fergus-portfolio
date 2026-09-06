@@ -916,7 +916,7 @@ describe("app/api/mcp/route", () => {
     // 4. tools/call, using a name taken from step 3 rather than a literal, so
     //    this breaks if the advertised list and the callable set ever diverge.
     const search = await post(
-      JSON.stringify(rpc("tools/call", { name: listed[0].name, arguments: { query: "agents" } }, 3)),
+      JSON.stringify(rpc("tools/call", { name: listed[0].name, arguments: { query: "deadlock" } }, 3)),
       versioned,
     );
     const searchResult = (await search.json()).result;

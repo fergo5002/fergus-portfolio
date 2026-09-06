@@ -3,99 +3,50 @@ import type { Article } from "../articles";
 export const crtThatBehaves: Article = {
   slug: "a-crt-that-behaves-like-a-crt",
   title: "Building a CRT that behaves like a CRT",
-  description:
-    "Most CRT effects are a scanline overlay and some glow. Deriving everything from one premise, a beam painting phosphor, gets you somewhere better.",
+  description: "The screen on this site keeps a buffer of fading light. How that works, what it actually simulates, and the boot bug that hid the whole page.",
   date: "2026-08-10",
+  updated: "2026-09-06",
+  tags: ["WebGL","Motion","Frontend","Craft"],
+  summary: "Implementation notes from this site's CRT interface: two render targets hold fading light from effects, fixed bands approximate burn-in, and one shared clock coordinates scroll, graphics and physics.",
+  body: `The first version of this site had scanlines and green glow. It looked like an old monitor in a screenshot, but scrolling didn't change much. I wanted the screen to respond to what was happening on it.
 
-  updated: "2026-08-21",
-  tags: ["WebGL", "Motion", "Frontend", "Craft"],
-  summary:
-    "Technique for a CRT-styled web interface built from one physical premise rather than a stack of effects: a ping-pong persistence buffer for phosphor decay and burn-in, scroll velocity as beam velocity, and reduced-motion handling that degrades to a single static frame.",
-  body: `Search for a CRT effect and you get the same recipe every time. A repeating linear gradient for scanlines, a text-shadow for glow, maybe a barrel-distortion filter, and a vignette. It reads as "old screen" and it's fine.
+I used an electron beam painting phosphor as the starting point. Fast scrolling pulls the glow along with it. Changing routes triggers a burst of channel static. When the terminal's gravity command drops the page, an impact adds light where an object lands.
 
-It also looks like a sticker. Every effect is independent, so nothing responds to anything else, and the moment you interact with the page the illusion drops.
+## Keeping the previous frame
 
-I rebuilt mine from a single premise instead: **an electron beam painting phosphor behind glass.** Every effect has to follow from that or it doesn't go in. That constraint turned out to be the whole trick, because it stops you adding tricks.
+The shader uses two render targets. On each frame it reads the previous buffer, fades the stored light, adds the current effects and writes the result into the other buffer. Then the buffers swap.
 
-## What does committing to the premise buy you?
+RGB holds the short-lived glow. Alpha holds a slower burn-in approximation. A second pass reads this buffer, softens it and draws it with the glass effects.
 
-Once you commit, a lot of decisions stop being aesthetic choices and start having correct answers.
+The text itself is still browser-rendered HTML. The shader isn't taking photographs of the page or storing a ghost of each letter. Its emitters are the beam sweep, pointer, taps, degauss rings and physics impacts. For burn-in, it uses horizontal bands at the navigation and status strips.
 
-Scroll velocity is beam velocity, so fast scrolling smears and hisses. A route change is a channel change. Idle time is a burn-in risk, so a screensaver isn't a gimmick, it's what the object would do. The cursor is a magnet near the tube. Text that lands hard should light the phosphor where it hits.
+That distinction was missing from the first version of this article. The actual implementation is in [PhosphorScreen.tsx](https://github.com/fergo5002/fergus-portfolio/blob/3d9b44c42c820b35ef9ed0fc32c5a6c2189cea8e/components/system/PhosphorScreen.tsx).
 
-None of those are things I thought of and then justified. They fall out of the premise. That's the difference between a system and a pile of effects, and you can feel it as a user even if you'd never articulate why.
+The buffers run at half the canvas resolution. The persistence layer is blurred when it is drawn, so I can spend fewer pixels on it than on the final image.
 
-## Phosphor has memory
+## The brightness change that barely changed anything
 
-This is the effect that does most of the work, and it's the one the usual recipe can't express at all.
+I once halved the degauss constants and thought I'd made the flash much dimmer. The new values were in the served bundle, the tests passed, and the flash looked almost identical.
 
-Phosphor keeps glowing after the beam has passed. A tube that has displayed the same navigation bar for ten minutes retains a faint ghost of it. A CSS overlay has no way to know what was on screen a moment ago, because CSS has no memory.
+The buffer was clamping its values to 1.0 on every frame. It also accumulated repeated deposits. The old numbers were far above the ceiling, so halving them still left the buffer saturated.
 
-A shader can, if you give it one. Render into a texture, then next frame read that texture back, fade it slightly, and add the new content on top. Ping-pong between two buffers so you're never reading and writing the same one.
+Reading a strip of pixels from the canvas showed roughly a two per cent change. I had to work backwards from the light reaching the screen to get a useful reduction. The constants now look less tidy, but changing them changes the picture.
 
-\`\`\`glsl
-// Persistence pass, running at half resolution.
-vec4 prev = texture2D(uPrev, uv);
-vec4 next = texture2D(uSource, uv);
+## One clock
 
-// RGB decays fast: that's the visible smear behind moving content.
-vec3 lit = max(next.rgb, prev.rgb * uDecay);
+Scroll, physics, sound and the shader share the frame loop in SystemProvider. It updates the frame values and calls the subscribers in order. A collision can therefore reach the shader and synth in the same frame.
 
-// Alpha accumulates slowly: that's burn-in under anything static.
-float burn = min(prev.a + next.a * uBurnRate, uBurnMax);
+The loop also bounds the timestep after a tab has been in the background. Without that, the physics solver could be handed a long interval to simulate at once.
 
-gl_FragColor = vec4(lit, burn);
-\`\`\`
+Per-frame values live in a mutable reference. The parts CSS needs are published as custom properties. React state handles controls and other occasional changes.
 
-Two decay rates in one buffer is the whole idea. RGB fades over a few frames and gives you the trail behind moving text. Alpha climbs over minutes and never quite clears, giving you a permanent faint ghost under the header and the status bar. Same texture, two timescales, because that's genuinely what the material does.
+## The page still has to work
 
-Half resolution, because it's a glow. Nobody has ever noticed the persistence buffer is soft, and it's four times fewer pixels.
+With reduced motion enabled, the smooth-scroll library stays unmounted, the shader draws a static frame and the boot animation is skipped. Sound is off by default, and enabling it doesn't start a continuous background tone.
 
-The rule that came out of this: **nothing else may write light directly to the screen.** Every effect deposits into the simulation buffer and lets it decay. The first version had impact flashes drawn straight to the output, and they looked wrong precisely because they were the only thing on screen with no memory.
+The boot path caused a less interesting but more serious bug. A pre-paint script hides the page while the machine starts. Skipping the animation without clearing that class left the whole site invisible.
 
-## Why should every effect share one clock?
+The animated name caused another: the HTML contained separate letters where a text extractor needed a name. I now render it whole on the server and switch to the character layer after mount. That led to [the survey of server-rendered headings](/writing/split-text-audit-2026).
 
-Because the moment two subsystems each schedule their own frame, the order they run in stops being defined, and you get a smear that lags the scroll by exactly one frame. If you take one practical thing from this, take this one.
-
-Every subsystem here wants a frame loop. The smooth-scrolling library, the shader, the physics solver, the status readouts. The obvious approach is for each to call [\`requestAnimationFrame\`](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame) itself, and it works, and then you find scroll velocity is computed after the shader read it, so the smear lags the scroll by exactly one frame.
-
-One loop, at the top, and everything subscribes:
-
-\`\`\`ts
-const subscribers = new Set<(dt: number) => void>();
-
-function tick(now: number) {
-  const dt = Math.min((now - last) / 1000, 1 / 30); // clamp a backgrounded tab
-  last = now;
-  for (const fn of subscribers) fn(dt);
-  raf = requestAnimationFrame(tick);
-}
-\`\`\`
-
-Order is now explicit and everything sees the same frame. The clamp matters more than it looks: without it, a tab that was backgrounded for thirty seconds hands the physics solver a thirty-second timestep and every object teleports through the floor.
-
-The other rule is that per-frame values never go through React state. Sixty state updates a second will cost you the frame budget on their own. Mutate a ref, publish to a CSS custom property, and let the compositor read it:
-
-\`\`\`ts
-frame.current.velocity = v;
-root.style.setProperty("--scroll-v", String(v));
-\`\`\`
-
-## What happens when someone turns motion off?
-
-A screen that flickers, drifts and smears is exactly what [\`prefers-reduced-motion\`](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion) exists to protect people from. Getting this right is not optional and it's more than pausing an animation.
-
-Under \`reduce\`: the smooth-scroll library is never mounted at all, the shader draws exactly one static frame and stops, scroll reveals apply instantly rather than transitioning, and the boot sequence doesn't run.
-
-The last one caught me out. The boot animation hides page content until it finishes, via a class set before first paint. Skip the animation but keep the class and you've built a page that is permanently invisible to the people who most needed the accommodation. Any pre-paint script that hides content needs a guaranteed path that reveals it again, and that path has to be the *first* thing you test, not the last.
-
-## What would I tell someone building one?
-
-One warning if you build anything like this: an effect that fragments text fragments it for machines too, which cost me my own headline in search. That is [its own article](/writing/split-text-is-costing-you-search).
-
-**Pick a premise and refuse things that don't follow from it.** The refusals are what make it look designed. I cut a cursor trail and an ambient audio bed late on, both of which I liked, because neither followed from anything and both read as noise.
-
-**Simulate the material, don't paint the symptom.** Scanlines are a symptom. Phosphor persistence is the material. Simulating the material gets you the symptom for free, plus every second-order effect you would never have thought to hand-draw.
-
-**Reach for CSS first anyway.** Most of this site is CSS keyframes and an IntersectionObserver. The WebGL is there for the one thing CSS genuinely cannot do, which is remember what it was showing a second ago. Using a shader for a fade would be showing off, and it would cost you a frame budget you'll want later.`,
+You can try the screen from the terminal on [the home page](/): \`degauss\` sends a ring across it, and \`gravity\` drops the page. Escape restores the page after gravity.`,
 };

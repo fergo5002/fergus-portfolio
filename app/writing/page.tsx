@@ -9,7 +9,7 @@ import { profile } from "@/content/profile";
 import { canonical, blogSchema, breadcrumbSchema, articlePath, OG_IMAGE } from "@/lib/seo";
 
 const DESCRIPTION =
-  "Essays on shipping with AI agents, multi-tenant Shopify engineering, why a startup wound down, and the craft of motion on the web.";
+  "Notes from building a booking system, a dungeon and this website, plus an account of closing Presterly.";
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name. Spelling
@@ -65,7 +65,7 @@ export default function WritingPage() {
             </Link>
             <p className="writing__meta">
               <time dateTime={article.date}>{formatDate(article.date)}</time>
-              <span aria-hidden="true"> · </span>
+              {" "}<span className="writing__separator" aria-hidden="true" />{" "}
               {readingMinutes(article.body)} min read
             </p>
             <p className="writing__desc">{article.description}</p>
