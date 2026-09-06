@@ -199,3 +199,15 @@ describe("the article meta line draws its separators (2026-09-06)", () => {
     expect(code(page)).not.toMatch(/<span aria-hidden="true"> · <\/span>/);
   });
 });
+
+describe.each([
+  ["experience", "components/ExperienceItem.tsx", "exp__dot"],
+  ["writing index", "app/writing/page.tsx", "writing__dot"],
+])("the %s draws decorative separators", (_name, file, selector) => {
+  it("keeps the glyph out of document text and draws it in CSS", () => {
+    const source = code(read(file));
+    expect(source).toContain(`<span className="${selector}" aria-hidden="true" />`);
+    expect(source).not.toMatch(/>\s*·\s*<\/span>/);
+    expect(code(css)).toMatch(new RegExp(`\\.${selector}::before\\s*\\{[^}]*content:\\s*" · "`));
+  });
+});

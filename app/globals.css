@@ -1080,6 +1080,9 @@ html.crt-off body {
 .exp__role {
   color: var(--amber);
 }
+.exp__dot::before {
+  content: " · ";
+}
 .exp__summary {
   margin: var(--sp-2) 0;
   color: var(--green);
@@ -2082,12 +2085,6 @@ html.js .exp__spine {
   .term__input {
     font-size: 16px;
   }
-  /* Same reason, and it matters more here: the contact form is the one place on
-     the site a visitor types something long, so having iOS yank the layout
-     sideways on the first tap would be worse than on the toy terminal. */
-  .cform__input {
-    font-size: 16px;
-  }
   .term__scroll {
     max-height: 190px;
     font-size: 0.84rem;
@@ -2435,6 +2432,7 @@ html.is-gravity .statusbar {
   .contact__row a,
   .exp__link a,
   .project__links a,
+  .writing__feed a,
   .post__next a {
     display: inline-flex;
     align-items: center;
@@ -2607,6 +2605,9 @@ html.is-gravity .statusbar {
   margin-top: var(--sp-5);
   font-size: 0.85rem;
   color: var(--green-dim);
+}
+.writing__dot::before {
+  content: " · ";
 }
 
 /* ── article ───────────────────────────────────────────────────────────── */
@@ -3304,6 +3305,20 @@ textarea.cform__input {
   resize: vertical;
   min-height: 9rem;
   line-height: 1.6;
+}
+
+/* Keep this after the base font shorthand: an earlier 16px rule was reset to
+   15px by `font: inherit`, making iOS zoom the form on focus. */
+@media (hover: none) {
+  .cform__input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .cform__label {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 
 .cform__error {

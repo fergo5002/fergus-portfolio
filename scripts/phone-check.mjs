@@ -411,7 +411,13 @@ function auditInPage({ minInput, minTap }) {
       if (!summary || !summary.contains(el)) return false;
     }
     const r = el.getBoundingClientRect();
-    return r.width >= 2 && r.height >= 2;
+    if (r.width < 2 || r.height < 2) return false;
+    // A full-size child can live inside a 1px clipped parent, as the contact
+    // honeypot does. Its own layout box is not evidence of a visible control.
+    // Check the ancestors' clipping box, not its intersection with this child:
+    // that keeps scrollable rail links and offscreen-control faults in scope.
+    const clip = clipBoxFor(el);
+    return !clip || (clip.right - clip.left >= 2 && clip.bottom - clip.top >= 2);
   };
 
   /**
@@ -999,7 +1005,13 @@ async function runAll(targets, outDir, readySelector = null) {
     const browser = await (engineName === "webkit" ? webkit : chromium).launch();
     try {
       for (const profile of PROFILES.filter((p) => p.engine === engineName)) {
-        for (const t of targets) results.push(await checkRoute(browser, profile, t.url, outDir, t.label, readySelector));
+        for (const t of targets) {
+          const result = await checkRoute(browser, profile, t.url, outDir, t.label, readySelector);
+          results.push(result);
+          // Retain completed measurements if a later navigation times out.
+          writeFileSync(join(outDir, "report.json"), JSON.stringify(results, null, 2));
+          console.log(`measured ${profile.id} ${t.label}: ${result.failures.length} failure(s)`);
+        }
       }
     } finally {
       await browser.close();

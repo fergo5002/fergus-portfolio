@@ -169,6 +169,13 @@ of building that page:
   autofilled two fields and pasted a prepared message was told "Sent." while it went nowhere.
   Never give a soft signal the power to delete.
 
+**Native validation must leave the invalid field visible below the fixed nav.** On WebKit
+phone emulation, a field's `scroll-margin-top` alone still left the focused name above the
+viewport after the browser finished scrolling. `html` also sets `scroll-padding-top` to the
+nav height plus one spacing unit. `scripts/phone-polish-check.mjs` taps the empty form's
+submit button and reads the final field rectangle without moving it itself. This preserves
+native validation and the no-JavaScript form; it does not introduce a second submit path.
+
 Sending goes through Resend over plain `fetch`, no SDK. `RESEND_API_KEY` is the only required
 variable and it **is set** on the Vercel project (production, preview and development), with a copy
 in the DPAPI vault. `CONTACT_TO_EMAIL` and `CONTACT_FROM_EMAIL` are optional overrides and neither

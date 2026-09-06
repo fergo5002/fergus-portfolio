@@ -571,3 +571,17 @@ it("reserves the fixed nav in the document's native validation scrollport", () =
   // The document padding keeps the focused field below the fixed bar.
   expect(css).toMatch(/html\s*\{[^}]*scroll-padding-top:\s*calc\(var\(--nav-h\) \+ var\(--sp-3\)\)/);
 });
+
+describe("contact fields and the feed link on touch", () => {
+  it("sizes contact inputs after their base font shorthand, so the cascade preserves 16px", () => {
+    const baseEnd = css.indexOf(".cform__input::placeholder");
+    const lateTouch = css.slice(baseEnd);
+    expect(lateTouch).toMatch(/@media \(hover: none\)\s*\{\s*\.cform__input\s*\{[^}]*font-size: 16px/);
+    expect(lateTouch).toMatch(/\.cform__input\s*\{[^}]*min-height: 44px/);
+    expect(lateTouch).toMatch(/\.cform__label\s*\{[^}]*min-height: 44px/);
+  });
+
+  it("gives the standalone RSS link a thumb's height", () => {
+    expect(mediaBlocks("(hover: none)")).toMatch(/\.writing__feed a[^{]*\{[^}]*min-height: 44px/);
+  });
+});

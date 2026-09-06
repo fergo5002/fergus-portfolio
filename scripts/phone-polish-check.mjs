@@ -121,6 +121,13 @@ async function run(name, engine, device) {
       return { top: r?.top, navBottom: document.querySelector(".nav").getBoundingClientRect().bottom, invalid: !!field };
     });
     assert(invalid.invalid && invalid.top >= invalid.navBottom, JSON.stringify(invalid));
+    if (device.hasTouch) {
+      const fields = await page.locator(".cform__input, .cform__label").evaluateAll(els => els.map(el => ({
+        tag: el.tagName, height: el.getBoundingClientRect().height, font: parseFloat(getComputedStyle(el).fontSize),
+      })));
+      assert(fields.every(el => el.height >= 44 && (el.tag === "LABEL" || el.font >= 16)), JSON.stringify(fields));
+      check("contact fields resist iOS zoom and fields/labels have a thumb's height", fields);
+    }
     check("native validation leaves the invalid field below the fixed nav", invalid);
     await page.screenshot({ path: join(out, `${name}-contact.png`) });
 

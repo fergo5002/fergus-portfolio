@@ -41,6 +41,24 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Each: break one guard, expect the suite to notice. */
 const MUTATIONS = [
+  ...[
+    ["contact font invites iOS zoom", /(\.cform__input\s*\{\s*font-size:) 16px/, "$1 15px"],
+    ["contact inputs lose their tap height", /(\.cform__input\s*\{\s*font-size: 16px;\s*min-height:) 44px/, "$1 32px"],
+    ["contact labels lose their tap height", /(\.cform__label\s*\{\s*display: flex;\s*align-items: center;\s*min-height:) 44px/, "$1 20px"],
+    ["the RSS link loses its tap height", /  \.writing__feed a,\r?\n/, ""],
+  ].map(([name, pattern, replace]) => ({
+    name: `phone polish: ${name}`, file: "app/globals.css", pattern, replace,
+    tests: "app/globals.test.ts",
+  })),
+  ...[
+    ["experience", "components/ExperienceItem.tsx", "exp__dot"],
+    ["writing index", "app/writing/page.tsx", "writing__dot"],
+  ].map(([name, file, selector]) => ({
+    name: `phone polish: ${name} writes decorative dots into the document`, file,
+    pattern: new RegExp(`<span className="${selector}" aria-hidden="true" />`),
+    replace: `<span className="${selector}" aria-hidden="true"> · </span>`,
+    tests: "components/chrome.test.ts",
+  })),
   // The interrupted phone-polish batch and its load/rain changes. Narrow test
   // files keep each mutation attributable; the runner proves the full baseline first.
   ...["#28a846", "#c88420", "#50a0be"].map(colour => ({
@@ -653,7 +671,7 @@ const MUTATIONS = [
   {
     name: "the phone tap target shrinks back under 44px",
     file: "app/globals.css",
-    pattern: /(?<lead>\.statusbar__prompt \{\r?\n    align-self: flex-end;[\s\S]{0,120}min-height: )44px;/,
+    pattern: /(?<lead>\.statusbar__prompt \{\r?\n    min-width: 44px;\r?\n    min-height: )44px;/,
     replace: "$<lead>22px;",
   },
 

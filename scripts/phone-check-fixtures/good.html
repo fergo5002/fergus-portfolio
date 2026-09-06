@@ -101,6 +101,11 @@
 <body>
 <p id="escape">Parked above the top, like a skip link waiting for focus.</p>
 <h1>Good fixture</h1>
+<!-- A full-size input inside a 1px clipped parent is not a visible control.
+     The contact honeypot uses this shape; its child still has a layout box. -->
+<div style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden" aria-hidden="true">
+  <input id="hidden-parent-input" tabindex="-1" style="font-size:13px;width:150px;height:22px;min-height:0" value="honeypot">
+</div>
 <p id="fine">Readable control paragraph, near-black on white.</p>
 <p id="dim">Formerly dim paragraph, now dark grey on white, with <a id="inline" href="#fine">an inline link in a sentence</a> that is exempt from the tap-target rule.</p>
 <div id="wide"></div>

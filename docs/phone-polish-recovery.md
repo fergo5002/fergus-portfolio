@@ -32,7 +32,7 @@ point. This record separates recovered evidence from checks performed after reco
   in-site navigation and unseen content retain their effects.
 - Tone down the rain on phones.
 - Shorten the phone boot to about two seconds, retaining the full desktop profile.
-- The recorded plan also includes a `cd arcade` button on every route. It runs through
+- Fergus's additional message at 11:55 asked for `cd arcade` globally. It runs through
   the existing terminal, including when the drawer is already open.
 
 The original edge fade was removed after the phone instrument measured the partially
@@ -68,14 +68,52 @@ Earlier evidence belongs to the tree before that last batch:
 
 ## Remaining verification at recovery
 
-- [ ] Full tests and production build on the combined tree.
-- [ ] Phone instrument planted-fault proof, including both merged fixture sets.
+- [x] Full tests on the combined tree: 2,668 passes, three opt-in skips; TypeScript passes.
+- [ ] Final production build after the additional route fixes.
+- [x] Phone instrument planted-fault proof, including both merged fixture sets and the
+  clipped-parent honeypot, on all three browser profiles.
 - [ ] Every sitemap route family, two article examples and all public tools on WebKit
   at 390/320 and throttled Chromium.
 - [ ] Real browser checks of nav reachability, drawer/help, arcade entry/exit, status-bar
   geometry, validation position and hard-load/in-site motion.
 - [ ] Relevant mutation proof and review of the final diff.
 - [ ] Update the living progress record and shared-vault worktree/evidence notes.
+
+## Recovery corrections
+
+The first recovered production build reproduced a further contact issue on both WebKit
+phone sizes: native validation focused the empty name field but left it above the viewport,
+despite a computed 60px field scroll margin. After settling, the 320px probe measured the
+field top at -10.17px. Adding document scroll padding kept the field below the nav in the
+same browser. The CSS guard failed before this correction; the final browser driver also
+waits for the native scroll to settle and never scrolls the invalid field itself.
+
+Secondary-colour headroom is now checked against page and panel backgrounds on all three
+themes. Ten additional mutation cases cover these colours, terminal tap height, document
+scroll padding, phone boot selection, both rain constants and the two late-hydration guards.
+
+The expanded audit also found that the earlier mobile contact font rule lost to a later
+`font: inherit`: WebKit measured 15px text and 41px inputs. The touch rule now follows the
+base declaration, with 16px text and 44px input/label targets. The standalone RSS link also
+gets a 44px target. Experience and writing-index separator dots follow the existing article
+convention: empty spans with CSS-generated decoration. Four new tests failed before these
+fixes and passed afterwards; six mutation cases cover the corresponding regressions.
+
+The contact honeypot was an instrument false positive: its input has a normal layout box
+inside a clipped 1px parent. The new good fixture failed with two false alarms on all three
+profiles before the audit checked the ancestors' clipping box. Afterwards it passed, while
+the existing unreachable-control fault, scrollable rail, closed-details and clipped-text
+fixtures continued to behave correctly. No accessibility floor or spam handling changed.
+
+The local full-catalogue mutation proof uses four temporary checkouts under
+`C:\Users\oreil\AppData\Local\Temp\codex-phone-polish-01a076f1`. Four workers per checkout
+caused an unchanged protocol timeout, so those failed baselines were discarded. One worker
+per checkout passed all 2,664 tests. To avoid repeating the whole suite for every fault,
+the temporary runners select tests by imports and source-reading guards, verify each test
+group on clean source, and fall back to the full suite if a selected group survives. The
+213 mutations and assertions are unchanged. The preparation script and exact mapping are
+retained under `.codex/phone-polish-recovery/`; the committed CI runner retains its standard
+full-suite behaviour.
 
 Physical phones, real mobile keyboards and representative real-network performance require
 device testing. There was no phone-polish pull request at recovery. Publishing this recovered

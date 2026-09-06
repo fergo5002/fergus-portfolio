@@ -1,5 +1,12 @@
 # Phone polish and UI glitch pass: implementation plan
 
+Recovery status, 6 September 2026: Claude session `5d32da86-0162-43ca-aafd-6934e9e73941`
+was interrupted after six commits and an uncommitted contrast/target batch. Codex recovered
+that exact tree and merged the subsequent five-studio release in an isolated checkout.
+`docs/phone-polish-recovery.md` is the current delivery/evidence record. The detailed steps
+below preserve the original plan; the nav fade was superseded by a measured contrast failure,
+and WebKit validation also required document scroll padding.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make fergusoreilly.dev work properly on phones and remove the load-time glitches every visitor sees, then prove it on real mobile engines and in production.
