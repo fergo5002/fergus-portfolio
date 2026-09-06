@@ -206,6 +206,7 @@ async function run(name, engine, device) {
 }
 
 const only = option("--profile", "");
+assert(["", "webkit-390", "webkit-320", "chromium-desktop"].includes(only), `Unknown browser profile: ${only}`);
 if (!only || only === "webkit-390") await run("webkit-390", webkit, { ...devices["iPhone 13"] });
 if (!only || only === "webkit-320") await run("webkit-320", webkit, { ...devices["iPhone 13"], viewport: { width: 320, height: 568 }, deviceScaleFactor: 2 });
 if (!only || only === "chromium-desktop") await run("chromium-desktop", chromium, { viewport: { width: 1440, height: 900 } });

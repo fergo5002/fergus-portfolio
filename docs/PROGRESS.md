@@ -10,16 +10,19 @@
 
 Recovered Claude session `5d32da86-0162-43ca-aafd-6934e9e73941` at its exact stopping
 point: six commits on `phone-polish` plus its final uncommitted contrast/tap-target batch.
-The original checkout remains untouched. Work continues in `95fb` on
-`codex/phone-polish-recovery`, with the subsequent studio release `c029de1` merged.
+The original checkout remains untouched. Implemented in `95fb` on
+`codex/phone-polish-recovery`, with main through `3d9b44c` merged.
 
 The recovery record is `docs/phone-polish-recovery.md`, including Fergus's original choices,
 the distinction between historical and fresh test evidence, and the remaining checks.
-Local recovery has additionally corrected WebKit native-validation scrolling, contact font
-cascade/target sizes, the RSS target and decorative meta separators. The phone instrument
-now recognises the honeypot's clipped parent, with a failing-then-passing browser fixture.
-The combined suite passes 2,668 tests; final production-browser verification is in progress.
-Nothing from this recovery has been pushed or deployed.
+Recovery additionally corrects WebKit native-validation scrolling, contact font cascade/target
+sizes, the RSS target, decorative meta separators and initial arcade focus before paint. The
+phone instrument recognises the honeypot's clipped parent, with a failing-then-passing fixture.
+The combined suite passes 2,669 tests; TypeScript and the 49-page production build pass. All
+57 public route/profile checks, phone/desktop shell interactions and all six arcade games on
+three phone profiles pass. All 220 mutation cases have recorded catches; the recovery record
+explains the local method, direct rain-pixel evidence and software-rendered boot timing limits.
+The resumed original request includes deployment through the normal PR and release gates.
 
 ## 2026-09-06: five selected studios
 

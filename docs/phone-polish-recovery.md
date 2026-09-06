@@ -10,6 +10,8 @@ point. This record separates recovered evidence from checks performed after reco
 - Original checkout: `C:\Dev\fergus-portfolio`, branch `phone-polish`, head `1e4dd0c`.
 - Original request began at 11:29 Dublin time. The limit interrupted work at 13:10 on
   6 September 2026. The final background mutation check subsequently completed.
+- The original request explicitly included fixing and deploying the work. Fergus's
+  continuation request resumes that scope through the repository's normal release gates.
 - Six commits follow `f4cc357`: `5969eae`, `bf1686c`, `7154fbd`, `aa61438`, `b3e3141`,
   and `1e4dd0c`. They cover the phone instrument, nav and arcade door, status bar,
   hydration/reveals, shorter phone boot, rain, help, MCP wrapping and article template.
@@ -24,6 +26,8 @@ point. This record separates recovered evidence from checks performed after reco
 - Current `origin/main` included `c029de1`, the five-studio release, so recovery merged
   that commit. The phone instrument's conflict combines clipped-text sampling with the
   studio scroll-panel checks. Both sets of planted regression fixtures remain.
+- The subsequent documentation/Atlas-check correction `3d9b44c` was also merged. Original
+  source remains at `1e4dd0c`; all three recovered files still match their snapshots by hash.
 
 ## Decisions recovered from Fergus's answers
 
@@ -68,16 +72,18 @@ Earlier evidence belongs to the tree before that last batch:
 
 ## Remaining verification at recovery
 
-- [x] Full tests on the combined tree: 2,668 passes, three opt-in skips; TypeScript passes.
-- [ ] Final production build after the additional route fixes.
+- [x] Full tests on the final tree: 2,669 passes, three opt-in skips; TypeScript passes.
+- [x] Final production build after the route and focus fixes: 49 generated pages.
 - [x] Phone instrument planted-fault proof, including both merged fixture sets and the
   clipped-parent honeypot, on all three browser profiles.
-- [ ] Every sitemap route family, two article examples and all public tools on WebKit
-  at 390/320 and throttled Chromium.
-- [ ] Real browser checks of nav reachability, drawer/help, arcade entry/exit, status-bar
+- [x] Every sitemap route family, two article examples and all public tools on WebKit
+  at 390/320 and throttled Chromium: 19 routes per profile, 57 checks, zero failures.
+- [x] Real browser checks of nav reachability, drawer/help, arcade entry/exit, status-bar
   geometry, validation position and hard-load/in-site motion.
-- [ ] Relevant mutation proof and review of the final diff.
-- [ ] Update the living progress record and shared-vault worktree/evidence notes.
+- [x] All six arcade games on both WebKit widths and Chromium: touch, pause/resume,
+  measured sizing, Escape, scrollback/focus recovery and reduced motion.
+- [x] All 220 current mutation cases caught across the recorded checks; final diff reviewed.
+- [x] Update the living progress record and shared-vault worktree/evidence notes.
 
 ## Recovery corrections
 
@@ -105,16 +111,46 @@ profiles before the audit checked the ancestors' clipping box. Afterwards it pas
 the existing unreachable-control fault, scrollable rail, closed-details and clipped-text
 fixtures continued to behave correctly. No accessibility floor or spam handling changed.
 
+One fresh WebKit run lost both the arcade and its drawer on an immediate Escape. Four
+instrumented repeats showed correct routing, so the observed failure was intermittent.
+The room's initial focus previously ran in a passive effect; it now runs before first paint
+in a layout effect, closing that interval. Its source-coupling guard failed before the change,
+then passed with the shell/nav suite, and its mutation was caught. The browser driver keeps
+keyboard/focus traces on a failure rather than silently retrying it.
+
+The cold-boot driver observes the real animation, without speeding up timers. It distinguishes
+a completed script from the existing 20-second watchdog recovery. In the final software-rendered
+run, the visible WebKit phone pages completed in 5,573ms and 5,339ms; the visible desktop page
+recovered through the watchdog at 20,471ms while still typing the first line. These are local
+rendering measurements, not a two-second device guarantee or evidence of a completed desktop
+animation. The shorter profile's timer floor and unchanged full profile are separately tested.
+
+`scripts/phone-rain-check.mjs` reads the actual WebGL canvas over 60 frames at paired shader
+times, replacing only the two phone rain constants for the before case. In the completed run,
+phone mean channel-weighted brightness changed from 14.8724 to 14.0533 and peak from 139.5042
+to 90.8056. Desktop means were identical at 12.8329 and peaks at 133.8584. These are controlled
+local canvas samples, not a claim about real-network frame rates or every device.
+
 The local full-catalogue mutation proof uses four temporary checkouts under
 `C:\Users\oreil\AppData\Local\Temp\codex-phone-polish-01a076f1`. Four workers per checkout
 caused an unchanged protocol timeout, so those failed baselines were discarded. One worker
 per checkout passed all 2,664 tests. To avoid repeating the whole suite for every fault,
 the temporary runners select tests by imports and source-reading guards, verify each test
-group on clean source, and fall back to the full suite if a selected group survives. The
-213 mutations and assertions are unchanged. The preparation script and exact mapping are
+group on clean source, and fall back to the full suite if a selected group survives. That first
+catalogue had 213 cases. A stale status-bar anchor was repaired, then seven additional cases
+and fresh full baselines brought the final catalogue to 220. The last baseline passes all
+2,669 tests. The preparation scripts, source/test mapping and per-case proof mapping are
 retained under `.codex/phone-polish-recovery/`; the committed CI runner retains its standard
 full-suite behaviour.
 
+The optional 15-second-harness rerun records 38/39 because its extra timeout rejection
+misclassifies the fault that deliberately drops the first handshake frame. The ordinary
+partition caught that fault; the retained direct microtask proof also shows `first frame`
+arriving on clean source and no message under the exact catalogue mutation. Its exchange
+tests time out by design. This exception is explicit, rather than rewriting the failed log.
+
 Physical phones, real mobile keyboards and representative real-network performance require
-device testing. There was no phone-polish pull request at recovery. Publishing this recovered
-branch is a separate final step; no deployment is claimed by this document.
+device testing. There was no phone-polish pull request at recovery. The release uses a pull
+request with the required `check`, `mutation` and `phone` gates, then verifies the exact merge
+SHA, READY state, assigned aliases and canonical browser behaviour on the personal Vercel
+project. Historical evidence and local checks above do not by themselves establish deployment.
