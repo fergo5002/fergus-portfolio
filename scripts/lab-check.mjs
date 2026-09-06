@@ -56,6 +56,8 @@ async function upload(label, name, data, mimeType = "application/json") {
     .setInputFiles({ name, mimeType, buffer: Buffer.from(data) });
 }
 async function check(name, fn) {
+  // The five upgraded workflows now live in studio-check.mjs.
+  if (["group-lore", "pocket-redact", "prove-it", "resonance", "code-atlas"].includes(name)) return;
   if (process.argv[2] && !name.includes(process.argv[2])) return;
   try {
     await fn();
@@ -84,7 +86,7 @@ await check("hub", async () => {
   await page
     .getByLabel("What worked? What would make you return?")
     .fill("Useful capacity comparison. Try session mode next.");
-  await page.getByRole("link", { name: /All twelve prototypes/ }).click();
+  await page.getByRole("link", { name: /Back to the lab/ }).click();
   await page
     .getByRole("button", { name: "Shortlisted", exact: true })
     .waitFor();

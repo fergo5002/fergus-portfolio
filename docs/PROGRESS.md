@@ -6,6 +6,33 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-06: five selected studios
+
+Fergus selected Group Lore, Pocket Redact, Prove It and Resonance for a deeper build, plus an
+Obsidian-style file graph. Work continues locally in `f6f8` on `codex/selected-tools-studio`,
+from `f49cb41`. Nothing has been pushed or deployed.
+
+- [x] Atlas replaces Code Atlas in the lab: broad file/folder/ZIP intake, public GitHub import,
+  manually ticked force graph, drag/pin/zoom/focus, file inspection, explainable links, local
+  media previews and saved map round trips.
+- [x] Group Lore: additional chat formats, worker import, date/person/phrase filters, weekly
+  rhythm, bounded message explorer and anonymous portrait/summary downloads.
+- [x] Pocket Redact: thumbnails, zoom, drawing/moving/resizing masks, undo/redo, text-box
+  candidates and a fresh raster PDF with an explicit review of its reopened pages.
+- [x] Prove It: twelve cases, prediction notebook, confidence history, evidence comparison
+  and downloadable debriefs.
+- [x] Resonance: live sixteen-step sequencing, playable pads and pitch scrubbing, per-voice
+  controls, XY effects, patch import/export and eight-bar WAV rendering.
+- [x] Full suite: 2,582 passes, three opt-in skips; desktop workflows and 390px WebKit/Chromium
+  checks; mixed-format imports, large archives, live GitHub and redaction pixel proof.
+- [x] Clean production build (44 pages), lab-disabled 404/sitemap verification and all five
+  studios passing the strict 320px/390px/throttled phone audit. The audit's scroll-panel fix
+  has a planted regression proof; numerical accessibility floors are unchanged.
+
+Detailed review paths, scope limits and evidence: `docs/selected-tools-studio.md`.
+The five studios are featured at `http://127.0.0.1:3106/lab`; the seven remaining experiments
+are still available below them.
+
 ## 2026-09-06: twelve local tool MVPs
 
 Fergus requested a working local MVP of every research pitch before choosing what to publish.

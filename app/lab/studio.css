@@ -1,0 +1,1422 @@
+/* Five workbenches, one phosphor machine. All rules stay inside the local lab. */
+.lab .studio {
+  --studio-ink: var(--green-bright);
+  --studio-soft: color-mix(in srgb, var(--green) 80%, var(--bg));
+  --studio-paper: color-mix(in srgb, var(--bg-panel) 94%, var(--green));
+  gap: 24px;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+.lab .studio * {
+  min-width: 0;
+  box-sizing: border-box;
+}
+.lab .studio button,
+.lab .studio input,
+.lab .studio select,
+.lab .studio textarea {
+  font: inherit;
+}
+.lab .studio button {
+  cursor: pointer;
+}
+.lab .studio button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.lab .studio :focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 4px;
+}
+.lab .studio h3 {
+  font-family: var(--font-screen);
+  font-size: 1.8rem;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--green-bright);
+  margin: 0 0 14px;
+}
+.lab .studio h4 {
+  margin: 18px 0 10px;
+  color: var(--green-bright);
+}
+.lab .studio p {
+  margin: 0 0 14px;
+}
+.lab .studio-intro {
+  padding: 26px 0 12px;
+  border-top: 1px solid var(--lab-line);
+}
+.lab .studio-intro h2 {
+  max-width: 18ch;
+  font-family: var(--font-screen);
+  font-size: clamp(2.6rem, 5.4vw, 5rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--green-bright);
+  margin: 18px 0;
+}
+.lab .studio-intro > p:last-child {
+  max-width: 65ch;
+  color: var(--studio-soft);
+  font-size: 1rem;
+}
+.lab .studio-eyebrow {
+  font-size: 0.7rem !important;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.lab .studio-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+}
+.lab .studio-toolbar > .lab-field {
+  flex: 1 1 170px;
+  max-width: 360px;
+}
+.lab .studio-toolbar .bench-button,
+.lab .studio-toggle {
+  min-height: 44px;
+}
+.lab .studio .lab-field {
+  margin: 0;
+  gap: 6px;
+}
+.lab .studio .lab-field label {
+  font-size: 0.75rem;
+  color: var(--studio-soft);
+}
+.lab .studio input:not([type="checkbox"]):not([type="range"]),
+.lab .studio select,
+.lab .studio textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--lab-line);
+  background: var(--bg);
+  color: var(--green-bright);
+  border-radius: 4px;
+  font-size: 16px;
+}
+.lab .studio input[type="file"] {
+  max-width: 100%;
+  font-size: 0.78rem !important;
+  padding: 8px !important;
+}
+.lab .studio input[type="file"]::file-selector-button {
+  background: var(--bg-panel);
+  color: var(--green);
+  border: 1px solid var(--lab-line);
+  padding: 5px 8px;
+  margin-right: 8px;
+}
+.lab .studio textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+.lab .studio select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 30px;
+}
+.lab .studio-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.lab .studio-range input {
+  accent-color: var(--amber);
+  width: 100%;
+  height: 24px;
+  min-width: 60px;
+}
+.lab .studio-range output {
+  min-width: 56px;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--green-bright);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+}
+.lab .studio-toggle {
+  border: 1px solid var(--lab-line);
+  color: var(--green);
+  background: transparent;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 0.8rem !important;
+}
+.lab .studio-toggle[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--green) 14%, var(--bg));
+  border-color: var(--green);
+  color: var(--green-bright);
+}
+.lab .studio button:hover:not(:disabled) {
+  border-color: var(--amber);
+}
+.lab .studio-panel,
+.lab .studio-drop,
+.lab .studio-details {
+  background: var(--studio-paper);
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  padding: 22px;
+}
+.lab .studio-drop {
+  border-style: dashed;
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--green) 5%, var(--bg)),
+    var(--bg)
+  );
+}
+.lab .studio-drop > strong {
+  display: block;
+  margin-bottom: 16px;
+  font-family: var(--font-screen);
+  font-size: 1.8rem;
+  font-weight: 400;
+  color: var(--green-bright);
+}
+.lab .studio-drop > p {
+  font-size: 0.76rem;
+  margin: 14px 0 0;
+  max-width: 100ch;
+}
+.lab .studio-drop.is-over {
+  outline: 2px solid var(--amber);
+  background: var(--bg-panel);
+}
+.lab .studio-details summary,
+.lab .studio details summary {
+  cursor: pointer;
+  min-height: 36px;
+  color: var(--green-bright);
+  font-size: 0.85rem;
+}
+.lab .studio-details[open] > summary {
+  margin-bottom: 16px;
+}
+.lab .studio-note {
+  font-size: 0.75rem;
+  color: var(--studio-soft);
+  line-height: 1.7;
+}
+.lab .studio-badge {
+  display: inline-block;
+  border: 1px solid var(--lab-line);
+  border-radius: 20px;
+  padding: 5px 11px;
+  font-size: 0.68rem;
+  color: var(--green);
+}
+.lab .studio-badge.is-live {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+.lab .studio-empty {
+  padding: 60px 20px;
+  border: 1px dashed var(--lab-line);
+  text-align: center;
+}
+.lab .studio-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.lab .studio-section-head > span {
+  font-size: 0.75rem;
+}
+.lab .studio-controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 14px 0;
+}
+.lab .studio .lab-metrics {
+  border-top: 1px solid var(--lab-line);
+  border-bottom: 1px solid var(--lab-line);
+  gap: 0;
+  background: transparent;
+}
+.lab .studio .lab-metrics > div {
+  border: 0;
+  border-right: 1px solid var(--lab-line);
+  background: transparent;
+  padding: 18px;
+}
+.lab .studio .lab-metrics dd {
+  font-family: var(--font-screen);
+  font-size: 2.9rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+.lab .studio .lab-metrics dt {
+  font-size: 0.72rem;
+}
+/* Atlas: a wide observatory beside an evidence drawer. */
+.lab .atlas-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.lab .atlas-stage {
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--green) 4%, var(--bg)),
+    var(--bg)
+  );
+}
+.lab .atlas-stage > .studio-toolbar {
+  padding: 12px;
+  gap: 6px;
+  border-bottom: 1px solid var(--lab-line);
+}
+.lab .atlas-stage .bench-button,
+.lab .atlas-stage .studio-toggle {
+  font-size: 0.7rem;
+  padding: 6px 9px;
+}
+.lab .atlas-canvas {
+  display: block;
+  width: 100%;
+  height: 560px;
+  touch-action: none;
+  cursor: grab;
+}
+.lab .atlas-canvas:active {
+  cursor: grabbing;
+}
+.lab .atlas-stage-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--lab-line);
+  font-size: 0.65rem;
+}
+.lab .atlas-stage-foot .lab-field {
+  max-width: 200px;
+}
+.lab .atlas-inspector {
+  padding: 20px;
+  border-left: 1px solid var(--lab-line);
+  max-height: 770px;
+  overflow: auto;
+  background: var(--studio-paper);
+}
+.lab .atlas-inspector h3 {
+  overflow-wrap: anywhere;
+}
+.lab .studio-path {
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+  color: var(--amber);
+}
+.lab .atlas-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.75rem;
+  line-height: 1.75;
+  margin: 20px 0;
+  padding: 14px;
+  border: 1px solid var(--lab-line);
+  max-height: 300px;
+  overflow: auto;
+  background: var(--bg);
+}
+.lab .atlas-related {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-top: 1px solid var(--lab-line);
+  background: transparent;
+  padding: 12px 0;
+  color: var(--green);
+}
+.lab .atlas-related strong,
+.lab .atlas-related span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.lab .atlas-related span {
+  font-size: 0.68rem;
+  margin-top: 5px;
+}
+.lab .atlas-file-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--lab-line);
+  max-height: 430px;
+  overflow: auto;
+}
+.lab .atlas-file-list button {
+  border: 0;
+  min-height: 55px;
+  padding: 12px;
+  background: var(--bg);
+  color: var(--green);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.lab .atlas-file-list small {
+  display: block;
+  color: var(--studio-soft);
+  font-size: 0.66rem;
+}
+.lab .atlas-file-list button[aria-pressed="true"] {
+  color: var(--amber);
+  background: var(--bg-panel);
+}
+/* Group Lore: editorial archive, tactile activity tiles. */
+.lab .lore-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(220px, 1fr);
+  gap: 20px;
+}
+.lab .lore-heat-scroll {
+  overflow-x: auto;
+  padding: 16px 0;
+}
+.lab .lore-heat-row,
+.lab .lore-heat-axis {
+  display: grid;
+  grid-template-columns: 30px repeat(24, minmax(12px, 1fr));
+  gap: 4px;
+  min-width: 460px;
+  align-items: center;
+  margin-bottom: 5px;
+}
+.lab .lore-heat-axis,
+.lab .lore-heat-row > span {
+  font-size: 0.55rem;
+}
+.lab .lore-heat-row button {
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 15px;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: color-mix(
+    in srgb,
+    var(--green) calc(var(--heat) * 100%),
+    var(--bg)
+  );
+  padding: 0;
+}
+.lab .lore-heat-row button:disabled {
+  opacity: 1;
+}
+.lab .lore-heat-row button[aria-pressed="true"] {
+  outline: 2px solid var(--amber);
+}
+.lab .lore-people {
+  max-height: 320px;
+  overflow: auto;
+}
+.lab .lore-people button {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--lab-line);
+  background: transparent;
+  color: var(--green);
+  text-align: left;
+}
+.lab .lore-people button[aria-pressed="true"] {
+  color: var(--amber);
+}
+.lab .lore-people strong {
+  display: block;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+.lab .lore-people i {
+  display: block;
+  height: 3px;
+  background: currentColor;
+  margin-top: 7px;
+}
+.lab .lore-people b {
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+.lab .lore-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--lab-line);
+  border-radius: 50%;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+  color: var(--amber);
+}
+.lab .lore-phrases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.lab .lore-phrases button {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--lab-line);
+  padding: 14px 18px;
+  color: var(--green-bright);
+  border-radius: 4px;
+}
+.lab .lore-phrases b {
+  color: var(--amber);
+  font-size: 0.7rem;
+}
+.lab .lore-archive {
+  scroll-margin-top: 24px;
+}
+.lab .lore-archive > .studio-note {
+  margin-top: 16px;
+}
+.lab .lore-messages {
+  max-height: 600px;
+  overflow: auto;
+}
+.lab .lore-messages article {
+  padding: 20px 0;
+  border-top: 1px solid var(--lab-line);
+}
+.lab .lore-messages article > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+.lab .lore-messages time {
+  margin-left: auto;
+  font-size: 0.66rem;
+  color: var(--studio-soft);
+}
+.lab .lore-messages p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 10px 0 0 40px;
+  font-size: 0.87rem;
+}
+.lab .lore-portrait img {
+  width: 100%;
+  height: auto;
+  max-width: 800px;
+  display: block;
+  margin-bottom: 20px;
+}
+/* Resonance: transport, pads, sequencer and live performance surface. */
+.lab .music-transport {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 18px;
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  background: var(--studio-paper);
+}
+.lab .music-transport > .lab-field {
+  flex: 1 1 160px;
+}
+.lab .music-transport > .studio-badge {
+  align-self: center;
+}
+.lab .music-machine {
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg);
+}
+.lab .music-machine canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  cursor: ns-resize;
+}
+.lab .music-machine p {
+  font-size: 0.7rem;
+  margin: 0;
+  padding: 12px 18px;
+  border-top: 1px solid var(--lab-line);
+}
+.lab .music-pads {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.lab .music-pad {
+  position: relative;
+  padding: 20px;
+  border: 1px solid var(--lab-line);
+  border-bottom: 3px solid var(--green);
+  border-radius: 5px;
+  background: var(--studio-paper);
+  color: var(--green-bright);
+}
+.lab .music-pad:nth-child(even) {
+  border-bottom-color: var(--amber);
+}
+.lab .music-pad:active {
+  background: color-mix(in srgb, var(--green) 20%, var(--bg));
+  transform: translateY(2px);
+}
+.lab .music-pad > span {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  font-size: 0.65rem;
+  opacity: 0.6;
+}
+.lab .music-pad strong {
+  display: block;
+  font-family: var(--font-screen);
+  font-size: 2.3rem;
+  font-weight: 400;
+}
+.lab .music-pad small {
+  font-size: 0.65rem;
+}
+.lab .music-sequencer {
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.lab .music-step-head {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 20px;
+  padding: 14px 18px;
+  font-size: 0.65rem;
+  color: var(--amber);
+}
+.lab .music-step-head > div,
+.lab .music-steps {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 5px;
+}
+.lab .music-step-head > div {
+  text-align: center;
+}
+.lab .music-voice {
+  border-top: 1px solid var(--lab-line);
+  padding: 16px 18px;
+  background: var(--studio-paper);
+}
+.lab .music-voice-main {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+}
+.lab .music-voice-label strong {
+  font-size: 0.85rem;
+}
+.lab .music-voice-label > div {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+.lab .music-voice-label .studio-toggle {
+  padding: 3px 8px;
+  min-height: 32px;
+  font-size: 0.65rem !important;
+}
+.lab .music-steps button {
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--lab-line);
+  border-radius: 3px;
+  background: var(--bg);
+}
+.lab .music-steps button:nth-child(4n + 1) {
+  border-left-color: var(--green);
+}
+.lab .music-steps button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--green) 65%, var(--bg));
+  border-color: var(--green);
+}
+.lab .music-voice:nth-child(odd) .music-steps button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--amber) 65%, var(--bg));
+  border-color: var(--amber);
+}
+.lab .music-steps button[data-current] {
+  outline: 2px solid var(--green-bright);
+  outline-offset: 2px;
+}
+.lab .music-voice > details {
+  margin-top: 12px;
+}
+.lab .music-voice summary {
+  font-size: 0.65rem !important;
+  min-height: 24px !important;
+}
+.lab .music-performance {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  align-items: center;
+  border: 1px solid var(--lab-line);
+  padding: 24px;
+  border-radius: 6px;
+}
+.lab .music-xy {
+  position: relative;
+  height: 260px;
+  touch-action: none;
+  cursor: crosshair;
+  overflow: hidden;
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  background:
+    linear-gradient(
+      0deg,
+      transparent 49.5%,
+      var(--lab-line) 50%,
+      transparent 50.5%
+    ),
+    linear-gradient(
+      90deg,
+      transparent 49.5%,
+      var(--lab-line) 50%,
+      transparent 50.5%
+    ),
+    radial-gradient(
+      ellipse at top right,
+      color-mix(in srgb, var(--amber) 12%, var(--bg)),
+      var(--bg)
+    );
+}
+.lab .music-xy > span {
+  position: absolute;
+  left: 14px;
+  top: 10px;
+  font-size: 0.7rem;
+  pointer-events: none;
+}
+.lab .music-xy > small {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  font-size: 0.65rem;
+  pointer-events: none;
+}
+.lab .music-xy i {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--amber);
+  background: color-mix(in srgb, var(--amber) 20%, transparent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 35px color-mix(in srgb, var(--amber) 25%, transparent);
+}
+/* Prove It: a dossier with a notebook, not a quiz form. */
+.lab .detective-library {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.lab .detective-library button {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+  text-align: left;
+  min-height: 160px;
+  padding: 20px;
+  background: var(--studio-paper);
+  border: 1px solid var(--lab-line);
+  color: var(--green);
+}
+.lab .detective-library strong {
+  font-family: var(--font-screen);
+  font-weight: 400;
+  font-size: 1.5rem;
+}
+.lab .detective-library button > span:last-child {
+  font-size: 0.68rem;
+}
+.lab .detective-brief {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  gap: 30px;
+  padding: 30px;
+  border: 1px solid var(--amber);
+  border-radius: 5px;
+  background: linear-gradient(
+    130deg,
+    color-mix(in srgb, var(--amber) 5%, var(--bg)),
+    var(--bg)
+  );
+}
+.lab .detective-brief h3 {
+  font-size: 2.5rem;
+}
+.lab .detective-budget {
+  align-self: center;
+  text-align: center;
+}
+.lab .detective-budget strong {
+  display: block;
+  font-family: var(--font-screen);
+  font-size: 5rem;
+  font-weight: 400;
+  color: var(--amber);
+  line-height: 1;
+}
+.lab .detective-budget span {
+  font-size: 0.65rem;
+}
+.lab .detective-budget > div {
+  display: flex;
+  gap: 5px;
+  margin: 14px auto;
+  justify-content: center;
+}
+.lab .detective-budget i {
+  width: 17px;
+  height: 8px;
+  background: var(--amber);
+}
+.lab .detective-budget i[data-spent="true"] {
+  opacity: 0.2;
+}
+.lab .detective-hypotheses {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.lab .detective-hypotheses button {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  min-height: 160px;
+  text-align: left;
+  border: 1px solid var(--lab-line);
+  background: var(--bg);
+  color: var(--green);
+  border-radius: 5px;
+  padding: 20px;
+}
+.lab .detective-hypotheses button > span {
+  font-family: var(--font-screen);
+  font-size: 2rem;
+  color: var(--amber);
+  line-height: 1;
+}
+.lab .detective-hypotheses strong {
+  font-weight: 400;
+  font-size: 0.88rem;
+}
+.lab .detective-hypotheses button[aria-pressed="true"] {
+  border-color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 7%, var(--bg));
+}
+.lab .detective-hypotheses button:disabled {
+  opacity: 0.75;
+}
+.lab .detective-hypotheses button[data-answer="true"] {
+  opacity: 1;
+  border-color: var(--green-bright);
+}
+.lab .detective-hypotheses small {
+  font-size: 0.65rem;
+}
+.lab .detective-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 20px;
+}
+.lab .detective-tests {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+.lab .detective-tests button {
+  display: grid;
+  grid-template-columns: 35px 1fr;
+  gap: 5px 12px;
+  padding: 18px;
+  text-align: left;
+  border: 1px solid var(--lab-line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--green);
+}
+.lab .detective-tests button > span {
+  grid-row: span 2;
+  font-family: var(--font-screen);
+  font-size: 2rem;
+  color: var(--amber);
+}
+.lab .detective-tests strong {
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+.lab .detective-tests small {
+  font-size: 0.65rem;
+}
+.lab .detective-evidence {
+  border-top: 1px solid var(--lab-line);
+  padding: 22px 0 8px;
+}
+.lab .detective-evidence h4 {
+  margin: 10px 0;
+}
+.lab .detective-evidence blockquote {
+  border-left: 2px solid var(--amber);
+  margin: 16px 0;
+  padding: 10px 16px;
+  background: var(--bg);
+  color: var(--green-bright);
+}
+.lab .detective-evidence small {
+  font-size: 0.68rem;
+}
+.lab .detective-commit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+.lab .detective-commit p {
+  max-width: 65ch;
+  font-size: 0.8rem;
+}
+.lab .detective-debrief {
+  padding: 30px;
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  background: var(--studio-paper);
+}
+.lab .detective-debrief > h3 {
+  font-size: 2.6rem;
+}
+.lab .detective-debrief .lab-metrics dd {
+  font-size: 1.9rem;
+}
+.lab .studio-table-scroll {
+  overflow-x: auto;
+}
+.lab .studio table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 500px;
+  font-size: 0.72rem;
+}
+.lab .studio th,
+.lab .studio td {
+  border: 1px solid var(--lab-line);
+  padding: 14px;
+  text-align: left;
+  font-weight: 400;
+}
+.lab .studio td[data-answer="true"] {
+  color: var(--green-bright);
+  background: color-mix(in srgb, var(--green) 7%, var(--bg));
+}
+.lab .detective-history {
+  font-size: 0.8rem;
+}
+/* Pocket Redact: restrained chrome around actual paper. */
+.lab .redact-workspace {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) 235px;
+  gap: 16px;
+  align-items: flex-start;
+}
+.lab .redact-thumbnails {
+  display: grid;
+  gap: 12px;
+  max-height: 780px;
+  overflow: auto;
+}
+.lab .redact-thumbnails button {
+  padding: 6px;
+  border: 1px solid var(--lab-line);
+  border-radius: 4px;
+  background: var(--studio-paper);
+  color: var(--green);
+}
+.lab .redact-thumbnails button[aria-pressed="true"] {
+  border-color: var(--amber);
+}
+.lab .redact-thumbnails button > div {
+  position: relative;
+}
+.lab .redact-thumbnails img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.lab .redact-thumbnails svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.lab .redact-thumbnails span {
+  display: block;
+  font-size: 0.6rem;
+  margin-top: 6px;
+}
+.lab .redact-viewport {
+  overflow: auto;
+  max-height: 820px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--green) 5%, var(--bg));
+  border: 1px solid var(--lab-line);
+  border-radius: 5px;
+}
+.lab .redact-paper {
+  position: relative;
+  min-width: 0;
+  box-shadow: 0 5px 20px #0005;
+}
+.lab .redact-paper > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
+}
+.lab .redact-paper > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+.lab .redact-inspector {
+  padding: 18px;
+  background: var(--studio-paper);
+  border: 1px solid var(--lab-line);
+  border-radius: 5px;
+  display: grid;
+  gap: 14px;
+}
+.lab .redact-inspector h3 {
+  font-size: 1.6rem;
+}
+.lab .redact-inspector p {
+  font-size: 0.7rem;
+  margin: 0;
+}
+.lab .redact-inspector > strong {
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+.lab .redact-candidates {
+  max-height: 180px;
+  overflow: auto;
+}
+.lab .redact-candidates p {
+  padding: 8px 0;
+  border-top: 1px solid var(--lab-line);
+  overflow-wrap: anywhere;
+  color: var(--amber);
+}
+.lab .redact-inspector details .lab-field {
+  margin-bottom: 10px;
+}
+.lab .redact-export {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 20px;
+  border: 1px solid var(--lab-line);
+  background: var(--studio-paper);
+}
+.lab .redact-export > span {
+  margin-right: auto;
+  font-size: 0.8rem;
+}
+.lab .redact-review > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 700px;
+  margin: 20px auto;
+  border: 1px solid var(--lab-line);
+}
+.lab .redact-review .lab-check {
+  margin: 20px 0;
+}
+/* Selected workbenches at the top of the lab. */
+.lab .lab-featured {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0 42px;
+}
+.lab .lab-featured a {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 18px;
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  text-decoration: none;
+  background: var(--bg-panel);
+}
+.lab .lab-featured strong {
+  font-family: var(--font-screen);
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: var(--green-bright);
+}
+.lab .lab-featured span {
+  font-size: 0.72rem;
+}
+.lab .lab-featured b {
+  color: var(--amber);
+  font-weight: 400;
+  font-size: 0.65rem;
+}
+@media (min-width: 1100px) {
+  .lab:has(.studio) .bench-surface {
+    padding: 28px;
+  }
+  .lab:has(.studio) .tool-workbench > .page__title {
+    font-size: 2.5rem;
+    margin-bottom: 0;
+  }
+  .lab:has(.studio) .tool-workbench > .page__lede {
+    font-size: 0.9rem;
+    max-width: 90ch;
+  }
+  .lab:has(.studio) .tool-workbench {
+    gap: 18px;
+  }
+}
+@media (max-width: 1050px) {
+  .lab .atlas-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lab .atlas-inspector {
+    max-height: 380px;
+    border-left: 0;
+    border-top: 1px solid var(--lab-line);
+  }
+  .lab .atlas-canvas {
+    height: 500px;
+  }
+  .lab .redact-workspace {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+  .lab .redact-inspector {
+    grid-column: 1/-1;
+    grid-template-columns: 1fr 1fr;
+  }
+  .lab .redact-inspector > h3,
+  .lab .redact-inspector > p {
+    grid-column: 1/-1;
+  }
+  .lab .lore-overview {
+    grid-template-columns: 1fr;
+  }
+  .lab .music-step-head,
+  .lab .music-voice-main {
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .lab .music-steps {
+    gap: 3px;
+  }
+  .lab .lab-featured {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 650px) {
+  .lab .studio {
+    gap: 20px;
+  }
+  .lab .studio-intro {
+    padding-top: 20px;
+  }
+  .lab .studio-intro h2 {
+    font-size: 2.8rem;
+  }
+  .lab .studio-panel,
+  .lab .studio-drop,
+  .lab .studio-details {
+    padding: 16px;
+  }
+  .lab .studio-toolbar > .lab-field {
+    max-width: none;
+    flex-basis: 130px;
+  }
+  .lab .studio .lab-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .lab .studio .lab-metrics > div {
+    padding: 14px;
+  }
+  .lab .studio .lab-metrics dd {
+    font-size: 2.4rem;
+  }
+  .lab .studio-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+  .lab .atlas-canvas {
+    height: 420px;
+  }
+  .lab .atlas-stage-foot {
+    flex-wrap: wrap;
+  }
+  .lab .atlas-file-list {
+    grid-template-columns: 1fr;
+  }
+  .lab .music-transport {
+    padding: 14px;
+  }
+  .lab .music-pads {
+    gap: 7px;
+  }
+  .lab .music-pad {
+    padding: 18px 8px 12px;
+  }
+  .lab .music-pad strong {
+    font-size: 1.9rem;
+  }
+  .lab .music-machine canvas {
+    min-height: 190px;
+    object-fit: cover;
+  }
+  .lab .music-step-head {
+    display: none;
+  }
+  .lab .music-voice {
+    padding: 14px 10px;
+  }
+  .lab .music-voice-main {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .lab .music-voice-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .lab .music-voice-label > div {
+    margin: 0;
+  }
+  .lab .music-steps {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .lab .music-steps button {
+    min-height: 36px;
+  }
+  .lab .music-performance {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 18px;
+  }
+  .lab .music-xy {
+    height: 220px;
+  }
+  .lab .detective-library {
+    grid-template-columns: 1fr 1fr;
+  }
+  .lab .detective-library button {
+    padding: 14px;
+  }
+  .lab .detective-brief {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 14px;
+  }
+  .lab .detective-budget {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .lab .detective-budget strong {
+    font-size: 2.5rem;
+  }
+  .lab .detective-budget > div {
+    margin: 0 0 0 auto;
+  }
+  .lab .detective-hypotheses {
+    grid-template-columns: 1fr;
+  }
+  .lab .detective-hypotheses button {
+    min-height: 80px;
+    display: grid;
+    grid-template-columns: 25px 1fr;
+    gap: 10px;
+    padding: 16px;
+  }
+  .lab .detective-hypotheses small {
+    grid-column: 2;
+  }
+  .lab .detective-workspace {
+    grid-template-columns: 1fr;
+  }
+  .lab .detective-commit {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .lab .detective-debrief {
+    padding: 16px;
+  }
+  .lab .redact-workspace {
+    grid-template-columns: 1fr;
+  }
+  .lab .redact-thumbnails {
+    display: flex;
+    max-height: 160px;
+    overflow-x: auto;
+  }
+  .lab .redact-thumbnails button {
+    min-width: 70px;
+    width: 70px;
+    flex-shrink: 0;
+  }
+  .lab .redact-viewport {
+    padding: 8px;
+    max-height: 600px;
+  }
+  .lab .redact-inspector {
+    grid-template-columns: 1fr;
+  }
+  .lab .redact-inspector > * {
+    grid-column: 1;
+  }
+  .lab .lab-featured {
+    grid-template-columns: 1fr 1fr;
+  }
+  .lab .lab-featured a {
+    padding: 16px;
+  }
+  .lab .lore-messages p {
+    margin-left: 0;
+  }
+  .lab .lore-messages time {
+    margin-left: 40px;
+  }
+  .lab .lore-heat-scroll {
+    padding-bottom: 20px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lab .studio * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
+
+.lab .atlas-media {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 16px 0;
+  max-height: 300px;
+  object-fit: contain;
+}
+
+.lab .atlas-workspace:fullscreen {
+  background: var(--bg);
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+.lab .atlas-workspace:fullscreen .atlas-stage {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.lab .atlas-workspace:fullscreen .atlas-canvas {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+.lab .atlas-workspace:fullscreen .atlas-inspector {
+  max-height: 100vh;
+}
+@media (max-width: 650px) {
+  .lab .atlas-workspace:fullscreen {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) 200px;
+  }
+}
+
+/* Touch controls retain a full finger target at the narrow review widths. */
+.lab .studio .bench-button {
+  min-width: 44px;
+}
+.lab .studio input[type="file"] {
+  font-size: 16px !important;
+}
+.lab .studio details summary {
+  min-height: 44px !important;
+}
+@media (max-width: 650px) {
+  .lab .music-steps {
+    grid-template-columns: repeat(4, minmax(44px, 1fr));
+  }
+  .lab .music-steps button {
+    min-height: 44px;
+  }
+  .lab .music-voice-label .studio-toggle {
+    min-height: 44px;
+  }
+  .lab .lore-heat-row,
+  .lab .lore-heat-axis {
+    grid-template-columns: 34px repeat(24, 44px);
+    min-width: 1186px;
+  }
+  .lab .lore-heat-row button {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+.lab .music-steps button {
+  color: var(--green-bright);
+  font-size: 0.65rem;
+}
+.lab .music-steps button[aria-pressed="true"] {
+  color: var(--bg);
+}
+
+/* Closed disclosures have no laid-out controls. Range labels are tap targets too. */
+.lab .studio details:not([open]) > :not(summary) { display:none!important; }
+.lab .lab-field > label { min-height:44px;display:flex;align-items:center; }
+.lab .studio { --studio-soft:var(--green); }
+.lab .studio input[type=range] { min-height:44px;font-size:16px; }

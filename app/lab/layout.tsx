@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import "./lab.css";
+import "./studio.css";
 import { ReviewProvider } from "@/components/lab/Review";
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {

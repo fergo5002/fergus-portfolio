@@ -10,12 +10,12 @@ const tools = {
   "same-page": dynamic(() => import("./SamePage"), { loading }),
   "what-if": dynamic(() => import("./WhatIf"), { loading }),
   "fair-play": dynamic(() => import("./FairPlay"), { loading }),
-  "prove-it": dynamic(() => import("./ProveIt"), { loading }),
-  "group-lore": dynamic(() => import("./GroupLore"), { loading }),
-  "pocket-redact": dynamic(() => import("./PocketRedact"), { loading }),
+  "prove-it": dynamic(() => import("../studio/ProveIt"), { loading }),
+  "group-lore": dynamic(() => import("../studio/GroupLore"), { loading }),
+  "pocket-redact": dynamic(() => import("../studio/PocketRedact"), { loading }),
   "clear-day": dynamic(() => import("./ClearDay"), { loading }),
-  "code-atlas": dynamic(() => import("./CodeAtlas"), { loading }),
-  resonance: dynamic(() => import("./Resonance"), { loading }),
+  atlas: dynamic(() => import("../studio/Atlas"), { loading }),
+  resonance: dynamic(() => import("../studio/Resonance"), { loading }),
 };
 export default function Workbench({ slug }: { slug: string }) {
   const [ready, setReady] = useState(false);

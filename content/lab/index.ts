@@ -1,10 +1,10 @@
 import type { ToolEntry } from "@/content/tools/types";
 export const labCopy = {
-  title: "Twelve ideas. Now try them.",
+  title: "Five tools. Go deeper.",
   intro:
-    "A working first version of every pitch, built for your local review. Open an example, change something, and see whether it earns a place in the Toolshed.",
-  back: "All twelve prototypes",
-  badge: "LOCAL REVIEW · MVP",
+    "The five selected tools have grown into working studios. Play, investigate, explore and make something worth keeping. The other experiments are still here below.",
+  back: "Back to the lab",
+  badge: "LOCAL REVIEW · STUDIOS",
   open: "Open workbench",
   all: "All",
   categories: ["Decide", "Understand", "Organise", "Make"],
@@ -16,7 +16,7 @@ export const labCopy = {
   selected: "Shortlisted",
   select: "Shortlist",
   empty: "No favourites yet. Try a few tools first.",
-  limit: "MVP boundary",
+  limit: "Scope and limits",
   previous: "Previous",
   next: "Next",
   loading: "Loading workbench…",
@@ -95,9 +95,9 @@ const entries: [string, string, string, string, string, string[]][] = [
     "Prove It",
     "Spend evidence, not confidence.",
     "Understand",
-    "Five short mysteries. Pick the investigation that separates the explanations, then commit to a conclusion.",
+    "Twelve case files. Collect evidence, track your confidence and discover what would change your mind.",
     [
-      "Five authored, deterministic cases with a deliberately simplified model of evidence.",
+      "Twelve authored, deterministic cases with a deliberately simplified model of evidence.",
       "The score rewards investigation, not real-world expertise. Replaying a known case changes the challenge.",
     ],
   ],
@@ -106,9 +106,9 @@ const entries: [string, string, string, string, string, string[]][] = [
     "Group Lore",
     "Your group chat has a history.",
     "Understand",
-    "Drop in a WhatsApp text export. Find its rhythms, repeated phrases and an activity portrait worth keeping.",
+    "Explore the rhythms and running threads of a chat archive. Filter the messages behind a pattern and make an anonymous portrait.",
     [
-      "Supports day/month/year WhatsApp text exports. Missing history and omitted media remain missing.",
+      "Supports WhatsApp text with a date-order setting and Telegram / DiscordChatExporter JSON. Missing history and omitted media remain missing.",
       "Message counts describe the export, not friendship, influence or personality. Shared portraits use pseudonyms by default.",
     ],
   ],
@@ -119,7 +119,7 @@ const entries: [string, string, string, string, string, string[]][] = [
     "Organise",
     "Cover sensitive areas of a PDF or image, then create and reopen a fresh flattened document to inspect the result.",
     [
-      "Raster export removes text search, links, forms, signatures and accessibility structure. Maximum 8 pages, 15 MB and 12 megapixels per page.",
+      "Raster export removes text search, links, forms, signatures and accessibility structure. Maximum 20 pages, 40 MB, 12 megapixels per page and 64 megapixels per document.",
       "Only the areas you mark are covered. Review every exported page before sharing; filenames and anything visibly left on the page may still identify you.",
     ],
   ],
@@ -136,14 +136,14 @@ const entries: [string, string, string, string, string, string[]][] = [
     ],
   ],
   [
-    "code-atlas",
-    "Code Atlas",
-    "Walk around your codebase.",
+    "atlas",
+    "Atlas",
+    "Find the thread.",
     "Understand",
-    "Turn a source ZIP into a city of files, inspect the actual measurements and compare its shape with another snapshot.",
+    "Turn files, folders, archives or a public GitHub repository into a draggable knowledge graph. Follow references, shared words and the files behind them.",
     [
-      "Height is line count, area is bytes. These are size measurements, not quality or complexity scores.",
-      "ZIPs up to 10 MB compressed / 30 MB expanded, 1,000 entries. Vendor, generated and binary files are excluded; no Git history is inferred.",
+      "Connections distinguish folders, explicit references and shared words. Word overlap is not proof of semantic similarity.",
+      "Up to 1,000 files / 80 MB. Readable formats get text extraction; others retain metadata. GitHub reads up to 100 text files / 8 MB. No OCR or private repositories.",
     ],
   ],
   [
@@ -151,10 +151,10 @@ const entries: [string, string, string, string, string, string[]][] = [
     "Resonance",
     "A tiny machine that makes music.",
     "Make",
-    "Give pendulums different periods and notes. Hear patterns form, save a patch, and see where the next variation leads.",
+    "Play four voices, shape a live sixteen-step sequence and perform with an XY surface. Save a patch or render eight bars to WAV.",
     [
-      "A synthesised pendulum sequencer, not a physically exact pendulum or full audio workstation.",
-      "Sound starts only when you press Play and stops when the page becomes hidden. Timing depends on your browser; no audio recording in this MVP.",
+      "A synthesised step sequencer with visual pendulums. Changing a note or effect keeps the sequence running.",
+      "Sound starts only after you play a pad or sequence and stops when the page becomes hidden. WAV export renders the current patch, including its release tail.",
     ],
   ],
 ];
@@ -170,9 +170,11 @@ export const labTools: LabTool[] = entries.map(
     status: "live",
     privacy: "browser",
     privacyLine:
-      slug === "good-window"
-        ? "The example stays in this tab. Fetching a live forecast sends the selected location and your IP address to Open-Meteo."
-        : "Your inputs are processed in this browser. Nothing is saved automatically; use downloads to keep a result.",
+      slug === "atlas"
+        ? "Files are processed in this browser. GitHub import sends requests to GitHub. Saved maps include extracted text; nothing is saved automatically."
+        : slug === "good-window"
+          ? "The example stays in this tab. Fetching a live forecast sends the selected location and your IP address to Open-Meteo."
+          : "Your inputs are processed in this browser. Nothing is saved automatically; use downloads to keep a result.",
     order: i,
   }),
 );

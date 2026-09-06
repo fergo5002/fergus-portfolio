@@ -20,6 +20,21 @@ export default function Hub() {
         <h1>{c.title}</h1>
         <p>{c.intro}</p>
       </header>
+      <div className="lab-featured">
+        {["atlas", "group-lore", "pocket-redact", "prove-it", "resonance"].map(
+          (slug, i) => {
+            const tool = labTools.find((t) => t.slug === slug)!;
+            return (
+              <Link key={slug} href={`/lab/${slug}`}>
+                <b>STUDIO {String(i + 1).padStart(2, "0")}</b>
+                <strong>{tool.name}</strong>
+                <span>{tool.hook}</span>
+                <b>Explore →</b>
+              </Link>
+            );
+          },
+        )}
+      </div>
       <div className="lab-actions" role="group" aria-label={c.all}>
         {[c.all, ...c.categories].map((cat) => (
           <button
