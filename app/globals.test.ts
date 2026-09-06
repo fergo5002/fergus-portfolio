@@ -546,10 +546,13 @@ describe("secondary text and small controls on the phone composite (2026-09-06)"
     expect(touch).toMatch(/html\[data-theme="ice"\]\s*\{[^}]*--green-dim:/);
   });
 
-  it("lifts it far enough to clear 4.5:1 on the page on the green phosphor", () => {
-    const lifted = /:root\s*\{[^}]*--green-dim:\s*(#[0-9a-f]{6})/.exec(touch)?.[1];
+  it.each(THEMES)("%s: touch secondary text has contrast headroom on the page and panels", (selector, vars) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const lifted = new RegExp(`${escaped}\\s*\\{[^}]*--green-dim:\\s*(#[0-9a-f]{6})`).exec(touch)?.[1];
     expect(lifted).toBeDefined();
-    expect(ratio(hex(lifted!), hex(tokens(":root")["--bg"]))).toBeGreaterThanOrEqual(6);
+    for (const ground of [vars["--bg"], vars["--bg-panel"]]) {
+      expect(ratio(hex(lifted!), hex(ground))).toBeGreaterThanOrEqual(6);
+    }
   });
 
   it("takes the glow off small secondary text on touch", () => {
@@ -561,4 +564,10 @@ describe("secondary text and small controls on the phone composite (2026-09-06)"
     expect(touch).toMatch(/\.term__input[^{]*\{[^}]*min-height: 44px/);
     expect(touch).toMatch(/\.contact__row a[^{]*\{[^}]*min-height: 44px/);
   });
+});
+
+it("reserves the fixed nav in the document's native validation scrollport", () => {
+  // WebKit's validation scrolling ignores the field's scroll-margin-top.
+  // The document padding keeps the focused field below the fixed bar.
+  expect(css).toMatch(/html\s*\{[^}]*scroll-padding-top:\s*calc\(var\(--nav-h\) \+ var\(--sp-3\)\)/);
 });

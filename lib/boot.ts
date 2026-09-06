@@ -208,9 +208,9 @@ export const BOOT_FAILSAFE_HANDLE = "__fergusosBootFailsafe";
  *
  * It runs before first paint and does four things:
  *
- *  1. Flags `.js` on `<html>`. Scroll reveals hide their content behind this
- *     class only, so a visitor without JavaScript is never left staring at a
- *     permanently clipped block.
+ *  1. Flags `.js` on `<html>` for progressive effects. Raster pre-hiding uses
+ *     the later `.navigated` flag instead, so a hard load stays readable while
+ *     the JavaScript is on its way.
  *  2. Restores the saved phosphor theme before paint, so a returning visitor on
  *     amber never sees a flash of green.
  *  3. On the landing page only, if this session has not booted and the user

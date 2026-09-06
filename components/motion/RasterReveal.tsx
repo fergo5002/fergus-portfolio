@@ -10,9 +10,9 @@ import { isLateHydration } from "@/lib/navigation";
  *
  * Deliberately CSS-driven rather than a Motion component. The animation is
  * one-shot and non-interactive, so a JS animation runtime buys nothing: and
- * gating the hidden state behind the `.js` class (set pre-paint in the document
- * head) means a visitor without JavaScript sees the content in full rather than
- * a permanently clipped block.
+ * gating the hidden state behind a class added during client-side navigation
+ * means a visitor without JavaScript sees the content in full rather than a
+ * permanently clipped block.
  *
  * **Animate only what the visitor has not seen** (2026-09-06). The pre-hide
  * used to key on `html.js`, which is set before first paint, so on a hard load

@@ -42,8 +42,8 @@ export default function Scramble({
     // A page title that has been readable for two seconds must not turn into
     // glyphs because the JavaScript has just arrived. On a hard load the
     // server text stays; the decode runs for a page reached by navigating,
-    // which nobody has seen yet. `view`-triggered headings are below the fold
-    // and are left alone: they have not been seen either. lib/navigation.ts.
+    // which nobody has seen yet. View-triggered headings get their own
+    // already-seen check below. lib/navigation.ts.
     if (trigger === "mount" && isLateHydration()) return;
 
     let tickTimer: ReturnType<typeof setTimeout>;

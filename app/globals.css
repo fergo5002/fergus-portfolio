@@ -90,6 +90,13 @@ body {
   padding: 0;
 }
 
+html {
+  /* WebKit's native form validation scrolls the focused field independently
+     of its scroll-margin. Reserve the fixed nav in the document scrollport
+     too, so an invalid name/email never lands behind the bar. */
+  scroll-padding-top: calc(var(--nav-h) + var(--sp-3));
+}
+
 /* Gated like every other animation here, and this one is worth spelling out.
    Under `reduce` Lenis is never mounted, so the rule below that hands scrolling
    to Lenis never applies and this is the declaration that actually runs. That
@@ -1907,9 +1914,7 @@ html.js .exp__spine {
      tools" and "cd mcp" were off the edge with nothing to scroll. Fergus chose
      a sideways-scrolling list over shorter labels or a menu. The LIST scrolls
      and the bar does not, so the reading-progress line drawn on `.nav::after`
-     stays put. The mask fades the last 32px so a clipped link reads as "more
-     this way" rather than as the end; the list's own right padding is the same
-     32px. The first version faded the trailing edge with a mask; the phone
+     stays put. The first version faded the trailing edge with a mask; the phone
      check read the clipped link under it at 1.23:1 and it was right, a faded
      sliver of "cd tools" is text nobody can read. The cut itself is the
      affordance, as it is on every tab strip on a phone, and the list snaps to
