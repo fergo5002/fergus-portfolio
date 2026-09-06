@@ -1,6 +1,8 @@
-# Five local studios
+# Five tool studios
 
-Fergus's selected build-out, 6 September 2026. Local review only; no deployment.
+Fergus's selected build-out, 6 September 2026. Deployment authorised after local review.
+The public release adds these five to `/tools`, with individual routes under `/tools/<slug>`.
+Release status and deployment evidence live in `docs/PROGRESS.md`.
 
 - **Atlas:** a physics graph of uploaded files, folders, ZIPs or a public GitHub repository. Every admitted file has a node. Readable formats get text extraction; other formats retain metadata. Connections identify containment, explicit references or shared terms. Search, inspect, focus, drag, pin, zoom and export.
 - **Group Lore:** import a chat, filter by person/date/phrase, explore its weekly rhythm and read the messages behind a pattern. Export an aggregate portrait without message text or names by default.
@@ -14,7 +16,7 @@ References: [D3 manual simulation ticks](https://d3js.org/d3-force/simulation), 
 
 ## Review
 
-Run `npm run lab` for development, or `npm run build` followed by `npm run lab:start` for the optimised build. Both use `http://127.0.0.1:3106/lab`. Branch: `codex/selected-tools-studio`, built on the twelve-MVP commit `f49cb41`. The lab remains gated by `FERGUSOS_LAB=1`, noindex and absent from the public tool registry.
+Run `npm run dev` for the public tools. For the complete local review hub, run `npm run lab`, or `npm run build` followed by `npm run lab:start`. Both lab commands use `http://127.0.0.1:3106/lab`. Branch: `codex/selected-tools-studio`, built on the twelve-MVP commit `f49cb41`. The lab remains gated by `FERGUSOS_LAB=1`, noindex and absent from the sitemap. Its five selected studios also have public registry entries and routes.
 
 Atlas occupies Code Atlas's place in the lab. The old `/lab/code-atlas` link redirects to `/lab/atlas`. No public tool was removed. The seven other lab experiments remain available, and the hub features the five selected studios first.
 

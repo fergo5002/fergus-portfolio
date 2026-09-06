@@ -16,6 +16,14 @@ import { reliefCopy } from "./relief";
 const HERE = join(process.cwd(), "content", "tools");
 
 describe("tool registry", () => {
+  it("publishes the five selected studios while experiments stay out of the public registry", () => {
+    for (const slug of ["atlas", "group-lore", "pocket-redact", "prove-it", "resonance"]) {
+      expect(toolBySlug(slug)?.status, slug).toBe("live");
+    }
+    for (const slug of ["code-atlas", "bottleneck", "good-window", "black-box", "same-page", "what-if", "fair-play", "clear-day"]) {
+      expect(toolBySlug(slug), slug).toBeUndefined();
+    }
+  });
   it("has at least one tool, and headline-check is live", () => {
     expect(tools.length).toBeGreaterThan(0);
     expect(toolBySlug("headline-check")?.status).toBe("live");

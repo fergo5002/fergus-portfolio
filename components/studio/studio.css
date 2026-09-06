@@ -1,0 +1,356 @@
+
+:is(.lab, .tool-studio) .studio {
+  --studio-ink: var(--green-bright);
+  --studio-soft: color-mix(in srgb, var(--green) 80%, var(--bg));
+  --studio-paper: color-mix(in srgb, var(--bg-panel) 94%, var(--green));
+  gap: 24px;
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+:is(.lab, .tool-studio) .studio * {
+  min-width: 0;
+  box-sizing: border-box;
+}
+:is(.lab, .tool-studio) .studio button,
+:is(.lab, .tool-studio) .studio input,
+:is(.lab, .tool-studio) .studio select,
+:is(.lab, .tool-studio) .studio textarea {
+  font: inherit;
+}
+:is(.lab, .tool-studio) .studio button {
+  cursor: pointer;
+}
+:is(.lab, .tool-studio) .studio button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+:is(.lab, .tool-studio) .studio :focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 4px;
+}
+:is(.lab, .tool-studio) .studio h3 {
+  font-family: var(--font-screen);
+  font-size: 1.8rem;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--green-bright);
+  margin: 0 0 14px;
+}
+:is(.lab, .tool-studio) .studio h4 {
+  margin: 18px 0 10px;
+  color: var(--green-bright);
+}
+:is(.lab, .tool-studio) .studio p {
+  margin: 0 0 14px;
+}
+:is(.lab, .tool-studio) .studio-intro {
+  padding: 26px 0 12px;
+  border-top: 1px solid var(--lab-line);
+}
+:is(.lab, .tool-studio) .studio-intro h2 {
+  max-width: 18ch;
+  font-family: var(--font-screen);
+  font-size: clamp(2.6rem, 5.4vw, 5rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--green-bright);
+  margin: 18px 0;
+}
+:is(.lab, .tool-studio) .studio-intro > p:last-child {
+  max-width: 65ch;
+  color: var(--studio-soft);
+  font-size: 1rem;
+}
+:is(.lab, .tool-studio) .studio-eyebrow {
+  font-size: 0.7rem !important;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+:is(.lab, .tool-studio) .studio-toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+}
+:is(.lab, .tool-studio) .studio-toolbar > .lab-field {
+  flex: 1 1 170px;
+  max-width: 360px;
+}
+:is(.lab, .tool-studio) .studio-toolbar .bench-button,
+:is(.lab, .tool-studio) .studio-toggle {
+  min-height: 44px;
+}
+:is(.lab, .tool-studio) .studio .lab-field {
+  margin: 0;
+  gap: 6px;
+}
+:is(.lab, .tool-studio) .studio .lab-field label {
+  font-size: 0.75rem;
+  color: var(--studio-soft);
+}
+:is(.lab, .tool-studio) .studio input:not([type="checkbox"]):not([type="range"]),
+:is(.lab, .tool-studio) .studio select,
+:is(.lab, .tool-studio) .studio textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--lab-line);
+  background: var(--bg);
+  color: var(--green-bright);
+  border-radius: 4px;
+  font-size: 16px;
+}
+:is(.lab, .tool-studio) .studio input[type="file"] {
+  max-width: 100%;
+  font-size: 0.78rem !important;
+  padding: 8px !important;
+}
+:is(.lab, .tool-studio) .studio input[type="file"]::file-selector-button {
+  background: var(--bg-panel);
+  color: var(--green);
+  border: 1px solid var(--lab-line);
+  padding: 5px 8px;
+  margin-right: 8px;
+}
+:is(.lab, .tool-studio) .studio textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+:is(.lab, .tool-studio) .studio select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 30px;
+}
+:is(.lab, .tool-studio) .studio-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+:is(.lab, .tool-studio) .studio-range input {
+  accent-color: var(--amber);
+  width: 100%;
+  height: 24px;
+  min-width: 60px;
+}
+:is(.lab, .tool-studio) .studio-range output {
+  min-width: 56px;
+  text-align: right;
+  white-space: nowrap;
+  color: var(--green-bright);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.8rem;
+}
+:is(.lab, .tool-studio) .studio-toggle {
+  border: 1px solid var(--lab-line);
+  color: var(--green);
+  background: transparent;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 0.8rem !important;
+}
+:is(.lab, .tool-studio) .studio-toggle[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--green) 14%, var(--bg));
+  border-color: var(--green);
+  color: var(--green-bright);
+}
+:is(.lab, .tool-studio) .studio button:hover:not(:disabled) {
+  border-color: var(--amber);
+}
+:is(.lab, .tool-studio) .studio-panel,
+:is(.lab, .tool-studio) .studio-drop,
+:is(.lab, .tool-studio) .studio-details {
+  background: var(--studio-paper);
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  padding: 22px;
+}
+:is(.lab, .tool-studio) .studio-drop {
+  border-style: dashed;
+  background: linear-gradient(
+    125deg,
+    color-mix(in srgb, var(--green) 5%, var(--bg)),
+    var(--bg)
+  );
+}
+:is(.lab, .tool-studio) .studio-drop > strong {
+  display: block;
+  margin-bottom: 16px;
+  font-family: var(--font-screen);
+  font-size: 1.8rem;
+  font-weight: 400;
+  color: var(--green-bright);
+}
+:is(.lab, .tool-studio) .studio-drop > p {
+  font-size: 0.76rem;
+  margin: 14px 0 0;
+  max-width: 100ch;
+}
+:is(.lab, .tool-studio) .studio-drop.is-over {
+  outline: 2px solid var(--amber);
+  background: var(--bg-panel);
+}
+:is(.lab, .tool-studio) .studio-details summary,
+:is(.lab, .tool-studio) .studio details summary {
+  cursor: pointer;
+  min-height: 36px;
+  color: var(--green-bright);
+  font-size: 0.85rem;
+}
+:is(.lab, .tool-studio) .studio-details[open] > summary {
+  margin-bottom: 16px;
+}
+:is(.lab, .tool-studio) .studio-note {
+  font-size: 0.75rem;
+  color: var(--studio-soft);
+  line-height: 1.7;
+}
+:is(.lab, .tool-studio) .studio-badge {
+  display: inline-block;
+  border: 1px solid var(--lab-line);
+  border-radius: 20px;
+  padding: 5px 11px;
+  font-size: 0.68rem;
+  color: var(--green);
+}
+:is(.lab, .tool-studio) .studio-badge.is-live {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+:is(.lab, .tool-studio) .studio-empty {
+  padding: 60px 20px;
+  border: 1px dashed var(--lab-line);
+  text-align: center;
+}
+:is(.lab, .tool-studio) .studio-section-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+:is(.lab, .tool-studio) .studio-section-head > span {
+  font-size: 0.75rem;
+}
+:is(.lab, .tool-studio) .studio-controls {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 14px 0;
+}
+:is(.lab, .tool-studio) .studio .lab-metrics {
+  border-top: 1px solid var(--lab-line);
+  border-bottom: 1px solid var(--lab-line);
+  gap: 0;
+  background: transparent;
+}
+:is(.lab, .tool-studio) .studio .lab-metrics > div {
+  border: 0;
+  border-right: 1px solid var(--lab-line);
+  background: transparent;
+  padding: 18px;
+}
+:is(.lab, .tool-studio) .studio .lab-metrics dd {
+  font-family: var(--font-screen);
+  font-size: 2.9rem;
+  font-weight: 400;
+  line-height: 1.2;
+}
+:is(.lab, .tool-studio) .studio .lab-metrics dt {
+  font-size: 0.72rem;
+}
+:is(.lab, .tool-studio) .studio-path {
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
+  color: var(--amber);
+}
+:is(.lab, .tool-studio) .studio-table-scroll {
+  overflow-x: auto;
+}
+:is(.lab, .tool-studio) .studio table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 500px;
+  font-size: 0.72rem;
+}
+:is(.lab, .tool-studio) .studio th,
+:is(.lab, .tool-studio) .studio td {
+  border: 1px solid var(--lab-line);
+  padding: 14px;
+  text-align: left;
+  font-weight: 400;
+}
+:is(.lab, .tool-studio) .studio td[data-answer="true"] {
+  color: var(--green-bright);
+  background: color-mix(in srgb, var(--green) 7%, var(--bg));
+}
+@media (min-width: 1100px) {
+  :is(.lab, .tool-studio):has(.studio) .bench-surface {
+    padding: 28px;
+  }
+  :is(.lab, .tool-studio):has(.studio) .tool-workbench > .page__title {
+    font-size: 2.5rem;
+    margin-bottom: 0;
+  }
+  :is(.lab, .tool-studio):has(.studio) .tool-workbench > .page__lede {
+    font-size: 0.9rem;
+    max-width: 90ch;
+  }
+  :is(.lab, .tool-studio):has(.studio) .tool-workbench {
+    gap: 18px;
+  }
+}
+@media (max-width: 650px) {
+  :is(.lab, .tool-studio) .studio {
+    gap: 20px;
+  }
+  :is(.lab, .tool-studio) .studio-intro {
+    padding-top: 20px;
+  }
+  :is(.lab, .tool-studio) .studio-intro h2 {
+    font-size: 2.8rem;
+  }
+  :is(.lab, .tool-studio) .studio-panel,
+:is(.lab, .tool-studio) .studio-drop,
+:is(.lab, .tool-studio) .studio-details {
+    padding: 16px;
+  }
+  :is(.lab, .tool-studio) .studio-toolbar > .lab-field {
+    max-width: none;
+    flex-basis: 130px;
+  }
+  :is(.lab, .tool-studio) .studio .lab-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  :is(.lab, .tool-studio) .studio .lab-metrics > div {
+    padding: 14px;
+  }
+  :is(.lab, .tool-studio) .studio .lab-metrics dd {
+    font-size: 2.4rem;
+  }
+  :is(.lab, .tool-studio) .studio-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(.lab, .tool-studio) .studio * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}
+:is(.lab, .tool-studio) .studio .bench-button {
+  min-width: 44px;
+}
+:is(.lab, .tool-studio) .studio input[type="file"] {
+  font-size: 16px !important;
+}
+:is(.lab, .tool-studio) .studio details summary {
+  min-height: 44px !important;
+}
+:is(.lab, .tool-studio) .studio details:not([open]) > :not(summary) { display:none!important; }
+:is(.lab, .tool-studio) .lab-field > label { min-height:44px;display:flex;align-items:center; }
+:is(.lab, .tool-studio) .studio { --studio-soft:var(--green); }
+:is(.lab, .tool-studio) .studio input[type=range] { min-height:44px;font-size:16px; }
+

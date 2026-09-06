@@ -125,3 +125,7 @@ export const studioCopy = {
     hint: "Sound starts with a deliberate press. Leaving this tab stops it. WAV rendering includes eight bars plus the release tail.",
   },
 };
+export const studioShellCopy = {
+  loading: "Loading your workbench…",
+  noScript: "This tool needs JavaScript to process files and run its controls in your browser. Enable JavaScript and reload to try it.",
+};

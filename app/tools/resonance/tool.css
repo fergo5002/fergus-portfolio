@@ -1,0 +1,292 @@
+@import "../../../components/studio/base.css";
+@import "../../../components/studio/studio.css";
+
+:is(.lab, .tool-studio) .music-transport {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  padding: 18px;
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  background: var(--studio-paper);
+}
+:is(.lab, .tool-studio) .music-transport > .lab-field {
+  flex: 1 1 160px;
+}
+:is(.lab, .tool-studio) .music-transport > .studio-badge {
+  align-self: center;
+}
+:is(.lab, .tool-studio) .music-machine {
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--bg);
+}
+:is(.lab, .tool-studio) .music-machine canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+  cursor: ns-resize;
+}
+:is(.lab, .tool-studio) .music-machine p {
+  font-size: 0.7rem;
+  margin: 0;
+  padding: 12px 18px;
+  border-top: 1px solid var(--lab-line);
+}
+:is(.lab, .tool-studio) .music-pads {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+:is(.lab, .tool-studio) .music-pad {
+  position: relative;
+  padding: 20px;
+  border: 1px solid var(--lab-line);
+  border-bottom: 3px solid var(--green);
+  border-radius: 5px;
+  background: var(--studio-paper);
+  color: var(--green-bright);
+}
+:is(.lab, .tool-studio) .music-pad:nth-child(even) {
+  border-bottom-color: var(--amber);
+}
+:is(.lab, .tool-studio) .music-pad:active {
+  background: color-mix(in srgb, var(--green) 20%, var(--bg));
+  transform: translateY(2px);
+}
+:is(.lab, .tool-studio) .music-pad > span {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  font-size: 0.65rem;
+  opacity: 0.6;
+}
+:is(.lab, .tool-studio) .music-pad strong {
+  display: block;
+  font-family: var(--font-screen);
+  font-size: 2.3rem;
+  font-weight: 400;
+}
+:is(.lab, .tool-studio) .music-pad small {
+  font-size: 0.65rem;
+}
+:is(.lab, .tool-studio) .music-sequencer {
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+:is(.lab, .tool-studio) .music-step-head {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 20px;
+  padding: 14px 18px;
+  font-size: 0.65rem;
+  color: var(--amber);
+}
+:is(.lab, .tool-studio) .music-step-head > div,
+:is(.lab, .tool-studio) .music-steps {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 5px;
+}
+:is(.lab, .tool-studio) .music-step-head > div {
+  text-align: center;
+}
+:is(.lab, .tool-studio) .music-voice {
+  border-top: 1px solid var(--lab-line);
+  padding: 16px 18px;
+  background: var(--studio-paper);
+}
+:is(.lab, .tool-studio) .music-voice-main {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+}
+:is(.lab, .tool-studio) .music-voice-label strong {
+  font-size: 0.85rem;
+}
+:is(.lab, .tool-studio) .music-voice-label > div {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+:is(.lab, .tool-studio) .music-voice-label .studio-toggle {
+  padding: 3px 8px;
+  min-height: 32px;
+  font-size: 0.65rem !important;
+}
+:is(.lab, .tool-studio) .music-steps button {
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--lab-line);
+  border-radius: 3px;
+  background: var(--bg);
+}
+:is(.lab, .tool-studio) .music-steps button:nth-child(4n + 1) {
+  border-left-color: var(--green);
+}
+:is(.lab, .tool-studio) .music-steps button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--green) 65%, var(--bg));
+  border-color: var(--green);
+}
+:is(.lab, .tool-studio) .music-voice:nth-child(odd) .music-steps button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--amber) 65%, var(--bg));
+  border-color: var(--amber);
+}
+:is(.lab, .tool-studio) .music-steps button[data-current] {
+  outline: 2px solid var(--green-bright);
+  outline-offset: 2px;
+}
+:is(.lab, .tool-studio) .music-voice > details {
+  margin-top: 12px;
+}
+:is(.lab, .tool-studio) .music-voice summary {
+  font-size: 0.65rem !important;
+  min-height: 24px !important;
+}
+:is(.lab, .tool-studio) .music-performance {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  align-items: center;
+  border: 1px solid var(--lab-line);
+  padding: 24px;
+  border-radius: 6px;
+}
+:is(.lab, .tool-studio) .music-xy {
+  position: relative;
+  height: 260px;
+  touch-action: none;
+  cursor: crosshair;
+  overflow: hidden;
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  background:
+    linear-gradient(
+      0deg,
+      transparent 49.5%,
+      var(--lab-line) 50%,
+      transparent 50.5%
+    ),
+    linear-gradient(
+      90deg,
+      transparent 49.5%,
+      var(--lab-line) 50%,
+      transparent 50.5%
+    ),
+    radial-gradient(
+      ellipse at top right,
+      color-mix(in srgb, var(--amber) 12%, var(--bg)),
+      var(--bg)
+    );
+}
+:is(.lab, .tool-studio) .music-xy > span {
+  position: absolute;
+  left: 14px;
+  top: 10px;
+  font-size: 0.7rem;
+  pointer-events: none;
+}
+:is(.lab, .tool-studio) .music-xy > small {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  font-size: 0.65rem;
+  pointer-events: none;
+}
+:is(.lab, .tool-studio) .music-xy i {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--amber);
+  background: color-mix(in srgb, var(--amber) 20%, transparent);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 0 35px color-mix(in srgb, var(--amber) 25%, transparent);
+}
+@media (max-width: 1050px) {
+  :is(.lab, .tool-studio) .music-step-head,
+:is(.lab, .tool-studio) .music-voice-main {
+    grid-template-columns: 140px minmax(0, 1fr);
+    gap: 12px;
+  }
+  :is(.lab, .tool-studio) .music-steps {
+    gap: 3px;
+  }
+}
+@media (max-width: 650px) {
+  :is(.lab, .tool-studio) .music-transport {
+    padding: 14px;
+  }
+  :is(.lab, .tool-studio) .music-pads {
+    gap: 7px;
+  }
+  :is(.lab, .tool-studio) .music-pad {
+    padding: 18px 8px 12px;
+  }
+  :is(.lab, .tool-studio) .music-pad strong {
+    font-size: 1.9rem;
+  }
+  :is(.lab, .tool-studio) .music-machine canvas {
+    min-height: 190px;
+    object-fit: cover;
+  }
+  :is(.lab, .tool-studio) .music-step-head {
+    display: none;
+  }
+  :is(.lab, .tool-studio) .music-voice {
+    padding: 14px 10px;
+  }
+  :is(.lab, .tool-studio) .music-voice-main {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  :is(.lab, .tool-studio) .music-voice-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  :is(.lab, .tool-studio) .music-voice-label > div {
+    margin: 0;
+  }
+  :is(.lab, .tool-studio) .music-steps {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 6px;
+  }
+  :is(.lab, .tool-studio) .music-steps button {
+    min-height: 36px;
+  }
+  :is(.lab, .tool-studio) .music-performance {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 18px;
+  }
+  :is(.lab, .tool-studio) .music-xy {
+    height: 220px;
+  }
+}
+@media (max-width: 650px) {
+  :is(.lab, .tool-studio) .music-steps {
+    grid-template-columns: repeat(4, minmax(44px, 1fr));
+  }
+  :is(.lab, .tool-studio) .music-steps button {
+    min-height: 44px;
+  }
+  :is(.lab, .tool-studio) .music-voice-label .studio-toggle {
+    min-height: 44px;
+  }
+}
+:is(.lab, .tool-studio) .music-steps button {
+  color: var(--green-bright);
+  font-size: 0.65rem;
+}
+:is(.lab, .tool-studio) .music-steps button[aria-pressed="true"] {
+  color: var(--bg);
+}
+

@@ -752,6 +752,9 @@ async function checkRoute(browser, profile, url, outDir, label, readySelector = 
 
   const timeout = profile.throttle ? 120_000 : 45_000;
   await page.goto(url, { waitUntil: "networkidle", timeout });
+  if (await page.locator("[data-studio-host]").count()) {
+    await page.locator("[data-studio-host] .studio").first().waitFor({ state: "visible", timeout });
+  }
   if (readySelector) await page.locator(readySelector).first().waitFor({ state: "visible", timeout });
   await page.waitForTimeout(500);
 

@@ -10,7 +10,15 @@
 
 Fergus selected Group Lore, Pocket Redact, Prove It and Resonance for a deeper build, plus an
 Obsidian-style file graph. Work continues locally in `f6f8` on `codex/selected-tools-studio`,
-from `f49cb41`. Nothing has been pushed or deployed.
+from `f49cb41`. Fergus authorised deployment after local review. Public release is being
+prepared through the normal GitHub checks and personal Vercel project.
+
+- [x] Public `/tools/atlas`, `/tools/group-lore`, `/tools/pocket-redact`, `/tools/prove-it`
+  and `/tools/resonance`, with registry entries, board previews, canonical metadata and
+  generated sitemap/agent discovery. Seven unselected experiments remain behind the lab flag.
+- [x] Shared studio furniture and per-tool styles serve the same components in public and local review.
+- [x] Public route/discovery check and both studio browser suites added to the phone CI gate.
+- [ ] Merge the release PR and verify its exact production deployment and canonical workflows.
 
 - [x] Atlas replaces Code Atlas in the lab: broad file/folder/ZIP intake, public GitHub import,
   manually ticked force graph, drag/pin/zoom/focus, file inspection, explainable links, local

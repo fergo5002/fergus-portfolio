@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { zipSync, strToU8 } from "fflate";
 import { PDFDocument, StandardFonts, PDFName } from "pdf-lib";
 const base = process.env.LAB_URL || "http://127.0.0.1:3106",
+  prefix = process.env.STUDIO_PREFIX || "/lab",
   out = resolve(".codex/studio-review");
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch({ headless: true }),
@@ -41,7 +42,7 @@ let current = "";
 page.on("pageerror", (e) => errors.push({ tool: current, message: e.message }));
 async function open(slug) {
   current = slug;
-  const r = await page.goto(`${base}/lab/${slug}`, {
+  const r = await page.goto(`${base}${prefix}/${slug}`, {
     waitUntil: "domcontentloaded",
     timeout: 120000,
   });
@@ -321,7 +322,7 @@ if (!process.argv[2] || process.argv[2] === "mobile") {
       "pocket-redact",
     ]) {
       try {
-        await p.goto(`${base}/lab/${slug}`, {
+        await p.goto(`${base}${prefix}/${slug}`, {
           waitUntil: "domcontentloaded",
           timeout: 120000,
         });

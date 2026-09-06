@@ -6,6 +6,7 @@ import { zipSync, strToU8 } from "fflate";
 import { PDFDocument, StandardFonts } from "pdf-lib";
 import sharp from "sharp";
 const base = process.env.LAB_URL || "http://127.0.0.1:3106",
+  prefix = process.env.STUDIO_PREFIX || "/lab",
   out = resolve(".codex/studio-review");
 await mkdir(out, { recursive: true });
 const browser = await chromium.launch({ headless: true }),
@@ -20,7 +21,7 @@ const results = [],
 page.on("pageerror", (e) => errors.push(e.message));
 const b = (name) => page.getByRole("button", { name, exact: true });
 async function open(slug) {
-  await page.goto(`${base}/lab/${slug}`, {
+  await page.goto(`${base}${prefix}/${slug}`, {
     waitUntil: "domcontentloaded",
     timeout: 120000,
   });
