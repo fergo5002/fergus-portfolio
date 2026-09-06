@@ -2415,6 +2415,67 @@ html.is-gravity .statusbar {
   .post__toc li {
     margin: 0;
   }
+  /* The terminal's chips, its prompt label and input, and the links in the
+     contact list and on the cards were 24 to 32px tall. Found the first time
+     the instrument drove the home page. */
+  .term__hint {
+    min-height: 44px;
+    padding: 0 var(--sp-3);
+  }
+  .term__form,
+  .term__label,
+  .term__input {
+    min-height: 44px;
+  }
+  .contact__row a,
+  .exp__link a,
+  .project__links a,
+  .post__next a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* ── dim text on the phone composite ──────────────────────────────────
+     Measured by the phone instrument on 2026-09-06, the first time it drove
+     the home page: every --green-dim line read 3.5 to 3.9:1. Not the token,
+     which clears 4.67 on the page: the 7px glow around a 13px word fills its
+     rectangle and reads as green ground, and that is what an eye sees too.
+     Two changes, both on the finger rather than the width: the dim token
+     comes up, on every phosphor by the same step, and the glow comes off the
+     small secondary lines, where on a phone it is blur rather than bloom.
+     Headings, links and the terminal keep theirs. */
+  :root {
+    --green-dim: #28a846;
+  }
+  html[data-theme="amber"] {
+    --green-dim: #c88420;
+  }
+  html[data-theme="ice"] {
+    --green-dim: #50a0be;
+  }
+  .hero__loc,
+  .hero__edu,
+  .hl__k,
+  .promptline__user,
+  .promptline__sep,
+  .promptline__dollar,
+  .exp__meta,
+  .exp__commit,
+  .project__year,
+  .project__role,
+  .contact__k,
+  .writing__meta,
+  .writing__tags li,
+  .writing__feed,
+  .talk__prompt,
+  .talk__alt,
+  .post__meta,
+  .chart__caption,
+  .flag,
+  .window__bar {
+    text-shadow: none;
+  }
 }
 
 /* The other half: space, not thumbs. The costume readout that carries no
