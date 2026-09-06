@@ -1,8 +1,9 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useSystem } from "./SystemProvider";
+import { markNavigated } from "@/lib/navigation";
 
 /**
  * Changing route is changing channel.
@@ -18,6 +19,16 @@ export default function RouteTransition() {
   const { degauss, reducedMotion } = useSystem();
   const [rolling, setRolling] = useState(false);
   const firstRender = useRef(true);
+  const firstPath = useRef(path);
+
+  // The first in-site navigation is what makes the next page one nobody has
+  // seen, and `lib/navigation.ts` keys every load-time effect on that. A
+  // layout effect rather than an effect so `html.navigated` is on the
+  // document before the new page paints: a frame later and its reveal blocks
+  // would paint visible, then hide, then paint in.
+  useLayoutEffect(() => {
+    if (path !== firstPath.current) markNavigated();
+  }, [path]);
 
   useEffect(() => {
     if (firstRender.current) {

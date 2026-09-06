@@ -210,3 +210,23 @@ describe("the power-on strike was left alone", () => {
     expect(PRESENT).toContain("col += (uPhosphor * 0.9 + vec3(0.35)) * strike * 1.4;");
   });
 });
+
+describe("the rain is finer and dimmer on a phone (Fergus, 2026-09-06)", () => {
+  // Seen on both mobile engines, every route: at 32 columns across a 0.6 dpr
+  // buffer the rain cells were about 12 CSS pixels square and read as blocky
+  // green dirt behind the text rather than as the texture it is on the desktop.
+  // Fergus chose toning it down over removing it. Same rule as every constant
+  // here: this proves the numbers are where they were put, and the pixels were
+  // measured separately (docs/PROGRESS.md, 2026-09-06).
+  it("draws the phone rain on a finer grid", () => {
+    expect(PRESENT).toContain("float cols = mix(54.0, 48.0, uMobile);");
+  });
+
+  it("scales every rain sample by one mobile gain, declared once", () => {
+    expect(PRESENT).toContain("float rainGain = mix(1.0, 0.55, uMobile);");
+    // No rain sample reaches the picture without the gain.
+    const samples = PRESENT.match(/rain\(uv[^;]*\) \* uRain/g) ?? [];
+    expect(samples.length).toBeGreaterThan(0);
+    for (const sample of samples) expect(PRESENT).toContain(`${sample} * rainGain`);
+  });
+});

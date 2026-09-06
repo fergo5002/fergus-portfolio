@@ -1,6 +1,6 @@
 # Three release gates. `check` covers types, tests and the production build.
 # `mutation` requires every part of the catalogue to pass in separate checkouts.
-# `phone` proves its instrument can fail, then checks the tools and arcade
+# `phone` proves its instrument can fail, then checks sitemap routes, tools and arcade
 # layouts, actual workflows, downloads and local multiplayer connections.
 #
 # The build needs no secrets. NEXT_PUBLIC_POSTHOG_KEY absent compiles
@@ -103,8 +103,10 @@ jobs:
       # nothing when it passes.
       - name: prove the phone check can fail
         run: node scripts/phone-check.mjs --self-test --out .phone-check
-      - name: phone check on every live tool route
+      - name: phone check on every sitemap route family
         run: node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap --out .phone-check
+      - name: phone and desktop shell interactions
+        run: node scripts/phone-polish-check.mjs --base http://localhost:3000 --out .phone-check/polish
       - name: phone check through the hidden arcade door
         run: node scripts/arcade-phone-check.mjs --base http://localhost:3000 --out .phone-check/arcade
       - name: tools workflows on desktop and phones

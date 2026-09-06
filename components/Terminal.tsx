@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { complete, runCommand } from "@/lib/commands";
 import type { SystemEffect } from "@/lib/commands";
 import { historyStore, initialHistory } from "@/lib/history";
+import { subscribeRequests, takeRequest } from "@/lib/shell-request";
 import { listKeys, removeKeys } from "@/lib/forget";
 import { localPresence } from "@/lib/presence";
 import { arcadeSession, markArcadeSeen } from "@/lib/arcade/session";
@@ -155,12 +156,33 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
     return extra;
   };
 
+  /**
+   * How many characters fit on one line of this terminal's output, measured
+   * from the face it draws with rather than assumed. `help` lays itself out
+   * in one column when there are fewer than sixty. Measured per command, on a
+   * throwaway probe, because the drawer's width is the viewport's and a phone
+   * rotates.
+   */
+  const measureCols = (): number | undefined => {
+    const scroll = scrollRef.current;
+    if (!scroll) return undefined;
+    const probe = document.createElement("span");
+    probe.textContent = "0".repeat(20);
+    probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit";
+    scroll.appendChild(probe);
+    const ch = probe.getBoundingClientRect().width / 20;
+    scroll.removeChild(probe);
+    if (!ch) return undefined;
+    return Math.floor(scroll.clientWidth / ch);
+  };
+
   const run = (raw: string) => {
     historyStore.dispatch({ type: "typed", cmd: raw });
     setCursor(null);
 
     const res = runCommand(raw, {
       history: commands,
+      cols: measureCols(),
       uptimeMs: frame.current.uptimeMs,
       theme: settings.theme,
       reducedMotion,
@@ -191,6 +213,22 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     });
   };
+
+  // A command asked for from outside the terminal (the nav's `cd arcade`).
+  // Drained once on mount, which is how the drawer runs a request that opened
+  // it, and again whenever one arrives while this terminal is already up.
+  // Through a ref so the effect keeps one identity and still runs the current
+  // `run`, with today's history and settings in it.
+  const runRef = useRef(run);
+  runRef.current = run;
+  useEffect(() => {
+    const drain = () => {
+      const cmd = takeRequest();
+      if (cmd) runRef.current(cmd);
+    };
+    drain();
+    return subscribeRequests(drain);
+  }, []);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();

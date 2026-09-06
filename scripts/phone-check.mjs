@@ -9,6 +9,9 @@
  *   input-font    an input, textarea or select whose computed font-size is under
  *                 16px (iOS zooms the whole page when one is focused)
  *   tap-target    a tappable element whose box is under 44 by 44 CSS px
+ *   unreachable   a control past either side of the viewport with no ancestor
+ *                 that scrolls sideways, so no thumb can ever reach it (a fixed
+ *                 bar does not widen the document, so `overflow` cannot see it)
  *   contrast      text whose composited contrast, sampled from the screenshot,
  *                 is under 4.5:1
  *
@@ -395,8 +398,50 @@ function auditInPage({ minInput, minTap }) {
   const visible = (el) => {
     const cs = getComputedStyle(el);
     if (cs.display === "none" || cs.visibility === "hidden" || Number(cs.opacity) === 0) return false;
+    // Closed is closed. Chromium keeps the contents of a closed <details>
+    // laid out (content-visibility rather than display: none), so every cell
+    // of the table behind an article chart's "show the numbers" reported a
+    // rectangle, was found occluded by the paragraph drawn where it would
+    // have been, and counted as a skip: nine per article, against an
+    // allowance of two, on a page a person reads fine. The summary is the
+    // one part of a closed details anybody sees.
+    const closed = el.closest("details:not([open])");
+    if (closed) {
+      const summary = closed.querySelector(":scope > summary");
+      if (!summary || !summary.contains(el)) return false;
+    }
     const r = el.getBoundingClientRect();
-    return r.width >= 2 && r.height >= 2;
+    if (r.width < 2 || r.height < 2) return false;
+    // A full-size child can live inside a 1px clipped parent, as the contact
+    // honeypot does. Its own layout box is not evidence of a visible control.
+    // Check the ancestors' clipping box, not its intersection with this child:
+    // that keeps scrollable rail links and offscreen-control faults in scope.
+    const clip = clipBoxFor(el);
+    return !clip || (clip.right - clip.left >= 2 && clip.bottom - clip.top >= 2);
+  };
+
+  /**
+   * The box an element's text can actually be seen in: the intersection of
+   * every ancestor that clips its overflow. A text node's client rectangles
+   * are the glyphs' own extent, and a run that is ellipsised or cut by its
+   * box still reports the whole line. The status bar's working directory on a
+   * phone is the case that found it: its rectangle ran on under the sound
+   * button, `elementFromPoint` said "button", and a run a person reads
+   * perfectly well was skipped as occluded. Viewport coordinates, or null when
+   * nothing clips.
+   */
+  const clipBoxFor = (el) => {
+    let box = null;
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      const cs = getComputedStyle(a);
+      const clips = (v) => v === "hidden" || v === "clip" || v === "auto" || v === "scroll";
+      if (!clips(cs.overflowX) && !clips(cs.overflowY)) continue;
+      const r = a.getBoundingClientRect();
+      box = box
+        ? { left: Math.max(box.left, r.left), top: Math.max(box.top, r.top), right: Math.min(box.right, r.right), bottom: Math.min(box.bottom, r.bottom) }
+        : { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+    }
+    return box;
   };
 
   /**
@@ -484,6 +529,34 @@ function auditInPage({ minInput, minTap }) {
     failures.push({ check: "tap-target", el: path(el), detail: size });
   }
 
+  // 3b. Reachability. A control past either side of the viewport with nothing
+  // to scroll is a control nobody can press. This is how two nav links shipped
+  // invisible on every phone while the overflow check stayed green: the nav is
+  // a fixed bar, and a fixed bar does not widen the document. The links were
+  // listed under `offscreen` on every run, and the route said ok.
+  //
+  // A control inside an ancestor that genuinely scrolls sideways is reachable
+  // by a thumb and is left alone. `aria-hidden` subtrees are not controls a
+  // person is offered (the contact form's honeypot lives at -9999px).
+  const scrollsSideways = (el) => {
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      const cs = getComputedStyle(a);
+      if ((cs.overflowX === "auto" || cs.overflowX === "scroll") && a.scrollWidth > a.clientWidth + 1) return true;
+    }
+    return false;
+  };
+  for (const el of document.querySelectorAll("a, button, [role=button], input, select, textarea")) {
+    if (!visible(el) || el.type === "hidden" || el.closest("[aria-hidden=true]")) continue;
+    const r = el.getBoundingClientRect();
+    if (r.right <= viewportWidth + 1 && r.left >= -1) continue;
+    if (scrollsSideways(el)) continue;
+    failures.push({
+      check: "unreachable",
+      el: path(el),
+      detail: `${Math.round(r.left)}..${Math.round(r.right)}px across a ${viewportWidth}px viewport, nothing to scroll`,
+    });
+  }
+
   // 4. Text runs, for the contrast pass outside the page.
   //
   // A rectangle outside the photographed viewport is dropped here and the
@@ -523,6 +596,7 @@ function auditInPage({ minInput, minTap }) {
     if (el.closest("script, style, noscript, canvas, svg, template")) continue;
     seen.add(el);
     const cs = getComputedStyle(el);
+    const clip = clipBoxFor(el);
     const rects = [];
     let dropped = 0;
     for (const child of el.childNodes) {
@@ -531,7 +605,21 @@ function auditInPage({ minInput, minTap }) {
       range.selectNodeContents(child);
       for (const r of range.getClientRects()) {
         if (r.width < 2 || r.height < 2) continue;
-        const rect = { x: r.left + window.scrollX, y: r.top + window.scrollY, w: r.width, h: r.height };
+        // Only the part of the run inside every clipping ancestor is on the
+        // page. The rest is not "occluded" and not "offscreen": it is not
+        // drawn at all.
+        let left = r.left, top = r.top, right = r.right, bottom = r.bottom;
+        if (clip) {
+          left = Math.max(left, clip.left);
+          top = Math.max(top, clip.top);
+          right = Math.min(right, clip.right);
+          bottom = Math.min(bottom, clip.bottom);
+        }
+        if (right - left < 2 || bottom - top < 2) {
+          dropped++;
+          continue;
+        }
+        const rect = { x: left + window.scrollX, y: top + window.scrollY, w: right - left, h: bottom - top };
         if (onScreen(rect) && inScrollViewport(el, rect)) rects.push(rect);
         else dropped++;
       }
@@ -549,7 +637,7 @@ function auditInPage({ minInput, minTap }) {
       offscreen.push({
         el: path(el),
         text: (el.textContent || "").trim().slice(0, 40),
-        detail: `${dropped} rect(s) outside the ${viewportWidth}x${viewportHeight} viewport or a scrolling panel`,
+        detail: `${dropped} rect(s) outside the ${viewportWidth}x${viewportHeight} viewport or clipped by an ancestor`,
       });
     }
   }
@@ -917,7 +1005,13 @@ async function runAll(targets, outDir, readySelector = null) {
     const browser = await (engineName === "webkit" ? webkit : chromium).launch();
     try {
       for (const profile of PROFILES.filter((p) => p.engine === engineName)) {
-        for (const t of targets) results.push(await checkRoute(browser, profile, t.url, outDir, t.label, readySelector));
+        for (const t of targets) {
+          const result = await checkRoute(browser, profile, t.url, outDir, t.label, readySelector);
+          results.push(result);
+          // Retain completed measurements if a later navigation times out.
+          writeFileSync(join(outDir, "report.json"), JSON.stringify(results, null, 2));
+          console.log(`measured ${profile.id} ${t.label}: ${result.failures.length} failure(s)`);
+        }
       }
     } finally {
       await browser.close();
@@ -930,7 +1024,7 @@ async function runAll(targets, outDir, readySelector = null) {
 /* Reporting                                                            */
 /* ------------------------------------------------------------------ */
 
-const CHECKS = ["overflow", "input-font", "tap-target", "contrast", "assets", "layout-moved", "skipped"];
+const CHECKS = ["overflow", "input-font", "tap-target", "unreachable", "contrast", "assets", "layout-moved", "skipped"];
 
 /** Prints the table and the failure lines. Returns true if anything failed. */
 function printSummary(results) {
@@ -990,14 +1084,20 @@ function labelFor(route) {
   return route.replace(/^\//, "").replace(/\//g, "_") || "root";
 }
 
-/** Every `/tools*` path the running site's sitemap lists. */
+/**
+ * Every path the running site's sitemap lists, except that only the first two
+ * articles come along: the article template is one template, and eleven copies
+ * of it would triple the run for no new finding. Until 2026-09-06 this kept
+ * `/tools*` alone, so the home page, the nav and the status bar on every
+ * route had never been under this instrument at all.
+ */
 async function routesFromSitemap(base) {
   const res = await fetch(new URL("/sitemap.xml", base));
   if (!res.ok) throw new Error(`sitemap.xml answered ${res.status}`);
   const xml = await res.text();
-  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
-    .map((m) => new URL(m[1]).pathname)
-    .filter((p) => p === "/tools" || p.startsWith("/tools/"));
+  const paths = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
+  const articles = paths.filter((p) => p.startsWith("/writing/")).slice(0, 2);
+  return [...paths.filter((p) => !p.startsWith("/writing/")), ...articles];
 }
 
 /* ------------------------------------------------------------------ */
@@ -1044,6 +1144,11 @@ async function selfTest(args) {
         ["input-font", "input#edge-input"],
         ["tap-target", "button#edge-tap"],
         ["contrast", "p#edge-contrast"],
+        // Off the side of the page with nothing to scroll. Added 2026-09-06
+        // after two nav links shipped exactly like this on every phone and the
+        // check stayed green: it was listing them under `offscreen` and
+        // calling the route ok.
+        ["unreachable", "a#offscreen-link"],
       ]) {
         if (!caught(r, check, el)) problems.push(`${r.profile} bad: ${check} on ${el} was not caught`);
       }
@@ -1088,6 +1193,28 @@ async function selfTest(args) {
     }
 
     for (const r of results.filter((r) => r.label === "good")) {
+      // The rail: a link past the edge of a container that scrolls sideways
+      // is reachable, and the good page asserts zero failures below, so this
+      // names the case rather than adding a check.
+      if (r.failures.some((f) => f.check === "unreachable" && f.el.includes("a#rail-link"))) {
+        problems.push(`${r.profile} good: a link inside a sideways-scrolling rail was called unreachable`);
+      }
+      // Closed is closed: the paragraph inside a closed details is neither
+      // sampled nor skipped, while its summary is read like any other run.
+      if (r.samples.some((x) => x.el.includes("p#closed-cell")) || r.skipped.some((x) => x.el.includes("p#closed-cell"))) {
+        problems.push(`${r.profile} good: text inside a closed details was read`);
+      }
+      if (!r.samples.some((x) => x.el.includes("summary#closed-summary"))) {
+        problems.push(`${r.profile} good: the summary of a closed details was not read`);
+      }
+      // A run clipped by its box is read within the box, not called occluded
+      // by whatever sits where its clipped tail would have been.
+      if (r.skipped.some((x) => x.el.includes("span#clipped-run"))) {
+        problems.push(`${r.profile} good: a run clipped by its own box was skipped as occluded`);
+      }
+      if (!r.samples.some((x) => x.el.includes("span#clipped-run"))) {
+        problems.push(`${r.profile} good: a run clipped by its own box was not sampled`);
+      }
       if (r.failures.length) {
         problems.push(
           `${r.profile} good: ${r.failures.length} failure(s) on a page with none: ${r.failures.map((f) => `${f.check} ${f.el}`).join("; ")}`,

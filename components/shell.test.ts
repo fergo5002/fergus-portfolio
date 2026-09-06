@@ -153,11 +153,18 @@ describe("the status bar prompt", () => {
     expect(statusBar).toMatch(/useSyncExternalStore\(shellStore\.subscribe, shellStore\.get, getServerShell\)/);
   });
 
-  it("is 44px both ways on small screens, in a rule that wins on order", () => {
+  it("is 44px both ways on touch, in a rule that wins on order", () => {
+    // Since 2026-09-06 the floors live in the `(hover: none)` block with the
+    // other thumb rules, and the narrow block only lays the button out:
+    // stretched to the bar's height and centred in it. The old narrow rule
+    // hung the `$` on the bar's bottom edge, written for a 22px bar and still
+    // applied to the 44px touch one.
     const mobile = /\.statusbar__prompt \{[^}]*min-height: 44px;[^}]*\}/.exec(css);
     expect(mobile).not.toBeNull();
     expect(mobile?.[0]).toMatch(/min-width: 44px;/);
-    expect(mobile?.[0]).toMatch(/align-self: flex-end;/);
+    const narrow = /\.statusbar__prompt \{[^}]*align-self: stretch;[^}]*\}/.exec(css);
+    expect(narrow?.[0]).toMatch(/align-items: center;/);
+    expect(narrow?.[0]).not.toMatch(/flex-end/);
     // The override of `.statusbar__readouts { display: contents }` must come
     // after it in the file, or it loses on the cascade with equal specificity.
     const contents = /\.statusbar__readouts \{\r?\n\s*display: contents;/.exec(css);

@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cabinets, collectionCopy as copy } from "@/content/arcade-collection";
 import { arcadeCopy } from "@/content/arcade";
@@ -75,13 +75,18 @@ function Room({ program, onExit }: Props) {
 
   useEffect(() => refreshBoards(), [refreshBoards]);
 
+  // Own keyboard input before the room paints. Waiting for a passive effect
+  // leaves Escape able to reach the drawer and unmount its terminal as well.
+  useLayoutEffect(() => {
+    roomRef.current?.focus({ preventScroll: true });
+  }, []);
+
   useEffect(() => {
     const html = document.documentElement;
     html.classList.add("arcade-open");
     setScrollLocked(true);
     setEjected(false);
     setGravity(false);
-    roomRef.current?.focus({ preventScroll: true });
     return () => {
       html.classList.remove("arcade-open");
       setScrollLocked(false);

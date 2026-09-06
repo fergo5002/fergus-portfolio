@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { scrambleFrame, randomGlyph } from "@/lib/scramble";
+import { isLateHydration } from "@/lib/navigation";
 
 /**
  * Renders `text` with a "terminal decrypting" reveal: starts fully scrambled and
@@ -38,6 +39,13 @@ export default function Scramble({
       return;
     }
 
+    // A page title that has been readable for two seconds must not turn into
+    // glyphs because the JavaScript has just arrived. On a hard load the
+    // server text stays; the decode runs for a page reached by navigating,
+    // which nobody has seen yet. View-triggered headings get their own
+    // already-seen check below. lib/navigation.ts.
+    if (trigger === "mount" && isLateHydration()) return;
+
     let tickTimer: ReturnType<typeof setTimeout>;
     let repeatTimer: ReturnType<typeof setInterval> | undefined;
     let io: IntersectionObserver | undefined;
@@ -61,6 +69,11 @@ export default function Scramble({
     };
 
     if (trigger === "view" && hostRef.current) {
+      // A heading the visitor scrolled to while the JavaScript was on its way
+      // is on screen or above it by the time this runs, and the observer
+      // would fire at once and scramble a line they are reading. Seen is
+      // seen. Only a heading still below the fold decodes as it arrives.
+      if (isLateHydration() && hostRef.current.getBoundingClientRect().top < window.innerHeight) return;
       const observer = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {

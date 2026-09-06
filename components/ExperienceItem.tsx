@@ -30,11 +30,11 @@ export default function ExperienceItem({
           </div>
           <p className="exp__meta">
             <span className="exp__role">{item.role}</span>
-            <span className="exp__dot"> · </span>
+            <span className="exp__dot" aria-hidden="true" />
             <span>{item.dates}</span>
             {item.location && (
               <>
-                <span className="exp__dot"> · </span>
+                <span className="exp__dot" aria-hidden="true" />
                 <span>{item.location}</span>
               </>
             )}

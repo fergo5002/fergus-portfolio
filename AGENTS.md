@@ -93,6 +93,34 @@ The nav is the deliberate exception. Its links read `cd experience` rather than 
 which is weak anchor text, but they are real navigation and a crawler needs to follow them.
 That is a design call, not a bug, and it is Fergus's to change if he ever wants to.
 
+**On a phone the nav list scrolls sideways** (2026-09-06, Fergus's call over shorter labels or
+a menu). The `ul` scrolls and the fixed bar does not, so the reading-progress line on
+`.nav::after` stays put; the list snaps to a link and `Nav.tsx` scrolls the active one into
+view by writing `scrollLeft`, never `scrollIntoView`. There is deliberately no fade at the
+trailing edge: the first version had one and the phone check read the clipped link under it at
+1.23:1, which was correct. The cut is the affordance. `cd arcade` sits at the end of the row as a
+`<button>` dressed as a link, because the arcade is not a page: it asks the shell to run the door
+command through `lib/shell-request.ts` (one slot, taken once) and whichever Terminal is mounted,
+inline on the home page or the drawer elsewhere, runs it. The drawer is opened with `open`, not
+`toggle`, so a drawer that is already up stays up to run it.
+
+**Animate only what the visitor has not seen** (2026-09-06). Hydration lands well after first
+paint here, 2.5 seconds on a desktop with a real GPU and 4 on a throttled Pixel, measured with a
+headed browser (a hidden tab throttles timers to one a second and measures nothing). Every
+mount-time effect therefore asks `lib/navigation.ts` whether this is a late hydration of a page
+already on screen. The raster pre-hide keys on `html.navigated`, added by `RouteTransition` in a
+layout effect on the first in-site navigation, never on the pre-paint `html.js` flag, which used
+to hold every block at opacity 0 until the JavaScript arrived. On a late hydration a block on
+screen or scrolled past is revealed at once with no animation, a block still below the fold is
+marked `is-unseen` and paints in when reached, and the page-title and hero scrambles do not run.
+A view-triggered scramble gets the same rect check. The proof is a headed-browser timeline of
+the title text from navigation start: one entry, not a flip to glyphs at 2.5 seconds.
+
+**Two boots.** `lib/boot.ts` now carries `FULL_BOOT` and `PHONE_BOOT` (one head line, two device
+lines, a floor near two seconds) and `pickBootProfile` chooses by coarse pointer or width under
+768. `BOOT_FLOOR_MS` is the full profile's floor and is unchanged. The ownership rules above are
+untouched by this: both profiles boot the same way, one is shorter.
+
 **And never disallow `/_next/` in `robots.txt`.** The inline pre-paint script adds `booting` to
 `<html>` on the landing page, `.booting` hides the content, and `BootSequence` is what clears it
 properly. Block the chunk it ships in and a rendering crawler sees an empty homepage while every
@@ -140,6 +168,13 @@ of building that page:
   marks a message with `[fast]` in the subject. It used to drop them, which meant a visitor who
   autofilled two fields and pasted a prepared message was told "Sent." while it went nowhere.
   Never give a soft signal the power to delete.
+
+**Native validation must leave the invalid field visible below the fixed nav.** On WebKit
+phone emulation, a field's `scroll-margin-top` alone still left the focused name above the
+viewport after the browser finished scrolling. `html` also sets `scroll-padding-top` to the
+nav height plus one spacing unit. `scripts/phone-polish-check.mjs` taps the empty form's
+submit button and reads the final field rectangle without moving it itself. This preserves
+native validation and the no-JavaScript form; it does not introduce a second submit path.
 
 Sending goes through Resend over plain `fetch`, no SDK. `RESEND_API_KEY` is the only required
 variable and it **is set** on the Vercel project (production, preview and development), with a copy
@@ -315,13 +350,21 @@ follow the amber and ice phosphors for that reason alone.
   `@media (prefers-reduced-motion: no-preference)` (CSS) or a `matchMedia` check (JS) with a
   static/instant fallback. Under `reduce`, Lenis is never mounted, the shader draws one static
   frame, and reveals apply instantly. Keep text contrast ≥ 4.5:1, alt text on images, visible
-  focus. Every live tool route is driven through WebKit at 390 and 320 and a throttled
-  Chromium in CI by `scripts/phone-check.mjs`, which fails on overflow, inputs under 16px,
-  tap targets under 44px and sampled contrast under 4.5:1, and also on a route that leaves
-  more than two text runs unread or whose photograph is not the layout its rectangles were
-  measured in. A resized desktop window does not count. Its self-test pins every floor from
-  both sides and asserts three hand-computed contrast ratios, so loosening one is red rather
-  than quiet; read that file's header before changing a number in it.
+  focus. Every route in the sitemap (the first two articles standing in for the template) is
+  driven through WebKit at 390 and 320 and a throttled Chromium in CI by
+  `scripts/phone-check.mjs`, which fails on overflow, inputs under 16px, tap targets under
+  44px, a control past either side of the viewport with nothing to scroll (`unreachable`),
+  and sampled contrast under 4.5:1, and also on a route that leaves more than two text runs
+  unread or whose photograph is not the layout its rectangles were measured in. A resized
+  desktop window does not count. Its self-test pins every floor from both sides and asserts
+  three hand-computed contrast ratios, so loosening one is red rather than quiet; read that
+  file's header before changing a number in it. **Until 2026-09-06 it drove `/tools*` only
+  and listed off-screen controls under `offscreen`, a category that never fails.** That is
+  how "cd tools" and "cd mcp" shipped unreachable on every phone with the check green. Read
+  the `offscreen` and `skipped` lines on a passing run: they are findings the instrument has
+  not been taught to fail yet. It now also ignores the contents of a closed `<details>`
+  (Chromium keeps them laid out) and clips a text run to its overflow-clipping ancestors, so
+  an ellipsised path is read where it is drawn.
   **A `(hover: none)` rule is about the finger and applies on a 27" touchscreen too.** Pair it
   with a width when the rule is really about running out of room: the touch status bar block
   in `globals.css` was one block doing both and dropped a readout on any touchscreen, which

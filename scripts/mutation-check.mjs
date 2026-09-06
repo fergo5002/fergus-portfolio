@@ -42,6 +42,89 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 /** Each: break one guard, expect the suite to notice. */
 const MUTATIONS = [
   {
+    name: "phone polish: arcade focus waits until after its first paint",
+    file: "components/arcade/ArcadeExperience.tsx",
+    pattern: /useLayoutEffect\(\(\) => \{\r?\n    roomRef.current\?\.focus/,
+    replace: "useEffect(() => {\n    roomRef.current?.focus",
+    tests: "components/arcade/arcade.test.ts",
+  },
+  ...[
+    ["contact font invites iOS zoom", /(\.cform__input\s*\{\s*font-size:) 16px/, "$1 15px"],
+    ["contact inputs lose their tap height", /(\.cform__input\s*\{\s*font-size: 16px;\s*min-height:) 44px/, "$1 32px"],
+    ["contact labels lose their tap height", /(\.cform__label\s*\{\s*display: flex;\s*align-items: center;\s*min-height:) 44px/, "$1 20px"],
+    ["the RSS link loses its tap height", /  \.writing__feed a,\r?\n/, ""],
+  ].map(([name, pattern, replace]) => ({
+    name: `phone polish: ${name}`, file: "app/globals.css", pattern, replace,
+    tests: "app/globals.test.ts",
+  })),
+  ...[
+    ["experience", "components/ExperienceItem.tsx", "exp__dot"],
+    ["writing index", "app/writing/page.tsx", "writing__dot"],
+  ].map(([name, file, selector]) => ({
+    name: `phone polish: ${name} writes decorative dots into the document`, file,
+    pattern: new RegExp(`<span className="${selector}" aria-hidden="true" />`),
+    replace: `<span className="${selector}" aria-hidden="true"> · </span>`,
+    tests: "components/chrome.test.ts",
+  })),
+  // The interrupted phone-polish batch and its load/rain changes. Narrow test
+  // files keep each mutation attributable; the runner proves the full baseline first.
+  ...["#28a846", "#c88420", "#50a0be"].map(colour => ({
+    name: `phone polish: secondary text loses contrast headroom (${colour})`,
+    file: "app/globals.css",
+    pattern: new RegExp(`--green-dim: ${colour};`),
+    replace: "--green-dim: #18351e;",
+    tests: "app/globals.test.ts",
+  })),
+  {
+    name: "phone polish: native validation loses the fixed-nav scroll inset",
+    file: "app/globals.css",
+    pattern: /scroll-padding-top: calc\(var\(--nav-h\) \+ var\(--sp-3\)\);/,
+    replace: "scroll-padding-top: 0;",
+    tests: "app/globals.test.ts",
+  },
+  {
+    name: "phone polish: terminal chips shrink below a thumb target",
+    file: "app/globals.css",
+    pattern: /(\.term__hint\s*\{\s*min-height:) 44px/,
+    replace: "$1 32px",
+    tests: "app/globals.test.ts",
+  },
+  {
+    name: "phone polish: the rain returns to coarse phone cells",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /float cols = mix\(54\.0, 48\.0, uMobile\);/,
+    replace: "float cols = mix(54.0, 32.0, uMobile);",
+    tests: "components/system/PhosphorScreen.test.ts",
+  },
+  {
+    name: "phone polish: the rain returns to full phone intensity",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /float rainGain = mix\(1\.0, 0\.55, uMobile\);/,
+    replace: "float rainGain = 1.0;",
+    tests: "components/system/PhosphorScreen.test.ts",
+  },
+  {
+    name: "phone polish: the phone selects the full desktop boot",
+    file: "lib/boot.ts",
+    pattern: /return env.coarse \|\| env.width < 768 \? PHONE_BOOT : FULL_BOOT;/,
+    replace: "return FULL_BOOT;",
+    tests: "lib/boot.test.ts",
+  },
+  {
+    name: "phone polish: a block already scrolled past is hidden again",
+    file: "components/motion/RasterReveal.tsx",
+    pattern: /if \(rect.top < window.innerHeight\) \{/,
+    replace: "if (rect.top < window.innerHeight && rect.bottom > 0) {",
+    tests: "components/motion/RasterReveal.test.ts",
+  },
+  {
+    name: "phone polish: a heading already read scrambles at hydration",
+    file: "components/Scramble.tsx",
+    pattern: /if \(isLateHydration\(\) && hostRef.current.getBoundingClientRect\(\).top < window.innerHeight\) return;/,
+    replace: "// Already-seen guard removed by mutation.",
+    tests: "components/motion/RasterReveal.test.ts",
+  },
+  {
     name: "Drift accepts more sample pieces than the browser workbench can safely analyse",
     file: "lib/tools/drift/readiness.ts",
     pattern: / && pieces\.length <= 50/,
@@ -595,7 +678,7 @@ const MUTATIONS = [
   {
     name: "the phone tap target shrinks back under 44px",
     file: "app/globals.css",
-    pattern: /(?<lead>\.statusbar__prompt \{\r?\n    align-self: flex-end;[\s\S]{0,120}min-height: )44px;/,
+    pattern: /(?<lead>\.statusbar__prompt \{\r?\n    min-width: 44px;\r?\n    min-height: )44px;/,
     replace: "$<lead>22px;",
   },
 

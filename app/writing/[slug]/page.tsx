@@ -112,13 +112,16 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
               in the BlogPosting graph is already built from this field. */}
           {article.updated && article.updated !== article.date ? (
             <>
-              <span aria-hidden="true"> · </span>
+              <span className="post__dot" aria-hidden="true" />
               updated <time dateTime={article.updated}>{formatDate(article.updated)}</time>
             </>
           ) : null}
-          <span aria-hidden="true"> · </span>
+          {/* Drawn by `.post__dot::before`, not written: the separators are
+              costume, and a lone middle dot was the first thing the phone
+              instrument failed on this template (2026-09-06). */}
+          <span className="post__dot" aria-hidden="true" />
           {readingMinutes(article.body)} min read
-          <span aria-hidden="true"> · </span>
+          <span className="post__dot" aria-hidden="true" />
           {profile.shortName}
         </p>
         <ul className="writing__tags" aria-label="Tags">

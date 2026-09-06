@@ -65,7 +65,7 @@ export default function WritingPage() {
             </Link>
             <p className="writing__meta">
               <time dateTime={article.date}>{formatDate(article.date)}</time>
-              <span aria-hidden="true"> · </span>
+              <span className="writing__dot" aria-hidden="true" />
               {readingMinutes(article.body)} min read
             </p>
             <p className="writing__desc">{article.description}</p>

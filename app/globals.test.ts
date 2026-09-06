@@ -342,28 +342,28 @@ describe("prose tables clear 4.5:1 on every theme", () => {
  * The phone check cannot catch this coming back. It drives 320 and 390 only, so
  * the merged version passes it perfectly. This is the guard instead.
  */
-describe("the touch bar separates thumb size from screen space", () => {
-  /** Every block with exactly this prelude, matched by counting braces. */
-  function mediaBlocks(prelude: string): string {
-    const needle = `@media ${prelude} {`;
-    const found: string[] = [];
-    for (let from = 0; ; ) {
-      const at = css.indexOf(needle, from);
-      if (at < 0) break;
-      const open = at + needle.length - 1;
-      let depth = 0;
-      let i = open;
-      for (; i < css.length; i++) {
-        if (css[i] === "{") depth++;
-        else if (css[i] === "}" && --depth === 0) break;
-      }
-      found.push(css.slice(open + 1, i));
-      from = i + 1;
+/** Every block with exactly this prelude, matched by counting braces. */
+function mediaBlocks(prelude: string): string {
+  const needle = `@media ${prelude} {`;
+  const found: string[] = [];
+  for (let from = 0; ; ) {
+    const at = css.indexOf(needle, from);
+    if (at < 0) break;
+    const open = at + needle.length - 1;
+    let depth = 0;
+    let i = open;
+    for (; i < css.length; i++) {
+      if (css[i] === "{") depth++;
+      else if (css[i] === "}" && --depth === 0) break;
     }
-    if (found.length === 0) throw new Error(`no @media ${prelude} block`);
-    return found.join("\n");
+    found.push(css.slice(open + 1, i));
+    from = i + 1;
   }
+  if (found.length === 0) throw new Error(`no @media ${prelude} block`);
+  return found.join("\n");
+}
 
+describe("the touch bar separates thumb size from screen space", () => {
   const touch = mediaBlocks("(hover: none)");
   const touchAndNarrow = mediaBlocks("(hover: none) and (max-width: 768px)");
 
@@ -379,8 +379,58 @@ describe("the touch bar separates thumb size from screen space", () => {
   });
 
   it("truncates the working directory for room rather than for thumbs", () => {
-    expect(touchAndNarrow).toContain(".statusbar__pwd");
+    expect(narrow).toContain(".statusbar__pwd");
     expect(touch).not.toContain(".statusbar__pwd");
+  });
+
+  // Measured live on 2026-09-06 at 390px: the prompt's `$` sat on the bar's
+  // bottom edge while every other readout was centred, the working directory
+  // was 11px wide and read "~…", and on tool routes the readouts ran under the
+  // sound button. The rules below were written for a 22px bar with a mouse;
+  // on touch the bar is 44px and the prompt has to be centred in it like the
+  // controls beside it.
+  const narrow = mediaBlocks("(max-width: 768px)");
+  const narrowPrompt = /\.statusbar__prompt\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? "";
+  const narrowPwd = /\.statusbar__pwd\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? "";
+
+  it("centres the prompt in the bar rather than hanging it off the bottom edge", () => {
+    expect(narrowPrompt).not.toContain("flex-end");
+    expect(narrowPrompt).toContain("align-items: center");
+    expect(narrowPrompt).toContain("min-width: 44px");
+  });
+
+  it("gives the working directory the slack and lets it ellipsise", () => {
+    expect(narrowPwd).toContain("flex: 1 1 auto");
+    expect(narrowPwd).toContain("text-overflow: ellipsis");
+  });
+
+  it("drops the uptime on a phone, which is costume, before it drops the path, which is not", () => {
+    expect(narrow).toMatch(/\.statusbar__up\s*\{[^}]*display: none/);
+  });
+});
+
+describe("a hard load is never re-hidden (Fergus, 2026-09-06)", () => {
+  // Measured with a real GPU on 2026-09-06: the page painted, then at
+  // hydration 2.5s later (4s on a throttled Pixel) every raster block was
+  // still opacity 0 and the title flipped to scrambled glyphs. The pre-hide
+  // used to key on `html.js`, which is set before first paint, so the server
+  // HTML was hidden for as long as hydration took. It now keys on
+  // `html.navigated`, which only exists once the visitor has moved inside the
+  // site, and on `.is-unseen`, which RasterReveal adds at hydration to blocks
+  // that are below the fold.
+  const motion = mediaBlocks("(prefers-reduced-motion: no-preference)");
+
+  it("no longer hides every reveal block behind the js flag", () => {
+    expect(motion).not.toMatch(/html\.js \.raster:not\(\.is-revealed\)\s*\{/);
+  });
+
+  it("hides blocks only after an in-site navigation, or when marked unseen", () => {
+    expect(motion).toMatch(/html\.navigated \.raster:not\(\.is-revealed\)/);
+    expect(motion).toMatch(/\.raster\.is-unseen/);
+  });
+
+  it("can reveal without the animation, for a block the visitor is already looking at", () => {
+    expect(motion).toMatch(/\.raster\.is-instant[^{]*\{[^}]*animation: none/);
   });
 });
 
@@ -396,5 +446,142 @@ describe("the arcade measures the same cell it draws", () => {
     const arcade = /\.arcade\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
     expect(arcade).toContain("touch-action: none");
     expect(arcade).toContain("overscroll-behavior: contain");
+  });
+});
+
+describe("the phone nav scrolls rather than clips", () => {
+  // Six links (seven with the arcade) do not fit a 390px bar. Measured live on
+  // 2026-09-06: the list ended at 551px in a 390px viewport, "cd tools" and
+  // "cd mcp" were off the edge with nothing to scroll, and the phone check
+  // called the route ok. Fergus chose a sideways-scrolling list with an edge
+  // fade over shorter labels or a menu.
+  const narrow = mediaBlocks("(max-width: 768px)");
+  const list = /\.nav__list\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? "";
+
+  it("lets the list scroll sideways and hides the scrollbar", () => {
+    expect(list).toContain("overflow-x: auto");
+    expect(list).toContain("scrollbar-width: none");
+  });
+
+  it("does not fade the trailing edge: the clipped link is the affordance", () => {
+    // A mask fade was the first version. The phone check read the clipped
+    // link under it at 1.23:1, and it was right: a faded sliver of "cd tools"
+    // is text nobody can read. The cut itself says "more this way", which is
+    // how every tab strip on a phone says it, and the list snaps to a link.
+    expect(list).not.toMatch(/mask-image/);
+    expect(list).toContain("scroll-snap-type: x proximity");
+    expect(narrow).toMatch(/\.nav__list li\s*\{[^}]*scroll-snap-align: start/);
+  });
+
+  it("no longer spreads the links to fill a bar they cannot fit", () => {
+    expect(list).not.toContain("justify-content: space-between");
+  });
+
+  it("keeps the bar itself from scrolling, so the progress line stays put", () => {
+    const nav = /\.nav\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? "";
+    expect(nav).toContain("overflow: hidden");
+  });
+});
+
+describe("small phone fixes (2026-09-06)", () => {
+  const rule = (selector: string) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+  };
+
+  it("keeps an invalid contact field out from under the fixed nav", () => {
+    // Native validation scrolls the first invalid field to the top of the
+    // viewport, which on this site is under a 44px fixed bar: seen live, the
+    // "fill out this field" bubble pointed at a field the nav was covering.
+    expect(rule(".cform__input")).toMatch(/scroll-margin-top:\s*calc\(var\(--nav-h\)/);
+    expect(rule(".term__input")).toMatch(/scroll-margin-top:\s*calc\(var\(--nav-h\)/);
+  });
+
+  it("lets a one-line code box wrap when asked, so the MCP endpoint is whole on a phone", () => {
+    expect(css).toMatch(/\.prose__pre--wrap code\s*\{[^}]*white-space: pre-wrap/);
+  });
+});
+
+describe("the article template under the phone instrument (2026-09-06)", () => {
+  // The instrument drove only /tools* until today. The first run over the
+  // articles found the meta line, the contents title and the chart captions
+  // on --green-dim, which is 4.4 to 4.5:1 on a panel and under the floor, and
+  // the contents links and the back link at 20px tall.
+  const rule = (selector: string) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+  };
+
+  it.each([".post__meta", ".post__toc-title", ".chart__caption", ".chart__data summary"])(
+    "%s uses the token that clears 4.5:1 on a panel",
+    (selector) => {
+      expect(rule(selector)).toMatch(/color:\s*var\(--green\)/);
+      expect(rule(selector)).not.toMatch(/--green-dim/);
+    },
+  );
+
+  it("gives the contents links and the footer links a thumb's height on touch", () => {
+    const touch = mediaBlocks("(hover: none)");
+    expect(touch).toMatch(/\.post__toc a[^{]*\{[^}]*min-height: 44px/);
+    expect(touch).toMatch(/\.post__foot a[^{]*\{[^}]*min-height: 44px/);
+  });
+
+  it("draws the meta line's separators rather than writing them", () => {
+    expect(css).toMatch(/\.post__dot::before\s*\{[^}]*content:\s*" · "/);
+  });
+});
+
+describe("secondary text and small controls on the phone composite (2026-09-06)", () => {
+  // The first every-route run of the phone instrument read every --green-dim
+  // line on the home page at 3.5 to 3.9:1: the 7px glow fills the rect of a
+  // 13px word and reads as green ground, which is what a person sees too.
+  // On touch the dim token is lifted and the glow comes off small secondary
+  // text. The terminal's chips, label and input, and the contact list's links,
+  // were 24 to 32px tall.
+  const touch = mediaBlocks("(hover: none)");
+
+  it("lifts --green-dim on touch, for every phosphor", () => {
+    expect(touch).toMatch(/:root\s*\{[^}]*--green-dim:\s*#[0-9a-f]{6}/);
+    expect(touch).toMatch(/html\[data-theme="amber"\]\s*\{[^}]*--green-dim:/);
+    expect(touch).toMatch(/html\[data-theme="ice"\]\s*\{[^}]*--green-dim:/);
+  });
+
+  it.each(THEMES)("%s: touch secondary text has contrast headroom on the page and panels", (selector, vars) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const lifted = new RegExp(`${escaped}\\s*\\{[^}]*--green-dim:\\s*(#[0-9a-f]{6})`).exec(touch)?.[1];
+    expect(lifted).toBeDefined();
+    for (const ground of [vars["--bg"], vars["--bg-panel"]]) {
+      expect(ratio(hex(lifted!), hex(ground))).toBeGreaterThanOrEqual(6);
+    }
+  });
+
+  it("takes the glow off small secondary text on touch", () => {
+    expect(touch).toMatch(/\.hero__loc,[^{]*\.hl__k[^{]*\{[^}]*text-shadow: none/);
+  });
+
+  it("gives the terminal chips, its prompt and the contact links a thumb's height", () => {
+    expect(touch).toMatch(/\.term__hint[^{]*\{[^}]*min-height: 44px/);
+    expect(touch).toMatch(/\.term__input[^{]*\{[^}]*min-height: 44px/);
+    expect(touch).toMatch(/\.contact__row a[^{]*\{[^}]*min-height: 44px/);
+  });
+});
+
+it("reserves the fixed nav in the document's native validation scrollport", () => {
+  // WebKit's validation scrolling ignores the field's scroll-margin-top.
+  // The document padding keeps the focused field below the fixed bar.
+  expect(css).toMatch(/html\s*\{[^}]*scroll-padding-top:\s*calc\(var\(--nav-h\) \+ var\(--sp-3\)\)/);
+});
+
+describe("contact fields and the feed link on touch", () => {
+  it("sizes contact inputs after their base font shorthand, so the cascade preserves 16px", () => {
+    const baseEnd = css.indexOf(".cform__input::placeholder");
+    const lateTouch = css.slice(baseEnd);
+    expect(lateTouch).toMatch(/@media \(hover: none\)\s*\{\s*\.cform__input\s*\{[^}]*font-size: 16px/);
+    expect(lateTouch).toMatch(/\.cform__input\s*\{[^}]*min-height: 44px/);
+    expect(lateTouch).toMatch(/\.cform__label\s*\{[^}]*min-height: 44px/);
+  });
+
+  it("gives the standalone RSS link a thumb's height", () => {
+    expect(mediaBlocks("(hover: none)")).toMatch(/\.writing__feed a[^{]*\{[^}]*min-height: 44px/);
   });
 });

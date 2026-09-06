@@ -90,6 +90,13 @@ body {
   padding: 0;
 }
 
+html {
+  /* WebKit's native form validation scrolls the focused field independently
+     of its scroll-margin. Reserve the fixed nav in the document scrollport
+     too, so an invalid name/email never lands behind the bar. */
+  scroll-padding-top: calc(var(--nav-h) + var(--sp-3));
+}
+
 /* Gated like every other animation here, and this one is worth spelling out.
    Under `reduce` Lenis is never mounted, so the rule below that hands scrolling
    to Lenis never applies and this is the declaration that actually runs. That
@@ -403,6 +410,20 @@ html.crt-off body {
   color: var(--amber);
   border-bottom-color: var(--amber);
 }
+/* `cd arcade` is a button in a row of links: the arcade is not a page, it is a
+   program the terminal hosts, so the nav asks the shell for it. It wears the
+   link's clothes and nothing of the button's. */
+.nav__link--cmd {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+}
 
 /* ----- prompt line ------------------------------------------------------- */
 /* The prompt line's text is drawn here, not written into the document.
@@ -714,6 +735,9 @@ html.crt-off body {
   text-shadow: var(--glow);
   caret-color: var(--green-bright);
   min-width: 0;
+  /* Anything that scrolls this into view (the status bar's prompt does)
+     lands it under the fixed nav otherwise. */
+  scroll-margin-top: calc(var(--nav-h) + var(--sp-3));
 }
 .term__input::placeholder {
   color: var(--green-dim);
@@ -1055,6 +1079,9 @@ html.crt-off body {
 }
 .exp__role {
   color: var(--amber);
+}
+.exp__dot::before {
+  content: " · ";
 }
 .exp__summary {
   margin: var(--sp-2) 0;
@@ -1433,6 +1460,9 @@ html.js .exp__spine {
 .statusbar__pwd {
   color: var(--amber);
 }
+.statusbar__pwd-short {
+  display: none;
+}
 .statusbar__mem {
   color: var(--green-faint);
 }
@@ -1552,7 +1582,18 @@ html.js .exp__spine {
      to appear. Opacity is ignored by the observer, so it is the only safe way to
      pre-hide something whose reveal is triggered by its own visibility. The clip
      lives purely inside the keyframes below. */
-  html.js .raster:not(.is-revealed) {
+  /* Keyed on `html.navigated`, never on `html.js`. The js flag is set before
+     first paint, so keying the pre-hide on it hid the server HTML for exactly
+     as long as hydration took: 2.5 seconds on a desktop with a real GPU and 4
+     on a throttled phone, measured on 2026-09-06, during which /experience and
+     /projects were a heading over a blank page. `navigated` is added by
+     RouteTransition on the first in-site navigation, when the next page is
+     genuinely new and hiding it costs nothing. On a hard load the blocks are
+     visible from first paint; RasterReveal then marks the ones below the fold
+     `is-unseen` at hydration (nobody can see them, so nothing flashes) and
+     reveals the ones on screen at once, without the animation. */
+  html.navigated .raster:not(.is-revealed),
+  .raster.is-unseen {
     opacity: 0;
   }
   html.js .raster.is-revealed {
@@ -1560,6 +1601,13 @@ html.js .exp__spine {
   }
   html.js .raster.is-revealed .raster__beam {
     animation: raster-beam 720ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--reveal-delay, 0ms) both;
+  }
+  /* A block the visitor was already looking at when the JavaScript arrived.
+     Revealed, but not animated: animating it would hide it first. */
+  html.js .raster.is-instant,
+  html.js .raster.is-instant .raster__beam,
+  html.js .raster.is-instant .hl {
+    animation: none;
   }
   @keyframes raster-in {
     0% {
@@ -1858,16 +1906,30 @@ html.js .exp__spine {
   }
 
   /* ── nav ────────────────────────────────────────────────────────────────
-     The prompt is the whole reason the bar overflowed: measured at 464-539px of
-     content in a 393px bar, so "cd projects" sat off-screen on every route with
-     no affordance suggesting it was there. The path is already in the status bar
-     at the bottom, so dropping the prompt here loses no information. */
+     The prompt is the first thing to go: measured at 464-539px of content in a
+     393px bar, so "cd projects" sat off-screen on every route with no
+     affordance suggesting it was there. The path is already in the status bar
+     at the bottom, so dropping the prompt here loses no information.
+
+     Then the links themselves stopped fitting. This block was written for four
+     of them and spread them across the bar; by 2026-09-06 there were six (seven
+     with the arcade), the list ended at 551px in a 390px viewport, and "cd
+     tools" and "cd mcp" were off the edge with nothing to scroll. Fergus chose
+     a sideways-scrolling list over shorter labels or a menu. The LIST scrolls
+     and the bar does not, so the reading-progress line drawn on `.nav::after`
+     stays put. The first version faded the trailing edge with a mask; the phone
+     check read the clipped link under it at 1.23:1 and it was right, a faded
+     sliver of "cd tools" is text nobody can read. The cut itself is the
+     affordance, as it is on every tab strip on a phone, and the list snaps to
+     a link so it never rests mid-word. The scrollbar is hidden because a
+     scrollbar under a 44px bar is a second, uglier edge. Nav.tsx moves the
+     active link into view on each route. */
   .nav {
     font-size: 0.8rem;
     gap: 0;
-    padding: 0 var(--sp-3);
-    justify-content: center;
-    overflow-x: visible;
+    padding: 0;
+    justify-content: flex-start;
+    overflow: hidden;
   }
   .nav__prompt {
     display: none;
@@ -1875,8 +1937,20 @@ html.js .exp__spine {
   .nav__list {
     display: flex;
     width: 100%;
-    justify-content: space-between;
-    gap: var(--sp-2);
+    gap: var(--sp-1);
+    padding: 0 32px 0 var(--sp-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline-start: var(--sp-2);
+  }
+  .nav__list::-webkit-scrollbar {
+    display: none;
+  }
+  .nav__list li {
+    flex: none;
+    scroll-snap-align: start;
   }
   /* Real touch targets. 44px is the floor Apple and WCAG 2.2 both land on, and
      these were 20px tall links in a 44px bar. 40 was still four short of the
@@ -2009,12 +2083,6 @@ html.js .exp__spine {
     font-size: 1rem;
   }
   .term__input {
-    font-size: 16px;
-  }
-  /* Same reason, and it matters more here: the contact form is the one place on
-     the site a visitor types something long, so having iOS yank the layout
-     sideways on the first tap would be worse than on the toy terminal. */
-  .cform__input {
     font-size: 16px;
   }
   .term__scroll {
@@ -2325,11 +2393,91 @@ html.is-gravity .statusbar {
     justify-content: center;
     padding: 0;
   }
+  /* The drawer's handle is a thumb target on any touchscreen, wide or narrow.
+     Its layout in a narrow bar (stretched, centred) is the narrow block's job
+     at the end of this file. */
+  .statusbar__prompt {
+    min-width: 44px;
+    min-height: 44px;
+  }
   .skiplink,
   .talk__cta {
     min-height: 44px;
     display: inline-flex;
     align-items: center;
+  }
+  /* The article's contents links and its footer links were 20px tall: text
+     in a list. Found the first time the instrument drove an article route. */
+  .post__toc a,
+  .post__foot a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .post__toc li {
+    margin: 0;
+  }
+  /* The terminal's chips, its prompt label and input, and the links in the
+     contact list and on the cards were 24 to 32px tall. Found the first time
+     the instrument drove the home page. */
+  .term__hint {
+    min-height: 44px;
+    padding: 0 var(--sp-3);
+  }
+  .term__form,
+  .term__label,
+  .term__input {
+    min-height: 44px;
+  }
+  .contact__row a,
+  .exp__link a,
+  .project__links a,
+  .writing__feed a,
+  .post__next a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* ── dim text on the phone composite ──────────────────────────────────
+     Measured by the phone instrument on 2026-09-06, the first time it drove
+     the home page: every --green-dim line read 3.5 to 3.9:1. Not the token,
+     which clears 4.67 on the page: the 7px glow around a 13px word fills its
+     rectangle and reads as green ground, and that is what an eye sees too.
+     Two changes, both on the finger rather than the width: the dim token
+     comes up, on every phosphor by the same step, and the glow comes off the
+     small secondary lines, where on a phone it is blur rather than bloom.
+     Headings, links and the terminal keep theirs. */
+  :root {
+    --green-dim: #28a846;
+  }
+  html[data-theme="amber"] {
+    --green-dim: #c88420;
+  }
+  html[data-theme="ice"] {
+    --green-dim: #50a0be;
+  }
+  .hero__loc,
+  .hero__edu,
+  .hl__k,
+  .promptline__user,
+  .promptline__sep,
+  .promptline__dollar,
+  .exp__meta,
+  .exp__commit,
+  .project__year,
+  .project__role,
+  .contact__k,
+  .writing__meta,
+  .writing__tags li,
+  .writing__feed,
+  .talk__prompt,
+  .talk__alt,
+  .post__meta,
+  .chart__caption,
+  .flag,
+  .window__bar {
+    text-shadow: none;
   }
 }
 
@@ -2349,11 +2497,6 @@ html.is-gravity .statusbar {
 @media (hover: none) and (max-width: 768px) {
   .statusbar__mem {
     display: none;
-  }
-  .statusbar__pwd {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .machine {
     flex: none;
@@ -2463,6 +2606,9 @@ html.is-gravity .statusbar {
   font-size: 0.85rem;
   color: var(--green-dim);
 }
+.writing__dot::before {
+  content: " · ";
+}
 
 /* ── article ───────────────────────────────────────────────────────────── */
 
@@ -2481,10 +2627,18 @@ html.is-gravity .statusbar {
   max-width: 22ch;
 }
 
+/* --green, not --green-dim, on the meta line, the contents title and the
+   chart captions: the phone instrument's first run over the article template
+   (2026-09-06) read --green-dim at 4.4 to 4.5:1 on the panels and the tube's
+   ambient ground, which is under the floor. The separators are costume and
+   are drawn, not written (components/chrome.test.ts). */
 .post__meta {
-  color: var(--green-dim);
+  color: var(--green);
   font-size: 0.82rem;
   margin: 0 0 var(--sp-3);
+}
+.post__dot::before {
+  content: " · ";
 }
 
 .post__toc {
@@ -2497,7 +2651,7 @@ html.is-gravity .statusbar {
 }
 
 .post__toc-title {
-  color: var(--green-dim);
+  color: var(--green);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -2662,6 +2816,14 @@ h4.prose__h {
 
 .prose__pre code {
   white-space: pre;
+}
+/* The one exception, opted into per block: a single line that is an address
+   rather than code (the MCP endpoint) wraps, because a phone cannot show a
+   64-character URL in a 358px box and a scrollbar under one line reads as a
+   cut-off. Real code keeps scrolling; wrapping it changes what it says. */
+.prose__pre--wrap code {
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 /* ----- prose tables ------------------------------------------------------
@@ -2885,7 +3047,7 @@ h4.prose__h {
 
 .chart__data summary {
   cursor: pointer;
-  color: var(--green-dim);
+  color: var(--green);
 }
 
 .chart__data summary:hover,
@@ -2900,7 +3062,7 @@ h4.prose__h {
 
 .chart__caption {
   font-size: 0.75rem;
-  color: var(--green-dim);
+  color: var(--green);
   margin: var(--sp-2) 0 0;
 }
 
@@ -3111,6 +3273,10 @@ h4.prose__h {
 .cform__input {
   width: 100%;
   min-width: 0;
+  /* Native validation scrolls the first invalid field to the top of the
+     viewport, which is under a fixed 44px bar here. Seen live on 2026-09-06:
+     the "fill out this field" bubble pointed at a field the nav covered. */
+  scroll-margin-top: calc(var(--nav-h) + var(--sp-3));
   background: var(--bg-panel);
   border: 1px solid var(--green-line);
   border-radius: var(--radius);
@@ -3139,6 +3305,20 @@ textarea.cform__input {
   resize: vertical;
   min-height: 9rem;
   line-height: 1.6;
+}
+
+/* Keep this after the base font shorthand: an earlier 16px rule was reset to
+   15px by `font: inherit`, making iOS zoom the form on focus. */
+@media (hover: none) {
+  .cform__input {
+    font-size: 16px;
+    min-height: 44px;
+  }
+  .cform__label {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 
 .cform__error {
@@ -3485,30 +3665,55 @@ html.is-ejecting .shell {
 
 @media (max-width: 768px) {
   /* ── the shell on a phone ────────────────────────────────────────────────
-     The prompt is the tap target for the drawer, so it must be 44px both ways
-     while the bar stays 22px tall. The bar's clipping moves onto the readouts
-     (which lose `display: contents` here, and this block sits after that rule
-     on purpose), and the button hangs its bottom edge on the bar's bottom
-     edge, so the extra height sits above the bar over the page, never below
-     the viewport where nobody can tap it. */
+     The bar is 44px on touch (see the `(hover: none)` block) and 22px with a
+     mouse; either way everything in it is centred on one line. Measured live
+     at 390px on 2026-09-06 before this: the prompt hung its `$` on the bottom
+     edge (a rule written for the 22px bar, still applied to the 44px one),
+     the working directory was 11px wide and read "~…", and on tool routes the
+     readouts ran under the sound button. Room is found in this order: the
+     uptime goes (costume), the path shortens to its last segment and then
+     ellipsises, and below 360px the brand goes too. The prompt and the three
+     machine buttons never shrink: they are the tap targets. */
   .statusbar {
-    overflow: visible;
+    gap: var(--sp-2);
+    padding: 0 var(--sp-2) 0 var(--sp-3);
+    overflow: hidden;
   }
   .statusbar__readouts {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
+    flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
   }
+  .statusbar__up {
+    display: none;
+  }
+  .statusbar__pwd {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .statusbar__pwd-full {
+    display: none;
+  }
+  .statusbar__pwd-short {
+    display: inline;
+  }
+  .machine {
+    flex: none;
+    margin-left: 0;
+  }
   .statusbar__prompt {
-    align-self: flex-end;
-    align-items: flex-end;
+    flex: none;
+    align-self: stretch;
+    align-items: center;
     justify-content: center;
     min-width: 44px;
-    min-height: 44px;
-    padding: 0 8px 4px;
+    padding: 0 10px;
   }
   .shell {
     max-height: 70vh;
@@ -3519,5 +3724,13 @@ html.is-ejecting .shell {
   .shell__close {
     min-width: 44px;
     min-height: 44px;
+  }
+}
+
+@media (max-width: 360px) {
+  /* The last thing to go, after the uptime and the long path: the brand is
+     identity, the path is information, and at 320px there is room for one. */
+  .statusbar__brand {
+    display: none;
   }
 }

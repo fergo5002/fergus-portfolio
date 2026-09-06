@@ -234,7 +234,12 @@ vec2 curve(vec2 uv) {
 }
 
 float rain(vec2 uv, float t, float smear) {
-  float cols = mix(54.0, 32.0, uMobile);
+  // 48 rather than 32 on a phone. At 32 columns across a 0.6 dpr buffer a cell
+  // was about 12 CSS pixels square and the rain read as blocky green dirt
+  // behind the text on both mobile engines (2026-09-06). Finer cells and the
+  // gain in tubeImage bring it back to texture. Fergus chose toning it down
+  // over removing it.
+  float cols = mix(54.0, 48.0, uMobile);
   float rows = cols * (uResolution.y / max(uResolution.x, 1.0)) * 1.25;
 
   vec2 grid = vec2(cols, rows);
@@ -290,6 +295,9 @@ vec3 tubeImage(vec2 suv, float lineScale) {
   vec2 uv = suv;
   float t = uTime;
   float glow = 0.0;
+  // The phone's rain at a bit over half strength, on every sample below, so
+  // the chromatic split cannot end up brighter than the centre.
+  float rainGain = mix(1.0, 0.55, uMobile);
 
   // Moved alongside the deposits in the sim pass, and it has to be both: the
   // persistence buffer is what smears behind the pointer, so dimming one and
@@ -332,7 +340,7 @@ vec3 tubeImage(vec2 suv, float lineScale) {
   }
 
   float absVel = min(abs(uScrollVel), 1.6);
-  float r = rain(uv, t, absVel * 0.9) * uRain;
+  float r = rain(uv, t, absVel * 0.9) * uRain * rainGain;
   float hum = pow(sin((uv.y + t * 0.045) * 6.2831) * 0.5 + 0.5, 14.0) * 0.05;
 
   vec3 col = BASE + uPhosphor * (r + hum + glow);
@@ -348,8 +356,8 @@ vec3 tubeImage(vec2 suv, float lineScale) {
 
   if (uMobile < 0.5) {
     float ca = absVel * 0.0022;
-    float rr = rain(uv + vec2(ca, 0.0), t, absVel * 0.9) * uRain;
-    float bb = rain(uv - vec2(ca, 0.0), t, absVel * 0.9) * uRain;
+    float rr = rain(uv + vec2(ca, 0.0), t, absVel * 0.9) * uRain * rainGain;
+    float bb = rain(uv - vec2(ca, 0.0), t, absVel * 0.9) * uRain * rainGain;
     col.r += uPhosphor.r * (rr - r) * 0.8;
     col.b += uPhosphor.b * (bb - r) * 0.8;
   }

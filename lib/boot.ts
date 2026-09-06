@@ -87,6 +87,72 @@ export function typewriterMs(
 }
 
 /**
+ * Everything that decides how long a boot takes and what it types, as one
+ * value, because there are now two of them.
+ *
+ * The full sequence is 6.4 seconds of BIOS, and on a phone that is a black
+ * screen for longer than most people give a link. Fergus chose a shorter boot
+ * for phones over skipping it (2026-09-06): the same story with fewer lines,
+ * about two seconds, the skip button still there. The lines are drawn from
+ * the same script rather than written fresh, so the phone tells a shorter
+ * version of the same boot, not a different one.
+ */
+export type BootProfile = {
+  readonly headLines: readonly string[];
+  readonly deviceLines: readonly string[];
+  readonly strikeMs: number;
+  readonly headSpeedMs: number;
+  readonly deviceSpeedMs: number;
+  readonly memoryMs: number;
+  readonly barMs: number;
+  readonly handoffMs: number;
+};
+
+export const FULL_BOOT: BootProfile = {
+  headLines: HEAD_LINES,
+  deviceLines: DEVICE_LINES,
+  strikeMs: STRIKE_MS,
+  headSpeedMs: HEAD_SPEED_MS,
+  deviceSpeedMs: DEVICE_SPEED_MS,
+  memoryMs: MEMORY_MS,
+  barMs: BAR_MS,
+  handoffMs: HANDOFF_MS,
+};
+
+export const PHONE_BOOT: BootProfile = {
+  headLines: [HEAD_LINES[0]],
+  deviceLines: [DEVICE_LINES[0], DEVICE_LINES[5]],
+  strikeMs: 360,
+  headSpeedMs: 7,
+  deviceSpeedMs: 6,
+  memoryMs: 360,
+  barMs: 320,
+  handoffMs: 220,
+};
+
+/** The floor of one profile: every term is a timer or a ramp that can run late and never early. */
+export function bootFloorMs(profile: BootProfile): number {
+  return (
+    profile.strikeMs +
+    typewriterMs(profile.headLines, profile.headSpeedMs) +
+    profile.memoryMs +
+    typewriterMs(profile.deviceLines, profile.deviceSpeedMs) +
+    profile.barMs +
+    profile.handoffMs
+  );
+}
+
+/**
+ * Which boot a machine gets. A coarse pointer is a phone or a tablet whatever
+ * its width; a narrow window with a mouse is a phone-sized page and gets the
+ * phone's patience too. Pure over its argument so it can be tested; the
+ * component reads `matchMedia` and `innerWidth` and hands them in.
+ */
+export function pickBootProfile(env: { coarse: boolean; width: number }): BootProfile {
+  return env.coarse || env.width < 768 ? PHONE_BOOT : FULL_BOOT;
+}
+
+/**
  * The shortest the sequence can possibly run. A floor, not an estimate: every
  * term is a timer or a rAF-driven ramp that the browser may run late and can
  * never run early.
@@ -96,13 +162,7 @@ export function typewriterMs(
  * asserted against `BOOT_WATCHDOG_MS` in the tests, since the watchdog is the
  * one remaining timer that can cut a live sequence short.
  */
-export const BOOT_FLOOR_MS =
-  STRIKE_MS +
-  typewriterMs(HEAD_LINES, HEAD_SPEED_MS) +
-  MEMORY_MS +
-  typewriterMs(DEVICE_LINES, DEVICE_SPEED_MS) +
-  BAR_MS +
-  HANDOFF_MS;
+export const BOOT_FLOOR_MS = bootFloorMs(FULL_BOOT);
 
 /**
  * How long the inline script waits for `BootSequence` before revealing the page
@@ -148,9 +208,9 @@ export const BOOT_FAILSAFE_HANDLE = "__fergusosBootFailsafe";
  *
  * It runs before first paint and does four things:
  *
- *  1. Flags `.js` on `<html>`. Scroll reveals hide their content behind this
- *     class only, so a visitor without JavaScript is never left staring at a
- *     permanently clipped block.
+ *  1. Flags `.js` on `<html>` for progressive effects. Raster pre-hiding uses
+ *     the later `.navigated` flag instead, so a hard load stays readable while
+ *     the JavaScript is on its way.
  *  2. Restores the saved phosphor theme before paint, so a returning visitor on
  *     amber never sees a flash of green.
  *  3. On the landing page only, if this session has not booted and the user

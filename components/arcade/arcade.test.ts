@@ -19,6 +19,13 @@ const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\/\
 
 const screen = code(read("components", "arcade", "ArcadeScreen.tsx"));
 
+it("gives the arcade keyboard focus before its first paint", () => {
+  const source = code(read("components", "arcade", "ArcadeExperience.tsx"));
+  // A passive effect leaves an interval where Escape can reach the drawer's
+  // window handler and remove both the program and its terminal.
+  expect(source).toMatch(/useLayoutEffect\(\(\) => \{\s*roomRef\.current\?\.focus\(\{ preventScroll: true \}\);\s*\}, \[\]\)/);
+});
+
 describe("the arcade runs on the one frame clock", () => {
   it("subscribes to the system loop and never starts its own", () => {
     expect(screen).toMatch(/onFrame\(/);

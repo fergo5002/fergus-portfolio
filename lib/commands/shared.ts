@@ -59,6 +59,12 @@ export type CommandContext = {
   /** What the presence provider last said. Absent until it has answered once. */
   presence?: number;
   /**
+   * How many characters fit on one line of the terminal that is asking, as
+   * measured by that terminal. `help` lays itself out in one column when
+   * there are fewer than sixty. Absent means wide.
+   */
+  cols?: number;
+  /**
    * What the arcade knows this session: whether the door has been opened, and
    * the last board snapshot the client fetched. Supplied by the Terminal, and
    * read only by `neofetch`, which prints the boards to somebody who has been
