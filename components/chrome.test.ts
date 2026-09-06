@@ -186,3 +186,16 @@ describe("the echoed prompt is drawn once", () => {
     expect(block).toContain('--promptline-path: "";');
   });
 });
+
+describe("the article meta line draws its separators (2026-09-06)", () => {
+  // The three " · " between the date, the reading time and the byline were
+  // text nodes. The phone instrument read a lone middle dot at 2.65:1, which
+  // is an honest reading of a glyph that is mostly antialiasing, and they are
+  // costume anyway: same rule as the prompt line, drawn with `content`.
+  const page = read("app", "writing", "[slug]", "page.tsx");
+
+  it("renders empty spans for the stylesheet to dress", () => {
+    expect(code(page)).toContain('<span className="post__dot" aria-hidden="true" />');
+    expect(code(page)).not.toMatch(/<span aria-hidden="true"> · <\/span>/);
+  });
+});

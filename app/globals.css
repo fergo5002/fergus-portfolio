@@ -1909,9 +1909,12 @@ html.js .exp__spine {
      and the bar does not, so the reading-progress line drawn on `.nav::after`
      stays put. The mask fades the last 32px so a clipped link reads as "more
      this way" rather than as the end; the list's own right padding is the same
-     32px, so scrolled to the end the fade sits over padding and the last link
-     is whole. The scrollbar is hidden because the fade is the affordance and a
-     scrollbar under a 44px bar is a second, uglier one. Nav.tsx moves the
+     32px. The first version faded the trailing edge with a mask; the phone
+     check read the clipped link under it at 1.23:1 and it was right, a faded
+     sliver of "cd tools" is text nobody can read. The cut itself is the
+     affordance, as it is on every tab strip on a phone, and the list snaps to
+     a link so it never rests mid-word. The scrollbar is hidden because a
+     scrollbar under a 44px bar is a second, uglier edge. Nav.tsx moves the
      active link into view on each route. */
   .nav {
     font-size: 0.8rem;
@@ -1931,14 +1934,15 @@ html.js .exp__spine {
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
-    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 32px), transparent);
-    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 32px), transparent);
+    scroll-snap-type: x proximity;
+    scroll-padding-inline-start: var(--sp-2);
   }
   .nav__list::-webkit-scrollbar {
     display: none;
   }
   .nav__list li {
     flex: none;
+    scroll-snap-align: start;
   }
   /* Real touch targets. 44px is the floor Apple and WCAG 2.2 both land on, and
      these were 20px tall links in a 44px bar. 40 was still four short of the
@@ -2400,6 +2404,17 @@ html.is-gravity .statusbar {
     display: inline-flex;
     align-items: center;
   }
+  /* The article's contents links and its footer links were 20px tall: text
+     in a list. Found the first time the instrument drove an article route. */
+  .post__toc a,
+  .post__foot a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .post__toc li {
+    margin: 0;
+  }
 }
 
 /* The other half: space, not thumbs. The costume readout that carries no
@@ -2545,10 +2560,18 @@ html.is-gravity .statusbar {
   max-width: 22ch;
 }
 
+/* --green, not --green-dim, on the meta line, the contents title and the
+   chart captions: the phone instrument's first run over the article template
+   (2026-09-06) read --green-dim at 4.4 to 4.5:1 on the panels and the tube's
+   ambient ground, which is under the floor. The separators are costume and
+   are drawn, not written (components/chrome.test.ts). */
 .post__meta {
-  color: var(--green-dim);
+  color: var(--green);
   font-size: 0.82rem;
   margin: 0 0 var(--sp-3);
+}
+.post__dot::before {
+  content: " · ";
 }
 
 .post__toc {
@@ -2561,7 +2584,7 @@ html.is-gravity .statusbar {
 }
 
 .post__toc-title {
-  color: var(--green-dim);
+  color: var(--green);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -2957,7 +2980,7 @@ h4.prose__h {
 
 .chart__data summary {
   cursor: pointer;
-  color: var(--green-dim);
+  color: var(--green);
 }
 
 .chart__data summary:hover,
@@ -2972,7 +2995,7 @@ h4.prose__h {
 
 .chart__caption {
   font-size: 0.75rem;
-  color: var(--green-dim);
+  color: var(--green);
   margin: var(--sp-2) 0 0;
 }
 

@@ -395,8 +395,44 @@ function auditInPage({ minInput, minTap }) {
   const visible = (el) => {
     const cs = getComputedStyle(el);
     if (cs.display === "none" || cs.visibility === "hidden" || Number(cs.opacity) === 0) return false;
+    // Closed is closed. Chromium keeps the contents of a closed <details>
+    // laid out (content-visibility rather than display: none), so every cell
+    // of the table behind an article chart's "show the numbers" reported a
+    // rectangle, was found occluded by the paragraph drawn where it would
+    // have been, and counted as a skip: nine per article, against an
+    // allowance of two, on a page a person reads fine. The summary is the
+    // one part of a closed details anybody sees.
+    const closed = el.closest("details:not([open])");
+    if (closed) {
+      const summary = closed.querySelector(":scope > summary");
+      if (!summary || !summary.contains(el)) return false;
+    }
     const r = el.getBoundingClientRect();
     return r.width >= 2 && r.height >= 2;
+  };
+
+  /**
+   * The box an element's text can actually be seen in: the intersection of
+   * every ancestor that clips its overflow. A text node's client rectangles
+   * are the glyphs' own extent, and a run that is ellipsised or cut by its
+   * box still reports the whole line. The status bar's working directory on a
+   * phone is the case that found it: its rectangle ran on under the sound
+   * button, `elementFromPoint` said "button", and a run a person reads
+   * perfectly well was skipped as occluded. Viewport coordinates, or null when
+   * nothing clips.
+   */
+  const clipBoxFor = (el) => {
+    let box = null;
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      const cs = getComputedStyle(a);
+      const clips = (v) => v === "hidden" || v === "clip" || v === "auto" || v === "scroll";
+      if (!clips(cs.overflowX) && !clips(cs.overflowY)) continue;
+      const r = a.getBoundingClientRect();
+      box = box
+        ? { left: Math.max(box.left, r.left), top: Math.max(box.top, r.top), right: Math.min(box.right, r.right), bottom: Math.min(box.bottom, r.bottom) }
+        : { left: r.left, top: r.top, right: r.right, bottom: r.bottom };
+    }
+    return box;
   };
 
   /**
@@ -538,6 +574,7 @@ function auditInPage({ minInput, minTap }) {
     if (el.closest("script, style, noscript, canvas, svg, template")) continue;
     seen.add(el);
     const cs = getComputedStyle(el);
+    const clip = clipBoxFor(el);
     const rects = [];
     let dropped = 0;
     for (const child of el.childNodes) {
@@ -546,7 +583,21 @@ function auditInPage({ minInput, minTap }) {
       range.selectNodeContents(child);
       for (const r of range.getClientRects()) {
         if (r.width < 2 || r.height < 2) continue;
-        const rect = { x: r.left + window.scrollX, y: r.top + window.scrollY, w: r.width, h: r.height };
+        // Only the part of the run inside every clipping ancestor is on the
+        // page. The rest is not "occluded" and not "offscreen": it is not
+        // drawn at all.
+        let left = r.left, top = r.top, right = r.right, bottom = r.bottom;
+        if (clip) {
+          left = Math.max(left, clip.left);
+          top = Math.max(top, clip.top);
+          right = Math.min(right, clip.right);
+          bottom = Math.min(bottom, clip.bottom);
+        }
+        if (right - left < 2 || bottom - top < 2) {
+          dropped++;
+          continue;
+        }
+        const rect = { x: left + window.scrollX, y: top + window.scrollY, w: right - left, h: bottom - top };
         if (onScreen(rect)) rects.push(rect);
         else dropped++;
       }
@@ -564,7 +615,7 @@ function auditInPage({ minInput, minTap }) {
       offscreen.push({
         el: path(el),
         text: (el.textContent || "").trim().slice(0, 40),
-        detail: `${dropped} rect(s) outside the ${viewportWidth}x${viewportHeight} viewport`,
+        detail: `${dropped} rect(s) outside the ${viewportWidth}x${viewportHeight} viewport or clipped by an ancestor`,
       });
     }
   }
@@ -1115,6 +1166,22 @@ async function selfTest(args) {
       // names the case rather than adding a check.
       if (r.failures.some((f) => f.check === "unreachable" && f.el.includes("a#rail-link"))) {
         problems.push(`${r.profile} good: a link inside a sideways-scrolling rail was called unreachable`);
+      }
+      // Closed is closed: the paragraph inside a closed details is neither
+      // sampled nor skipped, while its summary is read like any other run.
+      if (r.samples.some((x) => x.el.includes("p#closed-cell")) || r.skipped.some((x) => x.el.includes("p#closed-cell"))) {
+        problems.push(`${r.profile} good: text inside a closed details was read`);
+      }
+      if (!r.samples.some((x) => x.el.includes("summary#closed-summary"))) {
+        problems.push(`${r.profile} good: the summary of a closed details was not read`);
+      }
+      // A run clipped by its box is read within the box, not called occluded
+      // by whatever sits where its clipped tail would have been.
+      if (r.skipped.some((x) => x.el.includes("span#clipped-run"))) {
+        problems.push(`${r.profile} good: a run clipped by its own box was skipped as occluded`);
+      }
+      if (!r.samples.some((x) => x.el.includes("span#clipped-run"))) {
+        problems.push(`${r.profile} good: a run clipped by its own box was not sampled`);
       }
       if (r.failures.length) {
         problems.push(

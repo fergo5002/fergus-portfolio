@@ -463,8 +463,14 @@ describe("the phone nav scrolls rather than clips", () => {
     expect(list).toContain("scrollbar-width: none");
   });
 
-  it("fades the trailing edge so a clipped link reads as more, not as the end", () => {
-    expect(list).toMatch(/mask-image:\s*linear-gradient/);
+  it("does not fade the trailing edge: the clipped link is the affordance", () => {
+    // A mask fade was the first version. The phone check read the clipped
+    // link under it at 1.23:1, and it was right: a faded sliver of "cd tools"
+    // is text nobody can read. The cut itself says "more this way", which is
+    // how every tab strip on a phone says it, and the list snaps to a link.
+    expect(list).not.toMatch(/mask-image/);
+    expect(list).toContain("scroll-snap-type: x proximity");
+    expect(narrow).toMatch(/\.nav__list li\s*\{[^}]*scroll-snap-align: start/);
   });
 
   it("no longer spreads the links to fill a bar they cannot fit", () => {
@@ -493,5 +499,34 @@ describe("small phone fixes (2026-09-06)", () => {
 
   it("lets a one-line code box wrap when asked, so the MCP endpoint is whole on a phone", () => {
     expect(css).toMatch(/\.prose__pre--wrap code\s*\{[^}]*white-space: pre-wrap/);
+  });
+});
+
+describe("the article template under the phone instrument (2026-09-06)", () => {
+  // The instrument drove only /tools* until today. The first run over the
+  // articles found the meta line, the contents title and the chart captions
+  // on --green-dim, which is 4.4 to 4.5:1 on a panel and under the floor, and
+  // the contents links and the back link at 20px tall.
+  const rule = (selector: string) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+  };
+
+  it.each([".post__meta", ".post__toc-title", ".chart__caption", ".chart__data summary"])(
+    "%s uses the token that clears 4.5:1 on a panel",
+    (selector) => {
+      expect(rule(selector)).toMatch(/color:\s*var\(--green\)/);
+      expect(rule(selector)).not.toMatch(/--green-dim/);
+    },
+  );
+
+  it("gives the contents links and the footer links a thumb's height on touch", () => {
+    const touch = mediaBlocks("(hover: none)");
+    expect(touch).toMatch(/\.post__toc a[^{]*\{[^}]*min-height: 44px/);
+    expect(touch).toMatch(/\.post__foot a[^{]*\{[^}]*min-height: 44px/);
+  });
+
+  it("draws the meta line's separators rather than writing them", () => {
+    expect(css).toMatch(/\.post__dot::before\s*\{[^}]*content:\s*" · "/);
   });
 });

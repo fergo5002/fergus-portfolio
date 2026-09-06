@@ -133,6 +133,19 @@
 </div>
 <div id="hero"></div>
 <p id="shift">Under a band only a coarse pointer sees, and read where it is drawn.</p>
+<!-- Text nobody can see is not text this can read, part two (2026-09-06).
+     Chromium keeps the contents of a closed details laid out (content-visibility),
+     so the table inside the article charts' "show the numbers" reported nine
+     occluded runs per article and failed the route. Closed is closed. -->
+<details id="closed"><summary id="closed-summary">Show the numbers</summary><p id="closed-cell">Hidden until opened, and not to be sampled or skipped.</p></details>
+<!-- A run clipped by its own box, with an opaque sibling where the clipped
+     part would have been. The status bar's path does this on a phone: the
+     text node's rectangle runs on under the sound button, and the sampler
+     called it occluded. The visible part is what a person reads. -->
+<div style="display:flex;align-items:center;width:200px">
+  <div id="clipbox" style="flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap;color:#111;background:#fff"><span id="clipped-run">a long run of text that is cut off by the box it is in</span></div>
+  <button id="beside" type="button" style="flex:none;width:48px;height:48px;background:#fff;color:#111;border:1px solid #111">b</button>
+</div>
 <!-- A link past the edge of a rail that scrolls sideways. Reachable by a
      thumb, so it must never be reported as unreachable. -->
 <div id="rail" style="overflow-x:auto;width:200px;white-space:nowrap">
