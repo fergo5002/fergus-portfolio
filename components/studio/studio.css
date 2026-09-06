@@ -353,4 +353,3 @@
 :is(.lab, .tool-studio) .lab-field > label { min-height:44px;display:flex;align-items:center; }
 :is(.lab, .tool-studio) .studio { --studio-soft:var(--green); }
 :is(.lab, .tool-studio) .studio input[type=range] { min-height:44px;font-size:16px; }
-

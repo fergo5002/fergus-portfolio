@@ -289,4 +289,3 @@
 :is(.lab, .tool-studio) .music-steps button[aria-pressed="true"] {
   color: var(--bg);
 }
-

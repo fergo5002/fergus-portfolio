@@ -42,7 +42,11 @@ const upload = (name, text) => ({ name, mimeType: "text/csv", buffer: Buffer.fro
 try {
   if (!only || only === "index") {
   await go("");
-  assert.equal(await page.locator(".bench-card__link").count(), 5);
+  assert.deepEqual(
+    (await page.locator(".bench-card__link").evaluateAll(links => links.map(link => link.getAttribute("href")))).sort(),
+    ["atlas", "drift", "group-lore", "headline-check", "overlap", "pocket-redact", "prove-it", "relief", "resonance", "second-visit"].map(slug => `/tools/${slug}`).sort(),
+    "the board links to every released tool exactly once",
+  );
   await shot("index");
   }
 
@@ -167,7 +171,7 @@ try {
   }
   assert.deepEqual(errors, [], "application exceptions");
   assert.deepEqual(leaks, [], "visitor text crossed the network");
-  console.log(`PASS ${engine} ${width}: ${only || "all five tools"}, failures, downloads and no text uploads`);
+  console.log(`PASS ${engine} ${width}: ${only || "original five tool workflows"}, failures, downloads and no text uploads`);
 } catch (error) {
   await page.screenshot({ path: `${out}/${engine}-${width}-failure.png`, fullPage: true }).catch(() => {});
   console.error(await page.locator(".drift__note, .drift__readiness, .sv__message").allTextContents());
