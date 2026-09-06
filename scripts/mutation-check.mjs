@@ -41,6 +41,13 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** Each: break one guard, expect the suite to notice. */
 const MUTATIONS = [
+  {
+    name: "phone polish: arcade focus waits until after its first paint",
+    file: "components/arcade/ArcadeExperience.tsx",
+    pattern: /useLayoutEffect\(\(\) => \{\r?\n    roomRef.current\?\.focus/,
+    replace: "useEffect(() => {\n    roomRef.current?.focus",
+    tests: "components/arcade/arcade.test.ts",
+  },
   ...[
     ["contact font invites iOS zoom", /(\.cform__input\s*\{\s*font-size:) 16px/, "$1 15px"],
     ["contact inputs lose their tap height", /(\.cform__input\s*\{\s*font-size: 16px;\s*min-height:) 44px/, "$1 32px"],

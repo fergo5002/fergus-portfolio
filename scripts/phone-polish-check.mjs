@@ -37,6 +37,12 @@ async function run(name, engine, device) {
     });
     await page.addInitScript(() => {
       window.__polishTitles = [];
+      window.__polishKeys = [];
+      for (const type of ["focusin", "keydown"]) document.addEventListener(type, event => {
+        window.__polishKeys.push({ type, key: event.key, target: event.target?.className,
+          room: !!document.querySelector(".arcade-room"), at: performance.now() });
+        if (window.__polishKeys.length > 40) window.__polishKeys.shift();
+      }, true);
       let previous = "";
       const observer = new MutationObserver(() => {
         const text = document.querySelector(".page__title")?.textContent;
@@ -147,9 +153,46 @@ async function run(name, engine, device) {
     assert.equal(await page.locator(".arcade-room").count(), 0);
     check("reduced motion retains the arcade refusal and inline prompt");
     await page.screenshot({ path: join(out, `${name}-home.png`) });
+
+    // Observe a real cold boot without skipping or speeding up its timers.
+    // Assert the selected script; record elapsed time rather than pretending
+    // timer scheduling on a busy host is a production performance guarantee.
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.evaluate(() => sessionStorage.removeItem("fergusos_booted"));
+    await page.addInitScript(() => {
+      window.__polishBoot = { started: null, finished: null, text: "", visibility: [document.visibilityState] };
+      document.addEventListener("visibilitychange", () => window.__polishBoot.visibility.push(document.visibilityState));
+      new MutationObserver(() => {
+        const state = window.__polishBoot;
+        const boot = document.querySelector(".boot");
+        if (boot) {
+          state.started ??= performance.now();
+          const text = boot.textContent || "";
+          if (text.length > state.text.length) state.text = text;
+        } else if (state.started !== null && state.finished === null) state.finished = performance.now();
+      }).observe(document, { subtree: true, childList: true, characterData: true });
+    });
+    await page.goto(`${base}/`, { waitUntil: "networkidle" });
+    await page.bringToFront();
+    await page.waitForFunction(() => window.__polishBoot.finished !== null, null, { timeout: 40_000 });
+    const boot = await page.evaluate(() => ({ ...window.__polishBoot, hidden: document.documentElement.classList.contains("booting") }));
+    assert.equal(boot.hidden, false);
+    const elapsedMs = Math.round(boot.finished - boot.started);
+    const completed = /checking\s+caffeine reserves/.test(boot.text);
+    if (completed) {
+      assert.equal(boot.text.includes("CPU: Trinity"), !device.hasTouch);
+      check("cold boot completes with the phone or desktop script", { elapsedMs, phone: !!device.hasTouch, visibility: boot.visibility });
+    } else {
+      // Background timer clamping is explicitly unbounded (lib/boot.ts). A
+      // 20-second watchdog reveal is valid, but must never be reported as a
+      // completed animation or as a timing measurement of the short profile.
+      assert(elapsedMs >= 19_500, `boot ended early: ${JSON.stringify(boot)}`);
+      check("stalled cold boot recovers through its watchdog", { elapsedMs, visibility: boot.visibility });
+    }
     assert.deepEqual(errors, []);
     result.passed = true;
   } catch (error) {
+    result.keys = await page.evaluate(() => window.__polishKeys).catch(() => []);
     result.passed = false;
     result.failure = error.stack;
     console.error(`FAIL ${name}: ${error.message}`);
@@ -162,7 +205,8 @@ async function run(name, engine, device) {
   }
 }
 
-await run("webkit-390", webkit, { ...devices["iPhone 13"] });
-await run("webkit-320", webkit, { ...devices["iPhone 13"], viewport: { width: 320, height: 568 }, deviceScaleFactor: 2 });
-await run("chromium-desktop", chromium, { viewport: { width: 1440, height: 900 } });
+const only = option("--profile", "");
+if (!only || only === "webkit-390") await run("webkit-390", webkit, { ...devices["iPhone 13"] });
+if (!only || only === "webkit-320") await run("webkit-320", webkit, { ...devices["iPhone 13"], viewport: { width: 320, height: 568 }, deviceScaleFactor: 2 });
+if (!only || only === "chromium-desktop") await run("chromium-desktop", chromium, { viewport: { width: 1440, height: 900 } });
 process.exitCode = results.every(result => result.passed) ? 0 : 1;
