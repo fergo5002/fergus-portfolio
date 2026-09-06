@@ -23,6 +23,7 @@ point. This record separates recovered evidence from checks performed after reco
   `scripts/analytics.mjs`, is untouched. Claude instructions were not adopted by Codex.
 - Recovery branch: `codex/phone-polish-recovery`, in
   `C:\Users\oreil\.codex\worktrees\95fb\fergus-portfolio`.
+- Delivery tracking: [PR #21](https://github.com/fergo5002/fergus-portfolio/pull/21).
 - Current `origin/main` included `c029de1`, the five-studio release, so recovery merged
   that commit. The phone instrument's conflict combines clipped-text sampling with the
   studio scroll-panel checks. Both sets of planted regression fixtures remain.

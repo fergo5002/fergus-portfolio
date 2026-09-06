@@ -23,6 +23,7 @@ The combined suite passes 2,669 tests; TypeScript and the 49-page production bui
 three phone profiles pass. All 220 mutation cases have recorded catches; the recovery record
 explains the local method, direct rain-pixel evidence and software-rendered boot timing limits.
 The resumed original request includes deployment through the normal PR and release gates.
+Delivery tracking: [PR #21](https://github.com/fergo5002/fergus-portfolio/pull/21).
 
 ## 2026-09-06: five selected studios
 
