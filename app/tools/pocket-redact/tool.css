@@ -1,0 +1,166 @@
+@import "../../../components/studio/base.css";
+@import "../../../components/studio/studio.css";
+
+:is(.lab, .tool-studio) .redact-workspace {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) 235px;
+  gap: 16px;
+  align-items: flex-start;
+}
+:is(.lab, .tool-studio) .redact-thumbnails {
+  display: grid;
+  gap: 12px;
+  max-height: 780px;
+  overflow: auto;
+}
+:is(.lab, .tool-studio) .redact-thumbnails button {
+  padding: 6px;
+  border: 1px solid var(--lab-line);
+  border-radius: 4px;
+  background: var(--studio-paper);
+  color: var(--green);
+}
+:is(.lab, .tool-studio) .redact-thumbnails button[aria-pressed="true"] {
+  border-color: var(--amber);
+}
+:is(.lab, .tool-studio) .redact-thumbnails button > div {
+  position: relative;
+}
+:is(.lab, .tool-studio) .redact-thumbnails img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+:is(.lab, .tool-studio) .redact-thumbnails svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+:is(.lab, .tool-studio) .redact-thumbnails span {
+  display: block;
+  font-size: 0.6rem;
+  margin-top: 6px;
+}
+:is(.lab, .tool-studio) .redact-viewport {
+  overflow: auto;
+  max-height: 820px;
+  padding: 16px;
+  background: color-mix(in srgb, var(--green) 5%, var(--bg));
+  border: 1px solid var(--lab-line);
+  border-radius: 5px;
+}
+:is(.lab, .tool-studio) .redact-paper {
+  position: relative;
+  min-width: 0;
+  box-shadow: 0 5px 20px #0005;
+}
+:is(.lab, .tool-studio) .redact-paper > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: none;
+}
+:is(.lab, .tool-studio) .redact-paper > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: crosshair;
+}
+:is(.lab, .tool-studio) .redact-inspector {
+  padding: 18px;
+  background: var(--studio-paper);
+  border: 1px solid var(--lab-line);
+  border-radius: 5px;
+  display: grid;
+  gap: 14px;
+}
+:is(.lab, .tool-studio) .redact-inspector h3 {
+  font-size: 1.6rem;
+}
+:is(.lab, .tool-studio) .redact-inspector p {
+  font-size: 0.7rem;
+  margin: 0;
+}
+:is(.lab, .tool-studio) .redact-inspector > strong {
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+:is(.lab, .tool-studio) .redact-candidates {
+  max-height: 180px;
+  overflow: auto;
+}
+:is(.lab, .tool-studio) .redact-candidates p {
+  padding: 8px 0;
+  border-top: 1px solid var(--lab-line);
+  overflow-wrap: anywhere;
+  color: var(--amber);
+}
+:is(.lab, .tool-studio) .redact-inspector details .lab-field {
+  margin-bottom: 10px;
+}
+:is(.lab, .tool-studio) .redact-export {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  padding: 20px;
+  border: 1px solid var(--lab-line);
+  background: var(--studio-paper);
+}
+:is(.lab, .tool-studio) .redact-export > span {
+  margin-right: auto;
+  font-size: 0.8rem;
+}
+:is(.lab, .tool-studio) .redact-review > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 700px;
+  margin: 20px auto;
+  border: 1px solid var(--lab-line);
+}
+:is(.lab, .tool-studio) .redact-review .lab-check {
+  margin: 20px 0;
+}
+@media (max-width: 1050px) {
+  :is(.lab, .tool-studio) .redact-workspace {
+    grid-template-columns: 80px minmax(0, 1fr);
+  }
+  :is(.lab, .tool-studio) .redact-inspector {
+    grid-column: 1/-1;
+    grid-template-columns: 1fr 1fr;
+  }
+  :is(.lab, .tool-studio) .redact-inspector > h3,
+:is(.lab, .tool-studio) .redact-inspector > p {
+    grid-column: 1/-1;
+  }
+}
+@media (max-width: 650px) {
+  :is(.lab, .tool-studio) .redact-workspace {
+    grid-template-columns: 1fr;
+  }
+  :is(.lab, .tool-studio) .redact-thumbnails {
+    display: flex;
+    max-height: 160px;
+    overflow-x: auto;
+  }
+  :is(.lab, .tool-studio) .redact-thumbnails button {
+    min-width: 70px;
+    width: 70px;
+    flex-shrink: 0;
+  }
+  :is(.lab, .tool-studio) .redact-viewport {
+    padding: 8px;
+    max-height: 600px;
+  }
+  :is(.lab, .tool-studio) .redact-inspector {
+    grid-template-columns: 1fr;
+  }
+  :is(.lab, .tool-studio) .redact-inspector > * {
+    grid-column: 1;
+  }
+}

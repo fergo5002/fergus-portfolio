@@ -71,7 +71,7 @@ jobs:
 
   phone:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -114,6 +114,18 @@ jobs:
           node scripts/tools-check.mjs --base http://localhost:3000 --engine webkit --width 320
       - name: Overlap through two actual peer connections
         run: node scripts/overlap-peer-check.mjs http://localhost:3000
+      - name: selected studios, downloads and mobile workflows
+        run: |
+          node scripts/studio-public-check.mjs
+          node scripts/studio-check.mjs
+        env:
+          LAB_URL: http://localhost:3000
+          STUDIO_PREFIX: /tools
+      - name: studio file boundaries and redaction pixels
+        run: node scripts/studio-boundaries.mjs
+        env:
+          LAB_URL: http://localhost:3000
+          STUDIO_PREFIX: /tools
       - name: two-browser arcade multiplayer
         run: node scripts/arcade-multiplayer-check.mjs
         env:

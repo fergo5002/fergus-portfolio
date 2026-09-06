@@ -263,6 +263,7 @@
  * Usage:
  *   node scripts/phone-check.mjs --self-test
  *   node scripts/phone-check.mjs --base http://localhost:3000 --routes /tools,/tools/headline-check
+ *   Add --ready-selector .studio for dynamically loaded local workbenches.
  *   node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap
  *   node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap --out .phone-check
  */
@@ -344,6 +345,7 @@ function parseArgs(argv) {
     routes: [],
     fromSitemap: false,
     selfTest: false,
+    readySelector: null,
     out: join(ROOT, ".phone-check"),
   };
   for (let i = 0; i < argv.length; i++) {
@@ -352,6 +354,7 @@ function parseArgs(argv) {
     else if (a === "--routes") out.routes = argv[++i].split(",").map((s) => s.trim()).filter(Boolean);
     else if (a === "--from-sitemap") out.fromSitemap = true;
     else if (a === "--self-test") out.selfTest = true;
+    else if (a === "--ready-selector") out.readySelector = argv[++i];
     else if (a === "--out") out.out = argv[++i];
     else throw new Error(`unknown argument: ${a}`);
   }
@@ -565,6 +568,19 @@ function auditInPage({ minInput, minTap }) {
   const offscreen = [];
   const viewportHeight = document.documentElement.clientHeight;
   const onScreen = (r) => r.x < viewportWidth && r.y < viewportHeight && r.x + r.w > 0 && r.y + r.h > 0;
+  // A scroll panel has its own photographed viewport. Text wholly or partly
+  // beyond it must be read after scrolling, not sampled from whatever happens
+  // to be painted at that page coordinate. Keep ordinary overflow:hidden
+  // clipping and opaque overlays subject to the existing checks.
+  const inScrollViewport = (el, r) => {
+    for (let parent = el.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+      const style = getComputedStyle(parent), box = parent.getBoundingClientRect();
+      const left = box.left + parent.clientLeft + window.scrollX, top = box.top + parent.clientTop + window.scrollY;
+      if (["auto", "scroll"].includes(style.overflowX) && (r.x < left - 0.5 || r.x + r.w > left + parent.clientWidth + 0.5)) return false;
+      if (["auto", "scroll"].includes(style.overflowY) && (r.y < top - 0.5 || r.y + r.h > top + parent.clientHeight + 0.5)) return false;
+    }
+    return true;
+  };
   const seen = new Set();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
@@ -598,7 +614,7 @@ function auditInPage({ minInput, minTap }) {
           continue;
         }
         const rect = { x: left + window.scrollX, y: top + window.scrollY, w: right - left, h: bottom - top };
-        if (onScreen(rect)) rects.push(rect);
+        if (onScreen(rect) && inScrollViewport(el, rect)) rects.push(rect);
         else dropped++;
       }
     }
@@ -784,7 +800,7 @@ function sampleContrast(image, entry, scale) {
 /* One route, one profile                                               */
 /* ------------------------------------------------------------------ */
 
-async function checkRoute(browser, profile, url, outDir, label) {
+async function checkRoute(browser, profile, url, outDir, label, readySelector = null) {
   const context = await browser.newContext({ ...profile.device, reducedMotion: "reduce" });
   const page = await context.newPage();
   if (profile.throttle) {
@@ -818,6 +834,10 @@ async function checkRoute(browser, profile, url, outDir, label) {
 
   const timeout = profile.throttle ? 120_000 : 45_000;
   await page.goto(url, { waitUntil: "networkidle", timeout });
+  if (await page.locator("[data-studio-host]").count()) {
+    await page.locator("[data-studio-host] .studio").first().waitFor({ state: "visible", timeout });
+  }
+  if (readySelector) await page.locator(readySelector).first().waitFor({ state: "visible", timeout });
   await page.waitForTimeout(500);
 
   // One layout for the rectangles and the pixels (see the header). The
@@ -973,13 +993,13 @@ async function checkRoute(browser, profile, url, outDir, label) {
   };
 }
 
-async function runAll(targets, outDir) {
+async function runAll(targets, outDir, readySelector = null) {
   const results = [];
   for (const engineName of ["webkit", "chromium"]) {
     const browser = await (engineName === "webkit" ? webkit : chromium).launch();
     try {
       for (const profile of PROFILES.filter((p) => p.engine === engineName)) {
-        for (const t of targets) results.push(await checkRoute(browser, profile, t.url, outDir, t.label));
+        for (const t of targets) results.push(await checkRoute(browser, profile, t.url, outDir, t.label, readySelector));
       }
     } finally {
       await browser.close();
@@ -1212,6 +1232,12 @@ async function selfTest(args) {
        *                contrast to read and no target to tap.
        */
       const sampledEls = r.samples.map((s) => s.el);
+      if (!sampledEls.some((e) => e.includes("p#scroll-visible"))) {
+        problems.push(`${r.profile} good: visible scrolling-panel text was never sampled`);
+      }
+      if (sampledEls.some((e) => e.includes("p#scroll-hidden")) || !r.offscreen.some((e) => e.el.includes("p#scroll-hidden"))) {
+        problems.push(`${r.profile} good: text outside a scrolling panel was not classified as offscreen`);
+      }
       if (!sampledEls.some((e) => e.includes("span#arrow"))) {
         problems.push(`${r.profile} good: the thin glyph was never sampled`);
       }
@@ -1321,7 +1347,7 @@ async function main() {
 
   const targets = routes.map((r) => ({ label: labelFor(r), url: new URL(r, args.base).toString() }));
   console.log(`phone-check: ${targets.length} route(s) x ${PROFILES.length} profiles against ${args.base}`);
-  const results = await runAll(targets, args.out);
+  const results = await runAll(targets, args.out, args.readySelector);
   const failed = printSummary(results);
   console.log(failed ? "\nphone-check: FAILED" : "\nphone-check: passed");
   process.exitCode = failed ? 1 : 0;

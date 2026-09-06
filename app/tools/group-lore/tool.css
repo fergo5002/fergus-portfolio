@@ -1,0 +1,176 @@
+@import "../../../components/studio/base.css";
+@import "../../../components/studio/studio.css";
+
+:is(.lab, .tool-studio) .lore-overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(220px, 1fr);
+  gap: 20px;
+}
+:is(.lab, .tool-studio) .lore-heat-scroll {
+  overflow-x: auto;
+  padding: 16px 0;
+}
+:is(.lab, .tool-studio) .lore-heat-row,
+:is(.lab, .tool-studio) .lore-heat-axis {
+  display: grid;
+  grid-template-columns: 30px repeat(24, minmax(12px, 1fr));
+  gap: 4px;
+  min-width: 460px;
+  align-items: center;
+  margin-bottom: 5px;
+}
+:is(.lab, .tool-studio) .lore-heat-axis,
+:is(.lab, .tool-studio) .lore-heat-row > span {
+  font-size: 0.55rem;
+}
+:is(.lab, .tool-studio) .lore-heat-row button {
+  width: 100%;
+  aspect-ratio: 1;
+  min-height: 15px;
+  min-width: 0;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: color-mix(
+    in srgb,
+    var(--green) calc(var(--heat) * 100%),
+    var(--bg)
+  );
+  padding: 0;
+}
+:is(.lab, .tool-studio) .lore-heat-row button:disabled {
+  opacity: 1;
+}
+:is(.lab, .tool-studio) .lore-heat-row button[aria-pressed="true"] {
+  outline: 2px solid var(--amber);
+}
+:is(.lab, .tool-studio) .lore-people {
+  max-height: 320px;
+  overflow: auto;
+}
+:is(.lab, .tool-studio) .lore-people button {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--lab-line);
+  background: transparent;
+  color: var(--green);
+  text-align: left;
+}
+:is(.lab, .tool-studio) .lore-people button[aria-pressed="true"] {
+  color: var(--amber);
+}
+:is(.lab, .tool-studio) .lore-people strong {
+  display: block;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+:is(.lab, .tool-studio) .lore-people i {
+  display: block;
+  height: 3px;
+  background: currentColor;
+  margin-top: 7px;
+}
+:is(.lab, .tool-studio) .lore-people b {
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+:is(.lab, .tool-studio) .lore-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--lab-line);
+  border-radius: 50%;
+  font-size: 0.65rem;
+  flex-shrink: 0;
+  color: var(--amber);
+}
+:is(.lab, .tool-studio) .lore-phrases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+:is(.lab, .tool-studio) .lore-phrases button {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--lab-line);
+  padding: 14px 18px;
+  color: var(--green-bright);
+  border-radius: 4px;
+}
+:is(.lab, .tool-studio) .lore-phrases b {
+  color: var(--amber);
+  font-size: 0.7rem;
+}
+:is(.lab, .tool-studio) .lore-archive {
+  scroll-margin-top: 24px;
+}
+:is(.lab, .tool-studio) .lore-archive > .studio-note {
+  margin-top: 16px;
+}
+:is(.lab, .tool-studio) .lore-messages {
+  max-height: 600px;
+  overflow: auto;
+}
+:is(.lab, .tool-studio) .lore-messages article {
+  padding: 20px 0;
+  border-top: 1px solid var(--lab-line);
+}
+:is(.lab, .tool-studio) .lore-messages article > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+:is(.lab, .tool-studio) .lore-messages time {
+  margin-left: auto;
+  font-size: 0.66rem;
+  color: var(--studio-soft);
+}
+:is(.lab, .tool-studio) .lore-messages p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 10px 0 0 40px;
+  font-size: 0.87rem;
+}
+:is(.lab, .tool-studio) .lore-portrait img {
+  width: 100%;
+  height: auto;
+  max-width: 800px;
+  display: block;
+  margin-bottom: 20px;
+}
+@media (max-width: 1050px) {
+  :is(.lab, .tool-studio) .lore-overview {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 650px) {
+  :is(.lab, .tool-studio) .lore-messages p {
+    margin-left: 0;
+  }
+  :is(.lab, .tool-studio) .lore-messages time {
+    margin-left: 40px;
+  }
+  :is(.lab, .tool-studio) .lore-heat-scroll {
+    padding-bottom: 20px;
+  }
+}
+@media (max-width: 650px) {
+  :is(.lab, .tool-studio) .lore-heat-row,
+:is(.lab, .tool-studio) .lore-heat-axis {
+    grid-template-columns: 34px repeat(24, 44px);
+    min-width: 1186px;
+  }
+  :is(.lab, .tool-studio) .lore-heat-row button {
+    width: 44px;
+    height: 44px;
+  }
+}

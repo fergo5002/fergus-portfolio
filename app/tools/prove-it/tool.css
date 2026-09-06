@@ -1,0 +1,242 @@
+@import "../../../components/studio/base.css";
+@import "../../../components/studio/studio.css";
+
+
+:is(.lab, .tool-studio) .detective-library {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+:is(.lab, .tool-studio) .detective-library button {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: flex-start;
+  text-align: left;
+  min-height: 160px;
+  padding: 20px;
+  background: var(--studio-paper);
+  border: 1px solid var(--lab-line);
+  color: var(--green);
+}
+:is(.lab, .tool-studio) .detective-library strong {
+  font-family: var(--font-screen);
+  font-weight: 400;
+  font-size: 1.5rem;
+}
+:is(.lab, .tool-studio) .detective-library button > span:last-child {
+  font-size: 0.68rem;
+}
+:is(.lab, .tool-studio) .detective-brief {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 160px;
+  gap: 30px;
+  padding: 30px;
+  border: 1px solid var(--amber);
+  border-radius: 5px;
+  background: linear-gradient(
+    130deg,
+    color-mix(in srgb, var(--amber) 5%, var(--bg)),
+    var(--bg)
+  );
+}
+:is(.lab, .tool-studio) .detective-brief h3 {
+  font-size: 2.5rem;
+}
+:is(.lab, .tool-studio) .detective-budget {
+  align-self: center;
+  text-align: center;
+}
+:is(.lab, .tool-studio) .detective-budget strong {
+  display: block;
+  font-family: var(--font-screen);
+  font-size: 5rem;
+  font-weight: 400;
+  color: var(--amber);
+  line-height: 1;
+}
+:is(.lab, .tool-studio) .detective-budget span {
+  font-size: 0.65rem;
+}
+:is(.lab, .tool-studio) .detective-budget > div {
+  display: flex;
+  gap: 5px;
+  margin: 14px auto;
+  justify-content: center;
+}
+:is(.lab, .tool-studio) .detective-budget i {
+  width: 17px;
+  height: 8px;
+  background: var(--amber);
+}
+:is(.lab, .tool-studio) .detective-budget i[data-spent="true"] {
+  opacity: 0.2;
+}
+:is(.lab, .tool-studio) .detective-hypotheses {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+:is(.lab, .tool-studio) .detective-hypotheses button {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  min-height: 160px;
+  text-align: left;
+  border: 1px solid var(--lab-line);
+  background: var(--bg);
+  color: var(--green);
+  border-radius: 5px;
+  padding: 20px;
+}
+:is(.lab, .tool-studio) .detective-hypotheses button > span {
+  font-family: var(--font-screen);
+  font-size: 2rem;
+  color: var(--amber);
+  line-height: 1;
+}
+:is(.lab, .tool-studio) .detective-hypotheses strong {
+  font-weight: 400;
+  font-size: 0.88rem;
+}
+:is(.lab, .tool-studio) .detective-hypotheses button[aria-pressed="true"] {
+  border-color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 7%, var(--bg));
+}
+:is(.lab, .tool-studio) .detective-hypotheses button:disabled {
+  opacity: 0.75;
+}
+:is(.lab, .tool-studio) .detective-hypotheses button[data-answer="true"] {
+  opacity: 1;
+  border-color: var(--green-bright);
+}
+:is(.lab, .tool-studio) .detective-hypotheses small {
+  font-size: 0.65rem;
+}
+:is(.lab, .tool-studio) .detective-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 20px;
+}
+:is(.lab, .tool-studio) .detective-tests {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+:is(.lab, .tool-studio) .detective-tests button {
+  display: grid;
+  grid-template-columns: 35px 1fr;
+  gap: 5px 12px;
+  padding: 18px;
+  text-align: left;
+  border: 1px solid var(--lab-line);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--green);
+}
+:is(.lab, .tool-studio) .detective-tests button > span {
+  grid-row: span 2;
+  font-family: var(--font-screen);
+  font-size: 2rem;
+  color: var(--amber);
+}
+:is(.lab, .tool-studio) .detective-tests strong {
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+:is(.lab, .tool-studio) .detective-tests small {
+  font-size: 0.65rem;
+}
+:is(.lab, .tool-studio) .detective-evidence {
+  border-top: 1px solid var(--lab-line);
+  padding: 22px 0 8px;
+}
+:is(.lab, .tool-studio) .detective-evidence h4 {
+  margin: 10px 0;
+}
+:is(.lab, .tool-studio) .detective-evidence blockquote {
+  border-left: 2px solid var(--amber);
+  margin: 16px 0;
+  padding: 10px 16px;
+  background: var(--bg);
+  color: var(--green-bright);
+}
+:is(.lab, .tool-studio) .detective-evidence small {
+  font-size: 0.68rem;
+}
+:is(.lab, .tool-studio) .detective-commit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+:is(.lab, .tool-studio) .detective-commit p {
+  max-width: 65ch;
+  font-size: 0.8rem;
+}
+:is(.lab, .tool-studio) .detective-debrief {
+  padding: 30px;
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  background: var(--studio-paper);
+}
+:is(.lab, .tool-studio) .detective-debrief > h3 {
+  font-size: 2.6rem;
+}
+:is(.lab, .tool-studio) .detective-debrief .lab-metrics dd {
+  font-size: 1.9rem;
+}
+:is(.lab, .tool-studio) .detective-history {
+  font-size: 0.8rem;
+}
+@media (max-width: 650px) {
+  :is(.lab, .tool-studio) .detective-library {
+    grid-template-columns: 1fr 1fr;
+  }
+  :is(.lab, .tool-studio) .detective-library button {
+    padding: 14px;
+  }
+  :is(.lab, .tool-studio) .detective-brief {
+    grid-template-columns: 1fr;
+    padding: 20px;
+    gap: 14px;
+  }
+  :is(.lab, .tool-studio) .detective-budget {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  :is(.lab, .tool-studio) .detective-budget strong {
+    font-size: 2.5rem;
+  }
+  :is(.lab, .tool-studio) .detective-budget > div {
+    margin: 0 0 0 auto;
+  }
+  :is(.lab, .tool-studio) .detective-hypotheses {
+    grid-template-columns: 1fr;
+  }
+  :is(.lab, .tool-studio) .detective-hypotheses button {
+    min-height: 80px;
+    display: grid;
+    grid-template-columns: 25px 1fr;
+    gap: 10px;
+    padding: 16px;
+  }
+  :is(.lab, .tool-studio) .detective-hypotheses small {
+    grid-column: 2;
+  }
+  :is(.lab, .tool-studio) .detective-workspace {
+    grid-template-columns: 1fr;
+  }
+  :is(.lab, .tool-studio) .detective-commit {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  :is(.lab, .tool-studio) .detective-debrief {
+    padding: 16px;
+  }
+}

@@ -1,8 +1,13 @@
 import type { ToolEntry } from "./types";
+import { atlas } from "./atlas";
 import { drift } from "./drift";
+import { groupLore } from "./group-lore";
 import { headlineCheck } from "./headline-check";
 import { overlap } from "./overlap";
+import { pocketRedact } from "./pocket-redact";
+import { proveIt } from "./prove-it";
 import { relief } from "./relief";
+import { resonance } from "./resonance";
 import { secondVisit } from "./second-visit";
 
 export type { ToolEntry } from "./types";
@@ -16,7 +21,7 @@ export type { ToolEntry } from "./types";
  * tool's page read from here and nowhere else, which is how a tool that is
  * added once shows up everywhere at once.
  */
-const entries: ToolEntry[] = [drift, headlineCheck, overlap, relief, secondVisit];
+const entries: ToolEntry[] = [atlas, drift, groupLore, headlineCheck, overlap, pocketRedact, proveIt, relief, resonance, secondVisit];
 
 /** Every tool, `soon` ones included, in index order. */
 export const tools: ToolEntry[] = [...entries].sort((a, b) => a.order - b.order);

@@ -6,6 +6,62 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-06: five selected studios
+
+Fergus selected Group Lore, Pocket Redact, Prove It and Resonance for a deeper build, plus an
+Obsidian-style file graph. Work continues locally in `f6f8` on `codex/selected-tools-studio`,
+from `f49cb41`. Fergus authorised deployment after local review. Public release is being
+prepared through the normal GitHub checks and personal Vercel project.
+
+- [x] Public `/tools/atlas`, `/tools/group-lore`, `/tools/pocket-redact`, `/tools/prove-it`
+  and `/tools/resonance`, with registry entries, board previews, canonical metadata and
+  generated sitemap/agent discovery. Seven unselected experiments remain behind the lab flag.
+- [x] Shared studio furniture and per-tool styles serve the same components in public and local review.
+- [x] Public route/discovery check and both studio browser suites added to the phone CI gate.
+- [ ] Merge the release PR and verify its exact production deployment and canonical workflows.
+
+- [x] Atlas replaces Code Atlas in the lab: broad file/folder/ZIP intake, public GitHub import,
+  manually ticked force graph, drag/pin/zoom/focus, file inspection, explainable links, local
+  media previews and saved map round trips.
+- [x] Group Lore: additional chat formats, worker import, date/person/phrase filters, weekly
+  rhythm, bounded message explorer and anonymous portrait/summary downloads.
+- [x] Pocket Redact: thumbnails, zoom, drawing/moving/resizing masks, undo/redo, text-box
+  candidates and a fresh raster PDF with an explicit review of its reopened pages.
+- [x] Prove It: twelve cases, prediction notebook, confidence history, evidence comparison
+  and downloadable debriefs.
+- [x] Resonance: live sixteen-step sequencing, playable pads and pitch scrubbing, per-voice
+  controls, XY effects, patch import/export and eight-bar WAV rendering.
+- [x] Full suite: 2,582 passes, three opt-in skips; desktop workflows and 390px WebKit/Chromium
+  checks; mixed-format imports, large archives, live GitHub and redaction pixel proof.
+- [x] Clean production build (44 pages), lab-disabled 404/sitemap verification and all five
+  studios passing the strict 320px/390px/throttled phone audit. The audit's scroll-panel fix
+  has a planted regression proof; numerical accessibility floors are unchanged.
+
+Detailed review paths, scope limits and evidence: `docs/selected-tools-studio.md`.
+The five studios are featured at `http://127.0.0.1:3106/lab`; the seven remaining experiments
+are still available below them.
+
+## 2026-09-06: twelve local tool MVPs
+
+Fergus requested a working local MVP of every research pitch before choosing what to publish.
+The work is isolated on `codex/twelve-tool-mvps` in the `f6f8` worktree, based on `f4cc357`.
+Nothing has been pushed or deployed. The review hub is `/lab`; `FERGUSOS_LAB=1` enables it,
+and both the hub and tool pages return 404 without that flag. It is absent from the public
+tool registry and sitemap and carries noindex metadata.
+
+- [x] All twelve working prototypes, examples, editable inputs and useful exports.
+- [x] Hub categories, a shortlist and per-tool notes that survive client navigation; downloadable review.
+- [x] Tests first for the engines; 29 lab tests and the complete repository suite of 2,567 passes, three opt-in skips.
+- [x] TypeScript and production build, including the dynamically loaded PDF worker.
+- [x] Thirteen production-browser workflows: hub plus every prototype, real imports, failures and downloads, with no page errors.
+- [x] Live Open-Meteo fetch, fresh two-page PDF redaction round trip and actual oscillator creation / audio closure.
+- [x] All twelve routes pass 390px Chromium and WebKit checks after the select-overflow correction: no page errors, horizontal overflow, undersized input text or undersized buttons.
+
+Scopes, launch commands, source licences and evidence are in `docs/lab-mvp-review.md`.
+Run `npm run lab` for development or `npm run build` then `npm run lab:start` for the local
+production build. Both bind to `127.0.0.1:3106`; `LAB_PORT` can override the port. The public
+release process remains a separate decision after Fergus reviews the prototypes.
+
 ## 2026-09-05: public tools rebuild live
 
 Fergus requested an audit, redesign, implementation and production deployment of all five public
