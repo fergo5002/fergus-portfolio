@@ -1,0 +1,50 @@
+@import "../../components/studio/studio.css";
+@import "../tools/atlas/tool.css";
+@import "../tools/group-lore/tool.css";
+@import "../tools/pocket-redact/tool.css";
+@import "../tools/prove-it/tool.css";
+@import "../tools/resonance/tool.css";
+
+:is(.lab, .tool-studio) .lab-featured {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0 42px;
+}
+:is(.lab, .tool-studio) .lab-featured a {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px 18px;
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  text-decoration: none;
+  background: var(--bg-panel);
+}
+:is(.lab, .tool-studio) .lab-featured strong {
+  font-family: var(--font-screen);
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: var(--green-bright);
+}
+:is(.lab, .tool-studio) .lab-featured span {
+  font-size: 0.72rem;
+}
+:is(.lab, .tool-studio) .lab-featured b {
+  color: var(--amber);
+  font-weight: 400;
+  font-size: 0.65rem;
+}
+@media (max-width: 1050px) {
+  :is(.lab, .tool-studio) .lab-featured {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 650px) {
+  :is(.lab, .tool-studio) .lab-featured {
+    grid-template-columns: 1fr 1fr;
+  }
+  :is(.lab, .tool-studio) .lab-featured a {
+    padding: 16px;
+  }
+}

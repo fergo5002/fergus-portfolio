@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { workbenchCopy } from "@/content/tool-workbench";
+import { labCopy } from "@/content/lab";
 import "./workbench.css";
 import JsonLd from "@/components/JsonLd";
 import PromptLine from "@/components/PromptLine";
@@ -35,15 +36,17 @@ export default function ToolPage({
   children,
   extraSchema,
   talk,
+  localReview = false,
 }: {
   tool: ToolEntry;
   children: ReactNode;
   extraSchema?: JsonLdObject;
   talk?: string;
+  localReview?: boolean;
 }) {
   return (
     <div className="stack tool-workbench">
-      <JsonLd
+      {!localReview && <JsonLd
         nodes={[
           toolPageSchema(tool, extraSchema),
           breadcrumbSchema([
@@ -52,9 +55,9 @@ export default function ToolPage({
             { name: tool.name, path: toolPath(tool.slug) },
           ]),
         ]}
-      />
+      />}
       <PromptLine command={`./${tool.slug}`} path={toolShellCopy.indexPath} />
-      <Link className="bench-back" href="/tools">{workbenchCopy.back}</Link>
+      <Link className="bench-back" href={localReview ? "/lab" : "/tools"}>{localReview ? labCopy.back : workbenchCopy.back}</Link>
       <h1 className="page__title">
         <Scramble text={tool.slug} speed={34} />
       </h1>

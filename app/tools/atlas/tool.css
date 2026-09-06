@@ -1,0 +1,174 @@
+@import "../../../components/studio/base.css";
+@import "../../../components/studio/studio.css";
+
+:is(.lab, .tool-studio) .atlas-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  border: 1px solid var(--lab-line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+:is(.lab, .tool-studio) .atlas-stage {
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--green) 4%, var(--bg)),
+    var(--bg)
+  );
+}
+:is(.lab, .tool-studio) .atlas-stage > .studio-toolbar {
+  padding: 12px;
+  gap: 6px;
+  border-bottom: 1px solid var(--lab-line);
+}
+:is(.lab, .tool-studio) .atlas-stage .bench-button,
+:is(.lab, .tool-studio) .atlas-stage .studio-toggle {
+  font-size: 0.7rem;
+  padding: 6px 9px;
+}
+:is(.lab, .tool-studio) .atlas-canvas {
+  display: block;
+  width: 100%;
+  height: 560px;
+  touch-action: none;
+  cursor: grab;
+}
+:is(.lab, .tool-studio) .atlas-canvas:active {
+  cursor: grabbing;
+}
+:is(.lab, .tool-studio) .atlas-stage-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--lab-line);
+  font-size: 0.65rem;
+}
+:is(.lab, .tool-studio) .atlas-stage-foot .lab-field {
+  max-width: 200px;
+}
+:is(.lab, .tool-studio) .atlas-inspector {
+  padding: 20px;
+  border-left: 1px solid var(--lab-line);
+  max-height: 770px;
+  overflow: auto;
+  background: var(--studio-paper);
+}
+:is(.lab, .tool-studio) .atlas-inspector h3 {
+  overflow-wrap: anywhere;
+}
+:is(.lab, .tool-studio) .atlas-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 0.75rem;
+  line-height: 1.75;
+  margin: 20px 0;
+  padding: 14px;
+  border: 1px solid var(--lab-line);
+  max-height: 300px;
+  overflow: auto;
+  background: var(--bg);
+}
+:is(.lab, .tool-studio) .atlas-related {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-top: 1px solid var(--lab-line);
+  background: transparent;
+  padding: 12px 0;
+  color: var(--green);
+}
+:is(.lab, .tool-studio) .atlas-related strong,
+:is(.lab, .tool-studio) .atlas-related span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+:is(.lab, .tool-studio) .atlas-related span {
+  font-size: 0.68rem;
+  margin-top: 5px;
+}
+:is(.lab, .tool-studio) .atlas-file-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--lab-line);
+  max-height: 430px;
+  overflow: auto;
+}
+:is(.lab, .tool-studio) .atlas-file-list button {
+  border: 0;
+  min-height: 55px;
+  padding: 12px;
+  background: var(--bg);
+  color: var(--green);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+:is(.lab, .tool-studio) .atlas-file-list small {
+  display: block;
+  color: var(--studio-soft);
+  font-size: 0.66rem;
+}
+:is(.lab, .tool-studio) .atlas-file-list button[aria-pressed="true"] {
+  color: var(--amber);
+  background: var(--bg-panel);
+}
+@media (max-width: 1050px) {
+  :is(.lab, .tool-studio) .atlas-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  :is(.lab, .tool-studio) .atlas-inspector {
+    max-height: 380px;
+    border-left: 0;
+    border-top: 1px solid var(--lab-line);
+  }
+  :is(.lab, .tool-studio) .atlas-canvas {
+    height: 500px;
+  }
+}
+@media (max-width: 650px) {
+  :is(.lab, .tool-studio) .atlas-canvas {
+    height: 420px;
+  }
+  :is(.lab, .tool-studio) .atlas-stage-foot {
+    flex-wrap: wrap;
+  }
+  :is(.lab, .tool-studio) .atlas-file-list {
+    grid-template-columns: 1fr;
+  }
+}
+:is(.lab, .tool-studio) .atlas-media {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 16px 0;
+  max-height: 300px;
+  object-fit: contain;
+}
+:is(.lab, .tool-studio) .atlas-workspace:fullscreen {
+  background: var(--bg);
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  grid-template-columns: minmax(0, 1fr) 300px;
+}
+:is(.lab, .tool-studio) .atlas-workspace:fullscreen .atlas-stage {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+:is(.lab, .tool-studio) .atlas-workspace:fullscreen .atlas-canvas {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+:is(.lab, .tool-studio) .atlas-workspace:fullscreen .atlas-inspector {
+  max-height: 100vh;
+}
+@media (max-width: 650px) {
+  :is(.lab, .tool-studio) .atlas-workspace:fullscreen {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) 200px;
+  }
+}
