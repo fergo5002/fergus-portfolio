@@ -4,22 +4,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Typewriter from "./Typewriter";
 import { useSystem } from "@/components/system/SystemProvider";
 import {
-  BAR_MS,
   BOOTING_CLASS,
   BOOT_REARM_MS,
   BOOT_WATCHDOG_MS,
-  DEVICE_LINES,
-  DEVICE_SPEED_MS,
-  HANDOFF_MS,
-  HEAD_LINES,
-  HEAD_SPEED_MS,
+  FULL_BOOT,
   MEMORY_K,
-  MEMORY_MS,
   SESSION_KEY,
-  STRIKE_MS,
   armBootFailsafe,
   disarmBootFailsafe,
+  pickBootProfile,
 } from "@/lib/boot";
+import type { BootProfile } from "@/lib/boot";
 
 type Phase = "dark" | "head" | "memory" | "devices" | "bar";
 
@@ -49,6 +44,11 @@ export default function BootSequence({ children }: { children: React.ReactNode }
   // dependency so that the mount effect keeps a stable identity: re-running it
   // would restrike the tube mid-sequence.
   const finishRef = useRef<() => void>(() => {});
+  // Which boot this machine gets: the full BIOS or the phone's two seconds.
+  // Decided once, on mount, from the pointer and the width; a ref because the
+  // timings below read it from effects and the lines from render, and it
+  // must not change under a running sequence.
+  const profileRef = useRef<BootProfile>(FULL_BOOT);
 
   useEffect(() => {
     // The pre-paint script in <head> already decided whether to boot (session +
@@ -59,6 +59,10 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     // arms its failsafe on the same branch that adds the class.
     if (!document.documentElement.classList.contains(BOOTING_CLASS)) return;
 
+    profileRef.current = pickBootProfile({
+      coarse: window.matchMedia("(pointer: coarse)").matches,
+      width: window.innerWidth,
+    });
     setBooting(true);
     const f = frame.current;
     // Hold the phosphor layer dark until the machine is actually up...
@@ -73,7 +77,7 @@ export default function BootSequence({ children }: { children: React.ReactNode }
       frame.current.bootTarget = 1;
       audio.powerOn();
       setPhase("head");
-    }, STRIKE_MS);
+    }, profileRef.current.strikeMs);
 
     // Covers the case disarming the inline failsafe opens up: this component
     // mounted, took ownership of the reveal, and then stalled part-way (a
@@ -159,7 +163,7 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     const started = performance.now();
     let raf = 0;
     const step = (t: number) => {
-      const p = Math.min(1, (t - started) / MEMORY_MS);
+      const p = Math.min(1, (t - started) / profileRef.current.memoryMs);
       setMemory(Math.floor(p * MEMORY_K));
       if (p < 1) raf = requestAnimationFrame(step);
       else setPhase("devices");
@@ -175,10 +179,10 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     let handoff = 0;
     const started = performance.now();
     const step = (t: number) => {
-      const p = Math.min(1, (t - started) / BAR_MS);
+      const p = Math.min(1, (t - started) / profileRef.current.barMs);
       setProgress(p);
       if (p < 1) raf = requestAnimationFrame(step);
-      else handoff = window.setTimeout(finish, HANDOFF_MS);
+      else handoff = window.setTimeout(finish, profileRef.current.handoffMs);
     };
     raf = requestAnimationFrame(step);
     return () => {
@@ -188,6 +192,7 @@ export default function BootSequence({ children }: { children: React.ReactNode }
   }, [booting, phase, finish]);
 
   const bars = Math.round(progress * 24);
+  const profile = profileRef.current;
 
   return (
     <>
@@ -205,8 +210,8 @@ export default function BootSequence({ children }: { children: React.ReactNode }
           <div className="boot__inner">
             {phase !== "dark" && (
               <Typewriter
-                lines={[...HEAD_LINES]}
-                speed={HEAD_SPEED_MS}
+                lines={[...profile.headLines]}
+                speed={profile.headSpeedMs}
                 onDone={() => setPhase("memory")}
               />
             )}
@@ -219,8 +224,8 @@ export default function BootSequence({ children }: { children: React.ReactNode }
 
             {(phase === "devices" || phase === "bar") && (
               <Typewriter
-                lines={[...DEVICE_LINES]}
-                speed={DEVICE_SPEED_MS}
+                lines={[...profile.deviceLines]}
+                speed={profile.deviceSpeedMs}
                 onDone={() => setPhase("bar")}
               />
             )}

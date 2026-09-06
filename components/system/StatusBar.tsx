@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useSyncExternalStore } from "react";
-import { formatUptime, memoryAddress } from "@/lib/system";
+import { formatUptime, memoryAddress, shortPwd } from "@/lib/system";
 import { INITIAL_SHELL, shellStore } from "@/lib/shell";
 import { summonShell } from "@/components/ShellDrawer";
 import { useSystem } from "./SystemProvider";
@@ -56,7 +56,12 @@ export default function StatusBar() {
     });
   }, [frame, onFrame, reducedMotion]);
 
+  // Whole on the desktop, last segment on a phone: `.statusbar__pwd` reads
+  // the full path from a data attribute there is no room for on a 390px bar,
+  // so the short form is what the element says and the long form is what it
+  // titles.
   const pwd = path === "/" ? "~" : `~${path}`;
+  const short = shortPwd(path);
 
   return (
     // The readouts are decorative and stay hidden from assistive tech, but the
@@ -66,10 +71,13 @@ export default function StatusBar() {
     <div className="statusbar">
       <span className="statusbar__readouts" aria-hidden="true">
         <span className="statusbar__seg statusbar__brand">FergusOS 5.0</span>
-        <span className="statusbar__seg">
+        <span className="statusbar__seg statusbar__up">
           up <span ref={uptimeRef}>00:00:00</span>
         </span>
-        <span className="statusbar__seg statusbar__pwd">{pwd}</span>
+        <span className="statusbar__seg statusbar__pwd" title={pwd}>
+          <span className="statusbar__pwd-full">{pwd}</span>
+          <span className="statusbar__pwd-short">{short}</span>
+        </span>
         <span className="statusbar__seg statusbar__mem">
           <span ref={memRef}>0x00400000</span>
         </span>

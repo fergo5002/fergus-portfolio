@@ -379,8 +379,58 @@ describe("the touch bar separates thumb size from screen space", () => {
   });
 
   it("truncates the working directory for room rather than for thumbs", () => {
-    expect(touchAndNarrow).toContain(".statusbar__pwd");
+    expect(narrow).toContain(".statusbar__pwd");
     expect(touch).not.toContain(".statusbar__pwd");
+  });
+
+  // Measured live on 2026-09-06 at 390px: the prompt's `$` sat on the bar's
+  // bottom edge while every other readout was centred, the working directory
+  // was 11px wide and read "~…", and on tool routes the readouts ran under the
+  // sound button. The rules below were written for a 22px bar with a mouse;
+  // on touch the bar is 44px and the prompt has to be centred in it like the
+  // controls beside it.
+  const narrow = mediaBlocks("(max-width: 768px)");
+  const narrowPrompt = /\.statusbar__prompt\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? "";
+  const narrowPwd = /\.statusbar__pwd\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? "";
+
+  it("centres the prompt in the bar rather than hanging it off the bottom edge", () => {
+    expect(narrowPrompt).not.toContain("flex-end");
+    expect(narrowPrompt).toContain("align-items: center");
+    expect(narrowPrompt).toContain("min-width: 44px");
+  });
+
+  it("gives the working directory the slack and lets it ellipsise", () => {
+    expect(narrowPwd).toContain("flex: 1 1 auto");
+    expect(narrowPwd).toContain("text-overflow: ellipsis");
+  });
+
+  it("drops the uptime on a phone, which is costume, before it drops the path, which is not", () => {
+    expect(narrow).toMatch(/\.statusbar__up\s*\{[^}]*display: none/);
+  });
+});
+
+describe("a hard load is never re-hidden (Fergus, 2026-09-06)", () => {
+  // Measured with a real GPU on 2026-09-06: the page painted, then at
+  // hydration 2.5s later (4s on a throttled Pixel) every raster block was
+  // still opacity 0 and the title flipped to scrambled glyphs. The pre-hide
+  // used to key on `html.js`, which is set before first paint, so the server
+  // HTML was hidden for as long as hydration took. It now keys on
+  // `html.navigated`, which only exists once the visitor has moved inside the
+  // site, and on `.is-unseen`, which RasterReveal adds at hydration to blocks
+  // that are below the fold.
+  const motion = mediaBlocks("(prefers-reduced-motion: no-preference)");
+
+  it("no longer hides every reveal block behind the js flag", () => {
+    expect(motion).not.toMatch(/html\.js \.raster:not\(\.is-revealed\)\s*\{/);
+  });
+
+  it("hides blocks only after an in-site navigation, or when marked unseen", () => {
+    expect(motion).toMatch(/html\.navigated \.raster:not\(\.is-revealed\)/);
+    expect(motion).toMatch(/\.raster\.is-unseen/);
+  });
+
+  it("can reveal without the animation, for a block the visitor is already looking at", () => {
+    expect(motion).toMatch(/\.raster\.is-instant[^{]*\{[^}]*animation: none/);
   });
 });
 

@@ -18,6 +18,10 @@ import {
   bootInlineScript,
   disarmBootFailsafe,
   typewriterMs,
+  FULL_BOOT,
+  PHONE_BOOT,
+  bootFloorMs,
+  pickBootProfile,
 } from "./boot";
 
 /**
@@ -424,5 +428,37 @@ describe("BootSequence is wired to the failsafe", () => {
     // with it, and cannot escape when the watchdog is the caller (a throw inside
     // a setTimeout callback reaches no error boundary at all).
     expect(src).toMatch(/setBooting\(false\);[\s\S]{0,400}\btry\s*\{[\s\S]{0,400}degauss\(\)/);
+  });
+});
+
+describe("the phone boot (Fergus, 2026-09-06)", () => {
+  // The full sequence is 6.4 seconds of BIOS on a first visit, and on a phone
+  // that is a black screen for longer than most people give a link. Fergus
+  // chose a shorter boot for phones, about two seconds, over skipping it.
+  it("is a real profile with a floor near two seconds", () => {
+    expect(bootFloorMs(PHONE_BOOT)).toBeLessThan(2600);
+    expect(bootFloorMs(PHONE_BOOT)).toBeGreaterThan(1500);
+  });
+
+  it("keeps the full boot's floor exactly where it was", () => {
+    expect(bootFloorMs(FULL_BOOT)).toBe(BOOT_FLOOR_MS);
+  });
+
+  it("is picked for a coarse pointer or a narrow window, and the full boot otherwise", () => {
+    expect(pickBootProfile({ coarse: true, width: 1440 })).toBe(PHONE_BOOT);
+    expect(pickBootProfile({ coarse: false, width: 390 })).toBe(PHONE_BOOT);
+    expect(pickBootProfile({ coarse: false, width: 1440 })).toBe(FULL_BOOT);
+  });
+
+  it("still types real lines from the same script rather than a different story", () => {
+    for (const line of [...PHONE_BOOT.headLines, ...PHONE_BOOT.deviceLines]) {
+      expect([...HEAD_LINES, ...DEVICE_LINES]).toContain(line);
+    }
+  });
+
+  it("is what BootSequence reads, not the constants", () => {
+    const source = readFileSync(join(process.cwd(), "components", "BootSequence.tsx"), "utf8");
+    expect(source).toContain("pickBootProfile(");
+    expect(source).not.toMatch(/lines=\{\[\.\.\.HEAD_LINES\]\}/);
   });
 });

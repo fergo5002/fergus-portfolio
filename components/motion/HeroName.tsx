@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { randomGlyph, scrambleFrame } from "@/lib/scramble";
 import { splitWordsWithOffsets } from "@/lib/text";
 import { useSystem } from "@/components/system/SystemProvider";
+import { isLateHydration } from "@/lib/navigation";
 
 /** How far from the cursor a character still feels the field, in px. */
 const RADIUS = 170;
@@ -68,7 +69,11 @@ export default function HeroName({ text, className }: { text: string; className?
       setDisplay(scrambleFrame(text, 0, randomGlyph()));
       tickTimer = setTimeout(tick, 30);
     };
-    run();
+    // Not on a late hydration: the name has been on screen since first paint
+    // and must not turn into glyphs because the JavaScript arrived. The
+    // periodic re-glitch below still runs; that one is the tube's own habit,
+    // not a load effect. lib/navigation.ts.
+    if (!isLateHydration()) run();
     const repeat = setInterval(run, 20000);
     return () => {
       clearTimeout(tickTimer);

@@ -1447,6 +1447,9 @@ html.js .exp__spine {
 .statusbar__pwd {
   color: var(--amber);
 }
+.statusbar__pwd-short {
+  display: none;
+}
 .statusbar__mem {
   color: var(--green-faint);
 }
@@ -1566,7 +1569,18 @@ html.js .exp__spine {
      to appear. Opacity is ignored by the observer, so it is the only safe way to
      pre-hide something whose reveal is triggered by its own visibility. The clip
      lives purely inside the keyframes below. */
-  html.js .raster:not(.is-revealed) {
+  /* Keyed on `html.navigated`, never on `html.js`. The js flag is set before
+     first paint, so keying the pre-hide on it hid the server HTML for exactly
+     as long as hydration took: 2.5 seconds on a desktop with a real GPU and 4
+     on a throttled phone, measured on 2026-09-06, during which /experience and
+     /projects were a heading over a blank page. `navigated` is added by
+     RouteTransition on the first in-site navigation, when the next page is
+     genuinely new and hiding it costs nothing. On a hard load the blocks are
+     visible from first paint; RasterReveal then marks the ones below the fold
+     `is-unseen` at hydration (nobody can see them, so nothing flashes) and
+     reveals the ones on screen at once, without the animation. */
+  html.navigated .raster:not(.is-revealed),
+  .raster.is-unseen {
     opacity: 0;
   }
   html.js .raster.is-revealed {
@@ -1574,6 +1588,13 @@ html.js .exp__spine {
   }
   html.js .raster.is-revealed .raster__beam {
     animation: raster-beam 720ms cubic-bezier(0.16, 0.84, 0.3, 1) var(--reveal-delay, 0ms) both;
+  }
+  /* A block the visitor was already looking at when the JavaScript arrived.
+     Revealed, but not animated: animating it would hide it first. */
+  html.js .raster.is-instant,
+  html.js .raster.is-instant .raster__beam,
+  html.js .raster.is-instant .hl {
+    animation: none;
   }
   @keyframes raster-in {
     0% {
@@ -2387,11 +2408,6 @@ html.is-gravity .statusbar {
 @media (hover: none) and (max-width: 768px) {
   .statusbar__mem {
     display: none;
-  }
-  .statusbar__pwd {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
   .machine {
     flex: none;
@@ -3523,30 +3539,55 @@ html.is-ejecting .shell {
 
 @media (max-width: 768px) {
   /* ── the shell on a phone ────────────────────────────────────────────────
-     The prompt is the tap target for the drawer, so it must be 44px both ways
-     while the bar stays 22px tall. The bar's clipping moves onto the readouts
-     (which lose `display: contents` here, and this block sits after that rule
-     on purpose), and the button hangs its bottom edge on the bar's bottom
-     edge, so the extra height sits above the bar over the page, never below
-     the viewport where nobody can tap it. */
+     The bar is 44px on touch (see the `(hover: none)` block) and 22px with a
+     mouse; either way everything in it is centred on one line. Measured live
+     at 390px on 2026-09-06 before this: the prompt hung its `$` on the bottom
+     edge (a rule written for the 22px bar, still applied to the 44px one),
+     the working directory was 11px wide and read "~…", and on tool routes the
+     readouts ran under the sound button. Room is found in this order: the
+     uptime goes (costume), the path shortens to its last segment and then
+     ellipsises, and below 360px the brand goes too. The prompt and the three
+     machine buttons never shrink: they are the tap targets. */
   .statusbar {
-    overflow: visible;
+    gap: var(--sp-2);
+    padding: 0 var(--sp-2) 0 var(--sp-3);
+    overflow: hidden;
   }
   .statusbar__readouts {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
+    flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
   }
+  .statusbar__up {
+    display: none;
+  }
+  .statusbar__pwd {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .statusbar__pwd-full {
+    display: none;
+  }
+  .statusbar__pwd-short {
+    display: inline;
+  }
+  .machine {
+    flex: none;
+    margin-left: 0;
+  }
   .statusbar__prompt {
-    align-self: flex-end;
-    align-items: flex-end;
+    flex: none;
+    align-self: stretch;
+    align-items: center;
     justify-content: center;
     min-width: 44px;
-    min-height: 44px;
-    padding: 0 8px 4px;
+    padding: 0 10px;
   }
   .shell {
     max-height: 70vh;
@@ -3557,5 +3598,13 @@ html.is-ejecting .shell {
   .shell__close {
     min-width: 44px;
     min-height: 44px;
+  }
+}
+
+@media (max-width: 360px) {
+  /* The last thing to go, after the uptime and the long path: the brand is
+     identity, the path is information, and at 320px there is room for one. */
+  .statusbar__brand {
+    display: none;
   }
 }

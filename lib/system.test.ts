@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  shortPwd,
   DEFAULT_SETTINGS,
   MAX_FRAME_IMPACTS,
   SETTINGS_KEY,
@@ -46,6 +47,27 @@ describe("memoryAddress", () => {
   it("clamps out-of-range progress instead of producing junk", () => {
     expect(memoryAddress(-5)).toBe(memoryAddress(0));
     expect(memoryAddress(99)).toBe(memoryAddress(1));
+  });
+});
+
+describe("shortPwd", () => {
+  // The phone status bar has about 90px for the working directory once the
+  // brand, three 44px controls and the prompt have taken theirs. A long
+  // article slug ellipsised from the right read "~…" on 2026-09-06, which is
+  // no information at all. The last segment is the one that says where you
+  // are, so that is the one kept.
+  it("leaves home and a single section alone", () => {
+    expect(shortPwd("/")).toBe("~");
+    expect(shortPwd("/writing")).toBe("~/writing");
+  });
+
+  it("keeps only the last segment of a deeper path, and says so", () => {
+    expect(shortPwd("/writing/why-presterly-wound-down")).toBe("~/…/why-presterly-wound-down");
+    expect(shortPwd("/tools/drift")).toBe("~/…/drift");
+  });
+
+  it("ignores a trailing slash", () => {
+    expect(shortPwd("/writing/")).toBe("~/writing");
   });
 });
 

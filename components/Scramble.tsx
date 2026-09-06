@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { scrambleFrame, randomGlyph } from "@/lib/scramble";
+import { isLateHydration } from "@/lib/navigation";
 
 /**
  * Renders `text` with a "terminal decrypting" reveal: starts fully scrambled and
@@ -37,6 +38,13 @@ export default function Scramble({
       setDisplay(text);
       return;
     }
+
+    // A page title that has been readable for two seconds must not turn into
+    // glyphs because the JavaScript has just arrived. On a hard load the
+    // server text stays; the decode runs for a page reached by navigating,
+    // which nobody has seen yet. `view`-triggered headings are below the fold
+    // and are left alone: they have not been seen either. lib/navigation.ts.
+    if (trigger === "mount" && isLateHydration()) return;
 
     let tickTimer: ReturnType<typeof setTimeout>;
     let repeatTimer: ReturnType<typeof setInterval> | undefined;

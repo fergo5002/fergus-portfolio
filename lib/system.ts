@@ -255,3 +255,19 @@ export function memoryAddress(progress: number): string {
   const addr = Math.floor(clamped * 0xfffff) + 0x400000;
   return `0x${addr.toString(16).toUpperCase().padStart(8, "0")}`;
 }
+
+/**
+ * The working directory as the phone status bar shows it.
+ *
+ * The bar has about 90px for this once the brand, three 44px controls and the
+ * prompt have taken theirs, and a long article slug ellipsised from the right
+ * read "~…" on 2026-09-06: no information at all. The last segment is the one
+ * that says where you are, so a deeper path keeps that and says what it
+ * dropped. The desktop bar has the room and shows the whole path.
+ */
+export function shortPwd(path: string): string {
+  const parts = path.split("/").filter(Boolean);
+  if (parts.length === 0) return "~";
+  if (parts.length === 1) return `~/${parts[0]}`;
+  return `~/…/${parts[parts.length - 1]}`;
+}
