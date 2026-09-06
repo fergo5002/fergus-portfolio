@@ -32,6 +32,7 @@ Conventions: one line per sub-project below, state in bold, then a dated log. St
 | G4 | Circuit Poker (replaces planned six-max poker) | **live** | `codex/arcade-rebuild` | #15 | Single-player draw; real preview completion, persisted posting, audio, replay and forget |
 | P1 | Play your website | **queued** | | | |
 | L1 | Launch | **queued** | | | |
+| T8 | Atlas, Group Lore, Pocket Redact, Prove It and Resonance | **live** | `codex/selected-tools-studio` | [#19](https://github.com/fergo5002/fergus-portfolio/pull/19), merge `c029de1` | `dpl_7qEUqrsGnkh4cusugzX3nNxqgWeM` READY, canonical aliases assigned; five desktop and ten mobile workflows verified live |
 
 ## Decisions that changed the design after 2026-09-03
 

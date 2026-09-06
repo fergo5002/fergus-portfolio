@@ -24,16 +24,26 @@ Nothing from this recovery has been pushed or deployed.
 ## 2026-09-06: five selected studios
 
 Fergus selected Group Lore, Pocket Redact, Prove It and Resonance for a deeper build, plus an
-Obsidian-style file graph. Work continues locally in `f6f8` on `codex/selected-tools-studio`,
-from `f49cb41`. Fergus authorised deployment after local review. Public release is being
-prepared through the normal GitHub checks and personal Vercel project.
+Obsidian-style file graph. Built in `f6f8` on `codex/selected-tools-studio`, from `f49cb41`,
+then deployed with Fergus's approval through [PR #19](https://github.com/fergo5002/fergus-portfolio/pull/19).
+Merge `c029de1ba7cd81780d46608f78b33902e1d3baac` is live on the personal Vercel project:
+`dpl_7qEUqrsGnkh4cusugzX3nNxqgWeM`, READY, canonical aliases assigned and exact SHA verified.
 
 - [x] Public `/tools/atlas`, `/tools/group-lore`, `/tools/pocket-redact`, `/tools/prove-it`
   and `/tools/resonance`, with registry entries, board previews, canonical metadata and
   generated sitemap/agent discovery. Seven unselected experiments remain behind the lab flag.
 - [x] Shared studio furniture and per-tool styles serve the same components in public and local review.
 - [x] Public route/discovery check and both studio browser suites added to the phone CI gate.
-- [ ] Merge the release PR and verify its exact production deployment and canonical workflows.
+- [x] CI run `34035982387` passed check, phone, all four mutation partitions and the mutation gate.
+- [x] Canonical discovery/metadata check, all five desktop workflows and ten mobile workflows
+  verified on `https://fergusoreilly.dev`. Real map, chat portrait, debrief, PDF and WAV downloads work.
+- [x] Local review restored at `http://127.0.0.1:3106/lab`; the public `/lab` remains a 404.
+
+The first CI run found the old tools checker still expected five cards; it now checks all ten
+exact links. The live Atlas proof also found that `Files3` matched the initial `Files34` sample,
+allowing the test to export before import finished. Waiting for the exact file-count metric
+fixes the test; Atlas's real three-file import and saved map then passed on the canonical host.
+No application change was needed for either checker correction.
 
 - [x] Atlas replaces Code Atlas in the lab: broad file/folder/ZIP intake, public GitHub import,
   manually ticked force graph, drag/pin/zoom/focus, file inspection, explainable links, local
