@@ -476,3 +476,22 @@ describe("the phone nav scrolls rather than clips", () => {
     expect(nav).toContain("overflow: hidden");
   });
 });
+
+describe("small phone fixes (2026-09-06)", () => {
+  const rule = (selector: string) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+  };
+
+  it("keeps an invalid contact field out from under the fixed nav", () => {
+    // Native validation scrolls the first invalid field to the top of the
+    // viewport, which on this site is under a 44px fixed bar: seen live, the
+    // "fill out this field" bubble pointed at a field the nav was covering.
+    expect(rule(".cform__input")).toMatch(/scroll-margin-top:\s*calc\(var\(--nav-h\)/);
+    expect(rule(".term__input")).toMatch(/scroll-margin-top:\s*calc\(var\(--nav-h\)/);
+  });
+
+  it("lets a one-line code box wrap when asked, so the MCP endpoint is whole on a phone", () => {
+    expect(css).toMatch(/\.prose__pre--wrap code\s*\{[^}]*white-space: pre-wrap/);
+  });
+});

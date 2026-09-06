@@ -156,12 +156,33 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
     return extra;
   };
 
+  /**
+   * How many characters fit on one line of this terminal's output, measured
+   * from the face it draws with rather than assumed. `help` lays itself out
+   * in one column when there are fewer than sixty. Measured per command, on a
+   * throwaway probe, because the drawer's width is the viewport's and a phone
+   * rotates.
+   */
+  const measureCols = (): number | undefined => {
+    const scroll = scrollRef.current;
+    if (!scroll) return undefined;
+    const probe = document.createElement("span");
+    probe.textContent = "0".repeat(20);
+    probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit";
+    scroll.appendChild(probe);
+    const ch = probe.getBoundingClientRect().width / 20;
+    scroll.removeChild(probe);
+    if (!ch) return undefined;
+    return Math.floor(scroll.clientWidth / ch);
+  };
+
   const run = (raw: string) => {
     historyStore.dispatch({ type: "typed", cmd: raw });
     setCursor(null);
 
     const res = runCommand(raw, {
       history: commands,
+      cols: measureCols(),
       uptimeMs: frame.current.uptimeMs,
       theme: settings.theme,
       reducedMotion,

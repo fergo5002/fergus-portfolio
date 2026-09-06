@@ -110,18 +110,73 @@ const byRankThenName = (a: CommandDef, b: CommandDef): number => {
  * disagree. Pure over its argument, and independent of registration order:
  * sections print in `HELP_GROUPS` order and commands by rank, then name.
  */
-export function helpLines(defs: CommandDef[]): string[] {
+export function helpLines(defs: CommandDef[], opts: { cols?: number } = {}): string[] {
+  const cols = opts.cols;
+  const narrow = cols !== undefined && cols < NARROW_COLS;
   const listed = defs.filter((d) => !d.hidden && d.help);
   const sections: string[][] = [];
   for (const group of HELP_GROUPS) {
     const own = listed
       .filter((d) => (d.group ?? "shell") === group.id)
       .sort(byRankThenName)
-      .map((d) => `    ${d.help}`);
-    const lines = group.id === "shell" ? [...own, ...HELP_FOOT] : own;
+      .flatMap((d) => (narrow ? narrowHelp(d.help!, cols!) : [`    ${d.help}`]));
+    const foot = narrow ? HELP_FOOT.flatMap((line) => wrapDots(line.trim(), cols! - 4).map((l) => `    ${l}`)) : HELP_FOOT;
+    const lines = group.id === "shell" ? [...own, ...foot] : own;
     if (lines.length === 0) continue;
     sections.push([`  ${group.title}`, ...lines]);
   }
   const body = sections.flatMap((section, i) => (i === 0 ? section : ["", ...section]));
   return [...HELP_HEAD, ...body];
+}
+
+/**
+ * Under this many columns `help` is one column: the command on its own line
+ * and the description wrapped beneath it. The two-column table was written for
+ * eighty, and a phone drawer measures about thirty-eight in this face; seen
+ * live on 2026-09-06, "who else is on the tube" wrapped to leave "tube" alone
+ * on a line under a different command.
+ */
+export const NARROW_COLS = 60;
+
+/** `name<two or more spaces>description` as two indented lines, the second wrapped. */
+function narrowHelp(help: string, cols: number): string[] {
+  const at = help.search(/\s{2,}/);
+  if (at < 0) return [`    ${help}`];
+  const name = help.slice(0, at);
+  const desc = help.slice(at).trim();
+  return [`    ${name}`, ...wrapWords(desc, cols - 6).map((l) => `      ${l}`)];
+}
+
+/** Greedy word wrap. A single word longer than the width stands alone rather than being cut. */
+function wrapWords(text: string, width: number): string[] {
+  const out: string[] = [];
+  let line = "";
+  for (const word of text.split(/\s+/)) {
+    if (!word) continue;
+    if (line && line.length + 1 + word.length > width) {
+      out.push(line);
+      line = word;
+    } else {
+      line = line ? `${line} ${word}` : word;
+    }
+  }
+  if (line) out.push(line);
+  return out;
+}
+
+/** Wrap a ` · ` separated list at the separators, never inside an item. */
+function wrapDots(text: string, width: number): string[] {
+  const out: string[] = [];
+  let line = "";
+  for (const item of text.split(" · ")) {
+    const next = line ? `${line} · ${item}` : item;
+    if (line && next.length > width) {
+      out.push(line);
+      line = item;
+    } else {
+      line = next;
+    }
+  }
+  if (line) out.push(line);
+  return out;
 }

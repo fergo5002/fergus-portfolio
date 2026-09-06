@@ -728,6 +728,9 @@ html.crt-off body {
   text-shadow: var(--glow);
   caret-color: var(--green-bright);
   min-width: 0;
+  /* Anything that scrolls this into view (the status bar's prompt does)
+     lands it under the fixed nav otherwise. */
+  scroll-margin-top: calc(var(--nav-h) + var(--sp-3));
 }
 .term__input::placeholder {
   color: var(--green-dim);
@@ -2384,6 +2387,13 @@ html.is-gravity .statusbar {
     justify-content: center;
     padding: 0;
   }
+  /* The drawer's handle is a thumb target on any touchscreen, wide or narrow.
+     Its layout in a narrow bar (stretched, centred) is the narrow block's job
+     at the end of this file. */
+  .statusbar__prompt {
+    min-width: 44px;
+    min-height: 44px;
+  }
   .skiplink,
   .talk__cta {
     min-height: 44px;
@@ -2716,6 +2726,14 @@ h4.prose__h {
 
 .prose__pre code {
   white-space: pre;
+}
+/* The one exception, opted into per block: a single line that is an address
+   rather than code (the MCP endpoint) wraps, because a phone cannot show a
+   64-character URL in a 358px box and a scrollbar under one line reads as a
+   cut-off. Real code keeps scrolling; wrapping it changes what it says. */
+.prose__pre--wrap code {
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
 /* ----- prose tables ------------------------------------------------------
@@ -3165,6 +3183,10 @@ h4.prose__h {
 .cform__input {
   width: 100%;
   min-width: 0;
+  /* Native validation scrolls the first invalid field to the top of the
+     viewport, which is under a fixed 44px bar here. Seen live on 2026-09-06:
+     the "fill out this field" bubble pointed at a field the nav covered. */
+  scroll-margin-top: calc(var(--nav-h) + var(--sp-3));
   background: var(--bg-panel);
   border: 1px solid var(--green-line);
   border-radius: var(--radius);

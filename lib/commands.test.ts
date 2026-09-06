@@ -372,3 +372,29 @@ describe("neofetch and the boards", () => {
     expect(before).toEqual(after);
   });
 });
+
+describe("help in a narrow terminal (2026-09-06)", () => {
+  // A phone drawer is about 38 columns of this mono face, and the two-column
+  // help table was written for eighty. Seen live: "who else is on the tube"
+  // wrapping to leave "tube" alone on a line under a different command.
+  const narrow = runCommand("help", { cols: 40 });
+  const wide = runCommand("help", { cols: 80 });
+
+  it("puts each description on its own line under its command", () => {
+    expect(narrow.type).toBe("output");
+    if (narrow.type !== "output") return;
+    const at = narrow.lines.indexOf("    gravity");
+    expect(at).toBeGreaterThan(0);
+    expect(narrow.lines[at + 1]).toMatch(/^ {6}drop the page/);
+  });
+
+  it("fits every line into the width it was given", () => {
+    if (narrow.type !== "output") return;
+    for (const line of narrow.lines) expect(line.length, line).toBeLessThanOrEqual(40);
+  });
+
+  it("leaves the wide layout exactly as it was", () => {
+    expect(wide).toEqual({ type: "output", lines: HELP_LINES });
+    expect(runCommand("help")).toEqual({ type: "output", lines: HELP_LINES });
+  });
+});

@@ -8,7 +8,7 @@ export const nav = [
   defineCommand({
     name: "help",
     aliases: ["?", "man"],
-    run: () => ok(helpLines(listCommands())),
+    run: (_args, ctx) => ok(helpLines(listCommands(), { cols: ctx.cols })),
   }),
 
   defineCommand({

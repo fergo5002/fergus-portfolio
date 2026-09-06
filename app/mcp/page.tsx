@@ -101,7 +101,7 @@ export default function McpPage() {
 
       <Window title="endpoint">
         <div className="prose">
-          <pre className="prose__pre">
+          <pre className="prose__pre prose__pre--wrap">
             <code>{`POST ${MCP_ENDPOINT}`}</code>
           </pre>
           <p className="prose__p">
