@@ -110,7 +110,7 @@ await check("atlas", async () => {
     .getByText("Finding connections…", { exact: true })
     .waitFor({ state: "hidden" });
   await page.waitForFunction(() =>
-    document.querySelector(".lab-metrics")?.textContent?.includes("Files3"),
+    document.querySelector(".lab-metrics dd")?.textContent === "3",
   );
   const saved = JSON.parse(
     await readFile(await save("Save map + extracted text"), "utf8"),
@@ -129,7 +129,7 @@ await check("atlas", async () => {
     .waitFor({ state: "hidden" });
   await button("Explore an example").click();
   await page.waitForFunction(() =>
-    document.querySelector(".lab-metrics")?.textContent?.includes("Files34"),
+    document.querySelector(".lab-metrics dd")?.textContent === "34",
   );
   const graph = page.locator(".atlas-canvas");
   await graph.scrollIntoViewIfNeeded();
