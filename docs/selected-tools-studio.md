@@ -1,7 +1,7 @@
 # Five tool studios
 
-Fergus's selected build-out, 6 September 2026. Deployment authorised after local review.
-The public release adds these five to `/tools`, with individual routes under `/tools/<slug>`.
+Fergus's selected build-out, 6 September 2026. Deployed after local review through PR #19.
+All five are live at [the tools board](https://fergusoreilly.dev/tools), with individual routes under `/tools/<slug>`.
 Release status and deployment evidence live in `docs/PROGRESS.md`.
 
 - **Atlas:** a physics graph of uploaded files, folders, ZIPs or a public GitHub repository. Every admitted file has a node. Readable formats get text extraction; other formats retain metadata. Connections identify containment, explicit references or shared terms. Search, inspect, focus, drag, pin, zoom and export.
