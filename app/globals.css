@@ -403,6 +403,20 @@ html.crt-off body {
   color: var(--amber);
   border-bottom-color: var(--amber);
 }
+/* `cd arcade` is a button in a row of links: the arcade is not a page, it is a
+   program the terminal hosts, so the nav asks the shell for it. It wears the
+   link's clothes and nothing of the button's. */
+.nav__link--cmd {
+  appearance: none;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  cursor: pointer;
+}
 
 /* ----- prompt line ------------------------------------------------------- */
 /* The prompt line's text is drawn here, not written into the document.
@@ -1858,16 +1872,29 @@ html.js .exp__spine {
   }
 
   /* ── nav ────────────────────────────────────────────────────────────────
-     The prompt is the whole reason the bar overflowed: measured at 464-539px of
-     content in a 393px bar, so "cd projects" sat off-screen on every route with
-     no affordance suggesting it was there. The path is already in the status bar
-     at the bottom, so dropping the prompt here loses no information. */
+     The prompt is the first thing to go: measured at 464-539px of content in a
+     393px bar, so "cd projects" sat off-screen on every route with no
+     affordance suggesting it was there. The path is already in the status bar
+     at the bottom, so dropping the prompt here loses no information.
+
+     Then the links themselves stopped fitting. This block was written for four
+     of them and spread them across the bar; by 2026-09-06 there were six (seven
+     with the arcade), the list ended at 551px in a 390px viewport, and "cd
+     tools" and "cd mcp" were off the edge with nothing to scroll. Fergus chose
+     a sideways-scrolling list over shorter labels or a menu. The LIST scrolls
+     and the bar does not, so the reading-progress line drawn on `.nav::after`
+     stays put. The mask fades the last 32px so a clipped link reads as "more
+     this way" rather than as the end; the list's own right padding is the same
+     32px, so scrolled to the end the fade sits over padding and the last link
+     is whole. The scrollbar is hidden because the fade is the affordance and a
+     scrollbar under a 44px bar is a second, uglier one. Nav.tsx moves the
+     active link into view on each route. */
   .nav {
     font-size: 0.8rem;
     gap: 0;
-    padding: 0 var(--sp-3);
-    justify-content: center;
-    overflow-x: visible;
+    padding: 0;
+    justify-content: flex-start;
+    overflow: hidden;
   }
   .nav__prompt {
     display: none;
@@ -1875,8 +1902,19 @@ html.js .exp__spine {
   .nav__list {
     display: flex;
     width: 100%;
-    justify-content: space-between;
-    gap: var(--sp-2);
+    gap: var(--sp-1);
+    padding: 0 32px 0 var(--sp-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 32px), transparent);
+  }
+  .nav__list::-webkit-scrollbar {
+    display: none;
+  }
+  .nav__list li {
+    flex: none;
   }
   /* Real touch targets. 44px is the floor Apple and WCAG 2.2 both land on, and
      these were 20px tall links in a 44px bar. 40 was still four short of the

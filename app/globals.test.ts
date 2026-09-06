@@ -342,28 +342,28 @@ describe("prose tables clear 4.5:1 on every theme", () => {
  * The phone check cannot catch this coming back. It drives 320 and 390 only, so
  * the merged version passes it perfectly. This is the guard instead.
  */
-describe("the touch bar separates thumb size from screen space", () => {
-  /** Every block with exactly this prelude, matched by counting braces. */
-  function mediaBlocks(prelude: string): string {
-    const needle = `@media ${prelude} {`;
-    const found: string[] = [];
-    for (let from = 0; ; ) {
-      const at = css.indexOf(needle, from);
-      if (at < 0) break;
-      const open = at + needle.length - 1;
-      let depth = 0;
-      let i = open;
-      for (; i < css.length; i++) {
-        if (css[i] === "{") depth++;
-        else if (css[i] === "}" && --depth === 0) break;
-      }
-      found.push(css.slice(open + 1, i));
-      from = i + 1;
+/** Every block with exactly this prelude, matched by counting braces. */
+function mediaBlocks(prelude: string): string {
+  const needle = `@media ${prelude} {`;
+  const found: string[] = [];
+  for (let from = 0; ; ) {
+    const at = css.indexOf(needle, from);
+    if (at < 0) break;
+    const open = at + needle.length - 1;
+    let depth = 0;
+    let i = open;
+    for (; i < css.length; i++) {
+      if (css[i] === "{") depth++;
+      else if (css[i] === "}" && --depth === 0) break;
     }
-    if (found.length === 0) throw new Error(`no @media ${prelude} block`);
-    return found.join("\n");
+    found.push(css.slice(open + 1, i));
+    from = i + 1;
   }
+  if (found.length === 0) throw new Error(`no @media ${prelude} block`);
+  return found.join("\n");
+}
 
+describe("the touch bar separates thumb size from screen space", () => {
   const touch = mediaBlocks("(hover: none)");
   const touchAndNarrow = mediaBlocks("(hover: none) and (max-width: 768px)");
 
@@ -396,5 +396,33 @@ describe("the arcade measures the same cell it draws", () => {
     const arcade = /\.arcade\s*\{([^}]*)\}/.exec(css)?.[1] ?? "";
     expect(arcade).toContain("touch-action: none");
     expect(arcade).toContain("overscroll-behavior: contain");
+  });
+});
+
+describe("the phone nav scrolls rather than clips", () => {
+  // Six links (seven with the arcade) do not fit a 390px bar. Measured live on
+  // 2026-09-06: the list ended at 551px in a 390px viewport, "cd tools" and
+  // "cd mcp" were off the edge with nothing to scroll, and the phone check
+  // called the route ok. Fergus chose a sideways-scrolling list with an edge
+  // fade over shorter labels or a menu.
+  const narrow = mediaBlocks("(max-width: 768px)");
+  const list = /\.nav__list\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? "";
+
+  it("lets the list scroll sideways and hides the scrollbar", () => {
+    expect(list).toContain("overflow-x: auto");
+    expect(list).toContain("scrollbar-width: none");
+  });
+
+  it("fades the trailing edge so a clipped link reads as more, not as the end", () => {
+    expect(list).toMatch(/mask-image:\s*linear-gradient/);
+  });
+
+  it("no longer spreads the links to fill a bar they cannot fit", () => {
+    expect(list).not.toContain("justify-content: space-between");
+  });
+
+  it("keeps the bar itself from scrolling, so the progress line stays put", () => {
+    const nav = /\.nav\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? "";
+    expect(nav).toContain("overflow: hidden");
   });
 });

@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { complete, runCommand } from "@/lib/commands";
 import type { SystemEffect } from "@/lib/commands";
 import { historyStore, initialHistory } from "@/lib/history";
+import { subscribeRequests, takeRequest } from "@/lib/shell-request";
 import { listKeys, removeKeys } from "@/lib/forget";
 import { localPresence } from "@/lib/presence";
 import { arcadeSession, markArcadeSeen } from "@/lib/arcade/session";
@@ -191,6 +192,22 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
       if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     });
   };
+
+  // A command asked for from outside the terminal (the nav's `cd arcade`).
+  // Drained once on mount, which is how the drawer runs a request that opened
+  // it, and again whenever one arrives while this terminal is already up.
+  // Through a ref so the effect keeps one identity and still runs the current
+  // `run`, with today's history and settings in it.
+  const runRef = useRef(run);
+  runRef.current = run;
+  useEffect(() => {
+    const drain = () => {
+      const cmd = takeRequest();
+      if (cmd) runRef.current(cmd);
+    };
+    drain();
+    return subscribeRequests(drain);
+  }, []);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
