@@ -34,3 +34,21 @@ describe("animate only what the visitor has not seen", () => {
     expect(route).toContain("markNavigated()");
   });
 });
+
+describe("scrolled past during a slow hydration counts as seen (review, 2026-09-06)", () => {
+  // A visitor waiting four seconds for the JavaScript scrolls. When the effect
+  // finally runs, a block above the viewport has been on screen already;
+  // marking it unseen would hide content they read a moment ago, until they
+  // scrolled back up. Only a block still below the fold is genuinely unseen.
+  it("the reveal hides only what is still below the fold", () => {
+    const late = raster.slice(raster.indexOf("if (isLateHydration())"), raster.indexOf('el.classList.add("is-unseen")'));
+    expect(late).toContain("rect.top < window.innerHeight");
+    expect(late).not.toContain("rect.bottom > 0");
+  });
+
+  it("a view-triggered heading already on or above the screen is left readable", () => {
+    const view = scramble.slice(scramble.indexOf('trigger === "view"'));
+    expect(view).toContain("isLateHydration()");
+    expect(view).toContain("getBoundingClientRect().top < window.innerHeight");
+  });
+});

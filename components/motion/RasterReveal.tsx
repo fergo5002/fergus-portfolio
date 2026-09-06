@@ -55,8 +55,12 @@ export default function RasterReveal({
     }
 
     if (isLateHydration()) {
+      // On screen, or already scrolled past while the JavaScript was on its
+      // way: both have been seen, and hiding either would take away content
+      // the visitor was reading a moment ago. Only what is still below the
+      // fold is genuinely unseen.
       const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight && rect.bottom > 0) {
+      if (rect.top < window.innerHeight) {
         reveal(true);
         return;
       }

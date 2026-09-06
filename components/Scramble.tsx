@@ -69,6 +69,11 @@ export default function Scramble({
     };
 
     if (trigger === "view" && hostRef.current) {
+      // A heading the visitor scrolled to while the JavaScript was on its way
+      // is on screen or above it by the time this runs, and the observer
+      // would fire at once and scramble a line they are reading. Seen is
+      // seen. Only a heading still below the fold decodes as it arrives.
+      if (isLateHydration() && hostRef.current.getBoundingClientRect().top < window.innerHeight) return;
       const observer = new IntersectionObserver(
         (entries) => {
           for (const entry of entries) {
