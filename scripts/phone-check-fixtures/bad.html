@@ -48,5 +48,10 @@
   <button id="edge-tap" type="button">43</button>
 </p>
 <p id="edge-contrast">Grey on white at 4.29 to 1, a hair under the floor.</p>
+<!-- A control past the right edge of the viewport with nothing to scroll.
+     The shape of two nav links that shipped unreachable on every phone
+     while the overflow check stayed green, because a fixed bar does not
+     widen the document. -->
+<a id="offscreen-link" href="#fine" style="position:absolute;left:420px;top:600px;width:60px;height:48px;line-height:48px">off</a>
 </body>
 </html>

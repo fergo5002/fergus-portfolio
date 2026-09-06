@@ -9,6 +9,9 @@
  *   input-font    an input, textarea or select whose computed font-size is under
  *                 16px (iOS zooms the whole page when one is focused)
  *   tap-target    a tappable element whose box is under 44 by 44 CSS px
+ *   unreachable   a control past either side of the viewport with no ancestor
+ *                 that scrolls sideways, so no thumb can ever reach it (a fixed
+ *                 bar does not widen the document, so `overflow` cannot see it)
  *   contrast      text whose composited contrast, sampled from the screenshot,
  *                 is under 4.5:1
  *
@@ -481,6 +484,34 @@ function auditInPage({ minInput, minTap }) {
     failures.push({ check: "tap-target", el: path(el), detail: size });
   }
 
+  // 3b. Reachability. A control past either side of the viewport with nothing
+  // to scroll is a control nobody can press. This is how two nav links shipped
+  // invisible on every phone while the overflow check stayed green: the nav is
+  // a fixed bar, and a fixed bar does not widen the document. The links were
+  // listed under `offscreen` on every run, and the route said ok.
+  //
+  // A control inside an ancestor that genuinely scrolls sideways is reachable
+  // by a thumb and is left alone. `aria-hidden` subtrees are not controls a
+  // person is offered (the contact form's honeypot lives at -9999px).
+  const scrollsSideways = (el) => {
+    for (let a = el.parentElement; a; a = a.parentElement) {
+      const cs = getComputedStyle(a);
+      if ((cs.overflowX === "auto" || cs.overflowX === "scroll") && a.scrollWidth > a.clientWidth + 1) return true;
+    }
+    return false;
+  };
+  for (const el of document.querySelectorAll("a, button, [role=button], input, select, textarea")) {
+    if (!visible(el) || el.type === "hidden" || el.closest("[aria-hidden=true]")) continue;
+    const r = el.getBoundingClientRect();
+    if (r.right <= viewportWidth + 1 && r.left >= -1) continue;
+    if (scrollsSideways(el)) continue;
+    failures.push({
+      check: "unreachable",
+      el: path(el),
+      detail: `${Math.round(r.left)}..${Math.round(r.right)}px across a ${viewportWidth}px viewport, nothing to scroll`,
+    });
+  }
+
   // 4. Text runs, for the contrast pass outside the page.
   //
   // A rectangle outside the photographed viewport is dropped here and the
@@ -910,7 +941,7 @@ async function runAll(targets, outDir) {
 /* Reporting                                                            */
 /* ------------------------------------------------------------------ */
 
-const CHECKS = ["overflow", "input-font", "tap-target", "contrast", "assets", "layout-moved", "skipped"];
+const CHECKS = ["overflow", "input-font", "tap-target", "unreachable", "contrast", "assets", "layout-moved", "skipped"];
 
 /** Prints the table and the failure lines. Returns true if anything failed. */
 function printSummary(results) {
@@ -970,14 +1001,20 @@ function labelFor(route) {
   return route.replace(/^\//, "").replace(/\//g, "_") || "root";
 }
 
-/** Every `/tools*` path the running site's sitemap lists. */
+/**
+ * Every path the running site's sitemap lists, except that only the first two
+ * articles come along: the article template is one template, and eleven copies
+ * of it would triple the run for no new finding. Until 2026-09-06 this kept
+ * `/tools*` alone, so the home page, the nav and the status bar on every
+ * route had never been under this instrument at all.
+ */
 async function routesFromSitemap(base) {
   const res = await fetch(new URL("/sitemap.xml", base));
   if (!res.ok) throw new Error(`sitemap.xml answered ${res.status}`);
   const xml = await res.text();
-  return [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)]
-    .map((m) => new URL(m[1]).pathname)
-    .filter((p) => p === "/tools" || p.startsWith("/tools/"));
+  const paths = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => new URL(m[1]).pathname);
+  const articles = paths.filter((p) => p.startsWith("/writing/")).slice(0, 2);
+  return [...paths.filter((p) => !p.startsWith("/writing/")), ...articles];
 }
 
 /* ------------------------------------------------------------------ */
@@ -1024,6 +1061,11 @@ async function selfTest(args) {
         ["input-font", "input#edge-input"],
         ["tap-target", "button#edge-tap"],
         ["contrast", "p#edge-contrast"],
+        // Off the side of the page with nothing to scroll. Added 2026-09-06
+        // after two nav links shipped exactly like this on every phone and the
+        // check stayed green: it was listing them under `offscreen` and
+        // calling the route ok.
+        ["unreachable", "a#offscreen-link"],
       ]) {
         if (!caught(r, check, el)) problems.push(`${r.profile} bad: ${check} on ${el} was not caught`);
       }
@@ -1068,6 +1110,12 @@ async function selfTest(args) {
     }
 
     for (const r of results.filter((r) => r.label === "good")) {
+      // The rail: a link past the edge of a container that scrolls sideways
+      // is reachable, and the good page asserts zero failures below, so this
+      // names the case rather than adding a check.
+      if (r.failures.some((f) => f.check === "unreachable" && f.el.includes("a#rail-link"))) {
+        problems.push(`${r.profile} good: a link inside a sideways-scrolling rail was called unreachable`);
+      }
       if (r.failures.length) {
         problems.push(
           `${r.profile} good: ${r.failures.length} failure(s) on a page with none: ${r.failures.map((f) => `${f.check} ${f.el}`).join("; ")}`,

@@ -133,6 +133,12 @@
 </div>
 <div id="hero"></div>
 <p id="shift">Under a band only a coarse pointer sees, and read where it is drawn.</p>
+<!-- A link past the edge of a rail that scrolls sideways. Reachable by a
+     thumb, so it must never be reported as unreachable. -->
+<div id="rail" style="overflow-x:auto;width:200px;white-space:nowrap">
+  <a href="#fine" style="display:inline-block;width:150px;height:48px;line-height:48px">rail a</a>
+  <a id="rail-link" href="#fine" style="display:inline-block;width:150px;height:48px;line-height:48px">rail b</a>
+</div>
 <div id="tall"></div>
 </body>
 </html>
