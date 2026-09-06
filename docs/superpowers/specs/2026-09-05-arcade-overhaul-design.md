@@ -51,11 +51,13 @@ lowercase voice with marquee and canvas text in uppercase, the way a cabinet's o
 ├─ .crt__screen (DOM, z:1) ─────────── the page, `visibility: hidden` while the room is open
 ├─ .arcade-room (DOM, fixed, z:8990) ─ the arcade: transparent between panels so the tube shows
 ├─ CRT glass overlays (z:8997..9000) ─ scanlines, vignette, sheen, flicker, unchanged
-└─ status bar (z:9100) ────────────── stays visible: the arcade is a program on this machine
+└─ status bar (z:9100) ────────────── hidden while the room is open; the room has its own controls
 ```
 
-The nav and the shell drawer are hidden while the room is open (`html.arcade-open`), because both
-sit at 9050 and above and would draw over the arcade. Both come back on exit. The drawer is where
+The nav, shell drawer and status bar are hidden while the room is open (`html.arcade-open`), because
+they sit above the room and would draw over it. The status bar's prompt button could also unmount
+the terminal hosting the arcade. All come back on exit. This paragraph and the diagram were
+reconciled against the implementation on 2026-09-06. The drawer is where
 the room was launched from on every route but the home page, and it must be visible again after
 Escape; `scripts/arcade-collection-check.mjs` asserts that.
 

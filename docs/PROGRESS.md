@@ -6,6 +6,27 @@
 **Project:** FergusOS Terminal portfolio (`C:/Dev/fergus-portfolio`)
 **GitHub:** https://github.com/fergo5002/fergus-portfolio (public since 2026-09-03)
 
+## 2026-09-06: design context and arcade diagnosis
+
+`docs/fergusos-context.md` maps the design premise, public identity, current components,
+tokens, assets, motion, tool boundaries and verification lessons. The original arcade
+task had read the relevant context and inspected screenshots; its separate fonts,
+palette and modal still violated the requested site styling. This was a failure to
+apply and judge against that context, not evidence of a missing library.
+
+The current arcade presentation is PR #16 (`3b1a660`) plus PR #18 (`f5080e9`): a room
+under the glass, power-cycle entrance, live cabinets, shared theme colours and Hall
+of Fame. The older release entries below describe their own historical commits.
+`AGENTS.md`'s stale native-modal summary and the overhaul spec's status-bar diagram
+are reconciled to the current implementation. Changes in this session are documentation
+only, held locally on `codex/fergusos-context-audit`; no push or deployment was requested.
+
+Evidence: live route presentation review, original/current screenshots, desktop and
+390px WebKit arcade captures, and a fresh wheel experiment. The room moved 474px,
+removing its Lenis exemption reduced movement to 0px, and restoring it restored 474px
+while the background stayed at 600px. Physical phones, GPU frame rates and a complete
+functional regression of the site were not tested in this onboarding.
+
 ## 2026-09-05: public tools rebuild live
 
 Fergus requested an audit, redesign, implementation and production deployment of all five public

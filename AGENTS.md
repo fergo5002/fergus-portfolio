@@ -3,6 +3,17 @@
 Onboarding for any AI agent or developer picking up this project. Read this top-to-bottom
 before touching code. (Claude Code, Cursor, Copilot, and others read `AGENTS.md` by default.)
 
+## Before changing presentation
+
+Read `docs/fergusos-context.md` for the current design, component and asset map and the
+arcade diagnosis. Inspect the live home/projects and the closest existing surface before
+choosing a direction. Map the proposed feature to the existing fonts, colour tokens,
+glass layers and machine behaviour, then compare a representative implemented state
+against those references before expanding it. A generic design skill does not replace
+this system. Screenshots require visual judgement; functional tests prove their own
+behaviours. Neither establishes the other. Do not call a design coherent merely because
+it is green, animated or passes the test suite.
+
 ## What this is
 
 **FergusOS Terminal**: Patrick Fergus O'Reilly's personal portfolio, styled as a retro CRT
@@ -437,10 +448,12 @@ docs/
 
 ## The terminal is a real subsystem
 
-**Arcade update, 2026-09-05.** Fergus's rebuild request supersedes the character-only
-arcade presentation described below. `ArcadeExperience` loads on demand from Terminal,
-opens a native modal, runs a skippable phosphor corridor and presents six illustrated
-cabinets. Gameplay remains pure in `lib/arcade/engine.ts`; `renderer.ts` draws the canvas;
+**Arcade update, reconciled 2026-09-06.** The inside-the-tube overhaul in PR #16 and
+the focus correction in PR #18 supersede PR #15's native modal, corridor and static
+cabinet art. `ArcadeExperience` loads on demand from Terminal, portals a room below the
+CRT glass, runs a skippable power-cycle and presents six live attract-mode cabinets.
+The underlying page, nav, drawer and status bar are hidden until exit. The room carries
+`data-lenis-prevent`. Gameplay remains pure in `lib/arcade/engine.ts`; `renderer.ts` draws the canvas;
 `CanvasGame` subscribes to the one SystemProvider clock at fixed 60Hz. CSS is isolated in
 `components/arcade/arcade.css`. The old `ArcadeScreen` remains the ProgramSpec fallback.
 The shared contracts still apply: Escape restores the prompt, resize preserves the run,
