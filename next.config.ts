@@ -11,6 +11,10 @@ import { ingestRewrites } from "./lib/analytics";
  * loads `next.config.ts` natively; there is no build step to add.
  */
 const nextConfig: NextConfig = {
+  // Codex checks this repository out below the Windows user directory, where
+  // another package-lock.json exists. Without an explicit root, Next can trace
+  // from that unrelated lockfile instead of the active checkout.
+  outputFileTracingRoot: process.cwd(),
   // ESLint is not configured in this project; skip it during builds.
   eslint: { ignoreDuringBuilds: true },
   // OGL publishes raw ES modules from `src/` rather than a built bundle, so Next

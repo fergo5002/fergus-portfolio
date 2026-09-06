@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
+    "analytics": "node scripts/analytics.mjs",
     "indexnow": "node scripts/indexnow.mjs",
     "phone-check": "node scripts/phone-check.mjs",
     "phone-check:arcade": "node scripts/arcade-phone-check.mjs",
