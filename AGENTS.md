@@ -693,3 +693,5 @@ seeded from its slug. That is deliberately a test card, never a fake screenshot.
 
 Imagery is phosphor-duotoned at rest and resolves to full colour on hover (a light cast on touch,
 where there is no hover to earn it). The duotone hue is per-theme via `--duotone-hue`.
+
+For local agent setup, worktree isolation and acceptance evidence, read `.codex/README.md`.

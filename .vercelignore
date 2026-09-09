@@ -1,0 +1,4 @@
+
+# Local preview ownership proof, never a deployment asset.
+public/codex-worktree-*.txt
+.codex/results/

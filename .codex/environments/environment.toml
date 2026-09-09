@@ -1,0 +1,58 @@
+version = 1
+name = "FergusOS"
+
+[setup]
+script = '''
+set -eu
+node -e "if (Number(process.versions.node.split('.')[0]) !== 24) throw new Error('FergusOS requires Node 24')"
+npm ci
+'''
+
+[setup.win32]
+script = '''
+$ErrorActionPreference = 'Stop'
+node -e "if (Number(process.versions.node.split('.')[0]) !== 24) throw new Error('FergusOS requires Node 24')"
+if ($LASTEXITCODE -ne 0) { throw 'FergusOS Node version check failed.' }
+npm ci
+if ($LASTEXITCODE -ne 0) { throw 'FergusOS dependency installation failed.' }
+'''
+
+[[actions]]
+name = "Dev server"
+icon = "run"
+command = "node scripts/worktree-local.mjs dev"
+
+[[actions]]
+name = "Typecheck"
+icon = "test"
+command = "npx tsc --noEmit"
+
+[[actions]]
+name = "Tests"
+icon = "test"
+command = "npm test"
+
+[[actions]]
+name = "Build"
+icon = "tool"
+command = "node scripts/worktree-local.mjs build"
+
+[[actions]]
+name = "Mutation check"
+icon = "test"
+command = "node scripts/mutation-check.mjs"
+
+[[actions]]
+name = "Phone check (server running)"
+icon = "test"
+command = "node scripts/worktree-local.mjs phone"
+
+[[actions]]
+name = "Arcade phone check (server running)"
+icon = "test"
+command = "node scripts/worktree-local.mjs arcade"
+
+[[actions]]
+name = "Git status"
+icon = "debug"
+command = "git status --short --branch"

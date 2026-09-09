@@ -1402,3 +1402,8 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
     boot (no flash) → power-on → hero scramble; glyph-rain on all 3 routes; reduced-motion
     static fallbacks; 375px mobile; tab-switch pauses the canvas: was NOT run in a browser
     here (this machine tests on deployed prod). Do this on a Vercel preview before merging.
+
+## 2026-09-09: portable agent workflow
+
+Local setup and isolated preview/phone-check commands are in `.codex/README.md`.
+Implemented on `codex/expert-workflow-20260909`; no product deployment is implied.

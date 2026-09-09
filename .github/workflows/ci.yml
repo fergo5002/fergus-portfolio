@@ -35,6 +35,7 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: node --test scripts/worktree-runtime.test.mjs scripts/worktree-server-proof.test.mjs scripts/worktree-local.test.mjs
       - run: npx tsc --noEmit
       - run: npm test
       - run: npm run build

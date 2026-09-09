@@ -12,3 +12,13 @@ tsconfig.tsbuildinfo
 
 # phone-check screenshots
 .phone-check/
+
+# Agent setup is portable; generated local evidence is not.
+!.codex/
+.codex/*
+!.codex/README.md
+!.codex/environments/
+.codex/environments/*
+!.codex/environments/environment.toml
+.codex/results/
+public/codex-worktree-*.txt
