@@ -45,11 +45,9 @@ And we stopped in ten weeks. I have written separately about [what the accelerat
 
 Three things are different at Tigh Sauna, and not one of them is a process or a document. Each is a decision somebody had to make out loud and then own, which is the part that was missing last time rather than the discipline.
 
-| | Presterly | Tigh Sauna |
-|---|---|---|
-| who owns the commercial side | all three of us, so nobody | one person, named |
-| when we checked the economics | week eight | week one, before the schema |
-| who we built it with | a merchant we imagined | live venues, from the start |
+- **One person owns the commercial side and it is not shared.** At Presterly all three of us did, which meant nobody.
+- **The economics got checked in week one**, before the schema, rather than in week eight. It took an afternoon and it changed what we built.
+- **It is built with live venues** rather than for a merchant we imagined. Slower, much less comfortable, and the only version that produces something anyone wants.
 ## What would I tell someone about to start?
 
 Have the argument early. Write down what you each think you are building and who it is for, separately, then compare the answers before anyone writes a line of code.

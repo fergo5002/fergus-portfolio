@@ -27,12 +27,7 @@ And being around people at the same stage, which is worth more than it sounds. T
 
 Everything that actually decides whether the company lives. Nobody was hiding that, and I would have said the same at the time, but it is worth writing down plainly, because the brochure implies otherwise.
 
-| a programme can | a programme cannot |
-|---|---|
-| set a deadline you can't move | fix founder-product fit |
-| open a door in five minutes | make you check the economics |
-| tell you what is normal | make you ring a customer |
-| lend you credibility | tell you the company shouldn't exist |
+It can set a deadline you cannot move, open a door in five minutes, tell you what is normal and lend you its credibility. It cannot fix founder-product fit, make you check the economics, make you ring a customer, or tell you the company should not exist.
 
 Three of us pulling in different directions for ten weeks is [why the company ended](/writing/why-presterly-wound-down). No programme solves that. Nobody in the building knows your co-founders well enough to see it, and by the time it is visible from outside, it is visible because the company has already stopped working.
 

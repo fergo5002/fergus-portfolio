@@ -19,14 +19,9 @@ I rebuilt mine from a single idea: an electron beam painting phosphor behind gla
 
 That constraint is the whole trick, because it stops you adding tricks. Decisions that were aesthetic start having correct answers.
 
-| the usual recipe | what the premise gives you |
-|---|---|
-| a scanline gradient | scroll velocity is beam velocity, so fast scrolling smears |
-| a text-shadow glow | phosphor that keeps glowing after the beam has gone |
-| a vignette | burn-in under anything that sits still long enough |
-| nothing | a route change is a channel change |
+Where the usual recipe paints a scanline gradient, the premise says scroll velocity is beam velocity, so fast scrolling smears. Where it paints a text-shadow glow, the premise says phosphor keeps glowing after the beam has gone. The vignette becomes burn-in under anything that sits still long enough, and a route change becomes a channel change.
 
-None of that right-hand column is something I thought of and then justified. It falls out. That is the difference between a system and a pile of effects.
+None of that is something I thought of and then justified. It falls out. That is the difference between a system and a pile of effects.
 
 ## Phosphor has memory
 

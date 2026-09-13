@@ -73,13 +73,7 @@ And make uninstall soft. Merchants uninstall and reinstall constantly, sometimes
 
 Almost everything that felt like architecture, and almost nothing that felt like plumbing. Two apps in, here is the honest scorecard of what I spent the worry on.
 
-| what I worried about | how much it mattered |
-|---|---|
-| sharding and scaling architecture | none yet |
-| GraphQL against REST | barely, use GraphQL |
-| beautiful embedded app UX | none, nobody mentioned our modals |
-| one webhook secret for every tenant | enormously |
-| logging the raw webhook body | enormously |
+Sharding and scaling architecture: none of it has mattered yet. GraphQL against REST: barely, use GraphQL. A beautiful embedded app UX: nobody has ever mentioned our modals. What did matter, enormously, was the webhook secret and the raw webhook log, and I thought about neither.
 
 One well-indexed Postgres with a shop id on everything carries you past the point where you know whether the product works. The bottom two are the ones to act on today. A single [platform-wide webhook secret](https://shopify.dev/docs/apps/build/webhooks) is correct with one tenant, and with two it only proves the request was signed by one of your merchants, while the tenant comes from a header the caller controls. Use per-install secrets.
 

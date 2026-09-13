@@ -18,15 +18,9 @@ Because two people sitting at exactly the same thirty-three days since their las
 
 One comes every Saturday. Thirty-three days is five missed Saturdays and she is gone. The other comes every couple of months, so thirty-three days is an ordinary Tuesday in the middle of her normal gap, and there is nothing to do about it.
 
-One threshold has to pick which of them to be wrong about.
+One threshold has to pick which of them to be wrong about, and thirty days calls both of them fine.
 
-| customer | usual gap | at 33 days | fixed window says | their own rhythm says |
-|---|---|---|---|---|
-| Saturday regular | 7 days | 5 missed | fine | left a month ago |
-| fortnightly | 14 days | 2 missed | fine | drifting |
-| twice a season | 60 days | halfway | fine | nothing to see |
-
-The top row is the expensive one. She was the best customer in the building, she is already gone, and the dashboard is calm.
+The Saturday regular is the expensive half of that. Five missed Saturdays is a habit that has already broken, she was the best customer in the building, and the dashboard is calm about it. Set the window tighter to catch her and you start messaging the twice-a-season customer in the middle of her ordinary gap, which is how a retention budget gets spent on people who were always coming back.
 
 ## What do you measure instead?
 
