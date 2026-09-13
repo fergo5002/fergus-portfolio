@@ -10,7 +10,7 @@ export const relief: ToolEntry = {
   slug: "relief",
   name: "Relief",
   blurb:
-    "Turn a year of your activity into a contour landscape. Explore the busy hours and quiet weeks, then take it away as an image, a pen-plotter drawing or a 3D mesh.",
+    "Turn a year of your activity into a contour landscape, then take it away as an image, a pen-plotter drawing or a 3D mesh.",
   privacy: "browser",
   privacyLine:
     "Runs in your browser. CSV contents and generated exports are never sent over the network. On the GitHub path, your browser sends the username and pasted token directly to api.github.com; the token is never written to storage.",

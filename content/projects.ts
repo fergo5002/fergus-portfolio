@@ -30,12 +30,12 @@ export const projects: Project[] = [
   {
     slug: "tigh-sauna",
     title: "Tigh Sauna",
-    tagline: "The back of house for Irish saunas. Bookings, payments and customers in one place.",
+    tagline: "We grow Irish saunas. Retention software with the whole stack under it.",
     role: "Co-Founder, Engineering",
     year: "2026 – Present",
     bullets: [
-      "One system a venue runs on: take the booking, take the money, know who turned up, get them back. Nothing to wire together.",
-      "Each storefront is on Shopify, so a venue sells from day one. The booking, the diary and the customer record all follow from the order.",
+      "Bookings, payments, customers and the messaging that brings them back.",
+      "Live venues. Every storefront is on Shopify, so they sell from day one.",
     ],
     stack: ["Next.js", "TypeScript", "Fastify", "PostgreSQL", "Supabase", "Shopify", "Railway", "Vercel"],
     links: [{ label: "live", href: "https://tighsauna.com" }],
@@ -46,12 +46,12 @@ export const projects: Project[] = [
   {
     slug: "presterly",
     title: "Presterly",
-    tagline: "Never miss a reorder: predictive retention for consumable Shopify brands.",
+    tagline: "Predictive reorder messaging for Shopify brands. SMS and WhatsApp, one-tap checkout.",
     role: "Co-Founder & CTO",
     year: "2026",
     bullets: [
-      "Predicted when each customer would run out of each product, then reached them over SMS or WhatsApp at that moment with a one-tap pre-seeded checkout.",
-      "Multi-tenant engine that reached 34 Shopify stores holding 423,000 customers, with nearly €19M of order history analysed. Wound down in August 2026.",
+      "34 stores, 423,000 customers, nearly €19M of order history analysed.",
+      "Wound down in August 2026.",
     ],
     stack: ["TypeScript", "React Router 7", "Prisma", "PostgreSQL", "Shopify", "Klaviyo", "Twilio", "Railway"],
     links: [{ label: "live", href: "https://presterly.com" }],
@@ -61,12 +61,11 @@ export const projects: Project[] = [
   {
     slug: "loira",
     title: "Loira AI (Larry)",
-    tagline: "AI-native project management: an autonomous execution layer for teams.",
+    tagline: "AI project management. Turns what gets said in meetings into tracked work.",
     role: "Founding Engineer",
     year: "Feb – Jun 2026",
     bullets: [
-      "Turns what gets said in meetings, email and chat into tracked, assigned work, so nobody has to chase it.",
-      "TypeScript monorepo: Next.js frontend, Fastify API, BullMQ workers, PostgreSQL + Redis, with LLMs driving task extraction and status inference.",
+      "Founding engineer in Stockholm. I built the pipeline that reads the meeting and files the work.",
     ],
     stack: ["TypeScript", "Next.js", "Fastify", "BullMQ", "PostgreSQL", "Redis", "LLMs"],
     links: [{ label: "live", href: "https://loira.ai" }],
@@ -76,12 +75,11 @@ export const projects: Project[] = [
   {
     slug: "remand",
     title: "Remand",
-    tagline: "Where ideas meet discussion: AI market intelligence from online noise.",
+    tagline: "Finds the market demand hiding in online noise.",
     role: "Full-stack / AI",
     year: "HackEurope 2026",
     bullets: [
-      "Surfaces high-intent market opportunities from scattered online discussion using semantic search and growth-momentum mapping.",
-      "An embedded AI agent synthesises demand signals into positioning, feature ideas, and go-to-market angles.",
+      "Semantic search over scattered discussion, with an agent that turns the signal into positioning.",
     ],
     stack: ["Next.js", "React 19", "FastAPI", "Supabase", "pgvector", "OpenAI", "Anthropic"],
     links: [{ label: "live", href: "https://nybblers.vercel.app" }],
@@ -91,12 +89,12 @@ export const projects: Project[] = [
   {
     slug: "under-the-campanile",
     title: "Under the Campanile",
-    tagline: "A procedurally generated dungeon crawler beneath Trinity's Campanile.",
+    tagline: "A dungeon crawler under Trinity's Campanile.",
     role: "Shaders & Lighting Engineer",
     year: "TCD × Qualcomm",
     bullets: [
-      "Top-down roguelike built from scratch by a team of 8, mentored by a Qualcomm graphics engineer.",
-      "I wrote the lighting: dynamic lights, shadow casting and custom GLSL, in a TypeScript engine on Phaser 3.",
+      "I wrote the lighting: dynamic lights, shadow casting, custom GLSL.",
+      "Team of 8, mentored by a Qualcomm graphics engineer.",
     ],
     stack: ["TypeScript", "Phaser 3", "GLSL", "WebGL"],
     links: [],
@@ -106,11 +104,10 @@ export const projects: Project[] = [
   {
     slug: "contrabot",
     title: "ContraBot",
-    tagline: "A contrarian trading bot that fades the crowd.",
+    tagline: "A trading bot that fades the crowd.",
     role: "Personal project",
     bullets: [
-      "Monitors Reddit sentiment via the Anthropic Claude API, inverts crowd signals, and executes paper trades through Alpaca.",
-      "Position management and P&L tracking, with a backtest and dry-run harness.",
+      "Reads Reddit sentiment with Claude, inverts it, paper trades through Alpaca.",
     ],
     stack: ["Python", "Anthropic API", "Alpaca"],
     links: [],

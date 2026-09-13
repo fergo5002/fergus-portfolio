@@ -13,7 +13,7 @@ export const headlineCheck: ToolEntry = {
   slug: "headline-check",
   name: "Headline check",
   blurb:
-    "Paste a URL and see how its h1 comes out for something that reads HTML without running it. Catches split-text animations that turn a headline into loose letters.",
+    "Paste a URL and see how its h1 reads to something that never runs the JavaScript. Catches split-text animations that shred a headline into loose letters.",
   privacy: "server",
   privacyLine: "URL checks fetch the public page on the server. The HTML playground runs entirely in this browser; pasted source is never uploaded.",
   cantSee: [

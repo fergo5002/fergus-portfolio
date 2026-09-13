@@ -62,30 +62,6 @@
       "expect": "cited"
     },
     {
-      "id": "top-01",
-      "band": "topic",
-      "text": "Why does my split-text hero animation extract as separated letters for crawlers?",
-      "why": "The exact mechanism the article documents, found on this site and fixed on this site.",
-      "source": "split-text-is-costing-you-search",
-      "expect": "cited"
-    },
-    {
-      "id": "top-02",
-      "band": "topic",
-      "text": "Does aria-label fix a headline that is split into one span per character?",
-      "why": "The specific misconception the article corrects: aria-label is an accessibility property, and a text extractor has no reason to read it. A distinctive claim is a better citation test than a generic one.",
-      "source": "split-text-is-costing-you-search",
-      "expect": "cited"
-    },
-    {
-      "id": "top-03",
-      "band": "topic",
-      "text": "Is one Shopify webhook secret shared across every install a security problem?",
-      "why": "The cross-tenant hole that is correct with one merchant and broken with two.",
-      "source": "one-webhook-secret-two-tenants",
-      "expect": "cited"
-    },
-    {
       "id": "top-04",
       "band": "topic",
       "text": "How do I handle Shopify webhooks that arrive out of order or more than once?",
@@ -99,22 +75,6 @@
       "text": "What should I get right first when building a multi-tenant Shopify app?",
       "why": "The article's own framing, and a question with real search demand behind it.",
       "source": "multi-tenant-shopify-apps",
-      "expect": "cited"
-    },
-    {
-      "id": "top-06",
-      "band": "topic",
-      "text": "How do I verify work an AI coding agent says it has finished?",
-      "why": "The verification protocol: evidence in the same breath, delete the fix and watch it fail, local success is a hypothesis.",
-      "source": "agents-will-tell-you-it-works",
-      "expect": "cited"
-    },
-    {
-      "id": "top-07",
-      "band": "topic",
-      "text": "What habits stop AI-agent-written code breaking in production?",
-      "why": "Prod-parity containers, post-deploy checks and a written mistake ledger the agent reads first.",
-      "source": "shipping-with-ai-agents",
       "expect": "cited"
     },
     {

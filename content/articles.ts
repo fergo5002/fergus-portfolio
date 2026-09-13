@@ -35,31 +35,26 @@ export type Article = {
   body: string;
 };
 
-import { agentsShipping } from "./articles/shipping-with-ai-agents";
-import { verificationGap } from "./articles/agents-will-tell-you-it-works";
-import { webhookSecret } from "./articles/one-webhook-secret-two-tenants";
 import { multiTenantShopify } from "./articles/multi-tenant-shopify-apps";
 import { presterlyPostMortem } from "./articles/why-presterly-wound-down";
 import { acceleratorWorth } from "./articles/what-an-accelerator-is-for";
 import { crtThatBehaves } from "./articles/a-crt-that-behaves-like-a-crt";
-import { splitTextSeo } from "./articles/split-text-is-costing-you-search";
-import { splitTextAudit } from "./articles/split-text-audit-2026";
-import { uuidsAgreed } from "./articles/the-test-passed-because-the-uuids-agreed";
-import { qualcommOverlay } from "./articles/a-qualcomm-overlay-appeared-in-our-dungeon";
+import { customerGone } from "./articles/when-is-a-customer-actually-gone";
 
-/** Newest first. This order is the published order everywhere. */
+/**
+ * Newest first. This order is the published order everywhere.
+ *
+ * Cut from eleven to five on 2026-09-13. Fergus kept the four he wanted to be
+ * read and commissioned the fifth; the seven that came down are redirected to
+ * this index in `next.config.ts` rather than left to 404, because they were
+ * published, linked and indexed.
+ */
 export const articles: Article[] = [
-  uuidsAgreed,
-  qualcommOverlay,
-  splitTextAudit,
-  splitTextSeo,
-  agentsShipping,
-  webhookSecret,
+  customerGone,
+  acceleratorWorth,
+  multiTenantShopify,
   presterlyPostMortem,
   crtThatBehaves,
-  verificationGap,
-  multiTenantShopify,
-  acceleratorWorth,
 ].sort((a, b) => b.date.localeCompare(a.date));
 
 export function articleBySlug(slug: string): Article | undefined {

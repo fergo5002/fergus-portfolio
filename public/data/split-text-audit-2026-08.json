@@ -4,7 +4,7 @@
   "runDate": "2026-08-21",
   "generatedAt": "2026-08-21T09:48:37.191Z",
   "script": "scripts/split-text-audit.mjs",
-  "article": "https://fergusoreilly.dev/writing/split-text-audit-2026",
+  "article": "https://fergusoreilly.dev/writing",
   "sample": {
     "source": "Awwwards Sites of the Day",
     "listing": "https://www.awwwards.com/websites/sites_of_the_day/",

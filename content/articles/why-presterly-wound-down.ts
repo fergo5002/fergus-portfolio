@@ -4,78 +4,55 @@ export const presterlyPostMortem: Article = {
   slug: "why-presterly-wound-down",
   title: "Why we wound Presterly down",
   description:
-    "We reached 34 Shopify stores and €19M of order history in ten weeks, then stopped. The reason was not the product and not the market. A founder's post-mortem.",
-  date: "2026-08-14",
+    "34 Shopify stores and €19M of order history in ten weeks, then we stopped. It was not the product and it was not the market. A founder's post-mortem.",
+  date: "2026-08-16",
 
-  updated: "2026-08-21",
+  updated: "2026-09-13",
   tags: ["Startups", "Post-mortem", "Founders"],
   summary:
-    "Post-mortem of Presterly, a Shopify retention startup wound down in August 2026 after ten weeks. Primary cause was founder-product fit and three founders pulling in different directions, not the technology or the market. Secondary lesson: nobody checked unit economics until week eight.",
-  body: `Presterly predicted when a Shopify brand's customers would run out of what they'd bought, then reached them over SMS and WhatsApp at that moment with a checkout already filled in.
-
-It reached 34 stores holding 423,000 customers, analysed nearly €19 million of order history, and got through Meta's approval as a WhatsApp Business Platform Tech Provider. Ten weeks from the first commit.
-
-We wound it down in August 2026.
-
-People assume the technology fell over or the market said no. Neither happened, and pretending otherwise would make this a less useful thing to read.
+    "Post-mortem of Presterly, a Shopify retention startup wound down in August 2026 after ten weeks. The cause was founder-product fit and three founders pulling in different directions, not the technology or the market. Second lesson: nobody checked the unit economics until week eight.",
+  body: `Presterly worked out when a Shopify brand's customers would run out of what they had bought, then messaged them at that moment with a checkout already filled in. It reached 34 stores holding 423,000 customers, analysed nearly €19 million of order history, and got through Meta's approval as a WhatsApp Tech Provider. Ten weeks from the first commit. We wound it down in August 2026.
 
 ## Why did Presterly actually wind down?
 
-Three founders, moving in different directions, for ten weeks. That is the headline cause, and I have stopped dressing it up as a market problem or a technical one.
+Three founders moving in different directions for ten weeks. That is the headline cause and I have stopped dressing it up as a market problem.
 
-Not a falling-out. Nobody behaved badly. We just each had a different idea of what we were building and who it was for, and we never forced the disagreement into the open because there was always something more urgent to ship. Building is a wonderful way to avoid a conversation. You feel productive the entire time you're avoiding it.
+Nobody behaved badly. We each had a different idea of what we were building and who it was for, and we never forced that into the open, because there was always something more urgent to ship. Building is a wonderful way to avoid a conversation.
 
-What that looks like day to day is subtle. Priorities that don't quite line up. Two people solving adjacent problems that don't compose. A feature that one person thinks is the core product and another thinks is a demo. Everyone works hard, everything gets built, and the thing doesn't cohere.
+Day to day it is subtle. Priorities that don't quite line up. A feature one person thinks is the core product and another thinks is a demo. Everyone works hard, everything gets built, and the thing doesn't cohere.
 
-The word for it is founder-product fit, and I had not taken it seriously as a real category of failure before this. I thought it was a soft thing people said. It's the main thing.
+The word for it is founder-product fit. I thought that was a soft thing people said. It is the main thing.
 
-## The lesson I own
+## What did I get wrong myself?
 
-The one that's mine specifically: **nobody looked at the unit economics until about week eight.**
+Nobody looked at the unit economics until about week eight, and that one is mine rather than ours.
 
-Not because we were reckless. Because the idea seemed so obviously good at the start that checking felt like a formality we'd get to. Predicting a reorder and messaging at the right moment is plainly valuable. The margin question felt like it would answer itself.
+Not because we were reckless. The idea seemed so obviously good that checking felt like a formality, and the margin question felt like it would answer itself. It did, in week eight, with a long revenue lead time attached.
 
-It did answer itself, in week eight, and the answer had a long revenue lead time attached to it.
+It is a minor detail next to the founder split. Had the three of us been aligned we would have found it in week two and adjusted. But it is the part I could have fixed in an afternoon, so it is the part I keep.
 
-I want to be precise about how much weight this carries, because it's tempting to make it the headline. It isn't. The maths is a minor detail in why Presterly ended. The founder split is the real story, and if the three of us had been aligned we'd have found the economics in week two and adjusted.
-
-But it's the part I could have personally fixed in an afternoon, so it's the part I keep.
-
-## What would I want asked earlier?
-
-Why I keep saying the venture was wrong instead of saying what I got wrong. If I were interviewing me, that is the question I would push on, and it is a fair one.
-
-I say the venture was wrong rather than saying what I got wrong. That's a real dodge and I've been called on it. The honest version is that I chose to own the technical half, and the thing that killed this company was commercial. I did that at Loira too. I've now done it twice.
-
-The pattern I'm still walking around with is that I keep taking the half I'm comfortable in and hoping someone else has the other half covered. Nobody has ever made me answer when I stop doing that. I don't have a clean answer yet. I'm just no longer pretending it's a coincidence.
+There is a second one underneath it. I chose to own the technical half and hoped somebody else had the commercial half covered. I did that at Loira too. Twice is a pattern, not a coincidence, and I don't have a clean answer for it yet.
 
 ## What was genuinely good about it?
 
-Quite a lot of it, and that is worth saying, because a post-mortem made entirely of self-criticism is its own kind of performance.
+Quite a lot, and saying so matters, because a post-mortem made entirely of self-criticism is its own kind of performance.
 
-**Building fast against real merchants worked.** First commit to live merchant brands in six weeks, inside an accelerator, with a real Shopify install and real order data. The prediction engine was backtested against actual purchase history rather than a synthetic set, which is why we found out early that consumable reorder intervals are much noisier than the pitch deck version.
+Building fast against real merchants worked. First commit to live brands in six weeks, on real installs and real order data, with the prediction engine backtested against actual purchase history rather than a synthetic set. The WhatsApp work was hard and it landed.
 
-**The WhatsApp work was hard and it landed.** Getting through Meta's Tech Provider approval so each merchant onboards their own number through Embedded Signup and keeps ownership of it is not a weekend job. It's a real asset and I'd do it again.
+And we stopped in ten weeks. I have written separately about [what the accelerator was actually for](/writing/what-an-accelerator-is-for). The failure mode I have watched other people fall into is a company that stays technically alive for two years because nobody wants to be the one to say it.
 
-**We stopped in ten weeks.** I've written separately about [what the accelerator was actually for](/writing/what-an-accelerator-is-for). This is the bit I'm most comfortable with. The failure mode I've watched other people fall into is a company that stays technically alive for two years because nobody wants to be the one to say it. Ten weeks of clear evidence is enough evidence.
+## What changed for the next one
 
-## What I changed
+Three things are different at Tigh Sauna, and not one of them is a process or a document. Each is a decision somebody had to make out loud and then own, which is the part that was missing last time rather than the discipline.
 
-I'm building again, a booking and operations product for saunas, with one co-founder rather than two.
-
-Three concrete changes.
-
-**One person owns the commercial side and it isn't a shared responsibility.** My co-founder owns design and business, I own the platform. Not because that's tidier, but because "we'll both do sales" means neither of us does.
-
-**The economics got checked in week one.** Before the schema. It took an afternoon and it changed what we built.
-
-**We're building it with real venues rather than for an imagined one.** Two sauna businesses, in the product, finding the awkward parts early. It's slower and much less comfortable than building in a vacuum, and it's the only version that produces a product anyone wants.
-
+- **One person owns the commercial side and it is not shared.** At Presterly all three of us did, which meant nobody.
+- **The economics got checked in week one**, before the schema, rather than in week eight. It took an afternoon and it changed what we built.
+- **It is built with live venues** rather than for a merchant we imagined. Slower, much less comfortable, and the only version that produces something anyone wants.
 ## What would I tell someone about to start?
 
-Have the argument early. Write down what you each think you are building and who it is for, separately, then compare the answers before you have written a line of code.
+Have the argument early. Write down what you each think you are building and who it is for, separately, then compare the answers before anyone writes a line of code.
 
-Whatever the disagreement is that you can feel and are not naming, the one that keeps not being urgent enough to interrupt shipping, that's the one that ends the company. It will not resolve itself while you build. Building makes it easier to ignore, which is precisely why it's dangerous.
+Whatever the disagreement is that you can feel and are not naming, the one that keeps not being urgent enough to interrupt shipping, that is the one that ends the company. It will not resolve itself while you build. Building makes it easier to ignore, which is exactly what makes it dangerous.
 
 Ten weeks is a cheap way to learn that. Two years is not.`,
 };

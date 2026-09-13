@@ -916,7 +916,7 @@ describe("app/api/mcp/route", () => {
     // 4. tools/call, using a name taken from step 3 rather than a literal, so
     //    this breaks if the advertised list and the callable set ever diverge.
     const search = await post(
-      JSON.stringify(rpc("tools/call", { name: listed[0].name, arguments: { query: "agents" } }, 3)),
+      JSON.stringify(rpc("tools/call", { name: listed[0].name, arguments: { query: "shopify" } }, 3)),
       versioned,
     );
     const searchResult = (await search.json()).result;
@@ -1020,7 +1020,7 @@ describe("check_voice", () => {
 
   it("measures against the caller's own reference, not this site's", () => {
     // The whole point. The population in the answer is the six documents the
-    // caller's profile was built from, not the eleven articles at /writing.
+    // caller's profile was built from, not the articles at /writing.
     const payload = call("check_voice", { profile: saved, draft }).structuredContent as {
       reference: { documents: number; totalWords: number; markers: number };
     };

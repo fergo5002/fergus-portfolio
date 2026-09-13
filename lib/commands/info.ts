@@ -29,7 +29,9 @@ function neofetch(ctx: CommandContext): string[] {
     `Uptime   ${formatUptime(ctx.uptimeMs ?? 0)}`,
     `Shell    fsh 4.0`,
     `Display  ${ctx.theme ?? "green"} phosphor · 4:3`,
-    `Role     Co-Founder & CTO, Presterly`,
+    // Derived, not typed: this line said "Co-Founder & CTO, Presterly" for a
+    // month after that stopped being true.
+    `Role     ${experience[0] ? `${experience[0].role} · ${experience[0].org}` : profile.jobTitle}`,
     `Repos    ${projects.length} shipped · ${experience.length} posts`,
     // By label, not by index: `contact` has grown before and index 0 only
     // happens to be the email.
@@ -57,9 +59,9 @@ function arcadeBlock(ctx: CommandContext): string[] {
 
 function top(): string[] {
   const rows = [
-    ["1", "fergus", "38.2", "12.4", "presterly-engine"],
-    ["7", "fergus", "22.9", "18.1", "prediction-worker"],
-    ["12", "fergus", "11.4", "6.2", "whatsapp-bridge"],
+    ["1", "fergus", "38.2", "12.4", "tigh-retention"],
+    ["7", "fergus", "22.9", "18.1", "booking-worker"],
+    ["12", "fergus", "11.4", "6.2", "presterly-archive"],
     ["19", "fergus", "8.7", "4.0", "trinity-coursework"],
     ["24", "root", "4.1", "2.2", "phosphor-shader"],
     // The one hint that `cd arcade` exists. Not in help, not in completion,

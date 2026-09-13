@@ -53,7 +53,7 @@ describe("isIngestPath", () => {
 describe("trailingSlashTarget", () => {
   it("strips a trailing slash from a real route", () => {
     expect(trailingSlashTarget("/writing/")).toBe("/writing");
-    expect(trailingSlashTarget("/writing/split-text-audit-2026/")).toBe("/writing/split-text-audit-2026");
+    expect(trailingSlashTarget("/writing/why-presterly-wound-down/")).toBe("/writing/why-presterly-wound-down");
   });
 
   it("leaves the root alone", () => {

@@ -24,7 +24,7 @@ export const contactCopy = {
   command: "./say-hello",
   path: "~/contact",
   title: "contact",
-  lede: "Anything you send here lands in my inbox and I answer it myself. Building something, hiring, or backing early companies: all welcome, no agenda needed.",
+  lede: "This lands in my inbox and I answer it myself. No agenda needed.",
 
   fields: [
     {
@@ -59,7 +59,7 @@ export const contactCopy = {
 
   failedTitle: "That didn't send.",
   failedBody:
-    "My end, not yours, and nothing you wrote is lost. The button below opens the same message in your mail app. If that does nothing, copy it and paste it into whatever you do use.",
+    "My end, not yours, and nothing you wrote is lost. The button below opens the same message in your mail app. If that does nothing, copy it instead.",
   failedOpen: "Open it in your mail app",
   failedCopy: "Copy the message",
   failedCopied: "Copied",

@@ -9,7 +9,7 @@ import { profile } from "@/content/profile";
 import { canonical, blogSchema, breadcrumbSchema, articlePath, OG_IMAGE } from "@/lib/seo";
 
 const DESCRIPTION =
-  "Essays on shipping with AI agents, multi-tenant Shopify engineering, why a startup wound down, and the craft of motion on the web.";
+  "Essays on customer retention, multi-tenant Shopify engineering, why a startup wound down, and the craft of motion on the web.";
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name. Spelling
