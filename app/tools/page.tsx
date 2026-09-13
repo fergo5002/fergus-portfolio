@@ -12,7 +12,7 @@ import { OG_IMAGE, breadcrumbSchema, canonical, collectionPageSchema, toolPath }
 import { toolListing } from "@/lib/tools/listing";
 
 const DESCRIPTION =
-  "Small free tools, each one built because something went wrong here first and the fix was worth handing over.";
+  "Small free tools, each one built because something went wrong here first.";
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name.

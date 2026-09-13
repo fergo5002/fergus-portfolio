@@ -14,7 +14,7 @@ export const secondVisit: ToolEntry = {
   slug: "second-visit",
   name: "Second visit",
   blurb:
-    "Drop a bookings or orders export and find out how many first-time customers come back, with the uncertainty beside the number. A real retention model from a business that runs on it.",
+    "Drop a bookings export and see how many first-timers come back, with the uncertainty beside the number. The model a real business runs on.",
   privacy: "browser",
   cantSee: [
     "Why anyone left. Every verdict here is a shape in your own dates. Somebody who moved house and somebody who had a bad time look identical from the outside, and nothing in this tool can tell them apart.",

@@ -18,7 +18,7 @@ export const drift: ToolEntry = {
   slug: "drift",
   name: "Drift",
   blurb:
-    "This is not an AI detector. Paste some things you have written, then a draft, and see how far the draft has moved from the way you actually write.",
+    "This is not an AI detector. Paste things you have written, then a draft, and see how far the draft has drifted from you.",
   privacy: "browser",
   cantSee: [
     "Meaning. Every number here counts how often words and marks turn up, and none of them knows what any of it says.",
@@ -97,7 +97,7 @@ export const driftCopy = {
   announceDemo: "Worked example restored. Build your own profile before measuring your draft.",
 
   demoNote:
-    "Example: my draft measured against the eleven articles at /writing. Build a profile from your pieces to compare your own draft.",
+    "Example: my draft measured against the five articles at /writing. Build a profile from your pieces to compare your own draft.",
   referenceNote:
     "The distance is Burrows's Delta, and a Delta is measured in standard deviations, so it needs a population whose standard deviations they are. That population is your pieces: your own commonest words, and your own variation from one piece to the next. Which is why the number reads in units of your writing and not mine, and why the spread of your own pieces is printed beside it.",
   substitutionNote:

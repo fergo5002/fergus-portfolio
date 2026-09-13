@@ -36,7 +36,7 @@ import { trackToolRun } from "@/lib/tools/events";
  * privacy line say what it says.
  *
  * `reference` is state, not a prop. It starts as the worked example's table,
- * built from my eleven articles on the server, and `onBuild` replaces it with
+ * built from my five articles on the server, and `onBuild` replaces it with
  * one built from the visitor's pieces. Everything downstream reads the state,
  * so once they have pressed build there is no path left that scores their draft
  * against my writing. That was the bug: a Delta is measured in the reference
@@ -92,7 +92,7 @@ export default function DriftTool({
       // The server rendered the worked example. Once a saved profile replaces
       // its reference and profile, replace its report in the same turn too;
       // otherwise the note says the saved profile is active while the numbers
-      // immediately below still say they were built from my eleven articles.
+      // immediately below still say they were built from my five articles.
       setReport(analyse(stored.profile, driftDemo.draft, stored.reference, stored.spread));
       setSession((current) => afterRestore(current, stored.savedAt));
       setNote(driftCopy.savedNote);

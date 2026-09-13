@@ -6,7 +6,7 @@
  *   node scripts/split-text-audit.mjs --collect     # rebuild the seed from Awwwards
  *   node scripts/split-text-audit.mjs               # run the audit, write the dataset
  *
- * **Why this exists.** `/writing/split-text-is-costing-you-search` describes a
+ * **Why this exists.** The write-up that described this was retired on 2026-09-13; this script describes a
  * failure mode: a headline animated one character per element extracts as loose
  * letters for anything doing naive HTML-to-text, which is most of the machinery
  * feeding an answer engine. That article says it happens. Nobody had counted it.
@@ -858,7 +858,7 @@ async function audit() {
     runDate: new Date().toISOString().slice(0, 10),
     generatedAt: new Date().toISOString(),
     script: "scripts/split-text-audit.mjs",
-    article: "https://fergusoreilly.dev/writing/split-text-audit-2026",
+    article: "https://fergusoreilly.dev/writing",
     sample: {
       source: "Awwwards Sites of the Day",
       listing: AWWWARDS_LISTING,

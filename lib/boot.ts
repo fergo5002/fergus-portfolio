@@ -93,9 +93,10 @@ export function typewriterMs(
  * The full sequence is 6.4 seconds of BIOS, and on a phone that is a black
  * screen for longer than most people give a link. Fergus chose a shorter boot
  * for phones over skipping it (2026-09-06): the same story with fewer lines,
- * about two seconds, the skip button still there. The lines are drawn from
- * the same script rather than written fresh, so the phone tells a shorter
- * version of the same boot, not a different one.
+ * the skip button still there. The lines are drawn from the same script rather
+ * than written fresh, so the phone tells a shorter version of the same boot,
+ * not a different one. It ran at about two seconds until 2026-09-13, when
+ * Fergus called it and it went to about three and a half; see `PHONE_BOOT`.
  */
 export type BootProfile = {
   readonly headLines: readonly string[];
@@ -119,15 +120,30 @@ export const FULL_BOOT: BootProfile = {
   handoffMs: HANDOFF_MS,
 };
 
+/**
+ * Lengthened from about 2.1 seconds to about 3.6 on 2026-09-13. Fergus looked
+ * at the two second version on a phone and said it looked bad, which it did,
+ * and the reason was not only that it was short. At 6 and 7 milliseconds a
+ * character the typewriters were not typing: a line simply appeared, whole, and
+ * a BIOS that appears rather than types reads as a flash of unstyled text
+ * rather than a machine starting up. So the speeds are now 14 and 9, which is
+ * slower than the desktop boot on purpose, and a third device line was added
+ * back so the list has a middle rather than a first and last.
+ *
+ * The floor still sits under `BOOT_FAILSAFE_MS`, which is coincidence and not
+ * a constraint: `BootSequence` disarms that timer on mount, so the sequence is
+ * not racing it. See the note on `BOOT_FAILSAFE_MS` for why it must not grow to
+ * accommodate this.
+ */
 export const PHONE_BOOT: BootProfile = {
   headLines: [HEAD_LINES[0]],
-  deviceLines: [DEVICE_LINES[0], DEVICE_LINES[5]],
-  strikeMs: 360,
-  headSpeedMs: 7,
-  deviceSpeedMs: 6,
-  memoryMs: 360,
-  barMs: 320,
-  handoffMs: 220,
+  deviceLines: [DEVICE_LINES[0], DEVICE_LINES[2], DEVICE_LINES[5]],
+  strikeMs: 420,
+  headSpeedMs: 14,
+  deviceSpeedMs: 9,
+  memoryMs: 460,
+  barMs: 480,
+  handoffMs: 300,
 };
 
 /** The floor of one profile: every term is a timer or a ramp that can run late and never early. */

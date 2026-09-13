@@ -68,11 +68,11 @@ export default function HeadlineCheckPage() {
         <p className="hcheck__why-body">
           I found this on my own site, which is the only reason I trust it enough to write a tool
           about it. The homepage name animated one character at a time and extracted as loose
-          letters. The full write-up, including what not to do about it, is here:{" "}
+          letters. It came out of building{" "}
           <Link className="prose__link" href={ARTICLE_PATH}>
-            your split-text animation is eating your headline
+            a CRT that behaves like a CRT
           </Link>
-          .
+          , which is where the same warning sits at the end.
         </p>
       </section>
     </ToolPage>

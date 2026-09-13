@@ -431,13 +431,32 @@ describe("BootSequence is wired to the failsafe", () => {
   });
 });
 
-describe("the phone boot (Fergus, 2026-09-06)", () => {
+describe("the phone boot (Fergus, 2026-09-06, lengthened 2026-09-13)", () => {
   // The full sequence is 6.4 seconds of BIOS on a first visit, and on a phone
   // that is a black screen for longer than most people give a link. Fergus
-  // chose a shorter boot for phones, about two seconds, over skipping it.
-  it("is a real profile with a floor near two seconds", () => {
-    expect(bootFloorMs(PHONE_BOOT)).toBeLessThan(2600);
-    expect(bootFloorMs(PHONE_BOOT)).toBeGreaterThan(1500);
+  // chose a shorter boot for phones over skipping it. The first version ran at
+  // about two seconds and he said it looked bad, so it is now about three and a
+  // half: still well under the desktop boot, long enough to read as a machine
+  // starting up rather than a flash.
+  it("is a real profile with a floor near three and a half seconds", () => {
+    expect(bootFloorMs(PHONE_BOOT)).toBeLessThan(3900);
+    expect(bootFloorMs(PHONE_BOOT)).toBeGreaterThan(3200);
+  });
+
+  // The reason the two second version looked cheap was not only its length.
+  // Both typewriters ran at 6 and 7 milliseconds a character, which is fast
+  // enough that a line appears whole instead of typing, and a BIOS that appears
+  // is just unstyled text. Slower than the desktop boot is deliberate.
+  it("types slowly enough to be seen typing", () => {
+    expect(PHONE_BOOT.headSpeedMs).toBeGreaterThanOrEqual(12);
+    expect(PHONE_BOOT.deviceSpeedMs).toBeGreaterThanOrEqual(8);
+  });
+
+  // A first line and a last line is not a list. The middle one is what makes
+  // the device block read as a machine working through something.
+  it("keeps a middle to the device list", () => {
+    expect(PHONE_BOOT.deviceLines.length).toBeGreaterThanOrEqual(3);
+    expect(PHONE_BOOT.deviceLines.length).toBeLessThan(DEVICE_LINES.length);
   });
 
   it("keeps the full boot's floor exactly where it was", () => {

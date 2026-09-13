@@ -52,19 +52,25 @@ export const profile: Profile = {
   shortName: "Fergus O'Reilly",
   user: "fergus",
   host: "portfolio",
-  // One line on desktop with ~74px to spare. "CS @ Trinity" used to sit in the
-  // middle segment and was cut, not lost: the education line renders directly
-  // beneath this and already says Trinity.
-  tagline: "Technical Founder · Builds beautiful things that scale",
+  // One line on desktop with room to spare, and shorter than the version it
+  // replaced. "CS @ Trinity" used to sit in the middle segment and was cut, not
+  // lost: the education line renders directly beneath this and already says
+  // Trinity.
+  tagline: "Technical Founder · I build things that hold up",
   location: "Dublin, Ireland",
-  education:
-    "BA Computer Science (Major) & Business (Minor) @ Trinity College Dublin, First Class Honours (1.1)",
+  education: "BA Computer Science & Business @ Trinity College Dublin · 1.1",
+  /**
+   * Three short paragraphs, cut from five long ones on 2026-09-13 because
+   * Fergus read the old version and said it was too much to read. The first
+   * one is load bearing twice over: `lib/seo.ts` publishes it as the Person
+   * node's `description` and it is the first thing under `cat about.txt`, so
+   * it has to survive being read on its own, at about 150 characters, without
+   * the two beneath it.
+   */
   bio: [
-    "I'm a builder. I like making things that are genuinely nice to look at, and I like making them hold up once real traffic turns up. Those two pull against each other most days, and getting both is the part I actually enjoy.",
-    "I'm building Tigh Sauna, the back of house for Irish sauna operators: bookings, payments and customers in one place, quick to set up, and built to turn a first visit into a habit.",
-    "I'm starting third year of Computer Science and Business at Trinity College Dublin, on a 1.1 so far, and building full time alongside it.",
-    "Before this I was co-founder and CTO of Presterly, which predicted when a Shopify brand's customers would run out and reached them over SMS and WhatsApp at that moment. We wound it down in August 2026. Before that I was a founding engineer at Loira AI in Stockholm. I've also written a game engine's lighting system and a contrarian trading bot. I like starting things, and I like shipping them end to end.",
-    "Outside the terminal you'll find me at a tennis court, in the mountains, or at the sea.",
+    "I build software that grows businesses. Right now that's Tigh Sauna: retention software for Irish saunas, with bookings, payments and customers under it.",
+    "Third year Computer Science and Business at Trinity, 1.1 so far, building full time alongside it. Before this: CTO at Presterly, founding engineer at Loira AI in Stockholm.",
+    "Otherwise: a tennis court, the mountains, or the sea.",
   ],
   /**
    * These links are the site's `sameAs` edges, which is to say they are the

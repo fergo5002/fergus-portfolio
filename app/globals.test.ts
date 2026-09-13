@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
+import { PHONE_BOOT } from "@/lib/boot";
 import { join } from "node:path";
 
 /**
@@ -362,6 +363,55 @@ function mediaBlocks(prelude: string): string {
   if (found.length === 0) throw new Error(`no @media ${prelude} block`);
   return found.join("\n");
 }
+
+/**
+ * The BIOS has to fit its own longest line on a phone.
+ *
+ * `lib/boot.ts` pads every device line with dot leaders so they all end in the
+ * same column, which is the look. It only reads as that look if the line fits:
+ * at 393px the boot text was 15.2px in a 330px content box, so 36 characters
+ * fitted and the longest line is 43, and the leader wrapped onto a line of its
+ * own under a heading that had already ended.
+ *
+ * This is arithmetic rather than a screenshot on purpose. A resized desktop
+ * window is wide enough to hide it, and the phone check drives 320 and 390 but
+ * measures document overflow, which a wrapped line does not cause. Nothing was
+ * ever going to fail. So the rule is that the narrow-screen type size has to
+ * hold the longest line the boot can type, computed from the real lines.
+ */
+describe("the boot text fits a phone", () => {
+  const narrow = mediaBlocks("(max-width: 560px)");
+  /** Characters per em for the monospace stack, measured in Chromium at 393px. */
+  const ADVANCE = 0.6;
+
+  it("sizes the BIOS from the viewport, capped at the desktop size", () => {
+    expect(narrow).toContain(".boot {");
+    expect(narrow).toMatch(/font-size:\s*min\(0\.95rem,\s*calc\(\(100vw - 3rem\) \/ 26\.4\)\)/);
+  });
+
+  it("holds the longest leader line the phone boot can type", () => {
+    // The device lines are the ones that must not wrap, because they are the
+    // ones padded with dot leaders: break one and the dots land on a line of
+    // their own with nothing in front of them. The header line carries no
+    // leader, so it is allowed to wrap between two words like ordinary prose,
+    // and sizing the type to hold all 53 characters of it would put the BIOS
+    // under 11px to solve a problem nobody has.
+    //
+    // Measured against the phone profile rather than every line in the file:
+    // the two long HEAD_LINES never reach a narrow screen (`PHONE_BOOT` takes
+    // only the first), so holding the type to them would be sizing for text
+    // that is not there.
+    const longest = Math.max(...PHONE_BOOT.deviceLines.map((l) => l.length));
+    // The rule reserves (100vw - 3rem) for text and divides by 26.4, which is
+    // 44 characters at 0.6em each. Anything longer than 44 wraps again.
+    const fits = Math.floor(26.4 / ADVANCE);
+    expect(fits).toBeGreaterThan(longest);
+  });
+
+  it("drops the side padding that made the box too narrow to help", () => {
+    expect(narrow).toMatch(/\.boot__inner\s*\{[^}]*padding:[^;]*var\(--sp-4\)/);
+  });
+});
 
 describe("the touch bar separates thumb size from screen space", () => {
   const touch = mediaBlocks("(hover: none)");

@@ -30,7 +30,7 @@ export const metadata: Metadata = {
  * `/tools/drift`.
  *
  * This is the only module in the app that touches the corpus, and it touches it
- * for one reason: the worked example. The eleven articles build a reference, a
+ * for one reason: the worked example. The five articles build a reference, a
  * profile and a self-spread, and the demo draft is measured against them, all
  * at build time because the route is static. So the first paint carries a real
  * report over a corpus the reader can go and read, instead of an empty form.

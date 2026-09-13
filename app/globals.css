@@ -652,6 +652,28 @@ html.crt-off body {
   transform: scaleY(var(--boot-open, 1));
   will-change: transform;
 }
+/* The BIOS lines are fixed width by design: the dot leaders in
+   `lib/boot.ts` are padded so every device line ends in the same column. On a
+   phone that only works if the whole line fits. Measured at 393px before this
+   rule: the content box was 330px and one character was 9.12px, so 36
+   characters fitted and the longest line is 43. "detecting  /dev/ambition"
+   wrapped, dumping ".............. OK" onto a line of its own, which reads as
+   a broken layout rather than as a machine starting up.
+
+   So below 560px the type is sized from the viewport instead: 44 characters of
+   a 0.6em-advance monospace, which is the longest line plus one to spare, and
+   never larger than it is on the desktop. `app/globals.test.ts` pins the
+   arithmetic, because the failure is invisible in a resized desktop window
+   with a wide enough viewport. */
+@media (max-width: 560px) {
+  .boot {
+    font-size: min(0.95rem, calc((100vw - 3rem) / 26.4));
+  }
+  .boot__inner {
+    padding: clamp(var(--sp-4), 8vw, 120px) var(--sp-4);
+  }
+}
+
 .boot__skip {
   position: absolute;
   bottom: var(--sp-5);

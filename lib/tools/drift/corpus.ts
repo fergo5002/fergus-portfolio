@@ -12,7 +12,7 @@ import { buildReference, type Reference } from "./reference";
  * sentence about them.
  *
  * What this is good for is a demonstration over a corpus the reader can go and
- * read: eleven articles at /writing, one of my paragraphs rewritten the way a
+ * read: the articles at /writing, one of my paragraphs rewritten the way a
  * model rewrites things, and a real Delta computed at build time so the page is
  * never an empty form. `app/tools/drift/page.tsx` is the only module that
  * imports this one, and `app/tools/drift/page.test.ts` fails if the client

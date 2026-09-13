@@ -46,7 +46,7 @@ export default function ProjectsPage() {
           <ProjectCard key={p.slug} project={p} index={i} />
         ))}
       </div>
-      <Talk line="If you're building something in this territory, or hiring for it, get in touch." />
+      <Talk line="Building something like this, or hiring for it? Get in touch." />
     </div>
   );
 }

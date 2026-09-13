@@ -36,7 +36,7 @@ const matcher = new RegExp(`^${pattern}$`);
 
 describe("the middleware matcher", () => {
   it("runs on the pages people and crawlers read", () => {
-    for (const path of ["/", "/writing", "/writing/split-text-audit-2026", "/projects", "/api/mcp"]) {
+    for (const path of ["/", "/writing", "/writing/why-presterly-wound-down", "/projects", "/api/mcp"]) {
       expect(matcher.test(path), path).toBe(true);
     }
   });

@@ -6,7 +6,7 @@
  * bug it looks for shipped on this site. The hero name animates one character
  * per element, and for a while the most important string on the domain
  * extracted as `P a t r i c k  F e r g u s  O ' R e i l l y`. The article at
- * `/writing/split-text-is-costing-you-search` is the write-up; this module is
+ * The write-up that named this was retired on 2026-09-13; this module is
  * the same check, pointed at anyone else's page.
  *
  * **What the two views mean, precisely.** Both are models, and neither is a

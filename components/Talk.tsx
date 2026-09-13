@@ -29,8 +29,7 @@ export default function Talk({ line }: { line?: string }) {
         Fancy a chat?
       </h2>
       <p className="talk__line">
-        {line ??
-          "I'm always up for talking to people building things, hiring, or backing early companies. No agenda needed."}
+        {line ?? "Always up for talking to people building things. No agenda needed."}
       </p>
       {profile.booking ? (
         <a

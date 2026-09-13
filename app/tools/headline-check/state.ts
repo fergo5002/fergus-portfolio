@@ -44,7 +44,13 @@ export type ToolState =
  */
 export const INITIAL_TOOL_STATE: ToolState = { status: "idle", seq: 0 };
 
-export const ARTICLE_PATH = "/writing/split-text-is-costing-you-search";
+/**
+ * The piece this tool came out of. It was "split-text is costing you search"
+ * until that article was retired on 2026-09-13; the surviving write-up carries
+ * the same warning at the end. Published as `isBasedOn` on the tool page, so it
+ * has to point at something real.
+ */
+export const ARTICLE_PATH = "/writing/a-crt-that-behaves-like-a-crt";
 
 export const headlineCopy = {
   label: "Page URL",
@@ -68,7 +74,7 @@ export const headlineCopy = {
   fixCopy: "Copy the snippet",
   fixCopied: "Copied",
   fixCopyFailed: "The clipboard refused. Select the snippet and copy it by hand.",
-  readMore: "Read the whole piece",
+  readMore: "Where this came from",
 
   limits:
     "This reads the HTML the server sends and the style attributes in it. It cannot see your stylesheet, so a class that sets display:inline-block is invisible to it. One element per character is the signal that survives that, and it is the one this leans on.",
