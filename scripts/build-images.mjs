@@ -122,65 +122,24 @@ async function measuredText(text, { size, weight = 400, fill, tracking = 0 }) {
 }
 
 // ── 3b. Tigh Sauna ──────────────────────────────────────────────────────────
-// The house mark over the wordmark, in Tigh Sauna's own colours: `steam #0f6472`
-// on the warm `birch #faf6f0` secondary surface.
-//
-// This used to be a typographic lockup with three bars standing in for a diary,
-// written when there was no mark to copy and inventing one would have been a
-// claim about the brand. There is one now, so the stand-in goes: the vendored
-// house is the product's real icon, and the bars were a placeholder that had
-// started to read as clip art. The tagline went with them, because the card
-// already sits directly above that same sentence in `content/projects.ts` and
-// was printing it twice.
-//
-// Steam is the brand's text colour precisely because it is legible (6.8:1 on
-// white). Do not restyle this card in the old ember orange: ember only reached
-// 3.94:1, which is why it stopped being used for text in the first place.
+// Approved lettering and the actual brass still served by tighsauna.com.
+// Provenance: assets/sources/tigh-brand.md. Rebuild with --tigh-only.
 async function tighSauna() {
-  const STEAM = "#0f6472";
-  const BIRCH = "#faf6f0";
-
-  const src = join(SOURCES, "tigh-house-steam.svg");
-  if (!existsSync(src)) return skip("tigh-sauna.png", "vendored house mark missing");
-
-  /** Mark height, and the air between its eaves and the wordmark's cap line. */
-  const MARK_H = 208;
-  const GAP = 44;
-
-  const mark = await sharp(src).resize({ height: MARK_H, fit: "inside" }).toBuffer();
-  const markW = (await sharp(mark).metadata()).width;
-
-  const word = await measuredText("Tigh Sauna", {
-    size: 78,
-    weight: 700,
-    fill: STEAM,
-    tracking: -2.5,
-  });
-
-  if (word.width > CARD_W) {
-    throw new Error(
-      `tigh-sauna: wordmark is ${word.width}px, wider than the ${CARD_W}px card. Reduce the font size.`,
-    );
+  const wordSource = join(SOURCES, "tigh-wordmark-chalk.svg");
+  const brassSource = join(SOURCES, "tigh-brass-sculpture.webp");
+  if (!existsSync(wordSource) || !existsSync(brassSource)) {
+    throw new Error("Tigh card requires both vendored brand assets");
   }
-
-  // Centre the lockup as a unit from its real measured height rather than
-  // placing the two pieces at fixed offsets. The wordmark's ink height is not
-  // predictable: `measuredText` trims to the pixels, the font stack resolves
-  // differently per machine, and "Tigh Sauna" carries a descender, so a
-  // hard-coded top would drift low on one box and high on another.
-  const lockupH = MARK_H + GAP + word.height;
-  const top = Math.round((CARD_H - lockupH) / 2);
-
+  const word = await sharp(wordSource).trim().resize({ width: 280 }).png().toBuffer();
+  const brass = await sharp(brassSource).trim().resize({ height: 410 }).png().toBuffer();
+  const wordSize = await sharp(word).metadata();
+  const brassSize = await sharp(brass).metadata();
   const info = await sharp({
-    create: { width: CARD_W, height: CARD_H, channels: 4, background: BIRCH },
+    create: { width: CARD_W, height: CARD_H, channels: 4, background: "#0B3028" },
   })
     .composite([
-      { input: mark, left: Math.round((CARD_W - markW) / 2), top },
-      {
-        input: word.buffer,
-        left: Math.round((CARD_W - word.width) / 2),
-        top: top + MARK_H + GAP,
-      },
+      { input: word, left: 76, top: Math.round((CARD_H - wordSize.height) / 2) },
+      { input: brass, left: CARD_W - brassSize.width - 52, top: Math.round((CARD_H - brassSize.height) / 2) },
     ])
     .png({ compressionLevel: 9 })
     .toFile(join(OUT, "tigh-sauna.png"));
@@ -334,11 +293,13 @@ async function contrabot() {
 }
 
 console.log("building public/img ...");
-await portrait();
-await campanile();
 await tighSauna();
-await presterly();
-await loira();
-await remand();
-await contrabot();
+if (!process.argv.includes("--tigh-only")) {
+  await portrait();
+  await campanile();
+  await presterly();
+  await loira();
+  await remand();
+  await contrabot();
+}
 console.log("done.");

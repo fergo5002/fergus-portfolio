@@ -24,11 +24,11 @@ export const experience: ExperienceEntry[] = [
     dates: "Aug 2026 – Present",
     location: "Dublin, Ireland",
     isNew: true,
-    summary: "We grow Irish saunas. Retention software with the whole stack under it.",
+    summary: "Operations & Growth solutions for Saunas",
     bullets: [
       "I own the backend and the platform: bookings, payments, customers, and the messaging that brings them back.",
       "Merged three codebases into one product, one database, one login.",
-      "Built with live venues, which is why the awkward parts got found early.",
+      "Every site and system is built bespoke in collaboration with saunas.",
     ],
     link: { label: "tighsauna.com", href: "https://tighsauna.com" },
   },
