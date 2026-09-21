@@ -35,6 +35,7 @@ export const projects: Project[] = [
     year: "2026 – Present",
     bullets: [
       "Every site and system is built bespoke in collaboration with saunas.",
+      "Built to be the last software your sauna needs, helping you run the day-to-day and bring guests back.",
     ],
     stack: ["Next.js", "TypeScript", "Fastify", "PostgreSQL", "Supabase", "Shopify", "Railway", "Vercel"],
     links: [{ label: "live", href: "https://tighsauna.com" }],
