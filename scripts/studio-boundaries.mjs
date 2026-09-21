@@ -257,12 +257,44 @@ await check("large-chat-filtering", async () => {
 });
 await check("cancelled-chat-read-stays-cancelled", async () => {
   await b("Clear filters").click();
-  await page.evaluate(()=>{const original=File.prototype.text;window.__originalStudioFileText=original;File.prototype.text=async function(){if(this.name==="cancel-chat.json")await new Promise(resolve=>setTimeout(resolve,800));return original.call(this);};});
-  await page.getByLabel("Import chat (.txt, .json, .zip)",{exact:true}).setInputFiles({name:"cancel-chat.json",mimeType:"application/json",buffer:Buffer.from(JSON.stringify([{sender:"Delayed",text:"Should not replace the archive",at:Date.now()}]))});
-  await b("Cancel").click();
-  await page.waitForTimeout(1000);
-  assert((await page.locator(".lab-metrics").textContent()).includes("25,000"));
-  await page.evaluate(()=>{File.prototype.text=window.__originalStudioFileText;});
+  // Hold the read until the test has clicked Cancel. A fixed 800ms delay raced
+  // Playwright's actionability checks and disappeared before slower CI clicked.
+  await page.evaluate(() => {
+    const original = File.prototype.text;
+    window.__originalStudioFileText = original;
+    window.__studioReadFinished = false;
+    File.prototype.text = async function () {
+      if (this.name === "cancel-chat.json") {
+        await new Promise((resolve) => { window.__releaseStudioRead = resolve; });
+        const text = await original.call(this);
+        window.__studioReadFinished = true;
+        return text;
+      }
+      return original.call(this);
+    };
+  });
+  try {
+    await page.getByLabel("Import chat (.txt, .json, .zip)", { exact: true }).setInputFiles({
+      name: "cancel-chat.json",
+      mimeType: "application/json",
+      buffer: Buffer.from(JSON.stringify([{ sender: "Delayed", text: "Should not replace the archive", at: Date.now() }])),
+    });
+    await page.waitForFunction(() => typeof window.__releaseStudioRead === "function");
+    await b("Cancel").click();
+    await page.evaluate(() => window.__releaseStudioRead());
+    await page.waitForFunction(() => window.__studioReadFinished);
+    // Give an incorrectly started parser time to replace the existing archive.
+    await page.waitForTimeout(1000);
+    assert((await page.locator(".lab-metrics").textContent()).includes("25,000"));
+  } finally {
+    await page.evaluate(() => {
+      window.__releaseStudioRead?.();
+      File.prototype.text = window.__originalStudioFileText;
+      delete window.__releaseStudioRead;
+      delete window.__originalStudioFileText;
+      delete window.__studioReadFinished;
+    });
+  }
 });
 await check("redacted-pixels-and-moving-mask", async () => {
   await open("pocket-redact");

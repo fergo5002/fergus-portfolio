@@ -30,18 +30,17 @@ export const projects: Project[] = [
   {
     slug: "tigh-sauna",
     title: "Tigh Sauna",
-    tagline: "We grow Irish saunas. Retention software with the whole stack under it.",
+    tagline: "Operations & Growth solutions for Saunas",
     role: "Co-Founder, Engineering",
     year: "2026 – Present",
     bullets: [
-      "Bookings, payments, customers and the messaging that brings them back.",
-      "Live venues. Every storefront is on Shopify, so they sell from day one.",
+      "Every site and system is built bespoke in collaboration with saunas.",
     ],
     stack: ["Next.js", "TypeScript", "Fastify", "PostgreSQL", "Supabase", "Shopify", "Railway", "Vercel"],
     links: [{ label: "live", href: "https://tighsauna.com" }],
     image: "/img/tigh-sauna.png",
     imageAlt:
-      "The Tigh Sauna mark, a pitched house with an arched door, in steam teal on warm birch, above the words 'Tigh Sauna'",
+      "The new Tigh wordmark beside the brass ribbon sculpture from tighsauna.com, on evergreen",
   },
   {
     slug: "presterly",

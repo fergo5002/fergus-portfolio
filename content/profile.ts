@@ -68,7 +68,7 @@ export const profile: Profile = {
    * the two beneath it.
    */
   bio: [
-    "I build software that grows businesses. Right now that's Tigh Sauna: retention software for Irish saunas, with bookings, payments and customers under it.",
+    "I build software that grows businesses. Right now that's Tigh Sauna: operations and growth solutions for saunas, built bespoke in collaboration with them.",
     "Third year Computer Science and Business at Trinity, 1.1 so far, building full time alongside it. Before this: CTO at Presterly, founding engineer at Loira AI in Stockholm.",
     "Otherwise: a tennis court, the mountains, or the sea.",
   ],
