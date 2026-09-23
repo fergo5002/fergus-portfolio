@@ -1,0 +1,20 @@
+/** Labels for the controls built into the tube. */
+export const machineCopy = {
+  controls: "Machine controls",
+  terminal: "terminal",
+  openTerminal: "Open the terminal (backtick)",
+  closeTerminal: "Close the terminal (Escape)",
+  close: "close",
+  soundOn: "sound on",
+  soundOff: "sound off",
+  mute: "Mute the tube",
+  unmute: "Turn on sound. Key clicks, relays and the tube, silent at rest.",
+  gravity: "drop page",
+  restore: "restore",
+  dropPage: "Drop the page. Drag or throw the pieces. Escape puts them back.",
+  restorePage: "Put the page back together",
+  eject: "zoom out",
+  dock: "zoom in",
+  viewMachine: "Step back and see the whole machine",
+  viewPage: "Return to the page",
+} as const;

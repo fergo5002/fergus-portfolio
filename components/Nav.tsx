@@ -1,14 +1,16 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Magnetic from "@/components/motion/Magnetic";
-import { summonShell } from "@/components/ShellDrawer";
-import { shellStore } from "@/lib/shell";
+import { INITIAL_SHELL, shellStore } from "@/lib/shell";
 import { requestCommand } from "@/lib/shell-request";
 import { profile } from "@/content/profile";
+import { useSystem } from "@/components/system/SystemProvider";
+
+const getServerShell = () => INITIAL_SHELL;
 
 /**
  * The nav is also the site's internal link graph, which is why `/tools` and
@@ -33,20 +35,27 @@ const items = [
 /**
  * `cd arcade` is the one control here that is not a link, because the arcade
  * is not a page. It is a program the terminal hosts, so this asks the shell to
- * run the door command and makes sure a terminal is there to hear it: the
- * inline one on the home page, the drawer everywhere else. `open` rather than
+ * run the door command and makes sure the drawer is there to hear it. `open` rather than
  * `toggle`, because a drawer that is already open must stay open to run it.
  */
 function openArcade(): void {
+  if (shellStore.get().arcade !== "closed") return;
   requestCommand("cd arcade");
-  if (shellStore.get().inline) summonShell();
-  else shellStore.dispatch({ type: "open" });
+  shellStore.dispatch({ type: "open" });
 }
 
 export default function Nav() {
   const path = usePathname();
-  const shownPath = path === "/" ? "~" : path;
+  const shell = useSyncExternalStore(shellStore.subscribe, shellStore.get, getServerShell);
+  const { setGravity, setEjected } = useSystem();
+  const arcadeOpen = shell.arcade !== "closed";
+  const shownPath = arcadeOpen ? "~/arcade" : path === "/" ? "~" : path;
   const listRef = useRef<HTMLUListElement>(null);
+  const leaveArcade = () => {
+    shellStore.dispatch({ type: "close" });
+    setGravity(false);
+    setEjected(false);
+  };
 
   // On a phone the list scrolls sideways, and the link for the page you are on
   // may start off its edge. Move the list's own scroll position, never
@@ -59,7 +68,7 @@ export default function Nav() {
     const l = list.getBoundingClientRect();
     const a = active.getBoundingClientRect();
     if (a.left < l.left || a.right > l.right - 32) list.scrollLeft += a.left - l.left - 16;
-  }, [path]);
+  }, [path, arcadeOpen]);
 
   return (
     <nav className="nav" aria-label="Primary">
@@ -85,12 +94,13 @@ export default function Nav() {
       </span>
       <ul className="nav__list" ref={listRef}>
         {items.map((it) => {
-          const active = path === it.href;
+          const active = !arcadeOpen && path === it.href;
           return (
             <li key={it.href}>
               <Magnetic pull={0.28}>
                 <Link
                   href={it.href}
+                  onClick={leaveArcade}
                   className={`nav__link${active ? " is-active" : ""}`}
                   aria-current={active ? "page" : undefined}
                 >
@@ -102,7 +112,12 @@ export default function Nav() {
         })}
         <li>
           <Magnetic pull={0.28}>
-            <button type="button" className="nav__link nav__link--cmd" onClick={openArcade}>
+            <button
+              type="button"
+              className={`nav__link nav__link--cmd${arcadeOpen ? " is-active" : ""}`}
+              onClick={openArcade}
+              aria-current={arcadeOpen ? "location" : undefined}
+            >
               cd arcade
             </button>
           </Magnetic>

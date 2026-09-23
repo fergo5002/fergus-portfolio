@@ -1,6 +1,7 @@
 "use client";
 
 import { useSystem } from "./SystemProvider";
+import { machineCopy as copy } from "@/content/machine";
 
 /**
  * The three switches on the front of the machine.
@@ -32,16 +33,12 @@ export default function MachineControls() {
         onClick={() => setAudioEnabled(!audioOn)}
         onPointerEnter={() => audio.hover()}
         aria-pressed={audioOn}
-        title={
-          audioOn
-            ? "Mute the tube"
-            : "Unmute. Key clicks, relay clunks, the degauss sweep, collisions. All synthesised at runtime, and silent until something happens."
-        }
+        title={audioOn ? copy.mute : copy.unmute}
       >
         <span className="machine__glyph" aria-hidden="true">
           {audioOn ? "◉" : "◎"}
         </span>
-        <span className="machine__label">sound</span>
+        <span className="machine__label">{audioOn ? copy.soundOn : copy.soundOff}</span>
       </button>
 
       {/* Physics and the pull-back are both motion, and both take over the whole
@@ -63,16 +60,12 @@ export default function MachineControls() {
           onClick={() => setGravity(!gravityOn)}
           onPointerEnter={() => audio.hover()}
           aria-pressed={gravityOn}
-          title={
-            gravityOn
-              ? "Put the page back together"
-              : "Drop the page. Drag the words, throw them, stack them. Space shakes it, Esc puts it back."
-          }
+          title={gravityOn ? copy.restorePage : copy.dropPage}
         >
           <span className="machine__glyph" aria-hidden="true">
             {gravityOn ? "◆" : "◇"}
           </span>
-          <span className="machine__label">gravity</span>
+          <span className="machine__label">{gravityOn ? copy.restore : copy.gravity}</span>
         </button>
 
         <button
@@ -81,12 +74,12 @@ export default function MachineControls() {
           onClick={() => setEjected(!ejected)}
           onPointerEnter={() => audio.hover()}
           aria-pressed={ejected}
-          title={ejected ? "Back against the glass" : "Step back and look at the machine"}
+          title={ejected ? copy.viewPage : copy.viewMachine}
         >
           <span className="machine__glyph" aria-hidden="true">
             {ejected ? "▣" : "▢"}
           </span>
-        <span className="machine__label">{ejected ? "dock" : "eject"}</span>
+          <span className="machine__label">{ejected ? copy.dock : copy.eject}</span>
         </button>
       </div>
     </div>
