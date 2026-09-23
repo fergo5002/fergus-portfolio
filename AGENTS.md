@@ -100,8 +100,8 @@ view by writing `scrollLeft`, never `scrollIntoView`. There is deliberately no f
 trailing edge: the first version had one and the phone check read the clipped link under it at
 1.23:1, which was correct. The cut is the affordance. `cd arcade` sits at the end of the row as a
 `<button>` dressed as a link, because the arcade is not a page: it asks the shell to run the door
-command through `lib/shell-request.ts` (one slot, taken once) and whichever Terminal is mounted,
-inline on the home page or the drawer elsewhere, runs it. The drawer is opened with `open`, not
+command through `lib/shell-request.ts` (one slot, taken once) and the Terminal mounted in the
+common drawer runs it on every route. The drawer is opened with `open`, not
 `toggle`, so a drawer that is already up stays up to run it.
 
 **Animate only what the visitor has not seen** (2026-09-06). Hydration lands well after first

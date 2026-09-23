@@ -39,6 +39,10 @@ Verification before release:
   out before sending, so that check now verifies native keyboard submission.
 - Calendar pixel contrast, 44px targets and layout checks passed at 390px, 320px
   and throttled Chromium. Shared shell/arcade navigation checks passed locally.
-- All four CI mutation shards passed. The full browser release gate is being
-  rerun after correcting two test selectors. Canonical production verification
-  remains pending.
+- All four CI mutation shards passed before the final browser-test corrections.
+  Docker also passed the arcade sound, replay and forget flow. Amber and ice
+  article/calendar visual checks passed in Chromium desktop and WebKit 390px.
+- Final release gates and canonical production evidence are recorded in
+  [PR #25](https://github.com/fergo5002/fergus-portfolio/pull/25). The browser checks
+  use emulation; physical phones and recipient mailbox receipt need separate
+  evidence and are not implied by a passing build or provider acceptance.
