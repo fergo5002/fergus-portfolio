@@ -32,3 +32,10 @@ it("also releases the room for browser history navigation", () => {
   const room = read("components/arcade/ArcadeExperience.tsx");
   expect(room).toContain('if (path !== enteredPath.current) shellStore.dispatch({ type: "close" })');
 });
+
+it("releases query-only history changes and removes that listener with the room", () => {
+  const room = read("components/arcade/ArcadeExperience.tsx");
+  expect(room).toContain('const onHistory = () => shellStore.dispatch({ type: "close" })');
+  expect(room).toContain('window.addEventListener("popstate", onHistory)');
+  expect(room).toContain('window.removeEventListener("popstate", onHistory)');
+});
