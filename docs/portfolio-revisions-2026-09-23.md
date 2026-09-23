@@ -24,7 +24,7 @@ Implemented:
 
 Verification before release:
 
-- 2,590 unit tests passed, three opt-in integrations skipped; TypeScript passed.
+- 2,591 unit tests passed, three opt-in integrations skipped; TypeScript passed.
 - New calendar logic first failed without its implementation, then passed, including
   Irish daylight-saving time, forged/stale slots and provider failure.
 - Desktop and WebKit 390/320 meeting journeys passed, including failed-send field
@@ -32,4 +32,13 @@ Verification before release:
 - The delayed-hydration selection loss was reproduced before correction and the
   same scenario passed afterwards. The mobile preview overflow was observed in
   screenshot and document bounds, then corrected by stacking the links.
-- Docker, full release gates and canonical production verification are pending.
+- A fresh Node 24 Docker production build passed all 2,591 tests. Desktop and
+  WebKit 390/320 enhanced meeting flows and delayed-hydration preservation passed
+  against that container. Native no-JavaScript Tab/Enter submissions preserved
+  fields after provider failure. The automated pointer click intermittently timed
+  out before sending, so that check now verifies native keyboard submission.
+- Calendar pixel contrast, 44px targets and layout checks passed at 390px, 320px
+  and throttled Chromium. Shared shell/arcade navigation checks passed locally.
+- All four CI mutation shards passed. The full browser release gate is being
+  rerun after correcting two test selectors. Canonical production verification
+  remains pending.

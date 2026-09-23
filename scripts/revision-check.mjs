@@ -91,7 +91,12 @@ if (!base.startsWith("https://")) {
   await page.locator("#meeting-name").fill("No JavaScript verification");
   await page.locator("#meeting-email").fill("visitor@example.com");
   await page.locator("#meeting-note").fill("Keep this note after a failed send.");
-  await page.locator(".meeting__submit button").click();
+  // Exercise native keyboard submission. With page scripts disabled, Chromium's
+  // frame-based pointer stability check can stall whilst scrolling this form.
+  // A real Tab/Enter still goes through native validation and the form POST.
+  await page.keyboard.press("Tab");
+  assert.equal(await page.locator(".meeting__submit button").evaluate(el => el === document.activeElement), true);
+  await page.keyboard.press("Enter");
   await page.getByText("That didn't send. Your details are still here.", { exact: false }).waitFor();
   assert.equal(await page.locator("#meeting-note").inputValue(), "Keep this note after a failed send.");
   assert.equal(await page.locator("select[name=slot]").inputValue(), option);
