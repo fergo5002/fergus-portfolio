@@ -1,44 +1,47 @@
 "use client";
 
 import { useEffect, useSyncExternalStore } from "react";
-import { usePathname } from "next/navigation";
 import Terminal from "@/components/Terminal";
 import { INITIAL_SHELL, isShellHotkey, shellStore } from "@/lib/shell";
+import { machineCopy } from "@/content/machine";
 
 const getServerShell = () => INITIAL_SHELL;
 
-/**
- * Open the drawer, or, on the page that already hosts the terminal inline,
- * put the caret in it. The status bar's prompt and the backtick both come here.
- */
+/** The same drawer handle on every route. */
 export function summonShell(): void {
-  if (shellStore.get().inline) {
-    const input = document.querySelector<HTMLInputElement>(".term__input");
-    input?.scrollIntoView({ block: "center" });
-    input?.focus();
-    return;
-  }
   shellStore.dispatch({ type: "toggle" });
 }
 
 /**
- * The terminal on every route that does not host it in the page.
+ * The terminal on every route, including the home page.
  *
  * Renders nothing while closed: the scrollback lives in `lib/history.ts`, so
  * unmounting loses nothing, and there is never a hidden input to trap focus.
- * `lib/shell.ts` decides whether it may open; this only feeds it the route
- * and the keys. Mounted once, in `components/CrtShell.tsx`, beside the status
+ * `lib/shell.ts` owns its state; this supplies pointer and key input.
+ * Mounted once, in `components/CrtShell.tsx`, beside the status
  * bar inside the assembly: it is chrome on the machine, so it shrinks with the
  * display when the camera pulls back and sits above the glass like the bar
  * it hangs from.
  */
 export default function ShellDrawer() {
-  const path = usePathname();
   const state = useSyncExternalStore(shellStore.subscribe, shellStore.get, getServerShell);
 
   useEffect(() => {
-    shellStore.dispatch({ type: "route", inline: path === "/" });
-  }, [path]);
+    const onPointerDown = (event: PointerEvent) => {
+      if (!shellStore.get().open || !(event.target instanceof Element)) return;
+      // The arcade is a portal owned by this drawer. Its buttons are outside
+      // the drawer in the DOM, but dismissing their owner would end every game.
+      // Exclude the handle: closing on pointerdown then toggling on click reopens.
+      // Nav closes on click. Doing it here could scroll its newly active link
+      // under the pointer before the visitor releases their finger.
+      if (event.target.closest(".shell, .statusbar__prompt, .nav, .arcade-room")) return;
+      shellStore.dispatch({ type: "close" });
+      // Let the actual pointer target take focus. Keyboard dismissal below
+      // restores the handle, but an outside link or field keeps its own focus.
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -75,9 +78,9 @@ export default function ShellDrawer() {
             shellStore.dispatch({ type: "close" });
             document.querySelector<HTMLElement>(".statusbar__prompt")?.focus();
           }}
-          aria-label="Close the terminal"
+          aria-label={machineCopy.closeTerminal}
         >
-          esc
+          {machineCopy.close}
         </button>
       </div>
       <Terminal variant="drawer" autoFocus />

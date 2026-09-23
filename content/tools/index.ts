@@ -29,6 +29,9 @@ export const tools: ToolEntry[] = [...entries].sort((a, b) => a.order - b.order)
 /** The ones with a page behind them. The sitemap and the phone check use this. */
 export const liveTools: ToolEntry[] = tools.filter((t) => t.status === "live");
 
+/** The front shelf. Unlisted tools retain their routes and discovery records. */
+export const featuredTools = [atlas, pocketRedact, groupLore, relief, resonance];
+
 export function toolBySlug(slug: string): ToolEntry | undefined {
   return tools.find((t) => t.slug === slug);
 }

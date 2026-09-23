@@ -100,8 +100,8 @@ view by writing `scrollLeft`, never `scrollIntoView`. There is deliberately no f
 trailing edge: the first version had one and the phone check read the clipped link under it at
 1.23:1, which was correct. The cut is the affordance. `cd arcade` sits at the end of the row as a
 `<button>` dressed as a link, because the arcade is not a page: it asks the shell to run the door
-command through `lib/shell-request.ts` (one slot, taken once) and whichever Terminal is mounted,
-inline on the home page or the drawer elsewhere, runs it. The drawer is opened with `open`, not
+command through `lib/shell-request.ts` (one slot, taken once) and the Terminal mounted in the
+common drawer runs it on every route. The drawer is opened with `open`, not
 `toggle`, so a drawer that is already up stays up to run it.
 
 **Animate only what the visitor has not seen** (2026-09-06). Hydration lands well after first
@@ -276,8 +276,11 @@ for the phone check. Nothing else without an argument.
 `cd arcade` opens a room that is part of the machine, not a page over it. `ArcadeExperience.tsx`
 portals a fixed panel to `<body>` at `z-index: 8990`: above the page, below the flicker (8999),
 the glass sheen (8997) and the scanlines (9000), so every glass layer falls across the arcade the
-way it falls across a page. While it is up, `html.arcade-open` hides `.crt__screen`, the nav, the
-drawer and the status strip. The last two sit above 9000 and would draw over the room, and the
+way it falls across a page. While it is up, `html.arcade-open` hides `.crt__screen`, the
+drawer and the status strip. The regular nav hides only during the entrance, then returns above
+the room. It lives beside `.crt__screen` in `CrtShell`, so the hidden page cannot hide it too.
+Normal nav links close the arcade host before changing route, including same-route links.
+The drawer and strip sit above 9000 and would draw over the room, and the
 strip's prompt button toggles the drawer that hosts the terminal the room was launched from, so
 leaving it clickable would unmount the arcade from underneath itself. Nothing in
 `components/arcade/arcade.css` may go above 9000; `components/arcade/arcade.test.ts` checks.
@@ -543,14 +546,14 @@ add a `defineCommand` to the right module (or a new module with its registration
 beside it. Run `node scripts/mutation-check.mjs` if you touch a guard: the reduced-motion
 refusals, the scanlines range, the theme check, the hidden flag and the door are all mutated by it.
 
-The terminal is on every route. `app/page.tsx` renders it inline; everywhere else
+The terminal is in the drawer on every route, including the homepage.
 `components/ShellDrawer.tsx`, mounted once in `components/CrtShell.tsx` beside the status bar,
 hosts the same component in a drawer opened by the backtick (when focus is not in a field), by the
-`$ prompt` button in the status bar, or by a tap on that button on a phone, and closed by Escape.
+terminal button in the status bar, or by a tap on that button on a phone, and closed by Escape
+or a click outside. Outside dismissal excludes the arcade portal and the toggle that owns it.
 There is one scrollback and one recall list, in `lib/history.ts`, module-level and never persisted,
-so `cd projects` typed in the drawer and `history` typed on the home page agree. `lib/shell.ts` is
-the drawer's state machine, pure and tested, and it never opens on the route that hosts the
-terminal inline. `forget` returns an effect like every other command that touches the machine; the
+so closing and reopening the drawer preserves history. `lib/shell.ts` is
+the drawer's state machine, pure and tested. `forget` returns an effect like every other command that touches the machine; the
 Terminal removes the keys.
 
 ## How to work on this project
@@ -568,9 +571,8 @@ See `docs/PROGRESS.md`.
 
 ## Content still needing the owner (Fergus)
 
-- Nothing outstanding. (This section previously asked for a Hatch105 role and dates for a
-  `hatch105` entry in `content/experience.ts`. There is no such entry and has not been for some
-  time: Hatch105 is named inside the Presterly entry as the accelerator, which is what it is.)
+- Hatch105 has its own short accelerator entry under Tigh, at Fergus's request on 23 September
+  2026. It describes the ten-week Presterly programme and credits Jack Pierse.
 
 ## Keeping the numbers honest
 

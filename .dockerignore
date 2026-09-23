@@ -3,6 +3,9 @@ node_modules
 .git
 .vercel
 .playwright-mcp
+.revision-check
+.codex
+*.log
 npm-debug.log
 
 # Local environment files. Vercel builds from git and injects its own variables,

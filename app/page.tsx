@@ -1,118 +1,44 @@
+import Link from "next/link";
 import BootSequence from "@/components/BootSequence";
 import HeroName from "@/components/motion/HeroName";
 import RasterReveal from "@/components/motion/RasterReveal";
-import Terminal from "@/components/Terminal";
 import Window from "@/components/Window";
 import ImageFrame from "@/components/ImageFrame";
 import PromptLine from "@/components/PromptLine";
-import Scramble from "@/components/Scramble";
+import WorkPreview from "@/components/WorkPreview";
 import { profile } from "@/content/profile";
-import { skills } from "@/content/skills";
+import { homeCopy } from "@/content/home";
 import JsonLd from "@/components/JsonLd";
 import Talk from "@/components/Talk";
 import { profilePageSchema } from "@/lib/seo";
-
-const highlights = [
-  { k: "startup", v: "Co-Founder @ Tigh Sauna" },
-  { k: "previously", v: "CTO @ Presterly · Hatch105" },
-  { k: "academic", v: "1.1 / 4.0 GPA" },
-];
+import "./home.css";
 
 export default function Home() {
-  return (
-    <BootSequence>
-      <div className="stack">
-        <JsonLd nodes={[profilePageSchema()]} />
-        <Window title="~/whoami" className="hero">
-          <div className="hero__grid">
-            <div className="hero__text">
-              <PromptLine command="whoami" />
-              <h1 className="hero__name">
-                <HeroName text={profile.name} />
-              </h1>
-              <p className="hero__tagline">{profile.tagline}</p>
-              <p className="hero__loc">{profile.location}</p>
-              <p className="hero__edu">{profile.education}</p>
-            </div>
-            <div className="hero__portrait">
-              <ImageFrame
-                src={profile.portrait || undefined}
-                alt="Portrait of Fergus O'Reilly"
-                label="portrait.jpg"
-                plate="fergus-oreilly"
-                ratio="4 / 5"
-              />
-            </div>
-          </div>
-        </Window>
-
-        <Terminal />
-
-        <RasterReveal as="ul" className="highlights" aria-label="Highlights">
-          {highlights.map((h, i) => (
-            <li key={h.k} className="hl" style={{ ["--hl-i" as string]: i }}>
-              <span className="hl__k">{h.k}/</span>
-              <span className="hl__v">{h.v}</span>
-            </li>
-          ))}
-        </RasterReveal>
-
-        <RasterReveal>
-          <Window title="~/about" className="about">
-            <span id="about" className="anchor" />
-            <PromptLine command="cat about.txt" />
-            {profile.bio.map((p, i) => (
-              <p key={i} className="about__p">
-                {p}
-              </p>
-            ))}
-          </Window>
-        </RasterReveal>
-
-        <RasterReveal>
-          <Window title="~/skills">
-            <span id="skills" className="anchor" />
-            <PromptLine command="ls ./skills" />
-            <dl className="skills">
-              {skills.map((g) => (
-                <div key={g.label} className="skills__row">
-                  <dt className="skills__label">
-                    <Scramble text={`${g.label}/`} trigger="view" speed={18} />
-                  </dt>
-                  <dd className="skills__items">{g.items.join("  ·  ")}</dd>
-                </div>
-              ))}
-            </dl>
-          </Window>
-        </RasterReveal>
-
-        <RasterReveal>
-          <Window title="~/contact">
-            <span id="contact" className="anchor" />
-            <PromptLine command="./contact.sh" />
-            <ul className="contact">
-              {profile.contact.map((c) => (
-                <li key={c.label} className="contact__row">
-                  <span className="contact__k">{c.label}</span>
-                  {/* `me` is the identity half of this link, and it is not
-                      decoration: it is the HTML claim that the profile on the
-                      other end is the same person as the one this page is
-                      about, which is the same edge `sameAs` publishes in the
-                      Person graph. Saying it in both places costs nothing and
-                      is what lets something that only reads markup follow it. */}
-                  <a href={c.href} target="_blank" rel="me noreferrer">
-                    {c.value}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </Window>
-        </RasterReveal>
-
-        <RasterReveal>
-          <Talk />
-        </RasterReveal>
+  return <BootSequence><div className="stack">
+    <JsonLd nodes={[profilePageSchema()]} />
+    <Window title="~/whoami" className="hero">
+      <div className="hero__grid">
+        <div className="hero__text">
+          <PromptLine command="whoami" />
+          <h1 className="hero__name"><HeroName text={profile.name} /></h1>
+          <p className="hero__tagline">{profile.tagline}</p>
+          <p className="hero__loc">{profile.location}</p>
+          <p className="hero__edu">{profile.education}</p>
+        </div>
+        <div className="hero__portrait"><ImageFrame src={profile.portrait || undefined} alt="Portrait of Fergus O'Reilly" label="portrait.jpg" plate="fergus-oreilly" ratio="4 / 5" /></div>
       </div>
-    </BootSequence>
-  );
+    </Window>
+    <ul className="highlights home-highlights" aria-label="Highlights">
+      <li className="hl"><span className="hl__k">{homeCopy.startup}</span><WorkPreview name="tigh" /></li>
+      <li className="hl"><span className="hl__k">{homeCopy.previously}</span><WorkPreview name="presterly" /><WorkPreview name="hatch" /></li>
+      <li className="hl"><span className="hl__k">{homeCopy.academic}</span><span className="hl__v">{homeCopy.academicValue}</span></li>
+    </ul>
+    <RasterReveal><Window title="~/about" className="about">
+      <span id="about" className="anchor" />
+      <PromptLine command="cat about.txt" />
+      {profile.bio.map((p, i) => <p key={i} className="about__p">{p}</p>)}
+      <div className="about__routes"><p>{homeCopy.aboutLinks}</p><div><Link href="/projects">{homeCopy.projects}</Link><Link href="/experience">{homeCopy.experience}</Link></div></div>
+    </Window></RasterReveal>
+    <RasterReveal><Talk /></RasterReveal>
+  </div></BootSequence>;
 }

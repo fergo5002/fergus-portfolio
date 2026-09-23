@@ -485,15 +485,13 @@ describe("the call to action goes to a page", () => {
     const code = src.replace(/\/\*[\s\S]*?\*\//g, "");
     expect(code).toContain("export default function Talk");
 
-    expect([...code.matchAll(/mailto:/g)]).toHaveLength(1);
-    expect(code).toMatch(/c\.href\.startsWith\("mailto:"\)/);
+    expect([...code.matchAll(/mailto:/g)]).toHaveLength(0);
     expect(code).not.toMatch(/className="talk__cta"[\s\S]{0,120}mailto:/);
   });
 
-  /** The booking URL still wins when set, and still opens off-site. */
-  it("keeps the booking override, as an external link", () => {
-    expect(src).toMatch(/profile\.booking \?/);
-    expect(src).toMatch(/href=\{profile\.booking\}[\s\S]{0,120}target="_blank"/);
+  it("offers the built-in meeting requests", () => {
+    expect(src).toContain("<MeetingCards />");
+    expect(src).not.toContain("profile.booking");
   });
 });
 

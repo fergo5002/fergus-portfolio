@@ -1,0 +1,79 @@
+.figure {
+  margin: 0 0 var(--sp-5);
+  padding: clamp(16px, 4vw, 32px);
+  border: 1px solid var(--green-line);
+  background: var(--bg-panel);
+  color: var(--green);
+  max-width: 72ch;
+}
+
+.title {
+  margin: 0 0 24px;
+  color: var(--green-bright);
+  font-family: var(--font-screen);
+  font-size: clamp(1.7rem, 4vw, 2.2rem);
+  font-weight: normal;
+  line-height: 1.08;
+  text-wrap: balance;
+}
+
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choices button {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid var(--green);
+  border-radius: 0;
+  background: transparent;
+  color: var(--green);
+  font: inherit;
+  font-size: .82rem;
+  cursor: pointer;
+}
+.choices button[aria-pressed="true"] { color: var(--bg); background: var(--green); }
+.choices button:focus-visible { outline: 2px solid var(--amber); outline-offset: 4px; }
+:global(html:not(.js)) .choices { display: none; }
+
+.readouts {
+  display: grid;
+  grid-template-columns: 160px 1fr;
+  align-items: center;
+  gap: clamp(16px, 4vw, 40px);
+  margin: 32px 0;
+  min-height: 190px;
+}
+.clock { display: grid; place-items: center; position: relative; padding-bottom: 28px; }
+.clock svg { width: 140px; height: 140px; overflow: visible; grid-area: 1 / 1; transform: rotate(-90deg); }
+.clock circle { fill: none; stroke-width: 3; }
+.clockTrack { stroke: var(--green-line); }
+.clockArc { stroke: var(--green); stroke-linecap: square; }
+.clock strong { grid-area: 1 / 1; font: normal 2.8rem / 1 var(--font-screen); color: var(--green-bright); }
+.clock span { position: absolute; bottom: 0; width: 180px; text-align: center; font-size: .73rem; }
+.reservation > span { font-size: .78rem; }
+.reservation strong { display: block; margin: 8px 0; font: normal clamp(1.8rem, 4vw, 2.6rem) / 1.05 var(--font-screen); color: var(--green-bright); }
+.reservation strong[data-reserved="false"] { color: var(--amber); }
+.reservation p { margin: 0; max-width: 26ch; font-size: .82rem; line-height: 1.6; }
+.axisTitle { margin: 0 0 16px; font-size: .75rem; }
+.plot { position: relative; margin-left: 30px; }
+.plot svg { display: block; overflow: visible; width: 100%; height: 180px; }
+.plot svg * { vector-effect: non-scaling-stroke; }
+.grid { stroke: var(--green-line); stroke-width: 1; }
+.area { fill: var(--green); fill-opacity: .055; }
+.trace { fill: none; stroke: var(--green-bright); stroke-width: 2; }
+.expired { fill: var(--amber); fill-opacity: .055; }
+.cursor { stroke: var(--amber); stroke-width: 1; stroke-dasharray: 4 4; }
+.point { fill: var(--amber); stroke: var(--bg-panel); stroke-width: 2; }
+.yAxis { position: absolute; left: -30px; top: -7px; bottom: 18px; display: flex; flex-direction: column; justify-content: space-between; font-size: .72rem; }
+.xAxis { display: flex; justify-content: space-between; margin: 12px -12px 0; font-size: .72rem; font-variant-numeric: tabular-nums; }
+.figure figcaption { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--green-line); font-size: .75rem; line-height: 1.65; }
+
+@media (max-width: 480px) {
+  .readouts { grid-template-columns: 104px 1fr; gap: 16px; min-height: 154px; margin: 24px 0; }
+  .clock { padding-bottom: 40px; }
+  .clock svg { width: 96px; height: 96px; }
+  .clock strong { font-size: 2.2rem; }
+  .clock span { width: 104px; font-size: .7rem; line-height: 1.5; }
+  .reservation strong { font-size: 1.65rem; }
+  .reservation p { max-width: none; font-size: .75rem; }
+  .choices button { flex: 1 1 150px; text-align: left; }
+  .plot svg { height: 150px; }
+}

@@ -21,7 +21,7 @@ try {
   }
   await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
   await page.locator(".statusbar__prompt").click(); await page.locator(".term__input").fill("cd arcade poker"); await page.locator(".term__input").press("Enter");
-  await page.getByRole("button", { name: /^sound off$/i }).click(); await page.getByRole("button", { name: /^sound on$/i }).waitFor();
+  await page.locator(".arcade-room").getByRole("button", { name: /^sound off$/i }).click(); await page.locator(".arcade-room").getByRole("button", { name: /^sound on$/i }).waitFor();
   await page.getByRole("button", { name: /start solo run/i }).click(); await page.waitForTimeout(8500);
   await page.locator(".arcade-stage").focus();
   for (let i = 0; i < 32 && !await page.locator(".arcade-results").count(); i++) {

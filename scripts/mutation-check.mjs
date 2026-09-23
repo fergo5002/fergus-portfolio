@@ -42,6 +42,20 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 /** Each: break one guard, expect the suite to notice. */
 const MUTATIONS = [
   {
+    name: "meeting requests accept an unoffered slot",
+    file: "lib/meeting-server.ts",
+    pattern: /if \(!validMeetingSlot\(fields.slot, deps.now \?\? new Date\(\)\)\)/,
+    replace: "if (false)",
+    tests: "lib/meeting.test.ts",
+  },
+  {
+    name: "meeting requests lose Irish summer time",
+    file: "lib/meeting.ts",
+    pattern: /export const MEETING_ZONE = "Europe\/Dublin";/,
+    replace: 'export const MEETING_ZONE = "UTC";',
+    tests: "lib/meeting.test.ts",
+  },
+  {
     name: "phone polish: arcade focus waits until after its first paint",
     file: "components/arcade/ArcadeExperience.tsx",
     pattern: /useLayoutEffect\(\(\) => \{\r?\n    roomRef.current\?\.focus/,
@@ -652,10 +666,11 @@ const MUTATIONS = [
 
   // ── the shell everywhere (F2) ──
   {
-    name: "the drawer opens on the page that already has a terminal",
+    name: "the shared drawer stops opening",
     file: "lib/shell.ts",
-    pattern: /return state\.inline \|\| state\.open \? state : \{ \.\.\.state, open: true \};/,
-    replace: "return state.open ? state : { ...state, open: true };",
+    pattern: /return state\.open \? state : \{ \.\.\.state, open: true \};/,
+    replace: "return state;",
+    tests: "lib/shell.test.ts",
   },
   {
     name: "a backtick typed into a field summons the shell",
@@ -684,18 +699,16 @@ const MUTATIONS = [
 
   // ── what the review of F2 found ──
   {
-    // The home page's half of the backtick rule. `lib/shell.ts` declines to
-    // open on the inline route, so deleting this breaks nothing loudly: the
-    // key just stops doing anything on `/`.
-    name: "the backtick on the home page stops reaching the inline terminal",
+    name: "clicking outside the drawer stops dismissing it",
     file: "components/ShellDrawer.tsx",
-    pattern: /  if \(shellStore\.get\(\)\.inline\) \{[\s\S]*?\r?\n  \}\r?\n/,
+    pattern: /    document\.addEventListener\("pointerdown", onPointerDown\);/,
     replace: "",
+    tests: "components/chrome-interactions.test.ts",
   },
   {
     name: "the status bar writes its dollar into the document again",
     file: "components/system/StatusBar.tsx",
-    pattern: /(<span className="statusbar__prompt-label">prompt<\/span>)/,
+    pattern: /(<span className="statusbar__prompt-label">\{copy\.terminal\}<\/span>)/,
     replace: '<span aria-hidden="true">$ </span>\r\n        $1',
   },
   {

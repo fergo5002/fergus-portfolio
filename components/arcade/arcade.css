@@ -11,16 +11,18 @@
 
 /* ----- the page, while the room is up ----------------------------------- */
 html.arcade-open .crt__screen,
-html.arcade-open .nav,
 html.arcade-open .shell,
 html.arcade-open .statusbar {
+  visibility: hidden;
+}
+html.arcade-entering .nav {
   visibility: hidden;
 }
 
 /* ----- the room --------------------------------------------------------- */
 .arcade-room {
   position: fixed;
-  inset: 0;
+  inset: var(--nav-h) 0 0;
   z-index: 8990;
   overflow-y: auto;
   overflow-x: clip;
@@ -39,6 +41,9 @@ html.arcade-open .statusbar {
   --arcade-halo: color-mix(in srgb, var(--green) 26%, transparent);
   --arcade-amber-wash: color-mix(in srgb, var(--amber) 12%, transparent);
   --arcade-amber-halo: color-mix(in srgb, var(--amber) 32%, transparent);
+}
+.arcade-room.is-entering {
+  top: 0;
 }
 .arcade-room * {
   box-sizing: border-box;

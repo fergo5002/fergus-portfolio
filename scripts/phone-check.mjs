@@ -843,6 +843,11 @@ async function checkRoute(browser, profile, url, outDir, label, readySelector = 
   if (await page.locator("[data-studio-host]").count()) {
     await page.locator("[data-studio-host] .studio").first().waitFor({ state: "visible", timeout });
   }
+  if (await page.locator(".meeting").count()) {
+    // Measure the enhanced calendar, not its native-select fallback halfway
+    // through hydration. revision-check separately proves the native form.
+    await page.locator(".meeting__picker:not([inert])").waitFor({ state: "visible", timeout });
+  }
   if (readySelector) await page.locator(readySelector).first().waitFor({ state: "visible", timeout });
   await page.waitForTimeout(500);
 
@@ -1081,7 +1086,7 @@ function printSummary(results) {
 /* ------------------------------------------------------------------ */
 
 function labelFor(route) {
-  return route.replace(/^\//, "").replace(/\//g, "_") || "root";
+  return route.replace(/^\//, "").replace(/[^a-zA-Z0-9._-]/g, "_") || "root";
 }
 
 /**

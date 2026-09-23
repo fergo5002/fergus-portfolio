@@ -11,7 +11,7 @@ async function read(path, status = 200) {
 const [index, sitemap, llms] = await Promise.all([read("/tools"), read("/sitemap.xml"), read("/llms.txt")]);
 for (const slug of slugs) {
   const path = `/tools/${slug}`;
-  assert.ok(index.includes(`href="${path}"`), `${slug} has a link on the board`);
+  assert.equal(index.includes(`href="${path}"`), slug !== "prove-it", `${slug} follows the curated board selection`);
   assert.ok(sitemap.includes(`${canonical}${path}`), `${slug} is in the sitemap`);
   assert.ok(llms.includes(`${canonical}${path}`), `${slug} is in the agent index`);
   const html = await read(path);
@@ -25,4 +25,4 @@ for (const slug of slugs) {
 assert.ok(!sitemap.includes('/lab'), 'experiments stay outside the sitemap');
 await read('/lab', 404);
 await read('/lab/atlas', 404);
-console.log('Five public studios: board links, canonical metadata, structured data and discovery pass; local lab remains closed.');
+console.log('Five public studios: curated board, canonical metadata and discovery pass; local lab remains closed.');

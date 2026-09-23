@@ -12,7 +12,7 @@ const src = readFileSync(join(process.cwd(), "app", "tools", "page.tsx"), "utf8"
 
 describe("/tools reads the registry", () => {
   it("renders rows from toolListing", () => {
-    expect(src).toMatch(/toolListing\(tools\)/);
+    expect(src).toMatch(/toolListing\(featuredTools\)/);
   });
 
   it("no longer hard-codes a tool", () => {
@@ -24,7 +24,7 @@ describe("/tools reads the registry", () => {
     expect(src).toMatch(/row\.href \?/);
   });
 
-  it("builds the JSON-LD list from live tools only", () => {
-    expect(src).toMatch(/liveTools\.map\(/);
+  it("builds the JSON-LD list from the same featured tools a person sees", () => {
+    expect(src).toMatch(/featuredTools\.map\(/);
   });
 });

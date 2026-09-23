@@ -9,7 +9,7 @@ import { profile } from "@/content/profile";
 import { canonical, blogSchema, breadcrumbSchema, articlePath, OG_IMAGE } from "@/lib/seo";
 
 const DESCRIPTION =
-  "Essays on customer retention, multi-tenant Shopify engineering, why a startup wound down, and the craft of motion on the web.";
+  "Writing by Fergus O'Reilly.";
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name. Spelling
@@ -55,7 +55,6 @@ export default function WritingPage() {
       <h1 className="page__title">
         <Scramble text="writing" speed={34} />
       </h1>
-      <p className="page__lede">{DESCRIPTION}</p>
 
       <ol className="writing__list">
         {articles.map((article) => (
@@ -68,12 +67,6 @@ export default function WritingPage() {
               <span className="writing__dot" aria-hidden="true" />
               {readingMinutes(article.body)} min read
             </p>
-            <p className="writing__desc">{article.description}</p>
-            <ul className="writing__tags" aria-label="Tags">
-              {article.tags.map((tag) => (
-                <li key={tag}>{tag}</li>
-              ))}
-            </ul>
           </li>
         ))}
       </ol>

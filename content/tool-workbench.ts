@@ -1,5 +1,6 @@
 /** Product copy shared by the work surfaces, separate from the tool registry. */
 export const workbenchCopy = {
+  indexTitle: "tools",
   title: "Small tools. Useful results.",
   description: "Find a connection. Make something. Get a useful answer. Free tools for your files, your ideas and your curiosity.",
   back: "All tools",

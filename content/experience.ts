@@ -23,7 +23,6 @@ export const experience: ExperienceEntry[] = [
     role: "Co-Founder, Engineering",
     dates: "Aug 2026 – Present",
     location: "Dublin, Ireland",
-    isNew: true,
     summary: "Operations & Growth solutions for Saunas",
     bullets: [
       "I own the backend and the platform: bookings, payments, customers, and the messaging that brings them back.",
@@ -31,6 +30,17 @@ export const experience: ExperienceEntry[] = [
       "Every site and system is built bespoke in collaboration with saunas.",
     ],
     link: { label: "tighsauna.com", href: "https://tighsauna.com" },
+  },
+  {
+    id: "hatch105",
+    org: "Hatch105",
+    role: "Founder, accelerator programme",
+    dates: "2026",
+    location: "Dublin, Ireland",
+    bullets: [
+      "Ten weeks building Presterly in Jack Pierse's accelerator. One of nine teams, from around 1,700 applicants.",
+      "Met other founders, learnt from people who'd done it, and took the product to live merchants.",
+    ],
   },
   {
     id: "presterly",
@@ -62,16 +72,5 @@ export const experience: ExperienceEntry[] = [
       "Shipped the Slack, Calendar and email integrations, and set the team's code review and CI/CD.",
     ],
     link: { label: "loira.ai", href: "https://loira.ai" },
-  },
-  {
-    id: "tsmf",
-    org: "Trinity Student Managed Fund",
-    role: "Junior Analyst, Tech Hardware",
-    dates: "2024 – 2025",
-    location: "Dublin, Ireland",
-    bullets: [
-      "Semiconductor and tech-hardware equities, for a fund with over €700,000 under management.",
-      "Led an inter-sector pitch team and put the theses in front of fund leadership.",
-    ],
   },
 ];

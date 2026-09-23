@@ -4,8 +4,7 @@ import { requestCommand, takeRequest, subscribeRequests } from "./shell-request"
 /**
  * The nav's `cd arcade` is a button, not a link: the arcade is not a page, it
  * is a program the terminal hosts. So the nav asks the shell to run a command,
- * and whichever Terminal is mounted (inline on the home page, the drawer
- * everywhere else) drains the request. One slot, taken once.
+ * and the drawer's Terminal drains the request. One slot, taken once.
  */
 describe("a pending shell command", () => {
   it("is handed over once and then gone", () => {

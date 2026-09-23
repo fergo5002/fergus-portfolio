@@ -44,8 +44,8 @@ try {
   await go("");
   assert.deepEqual(
     (await page.locator(".bench-card__link").evaluateAll(links => links.map(link => link.getAttribute("href")))).sort(),
-    ["atlas", "drift", "group-lore", "headline-check", "overlap", "pocket-redact", "prove-it", "relief", "resonance", "second-visit"].map(slug => `/tools/${slug}`).sort(),
-    "the board links to every released tool exactly once",
+    ["atlas", "pocket-redact", "group-lore", "relief", "resonance"].map(slug => `/tools/${slug}`).sort(),
+    "the board links to the five featured tools exactly once",
   );
   await shot("index");
   }

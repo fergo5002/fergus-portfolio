@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import PhosphorScreen from "./system/PhosphorScreen";
 import StatusBar from "./system/StatusBar";
 import ShellDrawer from "./ShellDrawer";
+import Nav from "./Nav";
 import Screensaver from "./system/Screensaver";
 import RouteTransition from "./system/RouteTransition";
 import EjectRig from "./system/EjectRig";
@@ -33,6 +34,7 @@ export default function CrtShell({ children }: { children: ReactNode }) {
       <PhosphorScreen />
       <div className="crt__assembly">
         <div className="crt__screen">{children}</div>
+        <Nav />
         <div className="crt__scanlines" aria-hidden="true" />
         <div className="crt__vignette" aria-hidden="true" />
         <div className="crt__glass" aria-hidden="true" />

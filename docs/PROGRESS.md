@@ -1,3 +1,13 @@
+## 2026-09-23: portfolio and meeting requests
+
+Implementation is on `codex/portfolio-revisions`. See
+`docs/portfolio-revisions-2026-09-23.md` for decisions and verification limits.
+Homepage, writing, experience, featured tools, project artwork and common chrome
+are revised. Coffee/call requests use the existing Resend inbox and require email
+confirmation. The fresh Node 24 Docker build passed 2,591 tests, and desktop,
+phone and no-JavaScript meeting journeys passed against that build. Release gate
+status and the canonical production record are tracked in
+[PR #25](https://github.com/fergo5002/fergus-portfolio/pull/25).
 # PROGRESS: living project state
 
 > Update this file as you work. It is the handoff contract: the next agent reads it first.
