@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { MARKER_COUNT, MIN_DOCUMENT_SHARE } from "./reference";
 import { referenceDocuments, siteReference } from "./corpus";
 import { words } from "./text";
+import { articles } from "@/content/articles";
+import { toPlainText } from "@/lib/markdown";
 
 /**
  * This corpus is the worked example and nothing else.
@@ -18,8 +20,9 @@ import { words } from "./text";
  * demo with it.
  */
 describe("the site's own corpus", () => {
-  it("is every published article, as plain text", () => {
+  it("uses the long-form articles, leaving short visual notes out of the reference", () => {
     const documents = referenceDocuments();
+    expect(documents).toEqual(articles.filter((article) => article.format !== "visual-note").map((article) => toPlainText(article.body)));
     expect(documents.length).toBeGreaterThanOrEqual(5);
     for (const d of documents) expect(words(d).length).toBeGreaterThan(300);
     // toPlainText drops fenced code, so no article body reaches the corpus with

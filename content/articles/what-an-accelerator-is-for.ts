@@ -5,7 +5,7 @@ export const acceleratorWorth: Article = {
   title: "What an accelerator is actually for",
   description:
     "One of nine from about 1,700 applicants, ten weeks in, company wound down. What the programme was genuinely worth, and what it could never have fixed.",
-  date: "2026-09-04",
+  date: "2026-09-03",
 
   updated: "2026-09-13",
   tags: ["Startups", "Accelerators", "Founders"],

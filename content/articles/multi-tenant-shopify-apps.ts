@@ -4,14 +4,14 @@ export const multiTenantShopify: Article = {
   slug: "multi-tenant-shopify-apps",
   title: "Multi-tenant Shopify apps: what I'd get right first",
   description:
-    "Two multi-tenant Shopify apps later, here are the decisions that were expensive to change and the ones that turned out not to matter at all.",
-  date: "2026-08-26",
+    "Building multi-tenant Shopify apps: the decisions that were expensive to change and the ones that turned out not to matter at all.",
+  date: "2026-07-23",
 
   updated: "2026-09-13",
   tags: ["Shopify", "Multi-tenant", "Architecture", "TypeScript"],
   summary:
     "Architecture guidance for multi-tenant Shopify apps: scoping every query by shop, handling duplicate and out-of-order webhooks with idempotency keys, storing money in the shop's own currency, surviving token revocation, and treating uninstall as a soft state rather than a delete.",
-  body: `I have built two multi-tenant Shopify apps. One reached 34 stores holding 423,000 customers, the other runs bookings and payments for sauna venues. Most of what I worried about up front did not matter. A handful of things I never thought about turned out to be structural. This is that list.
+  body: `Building multi-tenant Shopify apps taught me to worry about the boring parts. Most of what I worried about up front did not matter. A handful of things I never thought about turned out to be structural. This is that list.
 
 ## Scope by shop at the lowest level you can
 

@@ -5,7 +5,7 @@ export const crtThatBehaves: Article = {
   title: "Building a CRT that behaves like a CRT",
   description:
     "Most CRT effects are a scanline overlay and some glow. Deriving everything from one premise, a beam painting phosphor, gets you somewhere better.",
-  date: "2026-08-06",
+  date: "2026-08-07",
 
   updated: "2026-09-13",
   tags: ["WebGL", "Motion", "Frontend", "Craft"],
