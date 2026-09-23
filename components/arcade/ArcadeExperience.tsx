@@ -91,6 +91,10 @@ function Room({ program, onExit }: Props) {
 
   useEffect(() => {
     const html = document.documentElement;
+    // Pathname does not change when Back leaves /contact?meet=coffee for
+    // /contact. History still changes the page underneath this room.
+    const onHistory = () => shellStore.dispatch({ type: "close" });
+    window.addEventListener("popstate", onHistory);
     html.classList.add("arcade-open");
     html.classList.add("arcade-entering");
     shellStore.dispatch({ type: "arcade", phase: "entering" });
@@ -98,6 +102,7 @@ function Room({ program, onExit }: Props) {
     setEjected(false);
     setGravity(false);
     return () => {
+      window.removeEventListener("popstate", onHistory);
       html.classList.remove("arcade-open");
       html.classList.remove("arcade-entering");
       shellStore.dispatch({ type: "arcade", phase: "closed" });

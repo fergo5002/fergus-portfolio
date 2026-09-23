@@ -152,6 +152,32 @@ async function run(name, engine, device) {
     await page.waitForFunction(() => !document.documentElement.classList.contains("scroll-locked"));
     check("browser history also releases the arcade during its entrance");
 
+    // The same pathname can be a different view, as on /contact?meet=coffee.
+    // A native history entry gives this check its own query without depending
+    // on contact copy or creating a meeting request.
+    await page.evaluate(() => window.history.pushState(window.history.state, "", "?chrome-history=1"));
+    await page.waitForURL(`${base}/projects?chrome-history=1`);
+    for (const direction of ["back", "forward"]) {
+      await page.locator(".nav__list").evaluate(el => { el.scrollLeft = el.scrollWidth; });
+      await press(door);
+      await page.locator(".arcade-room").waitFor();
+      if (direction === "back") await page.goBack();
+      else await page.goForward();
+      await page.waitForURL(`${base}/projects${direction === "forward" ? "?chrome-history=1" : ""}`);
+      await page.locator(".arcade-room").waitFor({ state: "detached" });
+      await page.waitForFunction(() => !document.documentElement.classList.contains("scroll-locked"));
+      assert.equal(await page.locator(".shell").count(), 0);
+      check("query-only history exits the arcade and releases scroll", { direction });
+    }
+    // A listener left behind by the room would close an ordinary drawer now.
+    await press(page.locator(".statusbar__prompt"));
+    await page.locator(".shell .term__input").waitFor();
+    await page.goBack();
+    await page.waitForURL(`${base}/projects`);
+    assert.equal(await page.locator(".shell").count(), 1);
+    await press(page.locator(".shell__close"));
+    check("leaving the room removes its history listener");
+
     const geometry = await page.evaluate(() => {
       const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
       const controls = [...document.querySelectorAll(".machine__btn, .statusbar__prompt")].map(el => {
