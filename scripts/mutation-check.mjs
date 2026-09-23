@@ -42,6 +42,20 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 /** Each: break one guard, expect the suite to notice. */
 const MUTATIONS = [
   {
+    name: "meeting requests accept an unoffered slot",
+    file: "lib/meeting-server.ts",
+    pattern: /if \(!validMeetingSlot\(fields.slot, deps.now \?\? new Date\(\)\)\)/,
+    replace: "if (false)",
+    tests: "lib/meeting.test.ts",
+  },
+  {
+    name: "meeting requests lose Irish summer time",
+    file: "lib/meeting.ts",
+    pattern: /export const MEETING_ZONE = "Europe\/Dublin";/,
+    replace: 'export const MEETING_ZONE = "UTC";',
+    tests: "lib/meeting.test.ts",
+  },
+  {
     name: "phone polish: arcade focus waits until after its first paint",
     file: "components/arcade/ArcadeExperience.tsx",
     pattern: /useLayoutEffect\(\(\) => \{\r?\n    roomRef.current\?\.focus/,

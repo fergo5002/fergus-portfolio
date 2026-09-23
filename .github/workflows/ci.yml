@@ -107,6 +107,10 @@ jobs:
         run: node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap --out .phone-check
       - name: phone and desktop shell interactions
         run: node scripts/phone-polish-check.mjs --base http://localhost:3000 --out .phone-check/polish
+      - name: homepage and meeting request journeys
+        run: node scripts/revision-check.mjs
+        env:
+          REVISION_BASE: http://localhost:3000
       - name: phone check through the hidden arcade door
         run: node scripts/arcade-phone-check.mjs --base http://localhost:3000 --out .phone-check/arcade
       - name: tools workflows on desktop and phones

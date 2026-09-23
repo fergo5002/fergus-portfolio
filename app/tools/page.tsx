@@ -7,7 +7,7 @@ import { workbenchCopy } from "@/content/tool-workbench";
 import "@/components/tools/workbench.css";
 import Talk from "@/components/Talk";
 import { profile } from "@/content/profile";
-import { liveTools, toolShellCopy, tools } from "@/content/tools";
+import { featuredTools, toolShellCopy } from "@/content/tools";
 import { OG_IMAGE, breadcrumbSchema, canonical, collectionPageSchema, toolPath } from "@/lib/seo";
 import { toolListing } from "@/lib/tools/listing";
 
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
  * `lib/tools/listing.ts`, where it can be tested.
  */
 export default function ToolsPage() {
-  const rows = toolListing(tools);
+  const rows = toolListing(featuredTools);
 
   return (
     <div className="stack tools-workbench">
@@ -49,7 +49,7 @@ export default function ToolsPage() {
             name: `Tools · ${profile.shortName}`,
             description: DESCRIPTION,
             itemType: "WebApplication",
-            items: liveTools.map((t) => ({
+            items: featuredTools.map((t) => ({
               name: t.name,
               url: toolPath(t.slug),
               description: t.blurb,
@@ -64,13 +64,11 @@ export default function ToolsPage() {
       <PromptLine command={toolShellCopy.indexCommand} path={toolShellCopy.indexPath} />
       <header className="bench-intro">
         <div>
-          <h1>{workbenchCopy.title}</h1>
-          <p>{workbenchCopy.description}</p>
+          <h1>{workbenchCopy.indexTitle}</h1>
           <p className="bench-subline">{workbenchCopy.noAccount}</p>
         </div>
-        <span className="bench-intro__count" aria-label={`${liveTools.length} tools`}>{String(liveTools.length).padStart(2, "0")}</span>
+        <span className="bench-intro__count" aria-label={`${featuredTools.length} tools`}>{String(featuredTools.length).padStart(2, "0")}</span>
       </header>
-      <p className="bench-note">{workbenchCopy.example}</p>
       <ul className="bench-grid">
         {rows.map((row) => (
           <li key={row.slug} className="bench-card">
@@ -78,11 +76,9 @@ export default function ToolsPage() {
               <Link href={row.href} className="bench-card__link">
                 <div className="bench-card__top">
                   <h2>{row.name}</h2>
-                  <span className="bench-card__category">{workbenchCopy.tools[row.slug]?.category}</span>
                 </div>
                 <p className="bench-card__purpose">{workbenchCopy.tools[row.slug]?.purpose ?? row.blurb}</p>
                 <ToolPreview slug={row.slug} />
-                <p>{workbenchCopy.tools[row.slug]?.output ?? row.blurb}</p>
                 <p className="bench-card__input">{workbenchCopy.tools[row.slug]?.input}</p>
                 <span className="bench-card__open">{workbenchCopy.open}</span>
               </Link>

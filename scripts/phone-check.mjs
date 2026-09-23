@@ -1081,7 +1081,7 @@ function printSummary(results) {
 /* ------------------------------------------------------------------ */
 
 function labelFor(route) {
-  return route.replace(/^\//, "").replace(/\//g, "_") || "root";
+  return route.replace(/^\//, "").replace(/[^a-zA-Z0-9._-]/g, "_") || "root";
 }
 
 /**

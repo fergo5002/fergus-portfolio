@@ -56,7 +56,7 @@ export const profile: Profile = {
   // replaced. "CS @ Trinity" used to sit in the middle segment and was cut, not
   // lost: the education line renders directly beneath this and already says
   // Trinity.
-  tagline: "Technical Founder · I build things that hold up",
+  tagline: "I build things. Then I scale them.",
   location: "Dublin, Ireland",
   education: "BA Computer Science & Business @ Trinity College Dublin · 1.1",
   /**

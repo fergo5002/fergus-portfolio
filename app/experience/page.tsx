@@ -10,7 +10,7 @@ import Talk from "@/components/Talk";
 import { canonical, experiencePageSchema, breadcrumbSchema, OG_IMAGE } from "@/lib/seo";
 
 const DESCRIPTION =
-  "Tigh Sauna (Co-Founder), Presterly (Co-Founder & CTO, Hatch105), Loira AI (Founding Engineer), and the Trinity Student Managed Fund.";
+  "Tigh Sauna (Co-Founder), Hatch105, Presterly (Co-Founder & CTO), and Loira AI (Founding Engineer).";
 
 export const metadata: Metadata = {
   title: "Experience",

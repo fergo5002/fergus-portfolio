@@ -12,3 +12,4 @@ tsconfig.tsbuildinfo
 
 # phone-check screenshots
 .phone-check/
+.revision-check/

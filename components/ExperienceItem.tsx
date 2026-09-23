@@ -18,7 +18,7 @@ export default function ExperienceItem({
   return (
     <RasterReveal delay={index * 110} className="exp__reveal">
       <TiltCard max={4}>
-        <article className="exp">
+        <article className="exp" id={item.id} style={{ scrollMarginTop: "calc(var(--nav-h) + 24px)" }}>
           <div className="exp__head">
             <span className="exp__commit" aria-hidden="true">
               ● commit

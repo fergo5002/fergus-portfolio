@@ -3,6 +3,9 @@ import JsonLd from "@/components/JsonLd";
 import PromptLine from "@/components/PromptLine";
 import Scramble from "@/components/Scramble";
 import ContactForm from "@/components/ContactForm";
+import MeetingCalendar from "@/components/MeetingCalendar";
+import MeetingCards from "@/components/MeetingCards";
+import { meetingCopy } from "@/content/meeting";
 import { contactCopy } from "@/content/contact";
 import { profile } from "@/content/profile";
 import { OG_IMAGE, breadcrumbSchema, canonical, contactPageSchema } from "@/lib/seo";
@@ -38,7 +41,9 @@ export const metadata: Metadata = {
  * have to, and if the send ever fails, the address they need is already on
  * screen rather than behind another click.
  */
-export default function ContactPage() {
+export default async function ContactPage({ searchParams }: { searchParams: Promise<{ meet?: string }> }) {
+  const { meet } = await searchParams;
+  const kind = meet === "coffee" || meet === "call" ? meet : null;
   return (
     <div className="stack">
       <JsonLd
@@ -52,11 +57,14 @@ export default function ContactPage() {
       />
       <PromptLine command={contactCopy.command} path={contactCopy.path} />
       <h1 className="page__title">
-        <Scramble text={contactCopy.title} speed={34} />
+        <Scramble text={kind ? meetingCopy[kind] : contactCopy.title} speed={34} />
       </h1>
-      <p className="page__lede">{contactCopy.lede}</p>
+      {kind && <p className="page__lede">{meetingCopy.intro}</p>}
 
-      <ContactForm />
+      {kind ? <MeetingCalendar key={kind} kind={kind} now={new Date().toISOString()} /> : <>
+        <ContactForm />
+        <div className="contact-meetings"><MeetingCards /></div>
+      </>}
 
       <section className="cdirect" aria-labelledby="contact-direct">
         <h2 id="contact-direct" className="cdirect__title">
