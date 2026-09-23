@@ -181,49 +181,50 @@ async function loira() {
 }
 
 // ── 6. Remand ───────────────────────────────────────────────────────────────
-// Authored rather than a stock screenshot: a thread list with vote momentum and
-// a clustered demand signal, which is what Remand actually does to online noise.
+// An authored concept illustration, not Reddit UI or measured campaign results.
+// Example questions converge on a positioning hypothesis, with no invented
+// vote counts, percentages or growth curve. Rebuild with --remand-only.
 async function remand() {
   const rows = [
-    { votes: "4.2k", w: 300, sub: "r/entrepreneur", hot: 1 },
-    { votes: "1.8k", w: 236, sub: "r/SaaS", hot: 0.72 },
-    { votes: "942", w: 188, sub: "r/smallbusiness", hot: 0.5 },
-    { votes: "411", w: 140, sub: "r/startups", hot: 0.32 },
+    ["A better way to", "hand work over?"],
+    ["Where did that", "client note go?"],
+    ["Still chasing", "project updates?"],
   ];
-
-  const thread = rows
-    .map((r, i) => {
-      const y = 150 + i * 78;
+  const threads = rows
+    .map((lines, i) => {
+      const y = 166 + i * 99;
       return `
-    <g transform="translate(70 ${y})">
-      <path d="M0 14 L11 0 L22 14 Z" fill="#FF4500" opacity="${0.35 + r.hot * 0.65}"/>
-      <text x="4" y="34" font-family="monospace" font-size="15" fill="#8b98a5">${r.votes}</text>
-      <rect x="74" y="0" width="${r.w}" height="13" rx="6.5" fill="#c9d1d9" opacity="${0.28 + r.hot * 0.45}"/>
-      <rect x="74" y="22" width="${r.w * 0.62}" height="9" rx="4.5" fill="#c9d1d9" opacity="0.16"/>
-      <text x="${74 + r.w + 26}" y="12" font-family="monospace" font-size="14" fill="#FF4500" opacity="0.75">${r.sub}</text>
+    <g transform="translate(54 ${y})">
+      <path d="M0 16 H360 V78 H37 L23 90 V78 H0 Z" fill="#1a211e" stroke="#48564d"/>
+      <path d="M19 46 L32 31 L45 46 H37 V61 H27 V46 Z" fill="#ff4500"/>
+      <text x="64" y="42" fill="#f4f7ef" font-size="25">${lines[0]}</text>
+      <text x="64" y="69" fill="#f4f7ef" font-size="25">${lines[1]}</text>
     </g>`;
     })
     .join("");
 
-  // Momentum curve climbing to the right of the thread list.
-  const pts = [0, 0.12, 0.1, 0.28, 0.34, 0.3, 0.52, 0.66, 0.62, 0.84, 1]
-    .map((v, i, a) => `${740 + (i / (a.length - 1)) * 160},${430 - v * 190}`)
-    .join(" ");
-
   const markup = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${CARD_W}" height="${CARD_H}" viewBox="0 0 ${CARD_W} ${CARD_H}">
-  <rect width="${CARD_W}" height="${CARD_H}" fill="#0d1117"/>
-  <g stroke="#c9d1d9" stroke-width="1" opacity="0.06">
-    ${[1, 2, 3, 4, 5].map((i) => `<line x1="0" y1="${i * 90}" x2="${CARD_W}" y2="${i * 90}"/>`).join("")}
+  <rect width="${CARD_W}" height="${CARD_H}" fill="#0c1210"/>
+  <g font-family="'Courier New', monospace">
+    <text x="50" y="111" font-size="82" font-weight="700" letter-spacing="-5" fill="#f4f7ef">Reddit</text>
+    <path d="M372 84 H468 M450 66 L468 84 L450 102" fill="none" stroke="#ff4500" stroke-width="7"/>
+    <text x="515" y="111" font-size="82" font-weight="700" letter-spacing="-5" fill="#ff6a35">growth</text>
+    ${threads}
+    <g fill="none" stroke="#ff4500" stroke-width="3">
+      <path d="M416 214 C466 214 469 310 511 310"/>
+      <path d="M416 313 H511"/>
+      <path d="M416 412 C466 412 469 316 511 316"/>
+      <path d="M511 313 H545 M533 301 L545 313 L533 325"/>
+    </g>
+    <rect x="566" y="181" width="340" height="281" fill="#ff6a35"/>
+    <path d="M582 165 H922 V446" fill="none" stroke="#ff6a35" stroke-width="1"/>
+    <text x="594" y="235" fill="#152019" font-size="19">A product angle to test</text>
+    <text x="592" y="298" fill="#0c1210" font-size="43" font-weight="700" letter-spacing="-2">Handover,</text>
+    <text x="592" y="346" fill="#0c1210" font-size="43" font-weight="700" letter-spacing="-2">without</text>
+    <text x="592" y="394" fill="#0c1210" font-size="43" font-weight="700" letter-spacing="-2">the chase.</text>
+    <text x="54" y="507" font-size="16" fill="#b7c5bb">Remand / illustrative questions and positioning</text>
   </g>
-  <text x="70" y="86" font-family="monospace" font-size="20" fill="#c9d1d9" opacity="0.85">listening to the noise</text>
-  <text x="70" y="112" font-family="monospace" font-size="13" fill="#8b98a5">4 threads clustered into one demand signal</text>
-  ${thread}
-  <polyline points="${pts}" fill="none" stroke="#FF4500" stroke-width="3" stroke-linejoin="round" opacity="0.9"/>
-  <text x="740" y="466" font-family="monospace" font-size="13" fill="#FF4500" opacity="0.8">MOMENTUM</text>
-  <rect x="70" y="470" width="600" height="8" rx="4" fill="#c9d1d9" opacity="0.1"/>
-  <rect x="70" y="470" width="430" height="8" rx="4" fill="#FF4500" opacity="0.75"/>
-  <text x="70" y="502" font-family="monospace" font-size="13" fill="#8b98a5">SIGNAL STRENGTH 72%</text>
 </svg>`;
   const info = await sharp(svg(markup)).png({ compressionLevel: 9 }).toFile(join(OUT, "remand.png"));
   done("remand.png", `${info.width}x${info.height} ${(info.size / 1024).toFixed(0)}KB`);
@@ -293,8 +294,15 @@ async function contrabot() {
 }
 
 console.log("building public/img ...");
-await tighSauna();
-if (!process.argv.includes("--tigh-only")) {
+const remandOnly = process.argv.includes("--remand-only");
+const tighOnly = process.argv.includes("--tigh-only");
+if (remandOnly && tighOnly) throw new Error("Choose either --remand-only or --tigh-only");
+if (remandOnly) {
+  await remand();
+} else if (tighOnly) {
+  await tighSauna();
+} else {
+  await tighSauna();
   await portrait();
   await campanile();
   await presterly();

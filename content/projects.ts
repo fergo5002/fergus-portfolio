@@ -84,7 +84,7 @@ export const projects: Project[] = [
     stack: ["Next.js", "React 19", "FastAPI", "Supabase", "pgvector", "OpenAI", "Anthropic"],
     links: [{ label: "live", href: "https://nybblers.vercel.app" }],
     image: "/img/remand.png",
-    imageAlt: "Illustration: a list of forum threads with vote counts, clustering into one rising demand signal",
+    imageAlt: "Remand illustration: Reddit questions about lost notes and chasing updates converge on a positioning idea, Handover without the chase",
   },
   {
     slug: "under-the-campanile",
