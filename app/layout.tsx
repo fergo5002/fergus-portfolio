@@ -5,7 +5,6 @@ import PostHogAnalytics from "@/components/analytics/PostHogAnalytics";
 import "./globals.css";
 import AwayTitle from "@/components/AwayTitle";
 import CrtShell from "@/components/CrtShell";
-import Nav from "@/components/Nav";
 import SystemProvider from "@/components/system/SystemProvider";
 import { profile } from "@/content/profile";
 import JsonLd from "@/components/JsonLd";
@@ -143,7 +142,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </a>
         <SystemProvider>
           <CrtShell>
-            <Nav />
             <main id="main" className="screen">
               {children}
             </main>

@@ -4,38 +4,34 @@ import type { Store } from "./external-store";
 /**
  * The shell drawer's state, kept pure so it can be tested without a DOM.
  *
- * Two facts, one machine. `open` is whether the drawer is showing. `inline` is
- * whether the current route already hosts the terminal in the page (the home
- * page does), in which case the drawer refuses to open: one terminal on a
- * page, never two. `components/ShellDrawer.tsx` feeds the route in and reads
- * the result; nothing else decides.
+ * One drawer on every route. The arcade remains a program inside its Terminal,
+ * and reports its phase so the navigation can join it after the entrance.
+ * Closing the owner clears that phase, including when a navigation interrupts it.
  */
 export type ShellState = {
   open: boolean;
-  inline: boolean;
+  arcade: "closed" | "entering" | "ready";
 };
 
 export type ShellEvent =
   | { type: "open" }
   | { type: "close" }
   | { type: "toggle" }
-  | { type: "route"; inline: boolean };
+  | { type: "arcade"; phase: ShellState["arcade"] };
 
-export const INITIAL_SHELL: ShellState = { open: false, inline: false };
+export const INITIAL_SHELL: ShellState = { open: false, arcade: "closed" };
 
 export function shellReduce(state: ShellState, event: ShellEvent): ShellState {
   switch (event.type) {
     case "open":
-      return state.inline || state.open ? state : { ...state, open: true };
+      return state.open ? state : { ...state, open: true };
     case "close":
-      return state.open ? { ...state, open: false } : state;
+      return state.open ? { open: false, arcade: "closed" } : state;
     case "toggle":
       return shellReduce(state, { type: state.open ? "close" : "open" });
-    case "route":
-      if (event.inline === state.inline) return state;
-      // Arriving on the inline host closes the drawer. Leaving it changes
-      // nothing else: a drawer that was open stays open across navigation.
-      return { open: event.inline ? false : state.open, inline: event.inline };
+    case "arcade":
+      if (!state.open || event.phase === state.arcade) return state;
+      return { ...state, arcade: event.phase };
   }
 }
 

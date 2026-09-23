@@ -14,9 +14,9 @@ const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\{\/\*[
 
 describe("cd arcade in the nav (Fergus, 2026-09-06)", () => {
   it("is a button that asks the shell to open the door, because the arcade is not a page", () => {
-    expect(code(nav)).toMatch(/<button[^>]*className="nav__link nav__link--cmd"/);
+    expect(code(nav)).toMatch(/<button[^>]*className=\{`nav__link nav__link--cmd/);
     expect(code(nav)).toContain('requestCommand("cd arcade")');
-    expect(code(nav)).toContain("summonShell()");
+    expect(code(nav)).toContain('shellStore.dispatch({ type: "open" })');
   });
 
   it("never becomes a link: there is no /arcade route to crawl", () => {

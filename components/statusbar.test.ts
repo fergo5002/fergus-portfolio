@@ -10,7 +10,17 @@ describe("the status bar on a phone", () => {
     expect(source).toContain("shortPwd(path)");
   });
 
-  it("marks the uptime so the stylesheet can drop it for room", () => {
-    expect(source).toContain('className="statusbar__seg statusbar__up"');
+  it("leaves room for the real controls instead of decorative telemetry", () => {
+    expect(source).not.toMatch(/formatUptime|memoryAddress|fpsRef|posRef/);
+    expect(source).toContain('aria-label={copy.controls}');
+  });
+
+  it("keeps control labels visible on a narrow screen", () => {
+    const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+    for (const cls of ["machine__label", "statusbar__prompt-label"]) {
+      for (const match of css.matchAll(new RegExp(`\\.${cls}\\s*\\{([^}]*)\\}`, "g"))) {
+        expect(match[1]).not.toMatch(/clip-path|display:\s*none|width:\s*1px/);
+      }
+    }
   });
 });

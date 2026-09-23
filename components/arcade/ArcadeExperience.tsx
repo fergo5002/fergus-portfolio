@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { usePathname } from "next/navigation";
 import { cabinets, collectionCopy as copy } from "@/content/arcade-collection";
 import { arcadeCopy } from "@/content/arcade";
 import { fetchBoards } from "@/lib/arcade/board-client";
@@ -10,6 +11,7 @@ import type { ProgramSpec } from "@/lib/arcade/program";
 import type { Link } from "@/lib/arcade/network";
 import { arcadeSession, markArcadeEntered, setArcadeBoards } from "@/lib/arcade/session";
 import { todaySeed } from "@/lib/arcade/attract";
+import { shellStore } from "@/lib/shell";
 import { useSystem } from "@/components/system/SystemProvider";
 import ArcadeEntrance from "./ArcadeEntrance";
 import ArcadeScreen from "./ArcadeScreen";
@@ -25,11 +27,9 @@ import "./arcade.css";
  *
  * A fixed panel at z-index 8990: above the page, below the scanlines, the
  * vignette, the glass and the flicker, so everything the site does to make a
- * page read as a CRT reaches the arcade too. The page underneath, the nav,
- * the drawer and the status strip are hidden by `html.arcade-open` while it
- * is up, because the drawer and the strip sit above 9000 and would draw over
- * it, and the strip's prompt button would unmount the terminal this was
- * launched from.
+ * page read as a CRT reaches the arcade too. The page, drawer and status
+ * strip are hidden while it is up. The regular navigation returns after the
+ * entrance, and a normal link closes this room's host before changing route.
  *
  * `data-lenis-prevent` is the scroll fix. Lenis is stopped for the document
  * behind the room, and a stopped Lenis cancels every wheel event it sees
@@ -47,6 +47,8 @@ type Screen =
 type Props = { program: ProgramSpec; onExit(lines: string[]): void };
 
 function Room({ program, onExit }: Props) {
+  const path = usePathname();
+  const enteredPath = useRef(path);
   const { reducedMotion, audioLive, setAudioEnabled, setScrollLocked, setEjected, setGravity, degauss, frame, audio } = useSystem();
   const theme = useArcadeTheme();
   const roomRef = useRef<HTMLElement>(null);
@@ -75,6 +77,12 @@ function Room({ program, onExit }: Props) {
 
   useEffect(() => refreshBoards(), [refreshBoards]);
 
+  // Normal nav links close before navigation. Back/forward and other route
+  // changes must release the same owner rather than leave a new page hidden.
+  useEffect(() => {
+    if (path !== enteredPath.current) shellStore.dispatch({ type: "close" });
+  }, [path]);
+
   // Own keyboard input before the room paints. Waiting for a passive effect
   // leaves Escape able to reach the drawer and unmount its terminal as well.
   useLayoutEffect(() => {
@@ -84,11 +92,15 @@ function Room({ program, onExit }: Props) {
   useEffect(() => {
     const html = document.documentElement;
     html.classList.add("arcade-open");
+    html.classList.add("arcade-entering");
+    shellStore.dispatch({ type: "arcade", phase: "entering" });
     setScrollLocked(true);
     setEjected(false);
     setGravity(false);
     return () => {
       html.classList.remove("arcade-open");
+      html.classList.remove("arcade-entering");
+      shellStore.dispatch({ type: "arcade", phase: "closed" });
       setScrollLocked(false);
       linkRef.current?.close();
       // Belt and braces with the entrance's own cleanup: never leave the tube dark.
@@ -141,10 +153,9 @@ function Room({ program, onExit }: Props) {
 
   return createPortal(
     <section
-      className="arcade-room"
+      className={`arcade-room${entering ? " is-entering" : ""}`}
       ref={roomRef}
-      role="dialog"
-      aria-modal="true"
+      role="region"
       aria-label={copy.label}
       data-lenis-prevent=""
       tabIndex={-1}
@@ -165,6 +176,8 @@ function Room({ program, onExit }: Props) {
           onDone={() => {
             markArcadeEntered();
             setEntering(false);
+            document.documentElement.classList.remove("arcade-entering");
+            shellStore.dispatch({ type: "arcade", phase: "ready" });
             degauss();
             audio.relay();
           }}

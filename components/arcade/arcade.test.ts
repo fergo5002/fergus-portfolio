@@ -221,8 +221,11 @@ describe("the room sits inside the tube", () => {
     for (const m of css.matchAll(/z-index:\s*(\d+)/g)) expect(Number(m[1])).toBeLessThan(9000);
   });
 
-  it("hides the page, nav, drawer and status strip while it is up, and puts them back", () => {
-    expect(css).toMatch(/html\.arcade-open \.crt__screen,\s*html\.arcade-open \.nav,\s*html\.arcade-open \.shell,\s*html\.arcade-open \.statusbar\s*\{\s*visibility:\s*hidden;/);
+  it("hides the page and terminal chrome, and hides the nav only for the entrance", () => {
+    expect(css).toMatch(/html\.arcade-open \.crt__screen,\s*html\.arcade-open \.shell,\s*html\.arcade-open \.statusbar\s*\{\s*visibility:\s*hidden;/);
+    expect(css).toMatch(/html\.arcade-entering \.nav\s*\{\s*visibility:\s*hidden;/);
+    expect(css).not.toMatch(/html\.arcade-open \.nav/);
+    expect(css).toMatch(/\.arcade-room\s*\{[^}]*inset:\s*var\(--nav-h\) 0 0;/);
     expect(room).toMatch(/classList\.add\("arcade-open"\)/);
     expect(room).toMatch(/classList\.remove\("arcade-open"\)/);
   });

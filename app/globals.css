@@ -31,7 +31,7 @@
   --sp-6: 48px;
 
   --nav-h: 44px;
-  --status-h: 26px;
+  --status-h: 48px;
   --maxw: 1040px;
   --radius: 6px;
   --glow: 0 0 2px rgba(51, 255, 102, 0.7), 0 0 7px rgba(51, 255, 102, 0.35);
@@ -1464,13 +1464,12 @@ html.js .exp__spine {
   z-index: 9100;
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
+  gap: var(--sp-2);
   padding: 0 var(--sp-3);
-  background: rgba(8, 12, 8, 0.9);
+  background: var(--bg-panel);
   border-top: 1px solid var(--green-line);
-  backdrop-filter: blur(2px);
-  font-size: 0.68rem;
-  color: var(--green-dim);
+  font-size: 0.72rem;
+  color: var(--green);
   white-space: nowrap;
   overflow: hidden;
   font-variant-numeric: tabular-nums;
@@ -1478,15 +1477,14 @@ html.js .exp__spine {
 }
 .statusbar__brand {
   color: var(--green);
+  padding-right: var(--sp-3);
+  border-right: 1px solid var(--green-line);
 }
 .statusbar__pwd {
   color: var(--amber);
 }
 .statusbar__pwd-short {
   display: none;
-}
-.statusbar__mem {
-  color: var(--green-faint);
 }
 
 /* ----- screensaver -------------------------------------------------------- */
@@ -1897,12 +1895,9 @@ html.js .exp__spine {
     --sp-5: 24px;
     --sp-6: 32px;
     --nav-h: 44px;
-    --status-h: 22px;
+    --status-h: 44px;
   }
 
-  .statusbar__hide-sm {
-    display: none;
-  }
   .statusbar {
     font-size: 0.62rem;
     gap: var(--sp-2);
@@ -2282,7 +2277,12 @@ html.is-gravity .statusbar {
 
 /* ----- machine controls --------------------------------------------------- */
 .statusbar__readouts {
-  display: contents;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .machine {
@@ -2290,21 +2290,22 @@ html.is-gravity .statusbar {
   align-items: center;
   gap: var(--sp-1);
   margin-left: auto;
-  padding-right: 2px;
+  flex: none;
 }
 
 .machine__btn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 7px;
+  min-height: 32px;
+  padding: 4px 10px;
   font: inherit;
   font-size: 11px;
   line-height: 1;
-  color: var(--green-dim);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 3px;
+  color: var(--green);
+  background: var(--bg-panel-2);
+  border: 1px solid var(--green-line);
+  border-radius: 2px;
   cursor: pointer;
   transition:
     color 140ms ease,
@@ -2354,18 +2355,10 @@ html.is-gravity .statusbar {
 }
 
 @media (max-width: 560px) {
-  /* On a narrow strip the labels are the first thing to go; the glyphs and the
-     title attributes carry the meaning. */
-  .machine__label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
+  /* The words explain the controls. Spare glyphs go before their labels do. */
+  .machine__glyph { display: none; }
   .machine__btn {
-    padding: 2px 5px;
+    padding: 0 4px;
   }
 }
 
@@ -2503,23 +2496,8 @@ html.is-gravity .statusbar {
   }
 }
 
-/* The other half: space, not thumbs. The costume readout that carries no
-   information (the memory address) goes, the working directory truncates
-   rather than pushing the controls out of reach, and the control row stops
-   claiming flex space. 768px rather than a new number, because that is where
-   this file already shrinks the bar (`--status-h: 22px`, `.statusbar` down to
-   0.62rem, `.statusbar__hide-sm` gone), so the readouts leave with the rest of
-   the narrow-screen budget instead of at a breakpoint of their own.
-
-   Measured on a WebKit touch context at 820, 900 and 1280 CSS px, against a
-   production build on 2026-09-03: the bar is 44px tall, the machine buttons
-   are 49 by 44, the memory readout is in it, the widest thing in the bar ends
-   16px inside the viewport, and `scrollWidth` equals `clientWidth` on all
-   three. */
+/* On a narrow touch screen the controls take only their own space. */
 @media (hover: none) and (max-width: 768px) {
-  .statusbar__mem {
-    display: none;
-  }
   .machine {
     flex: none;
     gap: 0;
@@ -3639,20 +3617,20 @@ html.is-ejecting .shell {
 }
 
 /* ----- the status bar prompt ----------------------------------------------
-   A real button in the status strip: the drawer's handle on every route, and
-   on the home page a jump to the inline terminal. */
+   A real button in the status strip: the drawer's handle on every route. */
 .statusbar__prompt {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 2px 7px;
+  min-height: 32px;
+  padding: 4px 12px;
   font: inherit;
   font-size: 11px;
   line-height: 1;
   color: var(--amber);
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 3px;
+  background: color-mix(in srgb, var(--amber) 7%, var(--bg-panel));
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent);
+  border-radius: 2px;
   cursor: pointer;
 }
 /* The glyph is costume, so it is drawn rather than written. Same rule as
@@ -3673,29 +3651,9 @@ html.is-ejecting .shell {
   color: var(--green-bright);
 }
 
-@media (max-width: 560px) {
-  /* Like the machine labels: the glyph carries it on a narrow strip. */
-  .statusbar__prompt-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-}
-
 @media (max-width: 768px) {
-  /* ── the shell on a phone ────────────────────────────────────────────────
-     The bar is 44px on touch (see the `(hover: none)` block) and 22px with a
-     mouse; either way everything in it is centred on one line. Measured live
-     at 390px on 2026-09-06 before this: the prompt hung its `$` on the bottom
-     edge (a rule written for the 22px bar, still applied to the 44px one),
-     the working directory was 11px wide and read "~…", and on tool routes the
-     readouts ran under the sound button. Room is found in this order: the
-     uptime goes (costume), the path shortens to its last segment and then
-     ellipsises, and below 360px the brand goes too. The prompt and the three
-     machine buttons never shrink: they are the tap targets. */
+  /* A shortened location shares the strip with the controls at tablet sizes.
+     Phones below 560px give the full strip to the four labelled controls. */
   .statusbar {
     gap: var(--sp-2);
     padding: 0 var(--sp-2) 0 var(--sp-3);
@@ -3709,9 +3667,6 @@ html.is-ejecting .shell {
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
-  }
-  .statusbar__up {
-    display: none;
   }
   .statusbar__pwd {
     flex: 1 1 auto;
@@ -3755,4 +3710,32 @@ html.is-ejecting .shell {
   .statusbar__brand {
     display: none;
   }
+}
+
+/* Four labelled controls fit a phone. The current path is already in its nav;
+   hide the duplicate readout before sacrificing an action's meaning. */
+@media (max-width: 560px) {
+  .statusbar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    padding: 0 6px;
+  }
+  .statusbar__readouts { display: none; }
+  .machine { display: contents; }
+  .machine__btn,
+  .statusbar__prompt {
+    min-width: 44px;
+    width: 100%;
+    height: 100%;
+    padding: 0 3px;
+    justify-content: center;
+    border-top: 0;
+    border-bottom: 0;
+    border-radius: 0;
+  }
+  .statusbar__prompt::before { display: none; }
+}
+@media (max-width: 560px) and (prefers-reduced-motion: reduce) {
+  .statusbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

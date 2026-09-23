@@ -47,8 +47,9 @@ describe("the drawer", () => {
     expect(drawer).toMatch(/shellStore\.dispatch\(\{ type: "close" \}\)/);
   });
 
-  it("tells the store which route it is on", () => {
-    expect(drawer).toMatch(/shellStore\.dispatch\(\{ type: "route", inline: path === "\/" \}\)/);
+  it("offers the same drawer on every route", () => {
+    expect(drawer).not.toContain("usePathname");
+    expect(drawer).not.toContain("inline");
   });
 
   it("renders nothing while closed, so no hidden input is ever focusable", () => {
@@ -69,25 +70,14 @@ describe("the drawer", () => {
 });
 
 describe("summonShell", () => {
-  // The home page's half of the backtick rule, and until now the untested
-  // half. `lib/shell.ts` refuses to open a drawer on the inline route, so
-  // deleting this early return broke nothing any test could see: the backtick
-  // on `/` would have gone quietly dead, the store dispatching a toggle that
-  // the reducer then declined.
-  it("puts the caret in the inline terminal rather than dispatching a toggle", () => {
-    expect(drawer).toMatch(
-      /if \(shellStore\.get\(\)\.inline\) \{[\s\S]{0,400}?\.term__input[\s\S]{0,200}?\.focus\(\);[\s\S]{0,40}?return;/,
-    );
+  it("toggles one drawer on every route", () => {
+    expect(drawer).toMatch(/export function summonShell\(\): void \{\s*shellStore\.dispatch\(\{ type: "toggle" \}\);\s*\}/);
   });
 
-  it("selects the input the Terminal actually renders", () => {
-    // A coupling check on a string that lives in two files and is checked by
-    // neither compiler. Rename the class in `Terminal.tsx` and the selector
-    // here matches nothing, `input` is null, and every optional call silently
-    // does nothing: the backtick on the home page stops working with no error.
-    const terminal = code(read("components", "Terminal.tsx"));
-    expect(drawer).toContain('querySelector<HTMLInputElement>(".term__input")');
-    expect(terminal).toContain('className="term__input"');
+  it("restores the handle only on keyboard or explicit-close dismissal", () => {
+    const pointer = drawer.slice(drawer.indexOf("const onPointerDown"), drawer.indexOf('document.addEventListener("pointerdown"'));
+    expect(pointer).not.toContain(".focus(");
+    expect(drawer).toContain('querySelector<HTMLElement>(".statusbar__prompt")?.focus()');
   });
 });
 
@@ -148,8 +138,8 @@ describe("the status bar prompt", () => {
     expect(statusBar).toMatch(/<button\s+type="button"\s+className="statusbar__prompt"/);
   });
 
-  it("says whether the drawer is open, except on the page that has no drawer", () => {
-    expect(statusBar).toMatch(/aria-expanded=\{shell\.inline \? undefined : shell\.open\}/);
+  it("says whether the drawer is open on every page", () => {
+    expect(statusBar).toMatch(/aria-expanded=\{shell\.open\}/);
     expect(statusBar).toMatch(/useSyncExternalStore\(shellStore\.subscribe, shellStore\.get, getServerShell\)/);
   });
 
@@ -165,11 +155,6 @@ describe("the status bar prompt", () => {
     const narrow = /\.statusbar__prompt \{[^}]*align-self: stretch;[^}]*\}/.exec(css);
     expect(narrow?.[0]).toMatch(/align-items: center;/);
     expect(narrow?.[0]).not.toMatch(/flex-end/);
-    // The override of `.statusbar__readouts { display: contents }` must come
-    // after it in the file, or it loses on the cascade with equal specificity.
-    const contents = /\.statusbar__readouts \{\r?\n\s*display: contents;/.exec(css);
-    const flex = /\.statusbar__readouts \{\r?\n\s*display: flex;/.exec(css);
-    expect(contents?.index).toBeGreaterThan(-1);
-    expect(flex?.index).toBeGreaterThan(contents?.index ?? Infinity);
+    expect(css).toMatch(/\.statusbar__readouts \{\r?\n\s*display: flex;/);
   });
 });

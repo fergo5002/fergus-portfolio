@@ -5,8 +5,7 @@
  * arcade is not a page: it is a program the terminal hosts, and
  * `components/Terminal.tsx` is the only place allowed to act on a program
  * result. So the nav does not open the arcade; it asks the shell to, and
- * whichever Terminal is mounted (inline on the home page, the drawer on every
- * other route) takes the request and runs it as if it had been typed.
+ * the drawer's Terminal takes the request and runs it as if it had been typed.
  *
  * One slot, not a queue: a person pressing the control means one thing, and
  * the latest press wins. Taken once, so two terminals mounting in quick

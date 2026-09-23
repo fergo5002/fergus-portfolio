@@ -652,10 +652,11 @@ const MUTATIONS = [
 
   // ── the shell everywhere (F2) ──
   {
-    name: "the drawer opens on the page that already has a terminal",
+    name: "the shared drawer stops opening",
     file: "lib/shell.ts",
-    pattern: /return state\.inline \|\| state\.open \? state : \{ \.\.\.state, open: true \};/,
-    replace: "return state.open ? state : { ...state, open: true };",
+    pattern: /return state\.open \? state : \{ \.\.\.state, open: true \};/,
+    replace: "return state;",
+    tests: "lib/shell.test.ts",
   },
   {
     name: "a backtick typed into a field summons the shell",
@@ -684,18 +685,16 @@ const MUTATIONS = [
 
   // ── what the review of F2 found ──
   {
-    // The home page's half of the backtick rule. `lib/shell.ts` declines to
-    // open on the inline route, so deleting this breaks nothing loudly: the
-    // key just stops doing anything on `/`.
-    name: "the backtick on the home page stops reaching the inline terminal",
+    name: "clicking outside the drawer stops dismissing it",
     file: "components/ShellDrawer.tsx",
-    pattern: /  if \(shellStore\.get\(\)\.inline\) \{[\s\S]*?\r?\n  \}\r?\n/,
+    pattern: /    document\.addEventListener\("pointerdown", onPointerDown\);/,
     replace: "",
+    tests: "components/chrome-interactions.test.ts",
   },
   {
     name: "the status bar writes its dollar into the document again",
     file: "components/system/StatusBar.tsx",
-    pattern: /(<span className="statusbar__prompt-label">prompt<\/span>)/,
+    pattern: /(<span className="statusbar__prompt-label">\{copy\.terminal\}<\/span>)/,
     replace: '<span aria-hidden="true">$ </span>\r\n        $1',
   },
   {

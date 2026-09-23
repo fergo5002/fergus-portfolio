@@ -423,9 +423,10 @@ describe("the touch bar separates thumb size from screen space", () => {
     expect(touch).toContain(".skiplink");
   });
 
-  it("hides the memory readout for room rather than for thumbs", () => {
-    expect(touchAndNarrow).toContain(".statusbar__mem");
-    expect(touch).not.toContain(".statusbar__mem");
+  it("changes the control row's spacing for room rather than for thumbs", () => {
+    expect(touchAndNarrow).toContain(".machine");
+    expect(touchAndNarrow).toContain("flex: none");
+    expect(touch).not.toContain(".statusbar__pwd");
   });
 
   it("truncates the working directory for room rather than for thumbs", () => {
@@ -454,8 +455,8 @@ describe("the touch bar separates thumb size from screen space", () => {
     expect(narrowPwd).toContain("text-overflow: ellipsis");
   });
 
-  it("drops the uptime on a phone, which is costume, before it drops the path, which is not", () => {
-    expect(narrow).toMatch(/\.statusbar__up\s*\{[^}]*display: none/);
+  it("reserves a full control row even on a narrow screen with a mouse", () => {
+    expect(narrow).toContain("--status-h: 44px");
   });
 });
 

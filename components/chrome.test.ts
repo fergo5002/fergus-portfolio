@@ -155,7 +155,7 @@ describe("the status bar prompt writes no costume into the document", () => {
   });
 
   it("keeps the button's accessible name, which was never the problem", () => {
-    expect(source).toContain('<span className="statusbar__prompt-label">prompt</span>');
+    expect(source).toContain('<span className="statusbar__prompt-label">{copy.terminal}</span>');
   });
 
   it("leaves the glyph to the stylesheet", () => {
