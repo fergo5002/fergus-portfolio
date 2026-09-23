@@ -34,7 +34,7 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
   }
   for (const kind of ["coffee", "call"]) {
     await page.goto(`${base}/contact?meet=${kind}`, { waitUntil: "networkidle" });
-    await page.locator(".meeting__picker").waitFor();
+    await page.locator(".meeting__picker:not([inert])").waitFor();
     await page.locator(".meeting__slots button:not(:disabled)").first().click();
     await page.locator("#meeting-name").fill("Fergus portfolio verification");
     await page.locator("#meeting-email").fill("oreillferg@gmail.com");
@@ -74,7 +74,7 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
   await page.locator("select[name=slot]").selectOption(chosen);
   await page.locator("#meeting-name").fill("Already chosen before hydration");
   release();
-  await page.locator(".meeting__picker").waitFor();
+  await page.locator(".meeting__picker:not([inert])").waitFor();
   assert.equal(await page.locator("input[name=slot]").inputValue(), chosen);
   assert.equal(await page.locator("#meeting-name").inputValue(), "Already chosen before hydration");
   assert.equal(await page.locator(".meeting__submit button").isEnabled(), true);

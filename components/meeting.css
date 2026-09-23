@@ -62,7 +62,8 @@
 .meeting__submit a, .meeting__result a { display: inline-flex; align-items: center; min-height: 44px; color: var(--amber); text-underline-offset: 4px; }
 .meeting__result:not(:empty) { border: 1px solid var(--amber); padding: var(--sp-3); margin-bottom: var(--sp-4); }
 .meeting__result p { margin: 0 0 8px; }
-.meeting__fallback { display: flex; flex-direction: column; gap: var(--sp-3); }
+.meeting__picker-container { position: relative; }
+.meeting__fallback { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; justify-content: center; gap: var(--sp-3); padding: var(--sp-4); background: var(--bg-panel); border: 1px solid var(--green-line); border-radius: var(--radius); }
 .meeting-success { border: 1px solid var(--green-line); background: var(--bg-panel); padding: var(--sp-5); }
 .meeting-success > svg { width: 72px; height: 72px; stroke: var(--amber); stroke-width: 1.5; fill: none; }
 .meeting-success h2 { font: 2.5rem/1.1 var(--font-screen); }

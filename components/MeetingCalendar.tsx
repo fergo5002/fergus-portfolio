@@ -68,7 +68,9 @@ export default function MeetingCalendar({ kind, now: nowISO }: { kind: MeetingKi
     <input type="hidden" name={ELAPSED_FIELD} ref={elapsed} defaultValue="" />
     <div className="cform__hp" aria-hidden="true"><label htmlFor="meeting-hp">{contactCopy.honeypotLabel}</label><input id="meeting-hp" name={HONEYPOT_FIELD} tabIndex={-1} autoComplete="off" /></div>
     <p className="meeting__zone">{copy.duration}<span />{copy.timezone}</p>
-    {ready ? <div className="meeting__picker">
+    <div className="meeting__picker-container">
+    <noscript><style>{`.meeting__picker { display: none; } .meeting__fallback { position: static !important; }`}</style></noscript>
+    <div className="meeting__picker" inert={!ready} aria-hidden={!ready ? true : undefined}>
       <section className="meeting__month" aria-labelledby="meeting-month">
         <div className="meeting__month-head">
           <h2 id="meeting-month" aria-live="polite">{monthLabel(month)}</h2>
@@ -91,8 +93,10 @@ export default function MeetingCalendar({ kind, now: nowISO }: { kind: MeetingKi
         </div>
         <div className="meeting__legend"><span>{copy.available}</span><span>{copy.unavailable}</span></div>
       </section>
-      <input type="hidden" name="slot" value={slot} />
-    </div> : <label className="meeting__fallback">{copy.noScript}<select ref={fallback} name="slot" required defaultValue={fields?.slot || ""}><option value="" disabled>{copy.selectTime}</option>{days.flatMap((value) => meetingSlots(value, now).filter((time) => time.available).map((time) => <option key={time.id} value={time.id}>{dayLabel(value)} · {time.label}</option>))}</select></label>}
+      <input type="hidden" name={ready ? "slot" : undefined} value={slot} />
+    </div>
+    {!ready && <label className="meeting__fallback">{copy.noScript}<select ref={fallback} name="slot" required defaultValue={fields?.slot || ""}><option value="" disabled>{copy.selectTime}</option>{days.flatMap((value) => meetingSlots(value, now).filter((time) => time.available).map((time) => <option key={time.id} value={time.id}>{dayLabel(value)} · {time.label}</option>))}</select></label>}
+    </div>
 
     <div className="meeting__summary" aria-live="polite">{slot ? meetingSummary(kind, slot) : copy.selectTime}</div>
     <div ref={result} tabIndex={-1} className="meeting__result" role="status">
