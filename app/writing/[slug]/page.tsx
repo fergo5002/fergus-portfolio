@@ -5,6 +5,7 @@ import PromptLine from "@/components/PromptLine";
 import Markdown from "@/components/Markdown";
 import JsonLd from "@/components/JsonLd";
 import Talk from "@/components/Talk";
+import ReservationFigure from "../ReservationFigure";
 import { articles, articleBySlug, readingMinutes, wordCount } from "@/content/articles";
 import { profile } from "@/content/profile";
 import { tableOfContents } from "@/lib/markdown";
@@ -146,7 +147,13 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </nav>
       ) : null}
 
-      <Markdown source={article.body} />
+      {article.slug === "the-timer-is-not-the-reservation" ? (
+        <>
+          <Markdown source={article.body.split("\n\n")[0]} />
+          <ReservationFigure />
+          <Markdown source={article.body.split("\n\n").slice(1).join("\n\n")} />
+        </>
+      ) : <Markdown source={article.body} />}
 
       <footer className="post__foot">
         {next ? (

@@ -5,7 +5,7 @@ export const customerGone: Article = {
   title: "When is a customer actually gone?",
   description:
     "A thirty day lapsed window is wrong for nearly every customer, and wrong in both directions at once. What to use instead, and what it cannot tell you.",
-  date: "2026-09-13",
+  date: "2026-09-11",
 
   tags: ["Retention", "Data", "Product"],
   summary:

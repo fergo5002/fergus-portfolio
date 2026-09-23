@@ -20,9 +20,9 @@ import { buildReference, type Reference } from "./reference";
  * article body into the browser bundle.
  */
 
-/** Every published article, as plain text. Code blocks are already dropped by `toPlainText`. */
+/** Long-form articles only: short visual notes are not comparable prose samples. */
 export function referenceDocuments(): string[] {
-  return articles.map((article) => toPlainText(article.body));
+  return articles.filter((article) => article.format !== "visual-note").map((article) => toPlainText(article.body));
 }
 
 let memo: Reference | null = null;

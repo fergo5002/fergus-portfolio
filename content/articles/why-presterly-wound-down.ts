@@ -5,7 +5,7 @@ export const presterlyPostMortem: Article = {
   title: "Why we wound Presterly down",
   description:
     "34 Shopify stores and €19M of order history in ten weeks, then we stopped. It was not the product and it was not the market. A founder's post-mortem.",
-  date: "2026-08-16",
+  date: "2026-08-18",
 
   updated: "2026-09-13",
   tags: ["Startups", "Post-mortem", "Founders"],

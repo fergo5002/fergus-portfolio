@@ -25,6 +25,8 @@ export type Article = {
   date: string;
   /** ISO date of a substantive revision, if there has been one. */
   updated?: string;
+  /** A deliberately short piece whose argument is carried by an authored figure. */
+  format?: "visual-note";
   tags: string[];
   /**
    * One line for `/llms.txt`, written for a model deciding whether this page
@@ -40,6 +42,7 @@ import { presterlyPostMortem } from "./articles/why-presterly-wound-down";
 import { acceleratorWorth } from "./articles/what-an-accelerator-is-for";
 import { crtThatBehaves } from "./articles/a-crt-that-behaves-like-a-crt";
 import { customerGone } from "./articles/when-is-a-customer-actually-gone";
+import { timerReservation } from "./articles/the-timer-is-not-the-reservation";
 
 /**
  * Newest first. This order is the published order everywhere.
@@ -50,6 +53,7 @@ import { customerGone } from "./articles/when-is-a-customer-actually-gone";
  * published, linked and indexed.
  */
 export const articles: Article[] = [
+  timerReservation,
   customerGone,
   acceleratorWorth,
   multiTenantShopify,

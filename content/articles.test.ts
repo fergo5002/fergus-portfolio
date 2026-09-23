@@ -98,6 +98,7 @@ describe.each(articles.map((a) => [a.slug, a] as const))("article: %s", (_slug, 
     // One day of slack for whoever is writing in a different timezone.
     const tomorrow = Date.now() + 24 * 60 * 60 * 1000;
     expect(Date.parse(article.date)).toBeLessThan(tomorrow);
+    if (article.updated) expect(article.updated >= article.date).toBe(true);
   });
 
   it("carries at least one tag", () => {
@@ -108,7 +109,14 @@ describe.each(articles.map((a) => [a.slug, a] as const))("article: %s", (_slug, 
   it("is long enough to be worth publishing", () => {
     // Thin content is the main way a writing surface makes a domain worse
     // rather than better. 600 words is the floor, not the target.
-    expect(wordCount(article.body)).toBeGreaterThan(600);
+    if (article.format === "visual-note") {
+      // A commissioned visual note earns its space with one working model,
+      // not padding. Long-form articles retain their original quality floor.
+      expect(wordCount(article.body)).toBeGreaterThanOrEqual(150);
+      expect(wordCount(article.body)).toBeLessThanOrEqual(250);
+    } else {
+      expect(wordCount(article.body)).toBeGreaterThan(600);
+    }
   });
 
   it("reports a sane reading time", () => {
@@ -119,7 +127,7 @@ describe.each(articles.map((a) => [a.slug, a] as const))("article: %s", (_slug, 
   it("parses without throwing and produces real blocks", () => {
     const blocks = parseMarkdown(article.body);
     expect(blocks.length).toBeGreaterThan(3);
-    expect(blocks.some((b) => b.type === "heading")).toBe(true);
+    if (article.format !== "visual-note") expect(blocks.some((b) => b.type === "heading")).toBe(true);
     expect(blocks.some((b) => b.type === "paragraph")).toBe(true);
   });
 
@@ -185,7 +193,7 @@ describe.each(articles.map((a) => [a.slug, a] as const))("article: %s", (_slug, 
  *    page, which makes the opening paragraph the most valuable sentence on the
  *    article. The window forces it to answer rather than warm up.
  */
-describe.each(articles.map((a) => [a.slug, a] as const))("citability: %s", (_slug, article) => {
+describe.each(articles.filter((a) => a.format !== "visual-note").map((a) => [a.slug, a] as const))("citability: %s", (_slug, article) => {
   it("asks at least three questions in its headings", () => {
     const questions = sections(article.body).filter((s) => s.isQuestion);
     expect(

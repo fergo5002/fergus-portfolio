@@ -280,13 +280,17 @@ describe("faqPageSchema", () => {
     expect(faq.about).toEqual({ "@id": PERSON_ID });
   });
 
-  it("publishes a real FAQ for every shipped article", () => {
+  it("publishes a real FAQ for full articles and none for a short visual note", () => {
     // The guard in content/articles.test.ts already requires two question
     // headings per article. This asserts the consequence the guard exists for:
     // that the requirement actually reaches the published graph, rather than
     // being satisfied in the prose and lost somewhere between here and the page.
     for (const a of articles) {
       const faq = faqPageSchema(a, questionPairs(a.body));
+      if (a.format === "visual-note") {
+        expect(faq, `invented FAQPage for ${a.slug}`).toBeUndefined();
+        continue;
+      }
       expect(faq, `no FAQPage for ${a.slug}`).toBeDefined();
       assertNoUndefined(faq as JsonLdObject, `faq:${a.slug}`);
       expect(() => JSON.parse(jsonLd(faq as JsonLdObject))).not.toThrow();
