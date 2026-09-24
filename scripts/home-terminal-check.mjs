@@ -8,6 +8,7 @@ const out = ".revision-check/home-terminal";
 await mkdir(out, { recursive: true });
 const probe = await readFile("C:/Users/oreil/.claude/scripts/instrument-check.js", "utf8").catch(() => null);
 for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) {
+  if (process.env.REVISION_WIDTH && width !== Number(process.env.REVISION_WIDTH)) continue;
   const browser = await engine.launch();
   const context = await browser.newContext({ viewport: { width, height: 950 }, reducedMotion: "reduce", isMobile: width < 500, hasTouch: width < 500 });
   const page = await context.newPage();
@@ -17,6 +18,18 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
   const command = async (selector, text) => {
     await page.locator(selector).fill(text);
     await page.locator(selector).press("Enter");
+  };
+  const motion = async reducedMotion => {
+    // Emulation updates the query before delivering its change event. Wait for
+    // the event and subsequent paint before commands read React's preference.
+    await page.evaluate(() => {
+      window.__homeMotionReady = false;
+      matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", () => {
+        requestAnimationFrame(() => requestAnimationFrame(() => { window.__homeMotionReady = true; }));
+      }, { once: true });
+    });
+    await page.emulateMedia({ reducedMotion });
+    await page.waitForFunction(() => window.__homeMotionReady);
   };
   try {
     await page.goto(base, { waitUntil: "networkidle" });
@@ -54,7 +67,7 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
     await page.locator(".shell").waitFor({ state: "detached" });
     await page.locator(inline).click();
     assert.equal(await page.locator(inline).evaluate(el => el === document.activeElement), true);
-    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await motion("no-preference");
     await command(inline, "cd arcade poker");
     await page.locator(".arcade-room").waitFor();
     assert.equal(await page.locator(".shell .term--program").count(), 1);
@@ -79,21 +92,36 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
     assert.equal(await page.locator("html").evaluate(el => el.classList.contains("scroll-locked")), false);
     await command(inline, "whoami");
     assert.match(await page.locator(".term--inline .term__entry").last().innerText(), /Fergus/);
-    await page.emulateMedia({ reducedMotion: "reduce" });
+    await motion("reduce");
     await page.evaluate(() => { document.activeElement?.blur(); window.scrollTo(0, 0); });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "home overflow");
     await page.screenshot({ path: `${out}/${width}-home.png`, fullPage: true });
     for (const route of ["/projects", "/experience", "/writing", "/tools"]) {
-      await page.goto(`${base}${route}`, { waitUntil: "networkidle" });
+      // Follow the site's links, preserving the shell lifetime being tested.
+      await page.locator(`.nav__link[href="${route}"]`).click();
+      await page.waitForURL(`${base}${route}`);
+      await page.waitForLoadState("networkidle");
       assert.equal(await page.locator(".meeting-card").count(), 0, route);
       assert.equal(await page.locator(".contact-invitation").innerText(), "Get in touch", route);
     }
-    await page.goto(`${base}/contact`, { waitUntil: "networkidle" });
+    await page.locator(".talk__cta").click();
+    await page.waitForURL(`${base}/contact`);
+    await page.waitForLoadState("networkidle");
     assert.equal(await page.locator(".meeting-card").count(), 2);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "contact overflow");
     await page.screenshot({ path: `${out}/${width}-contact.png`, fullPage: true });
     assert.deepEqual(errors, []);
     console.log(`${width}: inline shell, history, drawer, arcade ownership and contact placement passed`);
+  } catch (error) {
+    console.error("Failed state", await page.evaluate(() => ({
+      url: location.pathname,
+      motion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+      classes: document.documentElement.className,
+      shells: document.querySelectorAll(".shell").length,
+      rooms: document.querySelectorAll(".arcade-room").length,
+      latest: [...document.querySelectorAll(".term__entry")].slice(-3).map(el => el.textContent),
+    })).catch(() => "page unavailable"));
+    throw error;
   } finally {
     await browser.close();
   }
