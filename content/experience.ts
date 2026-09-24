@@ -34,12 +34,14 @@ export const experience: ExperienceEntry[] = [
   {
     id: "hatch105",
     org: "Hatch105",
-    role: "Founder, accelerator programme",
-    dates: "2026",
+    role: "Technical founder",
+    dates: "Jun 2026 – Aug 2026",
     location: "Dublin, Ireland",
+    summary:
+      "A ten-week accelerator founded by Jack Pierse, co-founder of Wayflyer and HappyStack. 1,700 applied and I was one of nine.",
     bullets: [
-      "Ten weeks building Presterly in Jack Pierse's accelerator. One of nine teams, from around 1,700 applicants.",
-      "Met other founders, learnt from people who'd done it, and took the product to live merchants.",
+      "One goal: $10k in monthly revenue by week ten. No time to build first and sell later, so we did both at once.",
+      "We missed the number, but chasing it got Presterly from first commit to live merchants in six weeks.",
     ],
   },
   {
