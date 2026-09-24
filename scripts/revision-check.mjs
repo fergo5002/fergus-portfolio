@@ -21,7 +21,7 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
   await page.evaluate(async () => { await Promise.all([...document.fonts].map(face => face.load().catch(() => null))); });
   if (probe) console.log(width, "instrument", await page.evaluate(probe));
   assert.match(await page.locator(".hero__tagline").innerText(), /I build things\. Then I scale them\./);
-  assert.equal(await page.locator("main .term").count(), 0);
+  assert.equal(await page.locator("main .term--inline").count(), 1);
   assert.equal(await page.locator(".skills").count(), 0);
   assert.equal(await page.locator(".about__routes a").count(), 2);
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "home overflow");

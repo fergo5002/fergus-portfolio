@@ -7,7 +7,8 @@ import dynamic from "next/dynamic";
 import { complete, runCommand } from "@/lib/commands";
 import type { SystemEffect } from "@/lib/commands";
 import { historyStore, initialHistory } from "@/lib/history";
-import { subscribeRequests, takeRequest } from "@/lib/shell-request";
+import { requestCommand, subscribeRequests, takeRequest } from "@/lib/shell-request";
+import { shellStore } from "@/lib/shell";
 import { listKeys, removeKeys } from "@/lib/forget";
 import { localPresence } from "@/lib/presence";
 import { arcadeSession, markArcadeSeen } from "@/lib/arcade/session";
@@ -37,7 +38,7 @@ function readStorageKeys(): string[] {
 }
 
 type Props = {
-  /** `inline` on the home page, `drawer` everywhere else. Only the class differs. */
+  /** The home page has an inline shell; the drawer owns full-screen programs. */
   variant?: "inline" | "drawer";
   /** Put the caret in the input on mount. The drawer wants this; the page does not. */
   autoFocus?: boolean;
@@ -51,7 +52,7 @@ type Props = {
  *
  * Its memory is not its own. `lib/history.ts` holds the scrollback and the
  * recall list at module level, so the inline terminal on the home page and the
- * drawer on every other route are one shell with one history.
+ * drawer on every route are one shell with one history.
  */
 export default function Terminal({ variant = "inline", autoFocus = false }: Props) {
   const { entries, commands } = useSyncExternalStore(historyStore.subscribe, historyStore.get, getServerHistory);
@@ -67,8 +68,8 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Two terminals never mount at once today, but ids are document-global and a
-  // duplicate would break every label and describedby on the second one.
+  // Both terminals can be mounted on the home page. Each needs its own label
+  // and help reference even though they share command history.
   const uid = useId();
   const inputId = `term-input-${uid}`;
   const helpId = `term-help-${uid}`;
@@ -177,7 +178,6 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
   };
 
   const run = (raw: string) => {
-    historyStore.dispatch({ type: "typed", cmd: raw });
     setCursor(null);
 
     const res = runCommand(raw, {
@@ -191,6 +191,15 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
       presence,
       arcade: arcadeSession(),
     });
+
+    // The drawer is the single program host, so nav and outside dismissal can
+    // always unmount it. Let that host record the command exactly once too.
+    if (res.type === "program" && variant === "inline") {
+      requestCommand(raw);
+      shellStore.dispatch({ type: "open" });
+      return;
+    }
+    historyStore.dispatch({ type: "typed", cmd: raw });
 
     if (res.type === "navigate") {
       historyStore.dispatch({ type: "print", cmd: raw, lines: [`-> ${res.href}`] });
@@ -222,13 +231,14 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
   const runRef = useRef(run);
   runRef.current = run;
   useEffect(() => {
+    if (variant !== "drawer") return;
     const drain = () => {
       const cmd = takeRequest();
       if (cmd) runRef.current(cmd);
     };
     drain();
     return subscribeRequests(drain);
-  }, []);
+  }, [variant]);
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
