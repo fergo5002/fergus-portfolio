@@ -572,7 +572,11 @@ See `docs/PROGRESS.md`.
 ## Content still needing the owner (Fergus)
 
 - Hatch105 has its own short accelerator entry under Tigh, at Fergus's request on 23 September
-  2026. It describes the ten-week Presterly programme and credits Jack Pierse.
+  2026, rewritten to his brief on 24 September. Keep it short: Jack Pierse (co-founder of
+  Wayflyer and HappyStack) founded it, 1,700 applied and Fergus was one of nine **people**, not
+  nine teams, then the $10k monthly revenue goal and what chasing it did. Role "Technical
+  founder", Jun to Aug 2026. The build-challenge ranker was his selection task, but he asked for
+  it to stay off the page.
 
 ## Keeping the numbers honest
 
