@@ -9,15 +9,26 @@
 .meeting-card__title { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); font: clamp(1.55rem, 3vw, 2.15rem)/1.1 var(--font-screen); }
 .meeting-card__title svg { flex: none; width: 24px; height: 24px; fill: none; stroke: var(--amber); stroke-width: 1.5; }
 .meeting-card__detail { display: block; font-size: .9rem; color: var(--green); margin-top: var(--sp-2); }
-.meeting-drawing { display: block; height: 128px; width: 100%; margin-bottom: var(--sp-4); stroke: currentColor; stroke-width: 1.4; color: var(--green); }
+.meeting-drawing { display: block; height: 148px; width: 100%; margin-bottom: var(--sp-4); stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; color: var(--green); }
 .meeting-drawing--coffee { color: var(--amber); }
+.meeting-drawing__solid { fill: var(--bg-panel); }
+.meeting-drawing__wash { fill: currentColor; stroke: none; opacity: .12; }
+.meeting-drawing__etch { stroke-width: .8; opacity: .58; }
+.meeting-drawing__highlight { stroke-width: 2.1; }
+.meeting-drawing__registration { color: var(--green); stroke-width: .8; opacity: .3; }
+.meeting-drawing__stipples { stroke-width: 1.4; opacity: .65; }
+.meeting-drawing__cord { stroke-width: 1.4; }
+.meeting-drawing__dial { fill: var(--bg); stroke-width: 1.2; }
+.meeting-drawing__ring { color: var(--amber); stroke-width: 1.2; opacity: .6; }
 .meeting-card:hover { border-color: var(--green); background: var(--bg-panel-2); }
 @media (prefers-reduced-motion: no-preference) {
   .meeting-card { transition: background .2s, border-color .2s; }
-  .meeting-card:hover .meeting-drawing__steam { animation: coffee-steam 1.8s ease-in-out infinite alternate; }
-  .meeting-card:hover .meeting-drawing__wave { transform-origin: center; animation: call-wave .65s ease-in-out infinite alternate; }
-  @keyframes coffee-steam { to { transform: translateY(-4px); } }
-  @keyframes call-wave { to { transform: scaleY(.55); } }
+  .meeting-card:is(:hover, :focus-within) .meeting-drawing__steam { animation: coffee-steam 2.4s ease-in-out infinite alternate; }
+  .meeting-card:is(:hover, :focus-within) .meeting-drawing__receiver { transform-origin: 121px 65px; animation: call-receiver .9s ease-in-out infinite; }
+  .meeting-card:is(:hover, :focus-within) .meeting-drawing__ring { animation: call-ring .9s ease-in-out infinite; }
+  @keyframes coffee-steam { to { transform: translateY(-4px); opacity: .65; } }
+  @keyframes call-receiver { 0%, 45%, 100% { transform: rotate(0); } 12% { transform: rotate(-2deg); } 28% { transform: rotate(2deg); } }
+  @keyframes call-ring { 0%, 45%, 100% { opacity: .4; } 20% { opacity: 1; } }
 }
 .meeting__zone { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; color: var(--green); margin: 0 0 var(--sp-4); font-size: .9rem; }
 .meeting__zone > span { width: 4px; height: 4px; background: var(--amber); }
@@ -82,8 +93,9 @@
 }
 @media (max-width: 480px) {
   .meeting-cards { grid-template-columns: 1fr; }
-  .meeting-card__link { display: grid; grid-template-columns: 92px 1fr; column-gap: var(--sp-3); align-items: center; }
-  .meeting-drawing { grid-row: span 2; width: 92px; height: 100px; margin: 0; }
+  .meeting-card__link { display: grid; grid-template-columns: 104px minmax(0, 1fr); column-gap: var(--sp-3); align-items: center; }
+  .meeting-drawing { grid-row: span 2; width: 104px; height: 100px; margin: 0; stroke-width: 2.4; }
+  .meeting-drawing__registration { opacity: .18; }
   .meeting-card__title { font-size: 1.5rem; gap: 8px; }
   .meeting-card__title svg { width: 18px; }
   .meeting-card__detail { margin-top: 0; }

@@ -13,7 +13,7 @@ export function summonShell(): void {
 }
 
 /**
- * The terminal on every route, including the home page.
+ * The floating terminal on every route, alongside the home page's inline shell.
  *
  * Renders nothing while closed: the scrollback lives in `lib/history.ts`, so
  * unmounting loses nothing, and there is never a hidden input to trap focus.

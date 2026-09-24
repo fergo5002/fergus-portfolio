@@ -15,9 +15,11 @@ npm run build
 npm start
 ```
 
-The terminal opens from the bottom bar on every route, including home. Escape,
-the close button or clicking outside dismisses it. Its history lasts for the tab.
+The homepage also has an interactive terminal directly below About. It shares
+history with the drawer, which opens from the bottom bar on every route. Escape,
+the close button or clicking outside dismisses the drawer. History lasts for the tab.
 The arcade keeps its power-cycle entrance and restores the regular top nav.
+Only the drawer hosts arcade programs, including commands typed in the inline shell.
 
 ## Content
 
@@ -35,6 +37,9 @@ not the derived image. Use `--tigh-only` or `--remand-only` to rebuild one card.
 The Remand card is an authored illustration, not a product screenshot.
 
 ## Meeting requests
+
+Main pages link to Contact with a single Get in touch button. Contact alone holds
+the coffee and call cards, with bespoke phosphor mug and rotary phone illustrations.
 
 `/contact?meet=coffee` and `/contact?meet=call` offer 30-minute weekday windows
 between 10:00 and 17:00 in Europe/Dublin, at least 24 hours ahead, for 28 days.

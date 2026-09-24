@@ -546,7 +546,9 @@ add a `defineCommand` to the right module (or a new module with its registration
 beside it. Run `node scripts/mutation-check.mjs` if you touch a guard: the reduced-motion
 refusals, the scanlines range, the theme check, the hidden flag and the door are all mutated by it.
 
-The terminal is in the drawer on every route, including the homepage.
+The homepage has an inline terminal directly below About, alongside the drawer on every route.
+Only the drawer subscribes to external shell requests and hosts arcade programs. An inline
+program command is forwarded before recording history, so it is recorded once by its drawer host.
 `components/ShellDrawer.tsx`, mounted once in `components/CrtShell.tsx` beside the status bar,
 hosts the same component in a drawer opened by the backtick (when focus is not in a field), by the
 terminal button in the status bar, or by a tap on that button on a phone, and closed by Escape
