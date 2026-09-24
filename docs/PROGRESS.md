@@ -1,3 +1,17 @@
+## 2026-09-24: inline shell and quieter contact links
+
+Fergus asked to restore the interactive shell directly below About and keep only
+Get in touch on the main pages. Coffee and call cards remain on Contact, with
+authored phosphor illustrations of a mug and rotary telephone. Both terminal
+instances share history, while the drawer alone hosts arcade programs.
+
+`scripts/home-terminal-check.mjs` exercises shell placement, shared history,
+single command recording, arcade ownership, same-route exit and contact placement
+at desktop, 390px and 320px. It failed against the previous homepage before the
+implementation. This change also updates the existing phone and revision guards.
+Shipping follows the repository's build, mutation and phone gates; production
+verification is recorded in the PR and personal-site handoff.
+
 ## 2026-09-23: portfolio and meeting requests
 
 Implementation is on `codex/portfolio-revisions`. See

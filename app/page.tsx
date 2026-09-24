@@ -10,6 +10,7 @@ import { profile } from "@/content/profile";
 import { homeCopy } from "@/content/home";
 import JsonLd from "@/components/JsonLd";
 import Talk from "@/components/Talk";
+import Terminal from "@/components/Terminal";
 import { profilePageSchema } from "@/lib/seo";
 import "./home.css";
 
@@ -39,6 +40,7 @@ export default function Home() {
       {profile.bio.map((p, i) => <p key={i} className="about__p">{p}</p>)}
       <div className="about__routes"><p>{homeCopy.aboutLinks}</p><div><Link href="/projects">{homeCopy.projects}</Link><Link href="/experience">{homeCopy.experience}</Link></div></div>
     </Window></RasterReveal>
+    <Terminal />
     <RasterReveal><Talk /></RasterReveal>
   </div></BootSequence>;
 }

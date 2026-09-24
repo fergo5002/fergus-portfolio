@@ -24,7 +24,7 @@ async function run(name, engine, device) {
   const check = (label, evidence) => { result.checks.push({ label, evidence }); console.log(`PASS ${name}: ${label}`); };
   const press = async locator => device.hasTouch ? locator.tap() : locator.click();
   const command = async text => {
-    const input = page.locator(".term__input");
+    const input = page.locator(".shell .term__input");
     await input.fill(text);
     await input.press("Enter");
   };
@@ -230,8 +230,9 @@ async function run(name, engine, device) {
     await page.goto(`${base}/`, { waitUntil: "networkidle" });
     await press(page.locator(".statusbar__prompt"));
     assert.equal(await page.locator(".shell").count(), 1);
-    assert.equal(await page.locator(".term").count(), 1);
-    assert.equal(await page.locator(".term__input").evaluate(el => document.activeElement === el), true);
+    assert.equal(await page.locator(".term--inline").count(), 1);
+    assert.equal(await page.locator(".shell .term").count(), 1);
+    assert.equal(await page.locator(".shell .term__input").evaluate(el => document.activeElement === el), true);
     if (device.hasTouch) {
       const targets = await page.locator(".term__input, .term__label, .term__hint, .contact__row a").evaluateAll(els => els.map(el => ({ tag: el.className || el.tagName, height: el.getBoundingClientRect().height })));
       assert(targets.every(el => el.height >= 44), JSON.stringify(targets));
@@ -239,7 +240,7 @@ async function run(name, engine, device) {
     }
     await command("cd arcade");
     assert.equal(await page.locator(".arcade-room").count(), 0);
-    check("home has one drawer and reduced motion retains the arcade refusal");
+    check("home has an inline shell and one drawer; reduced motion retains the arcade refusal");
     await page.screenshot({ path: join(out, `${name}-home.png`) });
 
     // Observe a real cold boot without skipping or speeding up its timers.

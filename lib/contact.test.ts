@@ -489,8 +489,10 @@ describe("the call to action goes to a page", () => {
     expect(code).not.toMatch(/className="talk__cta"[\s\S]{0,120}mailto:/);
   });
 
-  it("offers the built-in meeting requests", () => {
-    expect(src).toContain("<MeetingCards />");
+  it("keeps meeting choices on Contact and the shared invitation to one button", () => {
+    expect(src).not.toContain("<MeetingCards");
+    expect(src).toContain("meetingCopy.getInTouch");
+    expect(readFileSync(join(process.cwd(), "app/contact/page.tsx"), "utf8")).toContain("<MeetingCards />");
     expect(src).not.toContain("profile.booking");
   });
 });
