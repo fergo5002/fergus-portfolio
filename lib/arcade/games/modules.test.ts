@@ -11,6 +11,17 @@ import { EVENT_RING, type GameId } from "./types";
 
 const KEYS = ["up", "down", "left", "right", "action", "bank", "1", "2", "3", "4", "5", "char:a", "char:k", "erase", "nonsense"];
 
+/**
+ * The keys a module understands: a key game's names, or for a typing game
+ * `erase` and one `char:` of a character its words can contain.
+ */
+function understood(id: GameId, key: string): boolean {
+  if (inputOf(id) !== "text") return /^(up|down|left|right|action|bank|[1-5])$/.test(key);
+  if (key === "erase") return true;
+  const c = key.startsWith("char:") ? key.slice(5) : "";
+  return [...c].length === 1 && (MODULES[id].typeable?.test(c) ?? false);
+}
+
 /** A short, fixed input tape: presses on a rhythm and a held direction that turns. */
 function drive(id: GameId, seed: number, seconds: number) {
   const s = createGame(id, seed);
@@ -86,6 +97,14 @@ describe("every cabinet module", () => {
         expect(a).toEqual(b);
       });
 
+      it("says which characters it types if, and only if, it is a typing game", () => {
+        const typeable = MODULES[id].typeable;
+        if (inputOf(id) === "text") {
+          expect(typeable, `${id} declares no typeable characters`).toBeInstanceOf(RegExp);
+          expect(typeable!.test("ab"), "typeable matches one character at a time").toBe(false);
+        } else expect(typeable).toBeUndefined();
+      });
+
       it("mirrors typed text only if it is a typing game", () => {
         const s = createGame(id, 1);
         if (inputOf(id) === "text") expect(typeof typedOf(s)).toBe("string");
@@ -97,15 +116,15 @@ describe("every cabinet module", () => {
         let r = 1;
         const rng = () => ((r = (Math.imul(r, 1664525) + 1013904223) >>> 0) / 4294967296);
         const seen = new Set<string>();
-        for (let i = 0; i < 600 && !s.over; i++) {
+        // Long enough to reach later waves, where a typing game's words get longer and stranger.
+        for (let i = 0; i < 60 * 150 && !s.over; i++) {
           const plan = MODULES[id].demo(s as never, memory, rng);
           for (const k of [...plan.hold, ...plan.press]) seen.add(k);
           for (const k of plan.press) pressGame(s, k);
           stepGame(s, 1 / 60, plan.hold);
         }
         expect(seen.size).toBeGreaterThan(0);
-        const allowed = inputOf(id) === "text" ? /^(char:[a-z0-9]|erase)$/ : /^(up|down|left|right|action|bank|[1-5])$/;
-        for (const k of seen) expect(k, `${id} demo sent ${k}`).toMatch(allowed);
+        for (const k of seen) expect(understood(id, k), `${id} demo sent ${JSON.stringify(k)}`).toBe(true);
       });
     });
   }

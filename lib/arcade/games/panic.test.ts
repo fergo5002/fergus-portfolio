@@ -320,6 +320,20 @@ describe("Kernel Panic: the whole game", () => {
     }
   });
 
+  it("has an attract typist who reaches the words with spaces and symbols, all of them typeable", () => {
+    const s = createGame("panic", 5), memory = createAttractMemory(), rng = seededRng(5);
+    const sent = new Set<string>();
+    for (let i = 0; i < 60 * 150 && !s.over; i++) {
+      const plan = MODULES.panic.demo(s, memory, rng);
+      for (const k of plan.press) { sent.add(k); pressGame(s, k); }
+      stepGame(s, TICK, plan.hold);
+    }
+    const chars = [...sent].filter((k) => k.startsWith("char:")).map((k) => k.slice(5));
+    expect(chars).toContain(" ");
+    expect(chars.some((c) => /[^a-z ]/.test(c)), `only letters and spaces: ${chars.join("")}`).toBe(true);
+    for (const c of chars) expect(MODULES.panic.typeable?.test(c), c).toBe(true);
+  });
+
   it("has an attract typist who fumbles now and then, as a person does", () => {
     const s = createGame("panic", 3), memory = createAttractMemory(), rng = seededRng(3);
     for (let i = 0; i < 60 * 90 && !s.over; i++) {

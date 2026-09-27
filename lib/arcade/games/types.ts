@@ -98,6 +98,12 @@ export type GameModule<S extends BaseState = BaseState> = {
   demo(state: S, memory: DemoMemory, rng: () => number): DemoPlan;
   /** Text games only: what the visitor has typed so far, mirrored into the room's input. */
   typed?(state: S): string;
+  /**
+   * Text games only: one character its words can contain, lower case. A
+   * `char:<c>` press, from the room or the demo, is legitimate exactly when
+   * `c` matches, which is what the shared tests hold every demo to.
+   */
+  readonly typeable?: RegExp;
 };
 
 /* ── helpers every module uses ───────────────────────────────────────────── */

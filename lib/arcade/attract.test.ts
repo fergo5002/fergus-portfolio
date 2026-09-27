@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { attractPlan, capOf, createAttract, createAttractMemory, LIT_PRESS, seededRng } from "./attract";
-import { createGame, GAME_IDS, type GameId } from "./engine";
+import { createGame, GAME_IDS, inputOf, MODULES, pressGame, stepGame, type GameId } from "./engine";
+
+/** A key game's names, or for a typing game `erase` and one `char:` of a character its words can contain. */
+function understood(id: GameId, key: string): boolean {
+  if (inputOf(id) !== "text") return /^(up|down|left|right|action|bank|[1-5])$/.test(key);
+  if (key === "erase") return true;
+  const c = key.startsWith("char:") ? key.slice(5) : "";
+  return [...c].length === 1 && (MODULES[id].typeable?.test(c) ?? false);
+}
 
 /**
  * Attract mode is a real arcade behaviour: the cabinet plays itself until
@@ -87,14 +95,15 @@ describe("attractPlan", () => {
   });
 
   it("only ever emits keys the engine understands", () => {
-    const allowed = /^(up|down|left|right|action|bank|[1-5]|char:[a-z0-9]|erase)$/;
     for (const id of GAME_IDS) {
       const rng = seededRng(2), memory = createAttractMemory();
       const s = createGame(id, 2);
-      for (let i = 0; i < 300; i++) {
-        s.time += TICK;
+      // Played for real and long enough to reach later waves, not just a clock nudged forward.
+      for (let i = 0; i < 60 * 150 && !s.over; i++) {
         const plan = attractPlan(s, rng, memory);
-        for (const k of [...plan.hold, ...plan.press]) expect(k, `${id} emitted ${k}`).toMatch(allowed);
+        for (const k of [...plan.hold, ...plan.press]) expect(understood(id, k), `${id} emitted ${JSON.stringify(k)}`).toBe(true);
+        for (const k of plan.press) pressGame(s, k);
+        stepGame(s, TICK, plan.hold);
       }
     }
   });

@@ -327,6 +327,8 @@ function panicNow(s: PanicState, p: Proc) {
 export const panic: GameModule<PanicState> = {
   id: "panic",
   input: "text",
+  // A touch run asks for a subset of these (TOUCH_CHARS); the contract is the widest.
+  typeable: DESKTOP_CHARS,
 
   create(seed, options) {
     const touch = options?.touch === true;

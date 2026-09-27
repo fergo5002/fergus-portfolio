@@ -1597,6 +1597,21 @@ const MUTATIONS = [
     name: `arcade card: ${name}`, file: "lib/arcade/chrome.ts", pattern, replace,
     tests: "lib/arcade/chrome.test.ts",
   })),
+  // ── a typing game's demo keys are checked against what its words can contain ──
+  {
+    name: "demo keys: Kernel Panic's contract shrinks back to letters and digits",
+    file: "lib/arcade/games/panic.ts",
+    pattern: /  typeable: DESKTOP_CHARS,/,
+    replace: "  typeable: /^[a-z0-9]$/,",
+    tests: "lib/arcade/games/modules.test.ts lib/arcade/attract.test.ts lib/arcade/games/panic.test.ts",
+  },
+  {
+    name: "demo keys: Kernel Panic stops declaring what it types",
+    file: "lib/arcade/games/panic.ts",
+    pattern: /  typeable: DESKTOP_CHARS,/,
+    replace: "",
+    tests: "lib/arcade/games/modules.test.ts",
+  },
 ];
 
 
