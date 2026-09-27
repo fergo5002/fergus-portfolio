@@ -6,20 +6,26 @@ import { localOverlapCopy as copy } from "@/content/tool-workbench";
 import { compareLists, connectionsCsv, MAX_LOCAL_BYTES, readLocalList } from "@/lib/tools/overlap/local";
 import { demoLists } from "@/lib/tools/overlap/demo";
 import type { Entry } from "@/lib/tools/overlap/types";
+import { DropSlot, ExportBar, useIntake } from "@/components/instrument";
 
 const PeerTool = dynamic(() => import("./OverlapTool"));
 type List = { name: string; entries: Entry[]; skipped: number };
 type View = "shared" | "onlyA" | "onlyB";
 
+/** The two invented lists, so the page opens on a result. Seeded, so server and client agree. */
+function exampleLists(): [List, List] {
+  const pair = demoLists();
+  return [{ name: copy.first, entries: pair.a, skipped: 0 }, { name: copy.second, entries: pair.b, skipped: 0 }];
+}
+
 export default function OverlapWorkbench({ roomsAvailable = false }: { roomsAvailable?: boolean }) {
   const [peer, setPeer] = useState(false);
-  const [lists, setLists] = useState<[List | null, List | null]>([null, null]);
-  const [example, setExample] = useState(false);
+  const [lists, setLists] = useState<[List | null, List | null]>(exampleLists);
+  const [example, setExample] = useState(true);
   const [view, setView] = useState<View>("shared");
   const [query, setQuery] = useState("");
   const [note, setNote] = useState("");
   const [reading, setReading] = useState<[boolean, boolean]>([false, false]);
-  const [fileKey, setFileKey] = useState(0);
   const versions = useRef([0, 0]);
   const result = useMemo(() => lists[0] && lists[1] ? compareLists(lists[0].entries, lists[1].entries) : null, [lists]);
   const filtered = useMemo(() => (result?.[view] ?? []).filter(e => `${e.label} ${e.slug}`.toLowerCase().includes(query.trim().toLowerCase())), [result, view, query]);
@@ -46,15 +52,19 @@ export default function OverlapWorkbench({ roomsAvailable = false }: { roomsAvai
 
   function clear() {
     versions.current = versions.current.map(v => v + 1);
-    setLists([null, null]); setReading([false, false]); setExample(false); setNote(""); setQuery(""); setView("shared"); setFileKey(k => k + 1);
+    setLists([null, null]); setReading([false, false]); setExample(false); setNote(""); setQuery(""); setView("shared");
   }
 
   function demo() {
     clear();
-    const pair = demoLists();
-    setLists([{ name: copy.first, entries: pair.a, skipped: 0 }, { name: copy.second, entries: pair.b, skipped: 0 }]);
+    setLists(exampleLists());
     setExample(true);
   }
+
+  const intakes = [
+    useIntake({ accept: ".csv,text/csv", onFiles: ([file]) => void read(file, 0) }),
+    useIntake({ accept: ".csv,text/csv", onFiles: ([file]) => void read(file, 1) }),
+  ] as const;
 
   function download() {
     try {
@@ -70,18 +80,17 @@ export default function OverlapWorkbench({ roomsAvailable = false }: { roomsAvai
       <button className="bench-button" type="button" aria-pressed={peer} onClick={() => setPeer(true)}>{copy.peer}</button>
     </div>
     {peer ? <PeerTool roomsAvailable={roomsAvailable} /> : <>
-      <p className="bench-note">{copy.intro}</p>
-      <div className="bench-actions">
-        <button type="button" className="bench-button bench-button--primary" onClick={demo}>{copy.demo}</button>
-        {(lists[0] || lists[1]) && <button type="button" className="bench-button" onClick={clear}>{copy.clear}</button>}
-      </div>
-      <div className="bench-columns">
+      <div className="bench-columns overlap-intake">
         {([0, 1] as const).map(side => <div className="overlap-upload" key={side}>
-          <label className="bench-label" htmlFor={`local-list-${side}`}>{side === 0 ? copy.first : copy.second}</label>
-          <input key={`${side}-${fileKey}`} className="bench-input" id={`local-list-${side}`} type="file" accept=".csv,text/csv" onChange={e => void read(e.target.files?.[0], side)} />
+          <DropSlot intake={intakes[side]} id={`local-list-${side}`} label={side === 0 ? copy.first : copy.second} zone />
           <p className="bench-note">{reading[side] ? copy.reading : lists[side] ? copy.count(lists[side]!.entries.length, lists[side]!.skipped) : copy.choose}</p>
         </div>)}
       </div>
+      <div className="bench-actions">
+        <button type="button" className="bench-button" onClick={demo}>{copy.demo}</button>
+        {(lists[0] || lists[1]) && <button type="button" className="bench-button" onClick={clear}>{copy.clear}</button>}
+      </div>
+      <p className="bench-note">{copy.intro}</p>
       <p className="bench-note" role="status">{note || (example ? copy.example : "")}</p>
       {result ? <section aria-label={copy.shared}>
         <dl className="bench-metrics">
@@ -95,7 +104,7 @@ export default function OverlapWorkbench({ roomsAvailable = false }: { roomsAvai
         </div>
         <label className="bench-label" htmlFor="overlap-search">{copy.search}</label>
         <input id="overlap-search" className="bench-input" type="search" placeholder={copy.searchPlaceholder} value={query} onChange={e => setQuery(e.target.value)} />
-        <div className="bench-actions"><button type="button" className="bench-button" onClick={download} disabled={!filtered.length}>{copy.download}</button></div>
+        <ExportBar label={copy.download} actions={[{ label: copy.download, kind: "csv", onClick: download, disabled: !filtered.length }]} />
         <ul className="overlap-local-list">
           {filtered.slice(0, 100).map(entry => <li key={entry.slug}><span>{entry.label}</span><span className="bench-note">{entry.slug}</span></li>)}
         </ul>

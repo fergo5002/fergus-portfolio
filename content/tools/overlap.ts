@@ -133,6 +133,14 @@ export const overlap: ToolEntry = {
     "Rows with no profile link. LinkedIn leaves the URL out when a connection has restricted it, and those rows are counted and reported rather than guessed at.",
     "Old style /pub/ links from exports taken years ago. They are a different identifier space from an /in/ slug and comparing the two would invent matches.",
   ],
+  /** What a salted hash does and does not protect, in the shell's disclosure. */
+  method: [
+    overlapCopy.honesty.notPsi,
+    overlapCopy.honesty.claim,
+    overlapCopy.honesty.theyLearn,
+    overlapCopy.honesty.relaySees,
+    overlapCopy.honesty.storage,
+  ],
   status: "live",
   order: 30,
 };

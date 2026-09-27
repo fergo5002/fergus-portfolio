@@ -53,7 +53,7 @@ export const workbenchCopy = {
 export const localOverlapCopy = {
   local: "Compare two files",
   peer: "Connect with someone",
-  intro: "Have both exports? Compare them here in seconds. Both files stay in this tab. Only use files you have permission to read.",
+  intro: "Both files stay in this tab. Only use exports you have permission to read.",
   first: "First connection list",
   second: "Second connection list",
   choose: "Choose a LinkedIn CSV",
@@ -77,7 +77,6 @@ export const localOverlapCopy = {
   count: (used: number, skipped: number) => `${used.toLocaleString("en-IE")} profiles${skipped ? ` · ${skipped} rows skipped or repeated` : ""}`,
   showing: (visible: number, total: number) => `Showing ${visible} of ${total.toLocaleString("en-IE")} matches. Search to narrow the list; the download includes all matches in this view.`,
   peerIntro: "Keep one file on each person's computer. The browsers exchange salted profile hashes, not names. The other person learns your list size and IP address and can test guesses against the hashes. Direct connections can fail on restrictive networks.",
-  peerDetails: "What the other person and the connection service can see",
 };
 
 export const headlineLabCopy = {
