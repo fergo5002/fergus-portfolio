@@ -120,6 +120,7 @@ export const overlap: ToolEntry = {
   name: "Overlap",
   blurb:
     "Find the people you both know. Compare two LinkedIn exports without either file leaving its own computer.",
+  purpose: "Find the people two LinkedIn connection exports have in common.",
   privacy: "browser",
   privacyLine:
     "Your files and names stay in this browser. Salted profile hashes go directly to the other browser only in connected mode. Room codes use a daily-changing address hash for a short request budget.",

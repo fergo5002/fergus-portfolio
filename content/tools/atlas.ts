@@ -4,6 +4,7 @@ export const atlas: ToolEntry = {
   "slug": "atlas",
   "name": "Atlas",
   "blurb": "Turn files, folders, archives or a public GitHub repository into a draggable knowledge graph. Follow references, shared words and the files behind them.",
+  "purpose": "Turn files, folders or a public GitHub repository into a map of how they connect.",
   "cantSee": [
     "Connections distinguish folders, explicit references and shared words. Word overlap is not proof of semantic similarity.",
     "Up to 1,000 files / 80 MB. Readable formats get text extraction; others retain metadata. GitHub reads up to 100 text files / 8 MB. No OCR or private repositories."

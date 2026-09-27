@@ -106,6 +106,31 @@ describe.each(tools.map((t) => [t.slug, t] as const))("tool: %s", (_slug, tool) 
   it("declares where it runs", () => {
     expect(["browser", "server"]).toContain(tool.privacy);
   });
+
+  /**
+   * The instrument shell (2026-09-27) puts ONE sentence under the heading, and
+   * the index card uses the same line, so the two cannot disagree. The blurb
+   * stays for the meta description, the JSON-LD and `/llms.txt`.
+   */
+  it("has one short sentence of purpose for the page and its card", () => {
+    const purpose = tool.purpose ?? "";
+    expect(purpose.length, "purpose").toBeGreaterThanOrEqual(30);
+    expect(purpose.length, purpose).toBeLessThanOrEqual(110);
+    expect(purpose).toMatch(/\.$/);
+    expect(purpose.slice(0, -1), "one sentence only").not.toMatch(/[.!?](\s|$)/);
+    expect(purpose).not.toContain("\n");
+  });
+
+  it("writes its purpose and method notes in the house style", () => {
+    const american =
+      /\b(analyze[ds]?|analyzing|optimize[ds]?|optimizing|organize[ds]?|organizing|recognize[ds]?|behaviors?|colors?|favors?|centers?)\b/i;
+    for (const line of [tool.purpose ?? "", ...(tool.method ?? [])]) {
+      expect(line).not.toMatch(/[—–]/);
+      expect(line).not.toMatch(american);
+      expect(line).toBe(line.trim());
+    }
+    for (const line of tool.method ?? []) expect(line.length).toBeGreaterThanOrEqual(20);
+  });
 });
 
 describe("tool shell copy", () => {

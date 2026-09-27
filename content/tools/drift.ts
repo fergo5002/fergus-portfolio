@@ -19,6 +19,7 @@ export const drift: ToolEntry = {
   name: "Drift",
   blurb:
     "This is not an AI detector. Paste things you have written, then a draft, and see how far the draft has drifted from you.",
+  purpose: "Not an AI detector: measure how far a draft has drifted from the way you write.",
   privacy: "browser",
   cantSee: [
     "Meaning. Every number here counts how often words and marks turn up, and none of them knows what any of it says.",
