@@ -1,175 +1,617 @@
 @import "../../../components/studio/base.css";
 @import "../../../components/studio/studio.css";
 
-:is(.lab, .tool-studio) .atlas-workspace {
+/* app/tools/atlas/tool.css
+   Atlas's own rules, loaded by its page and by the local lab (app/lab/studio.css).
+   Every colour is a token, so amber and ice repaint the whole instrument.
+   Several selectors start ":is(.lab, .tool-studio) .studio.atlas" on purpose:
+   the studio sheets style bare inputs, paragraphs and summaries at a
+   specificity a single class cannot beat, and this is what it takes. */
+
+.atlas {
+  /* The shell's stage padding (components/tools/workbench.css, .bench-stage).
+     The map bleeds out by exactly this; Atlas.test.ts fails if they part. */
+  --atlas-bleed: clamp(14px, 2.4vw, 26px);
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 280px;
-  border: 1px solid var(--lab-line);
-  border-radius: 6px;
+  gap: 18px;
+  min-width: 0;
+}
+:is(.lab, .tool-studio) .studio.atlas p { margin: 0; }
+/* The server's picture is not a studio (the checks wait for ".studio" to mean
+   the instrument has arrived), so the box model the studio sheet would give
+   these is stated here, where both the picture and the instrument get it. */
+.atlas-stage,
+.atlas-graph,
+.atlas-strip { box-sizing: border-box; }
+
+/* ── the stage: the map, its readouts over it, its controls along it ── */
+
+.atlas-stage {
+  position: relative;
+  display: grid;
+  min-width: 0;
   overflow: hidden;
-}
-:is(.lab, .tool-studio) .atlas-stage {
-  background: radial-gradient(
-    ellipse at center,
-    color-mix(in srgb, var(--green) 4%, var(--bg)),
-    var(--bg)
-  );
-}
-:is(.lab, .tool-studio) .atlas-stage > .studio-toolbar {
-  padding: 12px;
-  gap: 6px;
-  border-bottom: 1px solid var(--lab-line);
-}
-:is(.lab, .tool-studio) .atlas-stage .bench-button,
-:is(.lab, .tool-studio) .atlas-stage .studio-toggle {
-  font-size: 0.7rem;
-  padding: 6px 9px;
-}
-:is(.lab, .tool-studio) .atlas-canvas {
-  display: block;
-  width: 100%;
-  height: 560px;
-  touch-action: none;
-  cursor: grab;
-}
-:is(.lab, .tool-studio) .atlas-canvas:active {
-  cursor: grabbing;
-}
-:is(.lab, .tool-studio) .atlas-stage-foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--lab-line);
-  font-size: 0.65rem;
-}
-:is(.lab, .tool-studio) .atlas-stage-foot .lab-field {
-  max-width: 200px;
-}
-:is(.lab, .tool-studio) .atlas-inspector {
-  padding: 20px;
-  border-left: 1px solid var(--lab-line);
-  max-height: 770px;
-  overflow: auto;
-  background: var(--studio-paper);
-}
-:is(.lab, .tool-studio) .atlas-inspector h3 {
-  overflow-wrap: anywhere;
-}
-:is(.lab, .tool-studio) .atlas-text {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 0.75rem;
-  line-height: 1.75;
-  margin: 20px 0;
-  padding: 14px;
-  border: 1px solid var(--lab-line);
-  max-height: 300px;
-  overflow: auto;
+  border: 1px solid var(--green-line);
+  border-radius: calc(var(--radius) - 2px);
   background: var(--bg);
 }
-:is(.lab, .tool-studio) .atlas-related {
+/* In the tools window the map runs to the window's edges, straight under its
+   title bar: the window is the tube and the map is what is on it. */
+.bench-stage .atlas-stage {
+  margin: calc(-1 * var(--atlas-bleed)) calc(-1 * var(--atlas-bleed)) 0;
+  border-width: 0 0 1px;
+  border-radius: 0;
+}
+
+/* The glass. Its CSS variables are read by the canvas (the band the map is
+   fitted under, the margin it keeps) and by the server's picture, so the two
+   frame the map identically. */
+.atlas-graph {
+  --atlas-osd: 64px;
+  --atlas-edge: 18px;
+  position: relative;
+  /* The whole map above the fold on a laptop: the page's head is about 420px. */
+  height: clamp(420px, calc(100svh - 420px), 720px);
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 70% 62% at 50% 56%, color-mix(in srgb, var(--green) 6%, transparent), transparent 72%),
+    var(--bg);
+}
+.atlas-graph::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 72px color-mix(in srgb, var(--green) 7%, transparent);
+  pointer-events: none;
+}
+
+.atlas-glass { position: absolute; inset: 0; }
+.atlas-canvas,
+.atlas-ghost {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  text-align: left;
-  border: 0;
-  border-top: 1px solid var(--lab-line);
-  background: transparent;
-  padding: 12px 0;
-  color: var(--green);
+  height: 100%;
 }
-:is(.lab, .tool-studio) .atlas-related strong,
-:is(.lab, .tool-studio) .atlas-related span {
-  display: block;
+/* pan-y: a finger on empty map still scrolls the page; GraphCanvas claims
+   the touches that land on a node, and pinches. */
+.atlas-canvas {
+  touch-action: pan-y;
+  cursor: grab;
+  -webkit-tap-highlight-color: transparent;
+}
+.atlas-canvas[data-point] { cursor: pointer; }
+.atlas-canvas[data-grab] { cursor: grabbing; }
+/* Inside the glass, because the glass clips anything drawn outside it. */
+:is(.lab, .tool-studio) .studio.atlas .atlas-canvas:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: -3px;
+}
+.atlas-ghost { pointer-events: none; }
+
+/* The server's picture of the example, in the rectangle the canvas fits into. */
+.atlas-poster {
+  position: absolute;
+  left: var(--atlas-edge);
+  top: var(--atlas-osd);
+  width: calc(100% - 2 * var(--atlas-edge));
+  height: calc(100% - var(--atlas-osd) - var(--atlas-edge));
+  overflow: visible;
+}
+/* Two shapes, one shown: the query here is SHAPE_QUERY in lib/studio/atlas-scene.ts,
+   the one the canvas asks, so the live map takes over in the same shape. */
+.atlas-poster--tall { display: none; }
+@media (max-width: 640px) {
+  .atlas-poster--wide { display: none; }
+  .atlas-poster--tall { display: block; }
+}
+.atlas-poster__link {
+  stroke: var(--green);
+  stroke-width: 1;
+  stroke-opacity: 0.42;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+.atlas-poster__link--folder { stroke-width: 0.8; stroke-opacity: 0.16; }
+.atlas-poster__link--terms { stroke: var(--amber); stroke-opacity: 0.34; stroke-dasharray: 3 4; }
+.atlas-poster__node--read { fill: var(--green); }
+.atlas-poster__node--folder { fill: var(--amber); }
+.atlas-poster__node--metadata {
+  fill: var(--bg);
+  stroke: var(--green);
+  stroke-width: 1.4;
+  vector-effect: non-scaling-stroke;
+}
+
+/* The band along the top: the reading line, then the command line. It lets
+   the pointer through to the map except where there is something on it. */
+.atlas-osd {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 20px;
+  min-height: var(--atlas-osd);
+  padding: 8px 12px 10px 18px;
+  background: linear-gradient(to bottom, var(--bg) 0, color-mix(in srgb, var(--bg) 86%, transparent) 72%, transparent);
+  pointer-events: none;
+}
+.atlas-osd > * { pointer-events: auto; }
+
+/* The reading, the way a scope prints its cursor: the display face, amber. */
+.atlas-reading {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-screen);
+  font-size: clamp(1.3rem, 2.1vw, 1.6rem);
+  line-height: 1.15;
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+  font-variant-ligatures: none;
+  text-shadow: 0 0 7px color-mix(in srgb, var(--amber) 40%, transparent);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.atlas-reading--busy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.atlas-reading__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* find ›, a command line on the glass. The prompt is drawn, not written. */
+.atlas-find {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 1 330px;
+  min-width: 0;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  cursor: text;
+}
+.atlas-find:focus-within { border-color: var(--amber); }
+.atlas-find__prompt::before {
+  content: "find \203A";
+  margin-right: 4px;
+  font-family: var(--font-screen);
+  font-size: 1.3rem;
+  font-variant-ligatures: none;
+  line-height: 1;
+  color: var(--green);
+  white-space: nowrap;
+}
+:is(.lab, .tool-studio) .studio.atlas .atlas-find input.atlas-find__input {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 0 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--green-bright);
+  caret-color: var(--amber);
+  font: inherit;
+  font-size: 16px;
+  outline: none;
+}
+.atlas-find__input::placeholder { color: var(--green); opacity: 0.7; }
+.atlas-find__count { flex: none; color: var(--green); font-size: 0.76rem; white-space: nowrap; }
+
+/* A small drawn button on the glass: the busy line's cancel. */
+.atlas .atlas-osd .atlas-chip {
+  flex: none;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--amber-bright);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  text-shadow: none;
+  cursor: pointer;
+}
+
+/* The zoom, in the corner. */
+.atlas-zoom {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1;
+  display: flex;
+  gap: 4px;
+}
+.atlas .atlas-zoom .atlas-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  color: var(--green-bright);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.atlas .atlas-zoom .atlas-icon:hover,
+.atlas .atlas-zoom .atlas-icon[aria-pressed="true"] { border-color: var(--amber); color: var(--amber-bright); }
+.atlas-icon svg,
+.atlas-inspector__close svg,
+.atlas-media__play svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.atlas-graph[data-inspecting] .atlas-zoom { right: calc(min(360px, 46%) + 12px); }
+
+/* ── the inspector, over the map ──────────────────────────────────────── */
+
+.atlas-inspector {
+  position: absolute;
+  /* Under the band, so the find line stays in reach while a file is open. */
+  top: var(--atlas-osd);
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  width: min(360px, 46%);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 12px 18px 20px;
+  border-top: 1px solid var(--green-line);
+  border-left: 1px solid var(--green-line);
+  border-top-left-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg-panel) 95%, transparent);
+  box-shadow: -18px 0 42px color-mix(in srgb, var(--bg) 72%, transparent);
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+.atlas-inspector__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.atlas .atlas-inspector .atlas-inspector__title {
+  margin: 8px 0 0;
+  font-family: var(--font-screen);
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1.05;
+  color: var(--green-bright);
   overflow-wrap: anywhere;
 }
-:is(.lab, .tool-studio) .atlas-related span {
-  font-size: 0.68rem;
-  margin-top: 5px;
+.atlas .atlas-inspector .atlas-inspector__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin-right: -10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--green);
+  cursor: pointer;
 }
-:is(.lab, .tool-studio) .atlas-file-list {
+.atlas .atlas-inspector .atlas-inspector__close:hover { color: var(--amber-bright); }
+:is(.lab, .tool-studio) .studio.atlas .atlas-inspector p { margin: 6px 0 0; }
+.atlas-inspector__path { color: var(--green); font-size: 0.74rem; overflow-wrap: anywhere; }
+.atlas-inspector__meta { display: flex; align-items: center; gap: 8px; color: var(--green-bright); font-size: 0.78rem; }
+.atlas-lamp {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--green);
+  border-radius: 50%;
+}
+.atlas-lamp--read { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.atlas-inspector__note,
+.atlas-inspector__count { color: var(--green); font-size: 0.76rem; }
+.atlas-inspector__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.atlas-inspector__count { padding-top: 12px; }
+.atlas-inspector__links { margin-top: 6px; }
+.atlas .atlas-inspector .atlas-related {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 0;
+  border: 0;
+  border-top: 1px solid var(--green-line);
+  border-radius: 0;
+  background: none;
+  color: var(--green-bright);
+  font-size: 0.82rem;
+  text-align: left;
+  cursor: pointer;
+}
+.atlas .atlas-inspector .atlas-related:hover .atlas-related__name { color: var(--amber-bright); }
+.atlas-related__name,
+.atlas-related__why { overflow-wrap: anywhere; }
+.atlas-related__why { color: var(--green); font-size: 0.7rem; }
+/* The shared-words line is amber because the dashed link on the map is. */
+.atlas-related[data-kind="terms"] .atlas-related__why { color: var(--amber); }
+.atlas .atlas-inspector .atlas-text {
+  max-height: 240px;
+  margin: 14px 0 0;
+  padding: 12px;
+  overflow: auto;
+  border: 1px solid var(--green-line);
+  background: var(--bg);
+  color: var(--green);
+  font-size: 0.72rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.atlas .atlas-inspector .atlas-media { display: block; width: 100%; margin-top: 12px; }
+.atlas .atlas-inspector img.atlas-media { height: auto; max-height: 240px; object-fit: contain; border: 1px solid var(--green-line); }
+.atlas-media__video { display: block; width: 100%; max-height: 220px; background: var(--bg); }
+.atlas-media__bar { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.atlas .atlas-inspector .atlas-media__play {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--green);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--green) 10%, var(--bg));
+  color: var(--green-bright);
+  cursor: pointer;
+}
+.atlas-media__time { flex: none; font-family: var(--font-screen); font-size: 1.1rem; color: var(--green-bright); }
+.atlas-media__track { position: relative; flex: 1; height: 3px; background: var(--green-line); }
+.atlas-media__track > span { position: absolute; inset: 0 auto 0 0; background: var(--amber); }
+
+/* ── the strip along the stage's bottom edge: one row of kit controls ─── */
+
+.atlas-strip {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 62px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-top: 1px solid var(--green-line);
+  background: var(--bg-panel);
+  scrollbar-width: none;
+}
+.atlas-strip::-webkit-scrollbar { display: none; }
+.atlas-strip > * { flex: none; }
+.atlas-strip .atlas-type { width: 10.5rem; }
+/* Each switch carries a sample of the line it shows, so the row is the legend. */
+.atlas-kind .inst-toggle__label::after {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  margin-left: 9px;
+  vertical-align: middle;
+  border-top: 1.5px solid var(--green);
+}
+.atlas-kind--folder .inst-toggle__label::after { border-top-color: var(--green-line); }
+.atlas-kind--terms .inst-toggle__label::after { border-top: 1.5px dashed var(--amber); }
+
+.atlas-stage:fullscreen { display: flex; flex-direction: column; background: var(--bg); }
+.atlas-stage:fullscreen .atlas-graph { flex: 1; height: auto; min-height: 0; }
+
+/* ── under the stage: where a map comes from, and how it is kept ─────── */
+
+.atlas-deck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 16px;
+  min-width: 0;
+}
+.atlas-deck > .inst-drop { flex: 1 1 340px; }
+.atlas-repo {
+  display: flex;
+  align-items: stretch;
+  flex: 1 1 280px;
+  max-width: 440px;
+  min-width: 0;
+  min-height: 46px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.atlas-repo:focus-within { border-color: var(--amber); }
+.atlas-repo::before {
+  content: "github.com/";
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+  color: var(--green);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+:is(.lab, .tool-studio) .studio.atlas .atlas-repo input.atlas-repo__input {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 8px 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--green-bright);
+  font: inherit;
+  font-size: 16px;
+  outline: none;
+}
+.atlas-repo__input::placeholder { color: var(--green); opacity: 0.7; }
+.atlas .atlas-repo .atlas-repo__go {
+  flex: none;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-left: 1px solid var(--green-line);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: color-mix(in srgb, var(--green) 10%, var(--bg));
+  color: var(--green-bright);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+.atlas .atlas-repo .atlas-repo__go:hover:not(:disabled) { color: var(--amber-bright); }
+.atlas .atlas-repo .atlas-repo__go:disabled { color: var(--green); background: var(--bg); }
+.atlas .atlas-deck .atlas-back {
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--amber-bright);
+  font-size: 0.84rem;
+  cursor: pointer;
+}
+.atlas-error {
+  flex-basis: 100%;
+  padding: 6px 10px;
+  border-left: 2px solid var(--amber);
+  color: var(--amber);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+.atlas-error:empty { display: none; }
+
+.atlas-keep {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--green-line);
+}
+.atlas-keep > .inst-drop { flex: 0 1 auto; }
+
+/* ── the list of every file, closed until asked for ──────────────────── */
+
+:is(.lab, .tool-studio) .studio.atlas .atlas-list > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: fit-content;
+  min-height: 44px;
+  color: var(--green-bright);
+  font-size: 0.85rem;
+  list-style: none;
+  cursor: pointer;
+}
+.atlas-list > summary::-webkit-details-marker { display: none; }
+.atlas-list > summary::before { content: "+"; font-family: var(--font-screen); font-size: 1.3rem; line-height: 1; color: var(--amber); }
+.atlas-list[open] > summary::before { content: "\2212"; }
+.atlas-list__body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1px;
-  background: var(--lab-line);
-  max-height: 430px;
+  max-height: 420px;
+  margin-top: 8px;
   overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--green-line);
+  background: var(--green-line);
 }
-:is(.lab, .tool-studio) .atlas-file-list button {
+.atlas .atlas-list .atlas-list__item,
+.atlas .atlas-list .atlas-list__more {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 8px 12px;
   border: 0;
-  min-height: 55px;
-  padding: 12px;
+  border-radius: 0;
   background: var(--bg);
   color: var(--green);
+  font-size: 0.78rem;
   text-align: left;
-  overflow-wrap: anywhere;
+  cursor: pointer;
 }
-:is(.lab, .tool-studio) .atlas-file-list small {
-  display: block;
-  color: var(--studio-soft);
-  font-size: 0.66rem;
-}
-:is(.lab, .tool-studio) .atlas-file-list button[aria-pressed="true"] {
-  color: var(--amber);
-  background: var(--bg-panel);
-}
-@media (max-width: 1050px) {
-  :is(.lab, .tool-studio) .atlas-workspace {
-    grid-template-columns: minmax(0, 1fr);
+.atlas .atlas-list .atlas-list__item[aria-pressed="true"] { background: var(--bg-panel); color: var(--amber-bright); }
+.atlas .atlas-list .atlas-list__item:hover .atlas-list__path { color: var(--green-bright); }
+.atlas-list__path { min-width: 0; overflow-wrap: anywhere; }
+.atlas-list__kind { flex: none; font-size: 0.7rem; }
+.atlas .atlas-list .atlas-list__more { grid-column: 1 / -1; justify-content: center; color: var(--amber-bright); }
+.atlas-list__empty { grid-column: 1 / -1; padding: 12px; background: var(--bg); }
+
+/* ── a phone ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .atlas-graph {
+    --atlas-osd: 116px;
+    --atlas-edge: 12px;
+    height: clamp(420px, 72svh, 640px);
   }
-  :is(.lab, .tool-studio) .atlas-inspector {
-    max-height: 380px;
+  .atlas-osd {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    padding: 8px 10px 12px 14px;
+  }
+  .atlas-find { flex: none; }
+  .atlas-inspector {
+    top: auto;
+    left: 0;
+    width: auto;
+    max-height: 62%;
     border-left: 0;
-    border-top: 1px solid var(--lab-line);
+    border-radius: var(--radius) var(--radius) 0 0;
+    border-top: 1px solid var(--green-line);
+    box-shadow: 0 -18px 42px color-mix(in srgb, var(--bg) 72%, transparent);
   }
-  :is(.lab, .tool-studio) .atlas-canvas {
-    height: 500px;
+  .atlas-graph[data-inspecting] .atlas-zoom { display: none; }
+  .atlas-list__body { grid-template-columns: minmax(0, 1fr); }
+  .atlas-repo { max-width: none; }
+}
+
+/* ── motion, only for those who have not asked for less ──────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .atlas-inspector { animation: atlas-sheet-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+  @keyframes atlas-sheet-in {
+    from { transform: translateX(100%); }
   }
-}
-@media (max-width: 650px) {
-  :is(.lab, .tool-studio) .atlas-canvas {
-    height: 420px;
+  @media (max-width: 640px) {
+    .atlas-inspector { animation-name: atlas-sheet-up; }
+    @keyframes atlas-sheet-up {
+      from { transform: translateY(100%); }
+    }
   }
-  :is(.lab, .tool-studio) .atlas-stage-foot {
-    flex-wrap: wrap;
-  }
-  :is(.lab, .tool-studio) .atlas-file-list {
-    grid-template-columns: 1fr;
-  }
+  .atlas .atlas-zoom .atlas-icon,
+  .atlas .atlas-inspector .atlas-related,
+  .atlas .atlas-list .atlas-list__item,
+  .atlas-find,
+  .atlas-repo { transition: border-color 120ms ease-out, color 120ms ease-out; }
 }
-:is(.lab, .tool-studio) .atlas-media {
-  display: block;
-  width: 100%;
-  height: auto;
-  margin: 16px 0;
-  max-height: 300px;
-  object-fit: contain;
-}
-:is(.lab, .tool-studio) .atlas-workspace:fullscreen {
-  background: var(--bg);
-  width: 100vw;
-  height: 100vh;
-  border-radius: 0;
-  grid-template-columns: minmax(0, 1fr) 300px;
-}
-:is(.lab, .tool-studio) .atlas-workspace:fullscreen .atlas-stage {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-:is(.lab, .tool-studio) .atlas-workspace:fullscreen .atlas-canvas {
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-:is(.lab, .tool-studio) .atlas-workspace:fullscreen .atlas-inspector {
-  max-height: 100vh;
-}
-@media (max-width: 650px) {
-  :is(.lab, .tool-studio) .atlas-workspace:fullscreen {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) 200px;
-  }
-}
-:is(.lab, .tool-studio) .atlas-stage-foot .atlas-spread { flex: 0 1 300px; }

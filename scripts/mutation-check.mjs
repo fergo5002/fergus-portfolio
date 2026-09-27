@@ -1732,10 +1732,12 @@ const MUTATIONS = [
   },
   // ── the tools instrument redesign (2026-09-27) ──
   {
+    // Moved with the Atlas rebuild (2026-09-27): the inspector's heading is
+    // now its own component's, and the old `<h3>{node.label}</h3>` is gone.
     name: "tools: an eyebrow comes back into a studio",
-    file: "components/studio/Atlas.tsx",
-    pattern: /<h3>\{node\.label\}<\/h3>/,
-    replace: '<p className="studio-eyebrow">FILE / INSPECTOR</p>\n              <h3>{node.label}</h3>',
+    file: "components/studio/AtlasInspector.tsx",
+    pattern: /<h2 className="atlas-inspector__title">\{view\.label\}<\/h2>/,
+    replace: '<p className="studio-eyebrow">FILE / INSPECTOR</p>\n        <h2 className="atlas-inspector__title">{view.label}</h2>',
     tests: "components/studio/eyebrow.test.ts",
   },
   {
@@ -1921,6 +1923,123 @@ const MUTATIONS = [
     replace: "x = Math.floor(line.x - 4);",
     tests: "lib/studio/redact-example.test.ts",
   },
+  // ── Atlas, the map as the stage (2026-09-27) ──
+  ...[
+    [
+      "atlas: a sentence comes back above the map",
+      "components/studio/Atlas.tsx",
+      /(\n\s*)<GraphCanvas\r?\n/,
+      '$1<p className="atlas-lead">{line}</p>$1<GraphCanvas\n',
+    ],
+    [
+      "atlas: the stage stops saying the example is the example",
+      "components/studio/Atlas.tsx",
+      /: isExample \? copy\.exampleSummary\(summary\) : copy\.summary\(summary\)/,
+      ": copy.summary(summary)",
+    ],
+    [
+      "atlas: the file list is back in the flow, open",
+      "components/studio/Atlas.tsx",
+      /<details className="atlas-list">/,
+      '<details className="atlas-list" open>',
+    ],
+    [
+      "atlas: media gets the browser's own controls back",
+      "components/studio/AtlasInspector.tsx",
+      /<audio \{\.\.\.events\} \/>/,
+      "<audio controls {...events} />",
+    ],
+    [
+      "atlas: the inspector's own scroll is eaten by the page's smooth scroll",
+      "components/studio/AtlasInspector.tsx",
+      /\s*data-lenis-prevent=""\r?\n(\s*)onKeyDown/,
+      "\n$1onKeyDown",
+    ],
+    [
+      "atlas: the server draws a different framing from the canvas, so the hand-over jumps",
+      "components/studio/AtlasPoster.tsx",
+      /viewBox=\{viewBoxFor\(bounds, WORLD_PAD\)\}/,
+      "viewBox={viewBoxFor(bounds, 0)}",
+    ],
+    [
+      "atlas: the server's picture answers to .studio, so a check counts the canvas before it exists",
+      "components/studio/AtlasPoster.tsx",
+      /<div className="atlas atlas--poster">/,
+      '<div className="studio atlas atlas--poster">',
+    ],
+    [
+      "atlas: the map is laid out square again and fills neither a laptop's stage nor a phone's",
+      "lib/studio/atlas-scene.ts",
+      /\{ wide: \{ x: 0\.022, y: 0\.1 \}, tall: \{ x: 0\.1, y: 0\.022 \} \}/,
+      "{ wide: { x: 0.05, y: 0.05 }, tall: { x: 0.05, y: 0.05 } }",
+    ],
+    [
+      "atlas: the map paints nothing until the observer has seen it (the blank phone photograph)",
+      "components/studio/GraphCanvas.tsx",
+      /if \(live\.current\) dirty\.current = true;\r?\n(\s*)else paint\(\);/,
+      "dirty.current = true;",
+    ],
+    [
+      "atlas: an eased camera move drags the beam across the map as a streak",
+      "components/studio/GraphCanvas.tsx",
+      /if \(hop\.current\) hop\.current\.last = null;/,
+      ";",
+    ],
+    [
+      "atlas: the beam walks under reduced motion",
+      "components/studio/GraphCanvas.tsx",
+      /if \(reducedMotion \|\| !el\) return;/,
+      "if (!el) return;",
+    ],
+    [
+      "atlas: the wheel is taken whether or not the map was chosen, so a scroll gets stuck in it",
+      "components/studio/GraphCanvas.tsx",
+      /if \(!\(e\.ctrlKey \|\| engagedRef\.current\)\) return;/,
+      "if (false) return;",
+    ],
+    [
+      "atlas: the bleed parts from the stage's padding",
+      "app/tools/atlas/tool.css",
+      /--atlas-bleed: clamp\(14px, 2\.4vw, 26px\);/,
+      "--atlas-bleed: 20px;",
+    ],
+    [
+      "atlas: find needs any term rather than every term",
+      "lib/studio/atlas-view.ts",
+      /else if \(terms\.every\(\(t\) => both\.includes\(t\)\)\)/,
+      "else if (terms.some((t) => both.includes(t)))",
+    ],
+    [
+      "atlas: the reading line counts a file's folder as a connection",
+      "lib/studio/atlas-view.ts",
+      /: l\.kind !== "folder"\),/,
+      ": true),",
+    ],
+    [
+      "atlas: the phosphor decays per frame, so a starved tab smears for seconds",
+      "lib/studio/atlas-scene.ts",
+      /return 0\.5 \*\* \(elapsedMs \/ halfLifeMs\);/,
+      "return 0.5 ** (16.667 / halfLifeMs);",
+    ],
+    [
+      "atlas: the phosphor is not halved on a coarse pointer",
+      "lib/studio/atlas-scene.ts",
+      /\(coarse \? HALF_LIFE_MS \/ 2 : HALF_LIFE_MS\)/,
+      "HALF_LIFE_MS",
+    ],
+    [
+      "atlas: a missing theme token paints black on black instead of refusing",
+      "lib/studio/atlas-scene.ts",
+      /if \(!value\) throw new AtlasPaletteError\(token\);/,
+      "if (false) throw new AtlasPaletteError(token);",
+    ],
+  ].map(([name, file, pattern, replace]) => ({
+    name,
+    file,
+    pattern,
+    replace,
+    tests: file.startsWith("lib/") ? file.replace(/\.ts$/, ".test.ts") : "components/studio/Atlas.test.ts",
+  })),
   // ── the room inside the tube (2026-09-05 overhaul) ──
   {
     name: "the arcade room loses data-lenis-prevent, so a stopped Lenis eats every wheel event",
