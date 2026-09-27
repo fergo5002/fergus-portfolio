@@ -1,116 +1,255 @@
 "use client";
-import { studioLabels } from "@/content/studio/labels";
-const ui = studioLabels.PocketRedact;
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+} from "react";
+import { useSystem } from "@/components/system/SystemProvider";
+import { DropSlot, ExportBar, useIntake } from "@/components/instrument";
+import { download } from "@/components/lab/shared";
 import { redactCopy as c } from "@/content/studio/redact";
 import { normaliseRect, type Rect } from "@/lib/lab/redact";
 import {
+  candidateAt,
+  centredMask,
   editMasks,
-  undoMasks,
-  redoMasks,
-  moveMask,
+  hitMask,
   matchingBoxes,
+  moveMask,
+  pendingCandidates,
+  redoMasks,
+  resizeMask,
+  undoMasks,
   type MaskHistory,
 } from "@/lib/studio/redaction";
 import {
-  readPdf,
-  readImage,
-  flatten,
-  canvasBlob,
+  pageBlob,
   rasterPdf,
+  readImage,
+  readPdf,
+  readPixels,
   releasePages,
   type RedactPage,
 } from "@/lib/studio/pdf";
-import {
-  Button,
-  Field,
-  NumberField,
-  ErrorMessage,
-  download,
-} from "@/components/lab/shared";
-import { DropSlot, ExportBar, Segmented, Slider, useIntake } from "@/components/instrument";
-import { Press } from "./Furniture";
-type Drag = {
-  x: number;
-  y: number;
-  rect?: Rect;
-  index?: number;
-  resize?: boolean;
+import { EXAMPLE_PAGE, EXAMPLE_SRC, exampleMask, exampleSheet } from "@/lib/studio/redact-example";
+import { canDownload, scanProgress, scanReveal, verifyPage, type PageVerdict } from "@/lib/studio/redact-verify";
+import { ZOOM, nextZoom, redactKey } from "@/lib/studio/redact-keys";
+import { Lens, Palette, type Mode } from "./redact/Palette";
+import { FindLine, type Find } from "./redact/FindLine";
+
+/**
+ * Pocket Redact.
+ *
+ * The document is the stage. The example invoice is open, large and already
+ * masked in the server's HTML (its image is an SVG built from one layout, see
+ * `lib/studio/redact-example.ts`), and you draw straight onto it. The tools
+ * float on the desk's edge; find is a command line under the page that lights
+ * its candidates on the page itself.
+ *
+ * Building the clean copy is the signature, and it is real work, not theatre:
+ *
+ *   burn    `rasterPdf` draws every page into pixels, paints each mask in as
+ *           solid black and writes a PDF of nothing but those images, while
+ *           the masks flare on the page (CSS, no-preference only).
+ *   proof   `readPdf` reopens those exact bytes, `verifyPage` reads the
+ *           reopened pixels under every mask and the reopened text layer, and
+ *           the page on the desk becomes the reopened page. A scan line
+ *           sweeps it, off the one frame clock by timestamp, only on screen,
+ *           revealing each mask's verdict as it passes. The verdicts exist
+ *           before the line moves; the line only shows them.
+ *
+ * The download is those bytes, behind `canDownload`: every page passed and
+ * every page inspected by the visitor, because a machine can check the masks
+ * but only a person can check what was left uncovered.
+ *
+ * Nothing here is stored and nothing leaves the tab. No control renders until
+ * hydration can answer it (`ready`); the page does, so the first paint is the
+ * document.
+ */
+
+const SHEET = exampleSheet();
+const examplePage = (): RedactPage => ({
+  url: EXAMPLE_SRC,
+  width: EXAMPLE_PAGE.width,
+  height: EXAMPLE_PAGE.height,
+  pointsWidth: EXAMPLE_PAGE.pointsWidth,
+  pointsHeight: EXAMPLE_PAGE.pointsHeight,
+  text: SHEET.text,
+  example: true,
+});
+
+const ACCEPT = ".pdf,.png,.jpg,.jpeg,.webp,.avif,.bmp";
+const MAX_BYTES = 40_000_000;
+/** One mask's flare, as long as `redact-burn` in tool.css. */
+const FLARE_MS = 900;
+/** Masks catch top to bottom, this far apart, the sixth and later together. */
+const STAGGER_MS = 60;
+const STAGGER_CAP = 5;
+/** One sweep of the scan line down the reopened page. */
+const SCAN_MS = 1400;
+/** A starved or absent frame clock still finishes the sweep. */
+const SCAN_FAILSAFE_MS = SCAN_MS + 1600;
+/** Page pixels a pointer may miss a mask by and still take it. */
+const SLOP = 8;
+/** Page pixels from a selected mask's corner that resize rather than move it. */
+const HANDLE = 18;
+/** Screen pixels under which a press and release is a tap, not a drag. */
+const TAP = 5;
+
+type Stage = "edit" | "burn" | "proof";
+type Drag = { x: number; y: number; cx: number; cy: number; rect?: Rect; index?: number; resize?: boolean };
+type Draft = { rect: Rect; index?: number };
+type Proof = { pages: RedactPage[]; verdicts: PageVerdict[]; file: Blob };
+
+const isField = (t: EventTarget | null) =>
+  t instanceof HTMLElement && (t.matches("input, textarea, select") || t.isContentEditable);
+const same = (a: Rect, b: Rect) => a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
+const strip = ({ x, y, width, height }: Rect): Rect => ({ x, y, width, height });
+const wait = (ms: number, signal: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    const id = window.setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => (window.clearTimeout(id), reject(signal.reason)), { once: true });
+  });
+/** A tick at a mask's right end, in page units: the scan's mark for a solid mask. */
+const tick = (r: Rect) => {
+  const s = Math.min(14, r.height * 0.45),
+    x = r.x + r.width + 10,
+    y = r.y + r.height / 2;
+  return `M${x} ${y}l${s * 0.4} ${s * 0.45}l${s * 0.9} -${s}`;
 };
+
 export default function PocketRedact() {
-  const [pages, setPages] = useState<RedactPage[]>([]),
-    [index, setIndex] = useState(0),
-    [history, setHistory] = useState<MaskHistory>({
-      past: [],
-      present: [],
-      future: [],
-    }),
-    [mode, setMode] = useState("draw"),
-    [selected, setSelected] = useState(-1),
-    [draft, setDraft] = useState<Rect | null>(null),
-    [zoom, setZoom] = useState(100),
-    [query, setQuery] = useState(""),
-    [findMode, setFindMode] = useState("text"),
-    [coords, setCoords] = useState([70, 290, 630, 45]),
-    [error, setError] = useState(""),
-    [progress, setProgress] = useState(""),
-    [previews, setPreviews] = useState<RedactPage[]>([]),
-    [reviewIndex, setReviewIndex] = useState(0),
-    [reviewed, setReviewed] = useState<number[]>([]),
-    [output, setOutput] = useState<Blob | null>(null),
-    drag = useRef<Drag | null>(null),
-    abort = useRef<AbortController | null>(null),
-    pageRef = useRef(pages),
-    previewRef = useRef(previews),
-    mounted = useRef(true);
-  pageRef.current = pages;
-  previewRef.current = previews;
-  const page = pages[index],
-    rects = history.present[index] ?? [],
-    candidates = useMemo(
-      () => (page ? matchingBoxes(page.text, query, findMode) : []),
-      [page, query, findMode],
-    );
+  const { onFrame, reducedMotion, audio, scrollTo } = useSystem();
+  const [ready, setReady] = useState(false);
+  const [pages, setPages] = useState<RedactPage[]>(() => [examplePage()]);
+  const [index, setIndex] = useState(0);
+  const [history, setHistory] = useState<MaskHistory>(() => ({
+    past: [],
+    present: [[exampleMask(SHEET)]],
+    future: [],
+  }));
+  const [mode, setMode] = useState<Mode>("draw");
+  const [selected, setSelected] = useState(-1);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [zoom, setZoom] = useState<number>(ZOOM.fit);
+  const [query, setQuery] = useState("");
+  const [find, setFind] = useState<Find>("text");
+  const [error, setError] = useState("");
+  const [progress, setProgress] = useState("");
+  const [stage, setStage] = useState<Stage>("edit");
+  const [proof, setProof] = useState<Proof | null>(null);
+  const [proofIndex, setProofIndex] = useState(0);
+  const [reviewed, setReviewed] = useState<number[]>([]);
+  const [scanned, setScanned] = useState<number[]>([]);
+  const drag = useRef<Drag | null>(null);
+  const abort = useRef<AbortController | null>(null);
+  const pagesRef = useRef(pages);
+  const proofRef = useRef(proof);
+  const mounted = useRef(true);
+  const deskRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const paperRef = useRef<HTMLDivElement>(null);
+  const marks = useRef<(SVGGElement | null)[]>([]);
+  pagesRef.current = pages;
+  proofRef.current = proof;
+
+  useEffect(() => setReady(true), []);
   useEffect(() => {
     mounted.current = true;
     return () => {
       mounted.current = false;
       abort.current?.abort();
-      releasePages(pageRef.current);
-      releasePages(previewRef.current);
+      releasePages(pagesRef.current);
+      if (proofRef.current) releasePages(proofRef.current.pages);
     };
   }, []);
-  function clearOutput() {
-    releasePages(previewRef.current);
-    previewRef.current = [];
-    setPreviews([]);
-    setOutput(null);
-    setReviewed([]);
+
+  const page = pages[index];
+  const rects = useMemo(() => history.present[index] ?? [], [history, index]);
+  const found = useMemo(() => (page ? matchingBoxes(page.text, query, find) : []), [page, query, find]);
+  const lit = useMemo(() => pendingCandidates(found, rects), [found, rects]);
+  const busy = !!progress;
+  const editing = stage === "edit" && !busy;
+  const shown = proof?.pages[proofIndex];
+  const verdict = proof?.verdicts[proofIndex];
+  const scanning = stage === "proof" && !!proof && !scanned.includes(proofIndex);
+  const total = history.present.reduce((n, p) => n + p.length, 0);
+  /** Each mask's flare delay: top to bottom, so the burn runs down the page. */
+  const delay = useMemo(() => {
+    const out: number[] = [];
+    rects
+      .map((r, i) => [r.y, i])
+      .sort((a, b) => a[0] - b[0])
+      .forEach(([, i], n) => (out[i] = Math.min(n, STAGGER_CAP) * STAGGER_MS));
+    return out;
+  }, [rects]);
+
+  /* ── history and masks ─────────────────────────────────────────────── */
+
+  function change(next: Rect[]) {
+    setHistory((h) => editMasks(h, index, next));
   }
-  function load(next: RedactPage[]) {
-    releasePages(pageRef.current);
-    clearOutput();
-    pageRef.current = next;
-    setPages(next);
-    setIndex(0);
-    setHistory({ past: [], present: next.map(() => []), future: [] });
+  function undo() {
+    setHistory(undoMasks);
     setSelected(-1);
-    setQuery("");
+  }
+  function redo() {
+    setHistory(redoMasks);
+    setSelected(-1);
+  }
+  function remove() {
+    if (selected < 0) return;
+    change(rects.filter((_, i) => i !== selected));
+    setSelected(-1);
+  }
+  function cover(boxes: Rect[]) {
+    if (boxes.length) change([...rects, ...boxes.map(strip)]);
+  }
+  function goTo(i: number) {
+    setIndex(i);
+    setSelected(-1);
     setDraft(null);
     drag.current = null;
-    setZoom(100);
   }
-  async function run(fn: (signal: AbortSignal) => Promise<void>) {
+
+  /* ── loading ───────────────────────────────────────────────────────── */
+
+  function dropProof() {
+    if (proofRef.current) releasePages(proofRef.current.pages);
+    proofRef.current = null;
+    setProof(null);
+    setProofIndex(0);
+    setReviewed([]);
+    setScanned([]);
+  }
+  function load(next: RedactPage[], masks: Rect[][] = next.map(() => [])) {
+    releasePages(pagesRef.current);
+    dropProof();
+    pagesRef.current = next;
+    setPages(next);
+    setHistory({ past: [], present: masks, future: [] });
+    goTo(0);
+    setQuery("");
+    setZoom(ZOOM.fit);
+    setStage("edit");
+  }
+  async function run(fn: (signal: AbortSignal) => Promise<void>, line: string) {
     abort.current?.abort();
     const controller = new AbortController();
     abort.current = controller;
     setError("");
-    setProgress("Preparing document…");
+    setProgress(line);
     try {
       await fn(controller.signal);
     } catch (e) {
-      if (mounted.current && !controller.signal.aborted)
-        setError(e instanceof Error ? e.message : String(e));
+      if (!mounted.current) return;
+      if (!controller.signal.aborted) setError(e instanceof Error ? e.message : String(e));
+      setStage((s) => (s === "burn" ? "edit" : s));
     } finally {
       if (mounted.current && abort.current === controller) {
         setProgress("");
@@ -118,93 +257,12 @@ export default function PocketRedact() {
       }
     }
   }
-  function change(next: Rect[]) {
-    setHistory((h) => editMasks(h, index, next));
-    clearOutput();
-  }
-  function undo() {
-    setHistory((h) => undoMasks(h));
-    setSelected(-1);
-    clearOutput();
-  }
-  function redo() {
-    setHistory((h) => redoMasks(h));
-    setSelected(-1);
-    clearOutput();
-  }
-  function remove() {
-    if (selected < 0) return;
-    change(rects.filter((_, i) => i !== selected));
-    setSelected(-1);
-  }
-  function position(e: PointerEvent<SVGSVGElement>) {
-    const r = e.currentTarget.getBoundingClientRect();
-    return {
-      x: ((e.clientX - r.left) / r.width) * page.width,
-      y: ((e.clientY - r.top) / r.height) * page.height,
-    };
-  }
-  function moved(e: PointerEvent<SVGSVGElement>) {
-    const d = drag.current,
-      p = position(e);
-    if (!d) return null;
-    if (d.rect)
-      return d.resize
-        ? normaliseRect(
-            d.rect.x,
-            d.rect.y,
-            Math.max(d.rect.x + 2, p.x),
-            Math.max(d.rect.y + 2, p.y),
-            page.width,
-            page.height,
-          )
-        : moveMask(d.rect, p.x - d.x, p.y - d.y, page.width, page.height);
-    return normaliseRect(d.x, d.y, p.x, p.y, page.width, page.height);
-  }
-  async function example(signal?: AbortSignal) {
-    const canvas = document.createElement("canvas");
-    canvas.width = 900;
-    canvas.height = 1160;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, 900, 1160);
-    ctx.fillStyle = "#171b18";
-    ctx.font = "bold 38px monospace";
-    ctx.fillText(c.sampleTitle, 70, 120);
-    ctx.font = "22px monospace";
-    const text = c.sample.map((line, i) => {
-      const y = 230 + i * 80;
-      ctx.fillText(line, 70, y);
-      return {
-        text: line,
-        x: 67,
-        y: y - 24,
-        width: Math.ceil(ctx.measureText(line).width) + 6,
-        height: 32,
-      };
-    });
-    ctx.strokeStyle = "#bbb";
-    ctx.strokeRect(50, 50, 800, 1060);
-    const blob = await canvasBlob(canvas);
-    // A file chosen while the example was drawing wins: never load over it.
-    if (!mounted.current || signal?.aborted) return;
-    load([
-      {
-        url: URL.createObjectURL(blob),
-        width: 900,
-        height: 1160,
-        pointsWidth: 600,
-        pointsHeight: 773.333,
-        text,
-      },
-    ]);
-  }
   const intake = useIntake({
-    accept: ".pdf,.png,.jpg,.jpeg,.webp,.avif,.bmp",
-    disabled: !!progress,
+    accept: ACCEPT,
+    maxBytes: MAX_BYTES,
+    disabled: busy || stage !== "edit",
     onFiles: ([file]) =>
       void run(async (signal) => {
-        if (file.size > 40_000_000) throw new Error("File limit: 40 MB.");
         const next = file.name.toLowerCase().endsWith(".pdf")
           ? await readPdf(new Uint8Array(await file.arrayBuffer()), setProgress, signal)
           : await readImage(file);
@@ -213,471 +271,523 @@ export default function PocketRedact() {
           return;
         }
         load(next);
-      }),
+      }, c.opening),
   });
-  // The instrument opens on its example, so the page is never an empty form.
-  // Drawn without the busy state, so the intake stays open while it draws; a
-  // file chosen in the meantime aborts it through the shared controller.
+  function openExample() {
+    abort.current?.abort();
+    setError("");
+    load([examplePage()], [[exampleMask(SHEET)]]);
+  }
+
+  /* ── the burn and the proof ────────────────────────────────────────── */
+
+  async function build() {
+    // Build sits under the page, so the page may be above the visitor: bring
+    // it back, so the burn, the scan and the reading happen where they look.
+    const desk = deskRef.current;
+    if (desk && desk.getBoundingClientRect().top < 0) scrollTo(desk);
+    await run(async (signal) => {
+      setStage("burn");
+      setSelected(-1);
+      audio.relay();
+      const started = performance.now();
+      const source = pagesRef.current,
+        masks = history.present;
+      const bytes = await rasterPdf(source, masks, setProgress, signal);
+      signal.throwIfAborted();
+      setProgress(c.reopening);
+      const reopened = await readPdf(bytes.slice(), setProgress, signal);
+      try {
+        if (reopened.length !== source.length) throw new Error(c.failed);
+        const verdicts: PageVerdict[] = [];
+        for (let i = 0; i < reopened.length; i++) {
+          signal.throwIfAborted();
+          verdicts.push(
+            verifyPage({
+              pixels: await readPixels(reopened[i]),
+              masks: masks[i] ?? [],
+              source: source[i],
+              textBefore: source[i].text.length,
+              textAfter: reopened[i].text.length,
+            }),
+          );
+        }
+        // Let the last flare finish before the page turns into its proof.
+        const flare = FLARE_MS + Math.max(0, ...delay);
+        const hold = reducedMotion ? 0 : flare - (performance.now() - started);
+        if (hold > 0) await wait(hold, signal);
+        if (!mounted.current) throw signal.reason;
+        dropProof();
+        const next = { pages: reopened, verdicts, file: new Blob([bytes], { type: "application/pdf" }) };
+        proofRef.current = next;
+        setProof(next);
+        setStage("proof");
+      } catch (e) {
+        releasePages(reopened);
+        throw e;
+      }
+    }, c.burning);
+  }
+  function backToEditing() {
+    dropProof();
+    setStage("edit");
+  }
+  async function savePng() {
+    const p = proof?.pages[proofIndex],
+      n = proofIndex + 1;
+    if (!p) return;
+    try {
+      download(`redacted-page-${n}.png`, await pageBlob(p));
+    } catch (e) {
+      if (mounted.current) setError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  /* The scan: once per reopened page, off the one frame clock, by the
+     frame's own timestamp (the clock clamps its delta at 64ms, and a starved
+     tab would stretch a delta-timed sweep for ever), subscribed only once the
+     page is on screen, and not at all under reduced motion or in a hidden
+     tab. It writes a CSS variable and toggles each verdict's attribute; it
+     never sets state per frame. */
   useEffect(() => {
-    const controller = new AbortController();
-    abort.current = controller;
-    example(controller.signal)
-      .catch((e) => {
-        if (mounted.current && !controller.signal.aborted) setError(e instanceof Error ? e.message : String(e));
-      })
-      .finally(() => {
-        if (abort.current === controller) abort.current = null;
-      });
-    return () => controller.abort();
-  }, []);
+    if (!scanning || !proof) return;
+    const paper = paperRef.current;
+    const done = () => setScanned((s) => (s.includes(proofIndex) ? s : [...s, proofIndex]));
+    if (reducedMotion || document.visibilityState !== "visible") {
+      done();
+      return;
+    }
+    if (!paper) return;
+    const masks = proof.verdicts[proofIndex].masks.map((m) => m.rect),
+      height = pagesRef.current[proofIndex]?.height ?? 1;
+    let start = -1,
+      failsafe = 0,
+      stop: (() => void) | null = null;
+    const finish = () => {
+      stop?.();
+      stop = null;
+      window.clearTimeout(failsafe);
+      done();
+    };
+    const seen = new IntersectionObserver(
+      (entries) => {
+        if (stop || !entries.some((e) => e.isIntersecting)) return;
+        seen.disconnect();
+        failsafe = window.setTimeout(finish, SCAN_FAILSAFE_MS);
+        stop = onFrame((time) => {
+          if (start < 0) start = time;
+          const t = scanProgress(start, time, SCAN_MS);
+          paper.style.setProperty("--scan", t.toFixed(4));
+          scanReveal(masks, t, height).forEach((on, i) => marks.current[i]?.toggleAttribute("data-passed", on));
+          if (t >= 1) finish();
+        });
+      },
+      { threshold: 0.15 },
+    );
+    seen.observe(paper);
+    return () => {
+      seen.disconnect();
+      stop?.();
+      window.clearTimeout(failsafe);
+    };
+  }, [scanning, proof, proofIndex, reducedMotion, onFrame]);
+
+  /* ── pointer and keys ──────────────────────────────────────────────── */
+
+  function position(e: PointerEvent<SVGSVGElement>) {
+    const r = e.currentTarget.getBoundingClientRect();
+    return {
+      x: ((e.clientX - r.left) / r.width) * page.width,
+      y: ((e.clientY - r.top) / r.height) * page.height,
+    };
+  }
+  function moved(e: PointerEvent<SVGSVGElement>): Rect | null {
+    const d = drag.current;
+    if (!d) return null;
+    const p = position(e);
+    if (d.rect)
+      return d.resize
+        ? normaliseRect(d.rect.x, d.rect.y, Math.max(d.rect.x + 2, p.x), Math.max(d.rect.y + 2, p.y), page.width, page.height)
+        : moveMask(d.rect, Math.round(p.x - d.x), Math.round(p.y - d.y), page.width, page.height);
+    return normaliseRect(d.x, d.y, p.x, p.y, page.width, page.height);
+  }
+  function onDown(e: PointerEvent<SVGSVGElement>) {
+    if (!editing || e.button > 0) return;
+    sheetRef.current?.focus({ preventScroll: true });
+    const p = position(e),
+      at = { ...p, cx: e.clientX, cy: e.clientY };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDraft(null);
+    if (mode === "select") {
+      const hit = hitMask(rects, p.x, p.y, SLOP);
+      setSelected(hit);
+      if (hit < 0) {
+        drag.current = at;
+        return;
+      }
+      const r = rects[hit];
+      drag.current = {
+        ...at,
+        rect: r,
+        index: hit,
+        resize: Math.abs(p.x - r.x - r.width) < HANDLE && Math.abs(p.y - r.y - r.height) < HANDLE,
+      };
+      return;
+    }
+    setSelected(-1);
+    drag.current = at;
+  }
+  function onMove(e: PointerEvent<SVGSVGElement>) {
+    const d = drag.current;
+    if (!d || (mode === "select" && d.index === undefined)) return;
+    const r = moved(e);
+    if (r) setDraft({ rect: r, index: d.index });
+  }
+  function onUp(e: PointerEvent<SVGSVGElement>) {
+    const d = drag.current;
+    if (!d) return;
+    const r = moved(e);
+    drag.current = null;
+    setDraft(null);
+    if (d.index !== undefined && d.rect) {
+      if (r && !same(r, d.rect)) change(rects.map((old, i) => (i === d.index ? r : old)));
+      return;
+    }
+    if (Math.hypot(e.clientX - d.cx, e.clientY - d.cy) < TAP) {
+      // A tap on a lit box covers that box alone.
+      const p = position(e),
+        hit = candidateAt(lit, p.x, p.y);
+      if (hit >= 0) cover([lit[hit]]);
+      return;
+    }
+    if (mode === "draw" && r && r.width > 1 && r.height > 1) {
+      change([...rects, r]);
+      setSelected(rects.length);
+    }
+  }
+  function onCancel() {
+    drag.current = null;
+    setDraft(null);
+  }
+  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (isField(event.target)) return;
+    if (!editing) return;
+    const intent = redactKey(event, selected >= 0);
+    if (!intent) return;
+    event.preventDefault();
+    const edit = (fn: (r: Rect) => Rect) => change(rects.map((r, i) => (i === selected ? fn(r) : r)));
+    switch (intent.kind) {
+      case "undo":
+        return undo();
+      case "redo":
+        return redo();
+      case "delete":
+        return remove();
+      case "mode":
+        return setMode(intent.mode);
+      case "new":
+        change([...rects, centredMask(page.width, page.height)]);
+        setSelected(rects.length);
+        return setMode("select");
+      case "move":
+        return edit((r) => moveMask(r, intent.dx, intent.dy, page.width, page.height));
+      case "resize":
+        return edit((r) => resizeMask(r, intent.dw, intent.dh, page.width, page.height));
+      case "zoom":
+        return setZoom((z) => nextZoom(z, intent.step));
+      case "fit":
+        return setZoom(ZOOM.fit);
+    }
+  }
+
+  /* ── the stage ─────────────────────────────────────────────────────── */
+
+  const view = stage === "proof" && shown ? shown : page;
+  const paperStyle = {
+    "--aspect": (view.width / view.height).toFixed(5),
+    "--zoom": (zoom / 100).toFixed(2),
+  } as CSSProperties;
+  /** The page the proof's masks were drawn on, which sets the verdicts' coordinates. */
+  const drawn = pages[proofIndex] ?? page;
+  const inspected = new Set(reviewed.filter((i) => proof && i < proof.pages.length)).size;
+  const failed = !!proof && proof.verdicts.some((v) => !v.ok);
+  const thumbs = stage === "proof" && proof ? proof.pages : pages;
+
   return (
-    <div className="lab-work studio studio-redact" {...intake.stageProps}>
-      <div className="studio-intake">
-        <DropSlot intake={intake} id="redact-file" label={c.upload} hint={c.limits} />
-        <Button disabled={!!progress} onClick={() => run(example)}>
-          {c.example}
-        </Button>
-      </div>
-      <ErrorMessage error={error} />
-      {progress && (
-        <div className="studio-toolbar" role="status">
-          <span>{progress}</span>
-          <Button onClick={() => abort.current?.abort()}>{ui.cancel}</Button>
-        </div>
-      )}
-      {!page && <p className="studio-empty">{c.empty}</p>}
-      {page && !previews.length && (
-        <>
-          <div className="studio-toolbar">
-            <Press
-              active={mode === "draw"}
-              onClick={() => setMode("draw")}
-              disabled={!!progress}
-            >
-              {c.draw}
-            </Press>
-            <Press
-              active={mode === "select"}
-              onClick={() => setMode("select")}
-              disabled={!!progress}
-            >
-              {c.select}
-            </Press>
-            <Button
-              disabled={!history.past.length || !!progress}
-              onClick={undo}
-            >
-              {c.undo}
-            </Button>
-            <Button
-              disabled={!history.future.length || !!progress}
-              onClick={redo}
-            >
-              {c.redo}
-            </Button>
-            <Button disabled={selected < 0 || !!progress} onClick={remove}>
-              {c.delete}
-            </Button>
-            <Slider
-              label={c.zoom}
-              min={50}
-              max={250}
-              step={10}
-              value={zoom}
-              format={(v) => `${v}%`}
-              onChange={setZoom}
-              className="redact-zoom"
-            />
-            <Button onClick={() => setZoom(100)}>{c.fit}</Button>
-          </div>
-          <p className="studio-note">{c.instruction}</p>
-          <div className="redact-workspace">
-            <nav className="redact-thumbnails" aria-label={ui.documentPages}>
-              {pages.map((p, i) => (
-                <button
-                  key={i}
-                  aria-label={`Page ${i + 1}, ${history.present[i].length} masks`}
-                  aria-pressed={index === i}
-                  disabled={!!progress}
-                  onClick={() => {
-                    setIndex(i);
-                    setSelected(-1);
-                    setDraft(null);
-                    drag.current = null;
-                  }}
-                >
-                  <div>
-                    <img src={p.url} alt="" width={p.width} height={p.height} />
-                    <svg viewBox={`0 0 ${p.width} ${p.height}`}>
-                      {history.present[i].map((r, j) => (
-                        <rect key={j} {...r} fill="black" />
-                      ))}
-                    </svg>
-                  </div>
-                  <span>
-                    {i + 1} · {history.present[i].length}
-                    {ui.masks}
-                  </span>
-                </button>
-              ))}
-            </nav>
-            <div
-              className="redact-viewport"
-              tabIndex={0}
-              aria-label={ui.redactionEditor}
-              onKeyDown={(e) => {
-                if (e.target instanceof HTMLInputElement) return;
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
-                  e.preventDefault();
-                  if (!progress) e.shiftKey ? redo() : undo();
-                } else if (!progress && selected >= 0) {
-                  if (e.key === "Delete" || e.key === "Backspace") {
-                    e.preventDefault();
-                    remove();
-                  } else if (e.key.startsWith("Arrow")) {
-                    e.preventDefault();
-                    const amount = e.shiftKey ? 10 : 1;
-                    change(
-                      rects.map((r, i) =>
-                        i === selected
-                          ? moveMask(
-                              r,
-                              e.key === "ArrowRight"
-                                ? amount
-                                : e.key === "ArrowLeft"
-                                  ? -amount
-                                  : 0,
-                              e.key === "ArrowDown"
-                                ? amount
-                                : e.key === "ArrowUp"
-                                  ? -amount
-                                  : 0,
-                              page.width,
-                              page.height,
-                            )
-                          : r,
-                      ),
-                    );
-                  }
-                }
-              }}
-            >
-              <div
-                className="redact-paper"
-                style={{
-                  width: `${zoom}%`,
-                  aspectRatio: `${page.width}/${page.height}`,
-                }}
-              >
+    <div className="lab-work studio redact" data-stage={stage} onKeyDown={onKeyDown} {...intake.stageProps}>
+      <div className="redact__desk" ref={deskRef}>
+        <div
+          className="redact__sheet"
+          ref={sheetRef}
+          role="group"
+          tabIndex={0}
+          aria-label={c.editor}
+          aria-describedby="redact-help"
+        >
+          <div className="redact__scroll" data-lenis-prevent={zoom > ZOOM.fit ? "" : undefined}>
+            <div className="redact__paper" ref={paperRef} style={paperStyle}>
+              {stage === "proof" && shown ? (
                 <img
+                  className="redact__proof"
+                  key={shown.url}
+                  src={shown.url}
+                  width={shown.width}
+                  height={shown.height}
+                  alt={c.proofAlt(proofIndex + 1)}
+                  draggable={false}
+                />
+              ) : (
+                <img
+                  className="redact__page"
                   src={page.url}
                   width={page.width}
                   height={page.height}
-                  alt={`Original page ${index + 1}`}
+                  alt={page.example ? c.example : c.pageAlt(index + 1)}
+                  draggable={false}
                 />
+              )}
+              {stage === "proof" && verdict ? (
                 <svg
-                  viewBox={`0 0 ${page.width} ${page.height}`}
-                  aria-label={ui.drawOrMoveRedactionMasks}
-                  onPointerDown={(e) => {
-                    if (progress) return;
-                    e.currentTarget.parentElement?.parentElement?.focus({
-                      preventScroll: true,
-                    });
-                    const p = position(e);
-                    e.currentTarget.setPointerCapture(e.pointerId);
-                    if (mode === "select") {
-                      let hit = -1;
-                      for (let i = rects.length - 1; i >= 0; i--) {
-                        const r = rects[i];
-                        if (
-                          p.x >= r.x - 8 &&
-                          p.x <= r.x + r.width + 8 &&
-                          p.y >= r.y - 8 &&
-                          p.y <= r.y + r.height + 8
-                        ) {
-                          hit = i;
-                          break;
-                        }
-                      }
-                      setSelected(hit);
-                      if (hit >= 0) {
-                        const r = rects[hit];
-                        drag.current = {
-                          ...p,
-                          rect: r,
-                          index: hit,
-                          resize:
-                            Math.abs(p.x - r.x - r.width) < 18 &&
-                            Math.abs(p.y - r.y - r.height) < 18,
-                        };
-                      }
-                    } else {
-                      setSelected(-1);
-                      drag.current = p;
-                    }
-                    setDraft(null);
-                  }}
-                  onPointerMove={(e) => {
-                    if (drag.current) setDraft(moved(e));
-                  }}
-                  onPointerUp={(e) => {
-                    const d = drag.current,
-                      r = moved(e);
-                    drag.current = null;
-                    setDraft(null);
-                    if (r && r.width > 1 && r.height > 1) {
-                      if (d?.index !== undefined) {
-                        change(
-                          rects.map((old, i) => (i === d.index ? r : old)),
-                        );
-                      } else {
-                        change([...rects, r]);
-                        setSelected(rects.length);
-                      }
-                    }
-                  }}
-                  onPointerCancel={() => {
-                    drag.current = null;
-                    setDraft(null);
-                  }}
+                  className="redact__verdicts"
+                  viewBox={`0 0 ${drawn.width} ${drawn.height}`}
+                  preserveAspectRatio="none"
+                  aria-hidden="true"
+                  focusable="false"
                 >
-                  {candidates.map((r, i) => (
-                    <rect
-                      key={`candidate-${i}`}
-                      {...r}
-                      fill="#ffbf00"
-                      fillOpacity=".25"
-                      stroke="#bd8100"
-                      strokeWidth="2"
-                      pointerEvents="none"
-                    />
-                  ))}
-                  {rects.map((r, i) => (
-                    <g key={i}>
-                      <rect
-                        {...(draft && drag.current?.index === i ? draft : r)}
-                        fill="#000"
-                        stroke={i === selected ? "#ffb000" : "none"}
-                        strokeWidth="3"
-                      />
-                      {i === selected && mode === "select" && (
-                        <rect
-                          x={r.x + r.width - 9}
-                          y={r.y + r.height - 9}
-                          width="18"
-                          height="18"
-                          fill="#ffb000"
-                        />
-                      )}
+                  {verdict.masks.map((m, i) => (
+                    <g
+                      key={`${proofIndex}-${i}`}
+                      ref={(el) => {
+                        marks.current[i] = el;
+                      }}
+                      className="redact__verdict"
+                      data-solid={m.solid || undefined}
+                      data-passed={scanning ? undefined : ""}
+                    >
+                      <rect x={m.rect.x} y={m.rect.y} width={m.rect.width} height={m.rect.height} />
+                      {m.solid ? <path d={tick(m.rect)} /> : null}
                     </g>
                   ))}
-                  {draft && drag.current?.index === undefined && (
-                    <rect
-                      {...draft}
-                      fill="#000"
-                      opacity=".8"
-                      stroke="#ffb000"
-                      strokeWidth="2"
-                    />
-                  )}
                 </svg>
-              </div>
-            </div>
-            <aside className="redact-inspector">
-              <h3>{c.search}</h3>
-              <Segmented
-                label={c.searchType}
-                size="sm"
-                value={findMode}
-                onChange={setFindMode}
-                options={[
-                  { value: "text", label: ui.exactText },
-                  { value: "email", label: ui.emailLikeText },
-                  { value: "phone", label: ui.phoneLongNumbers },
-                ]}
-              />
-              {findMode === "text" && (
-                <Field label={c.search}>
-                  <input
-                    type="search"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                </Field>
-              )}
-              <p>{page.text.length ? c.searchNote : c.noText}</p>
-              <strong>
-                {candidates.length} {c.suggestions.toLowerCase()}
-              </strong>
-              <div className="redact-candidates">
-                {candidates.slice(0, 20).map((t, i) => (
-                  <p key={i}>{t.text}</p>
-                ))}
-              </div>
-              <Button
-                disabled={!candidates.length || !!progress}
-                onClick={() => {
-                  change([...rects, ...candidates.map(({ text, ...r }) => r)]);
-                  setQuery("");
-                  setFindMode("text");
-                }}
-              >
-                {c.apply}
-              </Button>
-              <details>
-                <summary>{c.coords}</summary>
-                {coords.map((n, i) => (
-                  <NumberField
-                    key={i}
-                    label={c.fields[i]}
-                    value={n}
-                    min={0}
-                    onChange={(v) =>
-                      setCoords((old) => old.map((x, j) => (j === i ? v : x)))
-                    }
-                  />
-                ))}
-                <Button
-                  disabled={!!progress}
-                  onClick={() => {
-                    const [x, y, w, h] = coords;
-                    if (
-                      coords.some((n) => !Number.isFinite(n) || n < 0) ||
-                      w < 1 ||
-                      h < 1 ||
-                      x + w > page.width ||
-                      y + h > page.height
-                    ) {
-                      setError("Rectangle must fit inside this page.");
-                      return;
-                    }
-                    setError("");
-                    change([...rects, { x, y, width: w, height: h }]);
-                  }}
+              ) : (
+                <svg
+                  className="redact__marks"
+                  viewBox={`0 0 ${page.width} ${page.height}`}
+                  preserveAspectRatio="none"
+                  data-mode={mode}
+                  aria-hidden="true"
+                  focusable="false"
+                  onPointerDown={onDown}
+                  onPointerMove={onMove}
+                  onPointerUp={onUp}
+                  onPointerCancel={onCancel}
                 >
-                  {c.add}
-                </Button>
-              </details>
-              <Button
-                disabled={!rects.length || !!progress}
-                onClick={() => {
-                  change([]);
-                  setSelected(-1);
-                }}
-              >
-                {c.clear}
-              </Button>
-            </aside>
+                  {stage === "edit"
+                    ? lit.map((r, i) => (
+                        <rect key={`lit-${i}`} className="redact__candidate" x={r.x} y={r.y} width={r.width} height={r.height} />
+                      ))
+                    : null}
+                  {rects.map((r, i) => {
+                    const box = draft && draft.index === i ? draft.rect : r;
+                    return (
+                      <rect
+                        key={i}
+                        className="redact__mask"
+                        data-selected={i === selected || undefined}
+                        style={{ "--delay": `${delay[i] ?? 0}ms` } as CSSProperties}
+                        x={box.x}
+                        y={box.y}
+                        width={box.width}
+                        height={box.height}
+                      />
+                    );
+                  })}
+                  {selected >= 0 && mode === "select" && stage === "edit" && rects[selected] ? (
+                    <rect
+                      className="redact__handle"
+                      x={(draft?.index === selected ? draft.rect : rects[selected]).x + (draft?.index === selected ? draft.rect : rects[selected]).width - HANDLE / 2}
+                      y={(draft?.index === selected ? draft.rect : rects[selected]).y + (draft?.index === selected ? draft.rect : rects[selected]).height - HANDLE / 2}
+                      width={HANDLE}
+                      height={HANDLE}
+                    />
+                  ) : null}
+                  {draft && draft.index === undefined ? (
+                    <rect className="redact__draft" x={draft.rect.x} y={draft.rect.y} width={draft.rect.width} height={draft.rect.height} />
+                  ) : null}
+                </svg>
+              )}
+              {scanning ? <div className="redact__scan" aria-hidden="true" /> : null}
+            </div>
           </div>
-          <div className="redact-export">
-            <span>
-              {history.present.flat().length}
-              {ui.masksAcross}
-              {pages.length}
-              {ui.pages}
-            </span>
-            <Button
-              primary
-              disabled={!!progress}
-              onClick={() =>
-                run(async (signal) => {
-                  const bytes = await rasterPdf(
-                    pages,
-                    history.present,
-                    setProgress,
-                    signal,
-                  );
-                  signal.throwIfAborted();
-                  const next = await readPdf(
-                    bytes.slice(),
-                    setProgress,
-                    signal,
-                  );
-                  if (!mounted.current || signal.aborted) {
-                    releasePages(next);
-                    return;
-                  }
-                  clearOutput();
-                  previewRef.current = next;
-                  setPreviews(next);
-                  setOutput(new Blob([bytes], { type: "application/pdf" }));
-                  setReviewIndex(0);
+        </div>
+        <p id="redact-help" className="inst-hidden">
+          {c.editorHelp}
+        </p>
+
+        {stage === "proof" && verdict ? (
+          <output className="redact__reading" data-ok={(!scanning && verdict.ok) || undefined} data-bad={(!scanning && !verdict.ok) || undefined}>
+            {(scanning
+              ? c.scanning
+              : c.reading({
+                  masks: verdict.masks.length,
+                  solid: verdict.masks.filter((m) => m.solid).length,
+                  before: verdict.textBefore,
+                  after: verdict.textAfter,
                 })
+            )
+              .split(" · ")
+              .map((part, i) => (
+                <Fragment key={i}>
+                  {i ? <span aria-hidden="true"> · </span> : null}
+                  <span>{part}</span>
+                </Fragment>
+              ))}
+          </output>
+        ) : (
+          <>
+            {ready && <Palette
+              mode={mode}
+              onMode={setMode}
+              canUndo={history.past.length > 0}
+              canRedo={history.future.length > 0}
+              canDelete={selected >= 0}
+              onUndo={undo}
+              onRedo={redo}
+              onDelete={remove}
+              disabled={!editing}
+            />}
+            {ready && <Lens zoom={zoom} onZoom={setZoom} disabled={!editing} />}
+          </>
+        )}
+
+        {ready && thumbs.length > 1 ? (
+          <nav className="redact__pages" aria-label={c.pages}>
+            {stage === "proof" && proof
+              ? proof.pages.map((p, i) => (
+                  <button
+                    key={p.url}
+                    type="button"
+                    className="redact__thumb"
+                    aria-label={c.page(i + 1)}
+                    aria-pressed={proofIndex === i}
+                    data-reviewed={reviewed.includes(i) || undefined}
+                    data-bad={!proof.verdicts[i].ok || undefined}
+                    disabled={busy}
+                    onClick={() => setProofIndex(i)}
+                  >
+                    <img className="redact__thumb-page" src={p.url} alt="" width={p.width} height={p.height} />
+                  </button>
+                ))
+              : pages.map((p, i) => (
+                  <button
+                    key={`${p.url}-${i}`}
+                    type="button"
+                    className="redact__thumb"
+                    aria-label={c.pageMasks(i + 1, history.present[i].length)}
+                    aria-pressed={index === i}
+                    disabled={!editing}
+                    onClick={() => goTo(i)}
+                  >
+                    <img className="redact__thumb-page" src={p.url} alt="" width={p.width} height={p.height} />
+                    <svg className="redact__thumb-marks" viewBox={`0 0 ${p.width} ${p.height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                      {history.present[i].map((r, j) => (
+                        <rect key={j} x={r.x} y={r.y} width={r.width} height={r.height} />
+                      ))}
+                    </svg>
+                  </button>
+                ))}
+          </nav>
+        ) : null}
+
+        {ready && stage !== "proof" && (
+          <FindLine
+            id="redact-find"
+            mode={find}
+            onMode={setFind}
+            query={query}
+            onQuery={setQuery}
+            lit={lit.length}
+            onCover={() => cover(lit)}
+            hasText={page.text.length > 0}
+            disabled={!editing}
+          />
+        )}
+        {stage === "proof" ? <p className="redact__note">{c.proofNote}</p> : null}
+      </div>
+
+      {busy ? (
+        <div className="redact__status" role="status">
+          <span>{progress}</span>
+          <button type="button" className="redact__btn" onClick={() => abort.current?.abort()}>
+            {c.cancel}
+          </button>
+        </div>
+      ) : null}
+      {error ? (
+        <p className="redact__error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {failed ? (
+        <p className="redact__error" role="alert">
+          {c.failed}
+        </p>
+      ) : null}
+
+      {ready && stage !== "proof" && (
+        <div className="redact__deck">
+          <DropSlot intake={intake} id="redact-file" label={c.upload} className="redact__intake">
+            <button type="button" className="redact__btn redact__btn--quiet" disabled={busy} onClick={openExample}>
+              {c.example}
+            </button>
+          </DropSlot>
+          <div className="redact__go">
+            <output className="redact__count">{c.masks(total)}</output>
+            <button type="button" className="redact__btn redact__btn--go" disabled={!editing} onClick={() => void build()}>
+              {c.build}
+            </button>
+          </div>
+        </div>
+      )}
+      {ready && stage === "proof" && proof && verdict && (
+        <div className="redact__deck redact__deck--proof">
+          <label className="redact__inspected">
+            <input
+              type="checkbox"
+              className="redact__check"
+              checked={reviewed.includes(proofIndex)}
+              disabled={busy}
+              onChange={(e) =>
+                setReviewed((r) => (e.target.checked ? [...r, proofIndex] : r.filter((i) => i !== proofIndex)))
               }
-            >
-              {c.export}
-            </Button>
+            />
+            <span>{c.inspected}</span>
+          </label>
+          <div className="redact__go">
+            <button type="button" className="redact__btn" disabled={busy} onClick={backToEditing}>
+              {c.back}
+            </button>
             <ExportBar
+              className="redact__exports"
               label={c.exports}
               actions={[
                 {
+                  label: c.save(inspected, proof.pages.length),
+                  kind: "pdf",
+                  primary: true,
+                  disabled: !canDownload(proof.verdicts, reviewed) || busy,
+                  onClick: () => download("redacted-document.pdf", proof.file),
+                },
+                {
                   label: c.png,
                   kind: "png",
-                  disabled: !!progress,
-                  onClick: () =>
-                    void run(async (signal) => {
-                      const canvas = await flatten(page, rects),
-                        blob = await canvasBlob(canvas);
-                      signal.throwIfAborted();
-                      download("redacted-page.png", blob);
-                      canvas.width = 0;
-                    }),
+                  disabled: !verdict.ok || !reviewed.includes(proofIndex) || busy,
+                  onClick: () => void savePng(),
                 },
               ]}
             />
           </div>
-        </>
-      )}
-      {previews.length > 0 && (
-        <section className="redact-review">
-          <h3>{c.review}</h3>
-          <p className="studio-note">{c.reviewNote}</p>
-          <div className="studio-toolbar">
-            {previews.map((_, i) => (
-              <Press
-                key={i}
-                active={reviewIndex === i}
-                onClick={() => setReviewIndex(i)}
-              >
-                {ui.page}
-                {i + 1}
-                {reviewed.includes(i) ? " ✓" : ""}
-              </Press>
-            ))}
-          </div>
-          <img
-            src={previews[reviewIndex].url}
-            alt={`Reopened redacted page ${reviewIndex + 1}`}
-            width={previews[reviewIndex].width}
-            height={previews[reviewIndex].height}
-          />
-          <label className="lab-check">
-            <input
-              type="checkbox"
-              checked={reviewed.includes(reviewIndex)}
-              onChange={(e) =>
-                setReviewed((r) =>
-                  e.target.checked
-                    ? [...r, reviewIndex]
-                    : r.filter((i) => i !== reviewIndex),
-                )
-              }
-            />
-            {c.reviewed}
-          </label>
-          <div className="studio-toolbar">
-            <Button onClick={clearOutput}>{c.back}</Button>
-            <Button
-              primary
-              disabled={reviewed.length !== previews.length || !output}
-              onClick={() =>
-                output && download("redacted-document.pdf", output)
-              }
-            >
-              {c.save} ({reviewed.length}/{previews.length})
-            </Button>
-          </div>
-        </section>
+        </div>
       )}
     </div>
   );
