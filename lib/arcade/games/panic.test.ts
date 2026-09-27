@@ -414,6 +414,12 @@ describe("Kernel Panic: chips never collide near the top", () => {
         const children = s.processes.filter((p) => p.kind === "child");
         expect(children).toHaveLength(2);
         for (const c of children) expect(collide(c, ghost), `${touch ? "touch" : "desk"} fork at ${x}: ${c.name} on the fork`).toBe(false);
+        // And still beside it, so they read as the fork's children, not two strangers across the screen.
+        // At an edge both go the one way, side by side, so the far one is further out (276 at the right
+        // edge on the tall model; the old 28-character caption put them 252 and 336 away).
+        const [near, far] = children.map((c) => Math.abs(c.x - x)).sort((a, b) => a - b);
+        expect(near, `${touch ? "touch" : "desk"} fork at ${x}: nearer child ${near.toFixed(0)} away`).toBeLessThanOrEqual(170);
+        expect(far, `${touch ? "touch" : "desk"} fork at ${x}: farther child ${far.toFixed(0)} away`).toBeLessThanOrEqual(290);
       }
     }
   });
