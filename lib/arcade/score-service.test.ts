@@ -94,6 +94,6 @@ describe("retired cabinets", () => {
     ledger.boards["production:snake"] = { game: "snake", rows: [{ initials: "BAD", score: Number.NaN }] };
     const snapshot = boardSnapshot(ledger, "production");
     expect(snapshot.available).toBe(true);
-    expect(snapshot.boards.map((b) => b.game)).toEqual(["signal", "poker"]);
+    expect(snapshot.boards.map((b) => b.game)).toEqual(["signal", "poker", "panic"]);
   });
 });

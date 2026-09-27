@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent, PointerEvent } from "react";
 import { collectionCopy as copy, type Cabinet } from "@/content/arcade-collection";
 import type { BoardSnapshot } from "@/lib/arcade/board";
-import { createGame, pressGame, stepGame, WORLD, type GameState } from "@/lib/arcade/engine";
+import { createGame, eventsSince, gameHud, pressGame, stepGame, WORLD, type GameState } from "@/lib/arcade/engine";
 import { renderGame } from "@/lib/arcade/renderer";
 import type { ArcadeTheme } from "@/lib/arcade/theme";
 import { pushImpact } from "@/lib/system";
@@ -16,7 +16,7 @@ import ScoreBoard from "./ScoreBoard";
  *
  *  - The canvas sits in a window panel whose title bar carries the live HUD.
  *  - The world is drawn through a ghost layer, so it has phosphor memory.
- *  - Every engine event lights the tube where it happened: `state.eventAt` is
+ *  - Every engine event lights the tube where it happened: the event's `at` is
  *    projected from world space through the canvas's rect into the viewport
  *    and pushed onto the frame the shader already reads. One a frame at most.
  *  - Colours come from the theme the room read off the site's tokens.
@@ -33,8 +33,6 @@ function inputFor(key: string) {
   if (/^[1-5]$/.test(k)) return k;
   return null;
 }
-
-const IMPACT_ENERGY: Record<GameState["sound"], number> = { hurt: 0.9, score: 0.6, start: 0.5, hit: 0.35 };
 
 type Props = {
   cabinet: Cabinet;
@@ -64,7 +62,8 @@ export default function CanvasGame({ cabinet, seed, theme, boards, onBack, onRep
   const press = (key: string) => {
     if (pausedRef.current || stateRef.current.over) return;
     pressGame(stateRef.current, key);
-    if (cabinet.id === "poker") setHeld([...stateRef.current.held]);
+    const s = stateRef.current;
+    if (s.id === "poker") setHeld([...s.held]);
   };
   useEffect(() => { if (result) { resultRef.current?.scrollIntoView({ block: "center" }); resultRef.current?.focus(); } }, [result]);
   useEffect(() => {
@@ -81,7 +80,7 @@ export default function CanvasGame({ cabinet, seed, theme, boards, onBack, onRep
     const ghostCanvas = document.createElement("canvas");
     const ghost = ghostCanvas.getContext("2d");
     let live = true, acc = 0, finished = false, finishTimer: ReturnType<typeof setTimeout> | undefined;
-    let lastEvent = 0, hudClock = 0, compact = false;
+    let lastSeq = stateRef.current.eventSeq, hudClock = 0, compact = false;
     let rect = canvas.getBoundingClientRect(), rectStale = true;
     const measure = () => {
       rect = canvas.getBoundingClientRect(); rectStale = false;
@@ -103,16 +102,18 @@ export default function CanvasGame({ cabinet, seed, theme, boards, onBack, onRep
         while (acc >= 1000 / 60) { stepGame(state, 1 / 60, keys.current); acc -= 1000 / 60; }
       } else acc = 0;
       renderGame(ctx, state, canvas.width, canvas.height, themeRef.current, { compact, ghost });
-      if (state.event !== lastEvent) {
-        lastEvent = state.event;
-        if (state.sound === "hurt") audio.thud(); else if (state.sound === "score") audio.key(); else if (state.sound === "start") audio.relay(); else audio.hover();
+      const fresh = eventsSince(state, lastSeq);
+      if (fresh.length) {
+        lastSeq = state.eventSeq;
+        const event = fresh[fresh.length - 1];
+        if (event.sound === "hurt") audio.thud(); else if (event.sound === "score") audio.key(); else if (event.sound === "start") audio.relay(); else audio.hover();
         // Light the phosphor where it happened. The rect is re-read only after a scroll, not per event.
         if (rectStale) { rect = canvas.getBoundingClientRect(); rectStale = false; }
         if (rect.width > 0 && window.innerWidth > 0 && window.innerHeight > 0) {
           pushImpact(frame.current, {
-            x: (rect.left + (state.eventAt.x / WORLD.w) * rect.width) / window.innerWidth,
-            y: (rect.top + (state.eventAt.y / WORLD.h) * rect.height) / window.innerHeight,
-            energy: IMPACT_ENERGY[state.sound],
+            x: (rect.left + (event.at.x / WORLD.w) * rect.width) / window.innerWidth,
+            y: (rect.top + (event.at.y / WORLD.h) * rect.height) / window.innerHeight,
+            energy: event.energy,
             at: performance.now(),
           });
         }
@@ -120,7 +121,8 @@ export default function CanvasGame({ cabinet, seed, theme, boards, onBack, onRep
       hudClock += dt;
       if (hudClock > 150 && hudRef.current) {
         hudClock = 0;
-        const detail = state.id === "poker" ? `${state.handName} · ${state.handPoints} PTS · TARGET ${state.bank}/${state.target} · ${state.redraws} REDRAWS` : `HULL ${state.lives} · CHARGE ${Math.floor(state.charge)}%`;
+        const hud = gameHud(state);
+        const detail = [hud.stage && `${hud.stage.label} ${hud.stage.value}`, hud.lives && `${hud.lives.icon.toUpperCase()} ${hud.lives.current}`, hud.meter && `${hud.meter.label} ${Math.floor(hud.meter.value * 100)}%`].filter(Boolean).join(" · ");
         hudRef.current.textContent = `${String(state.score).padStart(6, "0")} PTS  /  ${detail}`;
       }
       if (state.over && !finished) {

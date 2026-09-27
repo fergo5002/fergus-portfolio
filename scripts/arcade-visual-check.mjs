@@ -16,7 +16,7 @@ try {
   await page.locator(".arcade-cabinet").first().waitFor();
   await page.screenshot({ path: resolve(out, "02-gallery.png") });
   const evidence = [];
-  for (const id of ["signal", "poker"]) {
+  for (const id of ["signal", "poker", "panic"]) {
     await page.locator(`.arcade-cabinet[data-game=${id}]`).click();
     await page.getByRole("button", { name: /start solo run/i }).click();
     // No explicit focus: the first Space after starting must reach the game, not a button.

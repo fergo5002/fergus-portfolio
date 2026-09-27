@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createGame, GAME_IDS, pressGame, stepGame } from "./engine";
 import { paletteFor, renderGame } from "./renderer";
@@ -64,12 +64,17 @@ describe("the renderer paints only the theme", () => {
     expect(main.rec.calls).toContain("drawImage");
   });
 
-  it("holds no colour literal of its own", () => {
-    const src = readFileSync(join(process.cwd(), "lib", "arcade", "renderer.ts"), "utf8")
-      .replace(/\/\*[\s\S]*?\*\//g, " ")
-      .replace(/\/\/[^\n]*/g, " ");
-    expect(src).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(src).not.toMatch(/rgba?\(/);
+  it("holds no colour literal of its own, in the renderer or any drawer", () => {
+    const dir = join(process.cwd(), "lib", "arcade");
+    const files = ["renderer.ts", ...readdirSync(join(dir, "draw")).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts")).map((f) => join("draw", f))];
+    expect(files.length).toBeGreaterThanOrEqual(5);
+    for (const file of files) {
+      const src = readFileSync(join(dir, file), "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, " ")
+        .replace(/\/\/[^\n]*/g, " ");
+      expect(src, file).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+      expect(src, file).not.toMatch(/rgba?\(/);
+    }
   });
 });
 

@@ -14,6 +14,7 @@ export const NARROW_COLS = 32;
 
 /** Game titles, by id. A game plan adds one line here and one in lib/arcade/games.ts. */
 export const GAME_TITLES: Record<string, string> = {
+  panic: "kernel panic",
   poker: "circuit poker",
   signal: "dead signal",
 };

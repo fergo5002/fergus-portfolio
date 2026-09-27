@@ -5,7 +5,7 @@ const args = process.argv.slice(2);
 const option = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
 const base = option("--base", "http://localhost:3000"), out = resolve(option("--out", ".phone-check/arcade"));
 await mkdir(out, { recursive: true });
-const games = ["signal", "poker"], evidence = [];
+const games = ["signal", "poker", "panic"], evidence = [];
 function check(condition, message) { if (!condition) throw new Error(message); }
 async function inspect(page) {
   return page.locator(".arcade-room").evaluate(room => {

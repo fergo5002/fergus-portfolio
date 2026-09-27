@@ -40,6 +40,16 @@ export const cabinets: readonly Cabinet[] = [
     controls: "tap a card or press 1 to 5 to hold it. space redraws the rest. enter banks the hand. no money, no betting, no accounts.",
     action: "REDRAW",
   },
+  {
+    id: "panic",
+    title: "KERNEL PANIC",
+    subtitle: "type fast. the kernel is watching.",
+    genre: "TYPING DEFENCE",
+    description: "rogue processes are falling towards the kernel. type a process's name and it dies before it lands. let three through and the kernel panics.",
+    objective: "type each falling name before it reaches the kernel. a wrong letter clears the line. the waves get faster.",
+    controls: "type on the keyboard. backspace takes a letter back. on a phone, tap to start and the keyboard comes up.",
+    action: "TYPE",
+  },
 ];
 
 /** The lines the arcade's BIOS types while the tube opens. Two of them are true rather than typed. */
@@ -58,7 +68,7 @@ export const collectionCopy = {
   label: "FergusOS arcade",
   title: "FERGUSOS ARCADE",
   ledeLead: "you found the other side of the glass.",
-  lede: "the cabinets run on the machine you are already using. free play, no coins, no accounts.",
+  lede: "three cabinets, running on the machine you are already using. free play, no coins, no accounts.",
   hint: "pick a cabinet",
   arrival: "entering the arcade",
   skip: "skip",

@@ -331,8 +331,8 @@ describe("arcade multiplayer is retired (2026-09-27)", () => {
 describe("a running game lights the tube where things happen", () => {
   it("pushes an impact at the engine's event position, projected through the canvas rect", () => {
     expect(game).toMatch(/pushImpact\(frame\.current,/);
-    expect(game).toMatch(/state\.eventAt\.x \/ WORLD\.w/);
-    expect(game).toMatch(/state\.eventAt\.y \/ WORLD\.h/);
+    expect(game).toMatch(/event\.at\.x \/ WORLD\.w/);
+    expect(game).toMatch(/event\.at\.y \/ WORLD\.h/);
   });
 
   it("draws through a ghost layer so motion has phosphor memory", () => {

@@ -4,7 +4,7 @@ import { GAME_TITLES } from "@/content/arcade";
 
 describe("the game list", () => {
   it("holds the cabinets that survived the 2026-09-27 cut, and nothing retired", () => {
-    expect(ARCADE_GAMES.map((g) => g.id)).toEqual(["poker", "signal"]);
+    expect(ARCADE_GAMES.map((g) => g.id)).toEqual(["panic", "poker", "signal"]);
     for (const retired of ["bounce", "pong", "snake", "under"]) expect(findGame(retired), retired).toBeUndefined();
   });
 

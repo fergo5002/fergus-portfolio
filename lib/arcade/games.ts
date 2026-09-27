@@ -28,6 +28,7 @@ export type ArcadeGame = {
 };
 
 export const ARCADE_GAMES: readonly ArcadeGame[] = [
+  { id: "panic", title: GAME_TITLES.panic, spec: vectorProgram("panic"), board: true },
   { id: "poker", title: GAME_TITLES.poker, spec: vectorProgram("poker"), board: true },
   { id: "signal", title: GAME_TITLES.signal, spec: vectorProgram("signal"), board: true },
 ];
