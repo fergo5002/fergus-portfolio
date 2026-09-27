@@ -45,7 +45,8 @@
   --atlas-osd: 64px;
   --atlas-edge: 18px;
   position: relative;
-  height: clamp(420px, 60vh, 680px);
+  /* The whole map above the fold on a laptop: the page's head is about 420px. */
+  height: clamp(420px, calc(100svh - 420px), 720px);
   overflow: hidden;
   background:
     radial-gradient(ellipse 70% 62% at 50% 56%, color-mix(in srgb, var(--green) 6%, transparent), transparent 72%),
@@ -93,6 +94,13 @@
   height: calc(100% - var(--atlas-osd) - var(--atlas-edge));
   overflow: visible;
 }
+/* Two shapes, one shown: the query here is SHAPE_QUERY in lib/studio/atlas-scene.ts,
+   the one the canvas asks, so the live map takes over in the same shape. */
+.atlas-poster--tall { display: none; }
+@media (max-width: 640px) {
+  .atlas-poster--wide { display: none; }
+  .atlas-poster--tall { display: block; }
+}
 .atlas-poster__link {
   stroke: var(--green);
   stroke-width: 1;
@@ -139,6 +147,7 @@
   line-height: 1.15;
   color: var(--amber);
   font-variant-numeric: tabular-nums;
+  font-variant-ligatures: none;
   text-shadow: 0 0 7px color-mix(in srgb, var(--amber) 40%, transparent);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -167,8 +176,10 @@
 .atlas-find:focus-within { border-color: var(--amber); }
 .atlas-find__prompt::before {
   content: "find \203A";
+  margin-right: 4px;
   font-family: var(--font-screen);
   font-size: 1.3rem;
+  font-variant-ligatures: none;
   line-height: 1;
   color: var(--green);
   white-space: nowrap;
@@ -181,7 +192,7 @@
   min-width: 0;
   min-height: 42px;
   margin: 0;
-  padding: 0;
+  padding: 0 0 0 2px;
   border: 0;
   border-radius: 0;
   background: transparent;
@@ -251,7 +262,8 @@
 
 .atlas-inspector {
   position: absolute;
-  top: 0;
+  /* Under the band, so the find line stays in reach while a file is open. */
+  top: var(--atlas-osd);
   right: 0;
   bottom: 0;
   z-index: 2;
@@ -259,7 +271,9 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 12px 18px 20px;
+  border-top: 1px solid var(--green-line);
   border-left: 1px solid var(--green-line);
+  border-top-left-radius: var(--radius);
   background: color-mix(in srgb, var(--bg-panel) 95%, transparent);
   box-shadow: -18px 0 42px color-mix(in srgb, var(--bg) 72%, transparent);
   font-size: 0.84rem;
@@ -566,6 +580,7 @@
     width: auto;
     max-height: 62%;
     border-left: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
     border-top: 1px solid var(--green-line);
     box-shadow: 0 -18px 42px color-mix(in srgb, var(--bg) 72%, transparent);
   }

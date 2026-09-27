@@ -282,7 +282,7 @@ export default function Atlas() {
             </button>
             <button type="button" className="atlas-icon" aria-label={copy.fit} onClick={() => graphHandle.current?.fit()}>
               <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                <path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />
+                <path d="M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3M8 5.25a2.75 2.75 0 1 0 0 5.5a2.75 2.75 0 1 0 0-5.5" />
               </svg>
             </button>
             {canFullscreen ? (

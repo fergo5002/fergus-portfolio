@@ -28,6 +28,7 @@ import {
 import {
   AtlasPaletteError,
   SETTLE_TICKS,
+  SHAPE_QUERY,
   adjacency,
   atlasPalette,
   halfLife,
@@ -39,6 +40,7 @@ import {
   seeded,
   simulate,
   type AtlasPalette,
+  type Shape,
   type SimLink,
   type SimNode,
 } from "@/lib/studio/atlas-scene";
@@ -144,10 +146,12 @@ export default function GraphCanvas({
   const camera = useRef<Camera>({ x: 0, y: 0, k: 1 });
   const size = useRef({ w: 0, h: 0, dpr: 1, ghostDpr: 1 });
   const palette = useRef<AtlasPalette | null>(null);
+  const blooms = useRef(new Map<string, HTMLCanvasElement>());
   const face = useRef("");
   const dirty = useRef(true);
   const live = useRef(false);
   const coarse = useRef(false);
+  const shape = useRef<Shape>("wide");
   const ease = useRef<{ from: Camera; to: Camera; start: number } | null>(null);
   const held = useRef<Held | null>(null);
   const pointers = useRef(new Map<number, Point>());
@@ -175,7 +179,7 @@ export default function GraphCanvas({
   /** The part of the canvas the map is fitted into: under the reading band, inside the edge. */
   function safeRect(): Rect {
     const { w, h } = size.current;
-    const box = canvasRef.current?.parentElement;
+    const box = canvasRef.current?.closest<HTMLElement>(".atlas-graph");
     const style = box ? getComputedStyle(box) : null;
     const osd = px(style?.getPropertyValue("--atlas-osd") ?? "", 56);
     const edge = px(style?.getPropertyValue("--atlas-edge") ?? "", 12);
@@ -185,7 +189,8 @@ export default function GraphCanvas({
   /** The safe rectangle less whatever the inspector covers, for bringing a chosen node into view. */
   function openRect(): Rect {
     const safe = safeRect();
-    const sheet = canvasRef.current?.parentElement?.querySelector<HTMLElement>(".atlas-inspector");
+    // The sheet is the canvas box's sibling, inside the glass: look from the glass.
+    const sheet = canvasRef.current?.closest(".atlas-graph")?.querySelector<HTMLElement>(".atlas-inspector");
     if (!sheet) return safe;
     const { w } = size.current;
     // offset*, not getBoundingClientRect: the sheet may still be sliding in.
@@ -275,6 +280,24 @@ export default function GraphCanvas({
     }
     ctx.setLineDash([]);
 
+    // Bloom under the dots, while there are few enough for it to read as
+    // light rather than fog.
+    if (nodes.current.length <= 400) {
+      for (const n of nodes.current) {
+        const isCentre = n.id === centre;
+        const isNear = near?.has(n.id) ?? false;
+        const quiet = dim && !isCentre && !isNear && !(found?.has(n.id) ?? false);
+        if (n.kind !== "folder" && n.status !== "read" && !isCentre) continue;
+        const sprite = bloom(isCentre || isNear ? pal.bright : n.kind === "folder" ? pal.accent : pal.ink, dpr);
+        if (!sprite) break;
+        const p = at.get(n.id)!;
+        const R = Math.min(16, Math.max(2, nodeRadius(n) * cam.k)) * (isCentre ? 5 : 3.4);
+        ctx.globalAlpha = quiet ? 0.05 : isCentre ? 0.55 : 0.2;
+        ctx.drawImage(sprite, p.x - R, p.y - R, R * 2, R * 2);
+      }
+      ctx.globalAlpha = 1;
+    }
+
     // Nodes. A file with text is a filled dot, one read for metadata only is
     // a ring, a folder is an accent dot with a halo: the legend is the drawing.
     for (const n of nodes.current) {
@@ -317,31 +340,84 @@ export default function GraphCanvas({
       }
     }
 
-    // Labels: folders always; the pointed-at node, its neighbours and the
-    // matches while there are few enough to read; every file once zoomed in.
+    // Labels: the pointed-at node first, then its neighbours, the matches, the
+    // folders, and every file once zoomed in, each placed only where it does
+    // not land on one already placed. A label that would collide is left out
+    // rather than printed over another: the reading line and the inspector
+    // name whatever is chosen.
     const many = nodes.current.length > 150;
     const everything = !many && cam.k >= 1.35;
+    const candidates: { n: SimNode; rank: number }[] = [];
+    for (const n of nodes.current) {
+      const rank =
+        n.id === centre
+          ? 0
+          : near?.has(n.id) && near.size <= 40
+            ? 1
+            : found?.has(n.id) && found.size <= 60
+              ? 2
+              : n.kind === "folder"
+                ? 3
+                : everything
+                  ? 4
+                  : -1;
+      if (rank >= 0) candidates.push({ n, rank });
+    }
+    candidates.sort((a, b) => a.rank - b.rank || b.n.degree - a.n.degree);
+    const placed: { x: number; y: number; w: number; h: number }[] = [];
+    const clear = (box: { x: number; y: number; w: number; h: number }) =>
+      placed.every((o) => box.x + box.w < o.x || o.x + o.w < box.x || box.y + box.h < o.y || o.y + o.h < box.y);
     ctx.textAlign = "center";
     ctx.textBaseline = "top";
     ctx.lineJoin = "round";
-    for (const n of nodes.current) {
-      const isCentre = n.id === centre;
-      const isNear = (near?.has(n.id) ?? false) && (near?.size ?? 0) <= 30;
-      const isLit = (found?.has(n.id) ?? false) && (found?.size ?? 0) <= 40;
-      const folder = n.kind === "folder";
-      if (!(folder || isCentre || isNear || isLit || everything)) continue;
+    for (const { n, rank } of candidates) {
       const p = at.get(n.id)!;
       const r = Math.min(16, Math.max(2, nodeRadius(n) * cam.k));
+      const folder = n.kind === "folder";
       const text = n.label.length > 30 ? `${n.label.slice(0, 28)}…` : n.label;
-      ctx.font = `${folder ? LABEL_PX + 1 : LABEL_PX}px ${face.current || "monospace"}`;
-      ctx.globalAlpha = dim && !isCentre && !isNear && !isLit ? 0.4 : 1;
+      const size = folder ? LABEL_PX + 1 : LABEL_PX;
+      ctx.font = `${size}px ${face.current || "monospace"}`;
+      const w = ctx.measureText(text).width;
+      const box = { x: p.x - w / 2 - 3, y: p.y + r + 3, w: w + 6, h: size + 4 };
+      if (rank > 0 && !clear(box)) continue;
+      placed.push(box);
+      ctx.globalAlpha = dim && rank > 2 ? 0.4 : 1;
       ctx.strokeStyle = pal.ground;
       ctx.lineWidth = 3.5;
       ctx.strokeText(text, p.x, p.y + r + 5);
-      ctx.fillStyle = isCentre || isNear ? pal.bright : folder ? pal.accentBright : isLit ? pal.accentBright : pal.ink;
+      ctx.fillStyle = rank <= 1 ? pal.bright : folder || rank === 2 ? pal.accentBright : pal.ink;
       ctx.fillText(text, p.x, p.y + r + 5);
     }
     ctx.globalAlpha = 1;
+  }
+
+  /**
+   * A soft disc of one colour, fading to nothing, drawn once per colour and
+   * size and stamped under every dot: the bloom a phosphor dot has on glass.
+   */
+  function bloom(colour: string, dpr: number): HTMLCanvasElement | null {
+    const key = `${colour}@${dpr}`;
+    const cached = blooms.current.get(key);
+    if (cached) return cached;
+    const size = Math.round(64 * dpr);
+    const sprite = document.createElement("canvas");
+    sprite.width = sprite.height = size;
+    const c = sprite.getContext("2d");
+    if (!c) return null;
+    // The gradient ends in the same colour at no alpha, so the fade never
+    // passes through the grey a plain "transparent" stop would give it.
+    c.fillStyle = colour;
+    c.fillRect(0, 0, 1, 1);
+    const [r, g, b] = c.getImageData(0, 0, 1, 1).data;
+    c.clearRect(0, 0, 1, 1);
+    const fade = c.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    fade.addColorStop(0, `rgba(${r}, ${g}, ${b}, 1)`);
+    fade.addColorStop(0.35, `rgba(${r}, ${g}, ${b}, 0.35)`);
+    fade.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+    c.fillStyle = fade;
+    c.fillRect(0, 0, size, size);
+    blooms.current.set(key, sprite);
+    return sprite;
   }
 
   function dot(ctx: CanvasRenderingContext2D, p: Point, r: number) {
@@ -581,6 +657,8 @@ export default function GraphCanvas({
     const ghost = ghostRef.current;
     if (!el || !ghost) return;
     coarse.current = window.matchMedia("(pointer: coarse)").matches;
+    // The server drew both shapes and CSS showed this one; lay out the same.
+    shape.current = window.matchMedia(SHAPE_QUERY).matches ? "tall" : "wide";
     const measure = () => {
       const r = el.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
@@ -649,7 +727,7 @@ export default function GraphCanvas({
       ? new Map(nodes.current.map((n) => [n.id, { x: n.x, y: n.y, fx: n.fx, fy: n.fy }]))
       : new Map();
     const scene = sceneOf(graph, kinds, only, previous);
-    const s = simulate(scene.nodes, scene.links, scene.nodes.length);
+    const s = simulate(scene.nodes, scene.links, scene.nodes.length, shape.current);
     if (!same) s.tick(pretick(scene.nodes.length, reducedMotion));
     else if (reducedMotion) s.tick(SETTLE_TICKS);
     else s.alpha(0.45);
@@ -708,6 +786,7 @@ export default function GraphCanvas({
   /* A theme change repaints in the new phosphor. */
   useEffect(() => {
     palette.current = null;
+    blooms.current.clear();
     requestPaint();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.theme]);

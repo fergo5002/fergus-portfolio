@@ -73,6 +73,16 @@ export function keep(halfLifeMs: number, elapsedMs: number): number {
 /** Every kind of link on show, which is how a map opens. */
 export const DEFAULT_KINDS: readonly LinkKind[] = ["folder", "reference", "terms"];
 
+/**
+ * The stage is wide on a laptop and tall on a phone, and a map laid out square
+ * fills neither. The server draws both shapes and CSS shows the one this
+ * query picks; the canvas asks the same query, so both agree on which.
+ */
+export const SHAPE_QUERY = "(max-width: 640px)";
+export type Shape = "wide" | "tall";
+/** How hard each axis pulls to the middle, per shape: the weaker axis is the one the map spreads along. */
+const PULL: Record<Shape, { x: number; y: number }> = { wide: { x: 0.022, y: 0.1 }, tall: { x: 0.1, y: 0.022 } };
+
 export type SimNode = AtlasNode & SimulationNodeDatum;
 export type SimLink = { source: SimNode; target: SimNode; kind: LinkKind; evidence: string };
 type Kept = { x?: number; y?: number; fx?: number | null; fy?: number | null };
@@ -122,24 +132,49 @@ export function sceneOf(
   return { nodes, links };
 }
 
-/** The forces, stopped: the caller decides when it ticks. */
-export function simulate(nodes: SimNode[], links: SimLink[], nodeCount: number): Simulation<SimNode, SimLink> {
+/**
+ * The forces, stopped: the caller decides when it ticks.
+ *
+ * A folder holds its files close, so a map reads as its folders first. Every
+ * other link pulls in inverse proportion to how connected its busier end is
+ * (d3's own default, scaled): a note that twenty others point to would
+ * otherwise drag every folder into one knot around it. A weak pull to the
+ * middle keeps an island (a folder of one photograph) from drifting off and
+ * shrinking everything else to fit it on screen.
+ */
+export function simulate(nodes: SimNode[], links: SimLink[], nodeCount: number, shape: Shape = "wide"): Simulation<SimNode, SimLink> {
+  const count = new Map<string, number>();
+  for (const l of links) {
+    count.set(l.source.id, (count.get(l.source.id) ?? 0) + 1);
+    count.set(l.target.id, (count.get(l.target.id) ?? 0) + 1);
+  }
+  const busier = (l: SimLink) => Math.max(1, Math.min(count.get(l.source.id) ?? 1, count.get(l.target.id) ?? 1));
+  const reach = linkDistance(nodeCount);
   return forceSimulation<SimNode>(nodes)
     .stop()
-    .force("charge", forceManyBody<SimNode>().strength(-70).distanceMax(650))
-    .force("link", forceLink<SimNode, SimLink>(links).distance(linkDistance(nodeCount)).strength(0.16))
+    .force("charge", forceManyBody<SimNode>().strength(-80).distanceMax(600))
+    .force(
+      "link",
+      forceLink<SimNode, SimLink>(links)
+        .distance((l) => (l.kind === "folder" ? reach * 0.5 : reach))
+        .strength((l) => (l.kind === "folder" ? 0.7 : (l.kind === "terms" ? 0.25 : 0.4) / busier(l))),
+    )
     .force("centre", forceCenter(0, 0).strength(0.04))
-    .force("x", forceX<SimNode>(0).strength(0.02))
-    .force("y", forceY<SimNode>(0).strength(0.02))
+    .force("x", forceX<SimNode>(0).strength((n) => PULL[shape].x * (n.degree <= 1 ? 3 : 1)))
+    .force("y", forceY<SimNode>(0).strength((n) => PULL[shape].y * (n.degree <= 1 ? 3 : 1)))
     .force("collision", forceCollide<SimNode>((n) => (n.kind === "folder" ? 22 : 12)))
     .alphaDecay(ALPHA_DECAY)
     .velocityDecay(0.35);
 }
 
 /** The settled layout, as the server draws it and the browser first paints it. */
-export function layoutGraph(graph: AtlasGraph, kinds: readonly string[]): Map<string, { x: number; y: number }> {
+export function layoutGraph(
+  graph: AtlasGraph,
+  kinds: readonly string[],
+  shape: Shape = "wide",
+): Map<string, { x: number; y: number }> {
   const { nodes, links } = sceneOf(graph, kinds);
-  simulate(nodes, links, nodes.length).tick(SETTLE_TICKS);
+  simulate(nodes, links, nodes.length, shape).tick(SETTLE_TICKS);
   return new Map(nodes.map((n) => [n.id, { x: n.x ?? 0, y: n.y ?? 0 }]));
 }
 

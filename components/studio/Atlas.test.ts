@@ -7,7 +7,7 @@ import { atlasExample } from "@/content/studio/atlas";
 import { atlasCopy } from "@/content/studio/atlas-copy";
 import { buildGraph } from "@/lib/studio/graph";
 import { inspect, mapSummary } from "@/lib/studio/atlas-view";
-import { DEFAULT_KINDS, layoutGraph } from "@/lib/studio/atlas-scene";
+import { DEFAULT_KINDS, SHAPE_QUERY, layoutGraph } from "@/lib/studio/atlas-scene";
 import { WORLD_PAD, boundsOf, viewBoxFor } from "@/lib/studio/atlas-camera";
 
 /**
@@ -210,14 +210,23 @@ describe("the inspector", () => {
 });
 
 describe("the picture the server draws before the script arrives", () => {
-  const layout = layoutGraph(graph, DEFAULT_KINDS);
+  it("is the example's own layout in both shapes, each framed as the canvas will frame it", () => {
+    for (const shape of ["wide", "tall"] as const) {
+      const svg = poster.match(new RegExp(`<svg class="atlas-poster atlas-poster--${shape}"[\\s\\S]*?</svg>`))?.[0] ?? "";
+      const bounds = boundsOf([...layoutGraph(graph, DEFAULT_KINDS, shape).values()])!;
+      expect(svg, shape).toContain(`viewBox="${viewBoxFor(bounds, WORLD_PAD)}"`);
+      expect(svg).toContain('preserveAspectRatio="xMidYMid meet"');
+      expect((svg.match(/<circle\b/g) ?? []).length).toBe(graph.nodes.length);
+      expect((svg.match(/<line\b/g) ?? []).length).toBe(graph.links.length);
+    }
+  });
 
-  it("is the example's own layout, framed as the canvas will frame it", () => {
-    const bounds = boundsOf([...layout.values()])!;
-    expect(poster).toContain(`viewBox="${viewBoxFor(bounds, WORLD_PAD)}"`);
-    expect(poster).toContain('preserveAspectRatio="xMidYMid meet"');
-    expect((poster.match(/<circle\b/g) ?? []).length).toBe(graph.nodes.length);
-    expect((poster.match(/<line\b/g) ?? []).length).toBe(graph.links.length);
+  it("shows the shape the canvas will choose, by the same query", () => {
+    const css = source("app", "tools", "atlas", "tool.css");
+    const canvas = source("components", "studio", "GraphCanvas.tsx");
+    expect(css).toMatch(/\.atlas-poster--tall \{ display: none; \}/);
+    expect(css).toMatch(new RegExp(`@media ${SHAPE_QUERY.replace(/[()]/g, "\\$&")} \\{[^@]*\\.atlas-poster--wide \\{ display: none; \\}`));
+    expect(canvas).toContain("window.matchMedia(SHAPE_QUERY).matches");
   });
 
   it("has no words in it for a crawler to read in front of the page's own", () => {

@@ -6,6 +6,7 @@ import {
   HALF_LIFE_MS,
   PALETTE_TOKENS,
   SETTLE_TICKS,
+  SHAPE_QUERY,
   adjacency,
   atlasPalette,
   halfLife,
@@ -78,6 +79,18 @@ describe("the layout", () => {
     expect(pretick(example.nodes.length, true)).toBe(SETTLE_TICKS);
     // A big map lays out the rest live, unless motion is reduced.
     expect(pretick(1000, false)).toBeLessThan(pretick(1000, true));
+  });
+
+  it("lays a map out wide for a wide stage and tall for a phone's", () => {
+    const spread = (shape: "wide" | "tall") => {
+      const at = [...layoutGraph(example, ALL, shape).values()];
+      const w = Math.max(...at.map((p) => p.x)) - Math.min(...at.map((p) => p.x));
+      const h = Math.max(...at.map((p) => p.y)) - Math.min(...at.map((p) => p.y));
+      return w / h;
+    };
+    expect(spread("wide")).toBeGreaterThan(1.25);
+    expect(spread("tall")).toBeLessThan(1 / 1.15);
+    expect(SHAPE_QUERY).toBe("(max-width: 640px)");
   });
 
   it("is the same picture every time, which is what lets the server draw it first", () => {
