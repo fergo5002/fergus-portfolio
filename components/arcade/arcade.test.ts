@@ -446,6 +446,31 @@ describe("a typing game's text input", () => {
   });
 });
 
+describe("the Hall of Fame is a section of the front, not a screen", () => {
+  const gallery = code(read("components", "arcade", "Gallery.tsx"));
+  const fame = code(read("components", "arcade", "HallOfFame.tsx"));
+
+  it("sits under the cabinets, on the front, from the same board snapshot", () => {
+    expect(gallery.indexOf("<HallOfFame boards={boards} />")).toBeGreaterThan(gallery.indexOf("</ul>"));
+  });
+
+  it("decides what to show in lib, and says loading or offline in a sentence", () => {
+    expect(fame).toMatch(/const fame = fameTable\(boards, GAME_IDS\);/);
+    expect(fame).toMatch(/fame\.kind === "checking" \? copy\.loading : copy\.unavailable/);
+  });
+
+  it("draws an empty slot's dashes in CSS and keeps the word in the document", () => {
+    expect(fame).toMatch(/<span className="fame__empty"><span className="vh">\{copy\.fameEmptySlot\}<\/span><\/span>/);
+    expect(css).toMatch(/\.fame__empty::before \{\s*content: "---";/);
+  });
+
+  it("shows one cabinet's column at a time on a phone, chosen with a switcher", () => {
+    expect(fame).toMatch(/<table className="fame__table" data-shown=\{shown\}>/);
+    expect(css).toMatch(/@media \(max-width: 700px\) \{\s*\.fame__switch \{\s*display: flex;/);
+    for (const id of ["signal", "poker", "panic"]) expect(css).toContain(`.fame__table[data-shown="${id}"] [data-game="${id}"]`);
+  });
+});
+
 describe("what the arcade keeps on the visitor's machine", () => {
   it("writes exactly one key, the posted initials, from exactly one place", () => {
     const dirs = [["components", "arcade"], ["lib", "arcade"]];

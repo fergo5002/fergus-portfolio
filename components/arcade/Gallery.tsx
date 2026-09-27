@@ -6,9 +6,10 @@ import type { GameId } from "@/lib/arcade/engine";
 import type { ArcadeTheme } from "@/lib/arcade/theme";
 import { useSystem } from "@/components/system/SystemProvider";
 import AttractScreen from "./AttractScreen";
+import HallOfFame from "./HallOfFame";
 
 /**
- * The room's front: the cabinets, each playing itself.
+ * The room's front: the cabinets, each playing itself, and the Hall of Fame under them.
  *
  * A cabinet is a list item with a stretched button, not a button wrapping a
  * canvas and a list, because a `<button>` may only hold phrasing content and
@@ -74,6 +75,7 @@ export default function Gallery({ boards, theme, live, onSelect }: Props) {
           </li>
         ))}
       </ul>
+      <HallOfFame boards={boards} />
       <p className="arcade-note">{copy.privacy}</p>
     </main>
   );

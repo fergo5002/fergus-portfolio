@@ -417,8 +417,7 @@ html.arcade-entering .nav {
 
 /* ----- one cabinet ------------------------------------------------------ */
 .arcade-detail,
-.arcade-play,
-.arcade-fame {
+.arcade-play {
   padding-top: var(--sp-4);
 }
 .arcade-detail__grid {
@@ -603,52 +602,121 @@ html.arcade-entering .nav {
 }
 
 /* ----- the hall of fame ------------------------------------------------- */
-.arcade-fame__title {
-  margin-top: var(--sp-4);
+/* One table, a column a cabinet (lib/arcade/fame.ts says why), in the
+   cabinets' own display face. */
+.fame {
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--green-line);
+}
+.fame__title {
   font-family: var(--font-screen);
   font-weight: 400;
-  font-size: clamp(2.6rem, 7vw, 5.5rem);
+  font-size: clamp(2.2rem, 5.5vw, 4.2rem);
   line-height: 0.95;
   letter-spacing: 0.02em;
   color: var(--green-bright);
   text-shadow:
     var(--glow),
-    0 0 32px var(--arcade-halo);
+    0 0 28px var(--arcade-halo);
 }
-.arcade-fame__lede {
+.fame__lede {
   max-width: 62ch;
   margin-top: var(--sp-3);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
 }
-.arcade-fame__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-4);
-  margin-top: var(--sp-5);
+.fame__state {
+  margin-top: var(--sp-3);
+  font-size: 0.9rem;
 }
-.arcade-fame__board .window__bar {
-  font-size: 0.82rem;
+.fame__switch {
+  display: none;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
 }
-.arcade-fame__board .window__title {
+.fame__pick {
+  flex: 1;
+  min-width: 0;
+  padding: 0 8px;
   font-family: var(--font-screen);
-  font-size: 1.3rem;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  white-space: normal;
+  line-height: 1;
+}
+.fame__pick[aria-pressed="true"] {
+  color: var(--bg);
+  background: var(--green-bright);
+  border-color: var(--green-bright);
+  text-shadow: none;
+}
+.fame__table {
+  width: 100%;
+  margin-top: var(--sp-4);
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-family: var(--font-screen);
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+.fame__table th,
+.fame__table td {
+  padding: 7px 10px;
+  border-bottom: 1px dotted var(--green-line);
+  text-align: left;
+  font-weight: 400;
+}
+.fame__table thead th {
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+  border-bottom: 1px solid var(--green-line);
+}
+.fame__table th.fame__rank {
+  width: 4.2ch;
+  color: var(--green);
+}
+.fame__table thead th.fame__rank {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--amber);
+}
+.fame__table tbody tr:first-child th,
+.fame__table tbody tr:first-child .fame__initials {
+  color: var(--amber-bright);
+}
+.fame__table td {
+  display: table-cell;
+}
+.fame__initials {
+  display: inline-block;
+  min-width: 3.6ch;
+  letter-spacing: 0.12em;
   color: var(--green-bright);
 }
-.arcade-fame__when {
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  color: var(--amber);
-  white-space: nowrap;
+.fame__score {
+  float: right;
+  font-variant-numeric: tabular-nums;
 }
-.arcade-fame__body {
-  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+/* Drawn, not written: the slot's meaning is the hidden word "empty". */
+.fame__empty::before {
+  content: "---";
+  letter-spacing: 0.12em;
+  color: var(--green-dim);
 }
-.arcade-fame__body .arcade-table {
-  font-size: 1.3rem;
+.fame__empty::after {
+  content: "------";
+  float: right;
+  color: var(--green-dim);
 }
-.arcade-fame__play {
-  margin-top: var(--sp-3);
-  width: 100%;
+.fame__table td.is-you {
+  color: var(--amber-bright);
+  background: var(--arcade-amber-wash);
+  box-shadow: inset 0 0 16px var(--arcade-amber-halo);
+}
+.fame__table td.is-you .fame__initials {
+  color: var(--amber-bright);
 }
 
 /* ----- playing ---------------------------------------------------------- */
@@ -912,8 +980,8 @@ html.arcade-entering .nav {
   .arcade-gallery.is-live .cabinet {
     animation: arcade-raster 640ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(160ms + var(--i, 0) * 70ms) both;
   }
-  .arcade-fame__board {
-    animation: arcade-raster 560ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * 60ms) both;
+  .arcade-gallery.is-live .fame {
+    animation: arcade-fade 520ms ease 420ms both;
   }
   .arcade-detail__grid,
   .arcade-play,
@@ -995,8 +1063,7 @@ html.arcade-entering .nav {
 
 /* ----- narrower --------------------------------------------------------- */
 @media (max-width: 1000px) {
-  .arcade-cabinets,
-  .arcade-fame__grid {
+  .arcade-cabinets {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .arcade-detail__grid {
@@ -1007,8 +1074,7 @@ html.arcade-entering .nav {
   .arcade-room {
     font-size: 15px;
   }
-  .arcade-cabinets,
-  .arcade-fame__grid {
+  .arcade-cabinets {
     grid-template-columns: 1fr;
     gap: var(--sp-3);
   }
@@ -1069,6 +1135,20 @@ html.arcade-entering .nav {
   }
   .arcade-bios {
     font-size: 0.85rem;
+  }
+}
+/* Three columns will not fit a phone: the switcher shows one cabinet's board. */
+@media (max-width: 700px) {
+  .fame__switch {
+    display: flex;
+  }
+  .fame__table [data-game] {
+    display: none;
+  }
+  .fame__table[data-shown="signal"] [data-game="signal"],
+  .fame__table[data-shown="poker"] [data-game="poker"],
+  .fame__table[data-shown="panic"] [data-game="panic"] {
+    display: table-cell;
   }
 }
 @media (max-width: 360px) {
