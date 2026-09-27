@@ -5,6 +5,7 @@ import {
   MAX_FRAME_IMPACTS,
   SETTINGS_KEY,
   createSystemFrame,
+  easeFactor,
   formatUptime,
   isDefaultSettings,
   isTheme,
@@ -181,5 +182,34 @@ describe("saveSettings keeps only what the visitor chose", () => {
 
   it("does nothing on the server", () => {
     expect(() => saveSettings(DEFAULT_SETTINGS)).not.toThrow();
+  });
+});
+
+describe("easeFactor: a per-frame ease that means the same at any refresh rate", () => {
+  // `x += (t - x) * 0.05` a frame eases twice as fast at 120Hz as at 60. The
+  // boot's picture came up behind the beam at a speed set by the visitor's
+  // monitor (code review, 2026-09-27); the coding-mistakes ledger has the rule.
+  it("is the constant itself at the 60Hz reference", () => {
+    expect(easeFactor(0.05, 1000 / 60)).toBeCloseTo(0.05, 10);
+  });
+  it("gives the same result in two half steps as in one whole one", () => {
+    const k = 0.05;
+    const whole = 1 - easeFactor(k, 1000 / 60);
+    const halves = (1 - easeFactor(k, 500 / 60)) ** 2;
+    expect(halves).toBeCloseTo(whole, 12);
+  });
+  it("does nothing over no time and never overshoots", () => {
+    expect(easeFactor(0.05, 0)).toBe(0);
+    expect(easeFactor(0.05, 10_000)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("the frame loop eases live and eject by elapsed time", () => {
+  it("uses easeFactor rather than a bare per-frame constant", () => {
+    const { readFileSync } = require("node:fs") as typeof import("node:fs");
+    const { join } = require("node:path") as typeof import("node:path");
+    const src = readFileSync(join(process.cwd(), "components", "system", "SystemProvider.tsx"), "utf8");
+    expect(src).toMatch(/f\.live \+= \(f\.targetLive - f\.live\) \* easeFactor\(0\.05, dt\);/);
+    expect(src).toMatch(/f\.eject \+= \(f\.ejectTarget - f\.eject\) \* easeFactor\(0\.055, dt\);/);
   });
 });

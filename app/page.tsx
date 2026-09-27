@@ -30,7 +30,7 @@ export default function Home() {
       </div>
     </Window>
     <ul className="highlights home-highlights" aria-label="Highlights">
-      <li className="hl"><span className="hl__k">{homeCopy.startup}</span><WorkPreview name="tigh" /></li>
+      <li className="hl"><span className="hl__k">{homeCopy.current}</span><WorkPreview name="tigh" /></li>
       <li className="hl"><span className="hl__k">{homeCopy.previously}</span><WorkPreview name="presterly" /><WorkPreview name="hatch" /></li>
       <li className="hl"><span className="hl__k">{homeCopy.academic}</span><span className="hl__v">{homeCopy.academicValue}</span></li>
     </ul>

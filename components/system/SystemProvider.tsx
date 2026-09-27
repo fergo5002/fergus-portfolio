@@ -16,6 +16,7 @@ import {
   DEFAULT_SETTINGS,
   IMPACT_LIFETIME_MS,
   createSystemFrame,
+  easeFactor,
   loadSettings,
   saveSettings,
 } from "@/lib/system";
@@ -306,11 +307,13 @@ export default function SystemProvider({ children }: { children: ReactNode }) {
       f.scrollVelocity += (target - f.scrollVelocity) * 0.18;
 
       f.pointerActive += (f.pointerTargetActive - f.pointerActive) * 0.09;
-      f.live += (f.targetLive - f.live) * 0.05;
+      // Eased by elapsed time, not per frame: the boot's picture comes up behind
+      // the beam, and at 120Hz a per-frame ease brought it up twice as fast.
+      f.live += (f.targetLive - f.live) * easeFactor(0.05, dt);
 
       // The pull-back is slow and heavy in both directions: it is a camera move,
       // not a toggle, and easing it fast makes the room read as a cut.
-      f.eject += (f.ejectTarget - f.eject) * 0.055;
+      f.eject += (f.ejectTarget - f.eject) * easeFactor(0.055, dt);
       if (Math.abs(f.ejectTarget - f.eject) < 0.0008) f.eject = f.ejectTarget;
       f.gravity += (f.gravityTarget - f.gravity) * 0.12;
 

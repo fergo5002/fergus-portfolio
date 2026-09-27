@@ -75,16 +75,16 @@ export const projects: Project[] = [
   {
     slug: "remand",
     title: "Remand",
-    tagline: "Finds the market demand hiding in online noise.",
+    tagline: "Push an idea through Reddit and read the signal that comes back.",
     role: "Full-stack / AI",
     year: "HackEurope 2026",
     bullets: [
-      "Semantic search over scattered discussion, with an agent that turns the signal into positioning.",
+      "Semantic search finds the threads where people already describe the problem, growth momentum shows whether interest is building, and an agent turns it into positioning.",
     ],
     stack: ["Next.js", "React 19", "FastAPI", "Supabase", "pgvector", "OpenAI", "Anthropic"],
     links: [{ label: "live", href: "https://nybblers.vercel.app" }],
     image: "/img/remand.png",
-    imageAlt: "Remand illustration: Reddit questions about lost notes and chasing updates converge on a positioning idea, Handover without the chase",
+    imageAlt: "Remand illustration: an idea is pushed through four Reddit threads about the same problem and comes out as a rising demand signal",
   },
   {
     slug: "under-the-campanile",

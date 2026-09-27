@@ -9,28 +9,9 @@ import { INITIAL_SHELL, shellStore } from "@/lib/shell";
 import { requestCommand } from "@/lib/shell-request";
 import { profile } from "@/content/profile";
 import { useSystem } from "@/components/system/SystemProvider";
+import { navItems as items } from "@/content/nav";
 
 const getServerShell = () => INITIAL_SHELL;
-
-/**
- * The nav is also the site's internal link graph, which is why `/tools` and
- * `/mcp` are here rather than only in the sitemap.
- *
- * A page reachable by sitemap alone is reachable, but it is the weakest form of
- * it: nothing on the site says it matters, and internal links are how a crawler
- * decides that. `/contact` is the deliberate exception and always has been, and
- * it gets away with it because every `Talk` block links to it, so it is well
- * linked without being in the chrome. These two had nothing pointing at them at
- * all.
- */
-const items = [
-  { href: "/", label: "~" },
-  { href: "/experience", label: "experience" },
-  { href: "/projects", label: "projects" },
-  { href: "/writing", label: "writing" },
-  { href: "/tools", label: "tools" },
-  { href: "/mcp", label: "mcp" },
-];
 
 /**
  * `cd arcade` is the one control here that is not a link, because the arcade

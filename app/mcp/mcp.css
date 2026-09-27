@@ -1,0 +1,118 @@
+/* /mcp: the endpoint, how to add it, a live console, the tools, and the
+   reasoning behind one disclosure. Tokens only; no colour of its own. */
+
+.mcp-endpoint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2) var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+}
+.mcp-endpoint__k { color: var(--green); font-size: 0.85rem; }
+.mcp-endpoint__url {
+  flex: 1 1 18rem;
+  min-width: 0;
+  color: var(--amber);
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.mcp-copy {
+  flex: none;
+  min-height: 44px;
+  min-width: 72px;
+  padding: 0 var(--sp-3);
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 7%, var(--bg-panel));
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent);
+  border-radius: 2px;
+  cursor: pointer;
+}
+.mcp-copy:hover { color: var(--green-bright); border-color: var(--green-line); }
+.mcp-copy:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+.mcp-install { border: 1px solid var(--green-line); border-radius: var(--radius); background: var(--bg-panel); overflow: clip; }
+.mcp-install__tabs { display: flex; border-bottom: 1px solid var(--green-line); }
+.mcp-install__tab {
+  min-height: 44px;
+  padding: 0 var(--sp-4);
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--green);
+  background: transparent;
+  border: 0;
+  border-right: 1px solid var(--green-line);
+  cursor: pointer;
+}
+.mcp-install__tab[aria-selected="true"] { color: var(--bg); background: var(--green); text-shadow: none; }
+.mcp-install__tab:focus-visible { outline: 2px solid var(--amber); outline-offset: -2px; }
+.mcp-install__panel { display: flex; align-items: flex-start; gap: var(--sp-3); padding: var(--sp-3); }
+.mcp-install__code { flex: 1 1 auto; min-width: 0; margin: 0; overflow-x: auto; color: var(--green-bright); font-size: 0.85rem; line-height: 1.6; }
+
+.mcp-console__live { color: var(--green); font-size: 0.75rem; }
+.mcp-console__live::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 8px; background: var(--amber); box-shadow: 0 0 6px var(--amber); vertical-align: middle; }
+.mcp-console__body { padding: var(--sp-4); }
+.mcp-console__presets { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-4); }
+.mcp-console__preset {
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--green-bright);
+  background: var(--bg-panel-2);
+  border: 1px solid var(--green-line);
+  border-radius: 2px;
+  cursor: pointer;
+}
+.mcp-console__preset:hover { border-color: var(--green); }
+.mcp-console__preset[aria-pressed="true"] { color: var(--bg); background: var(--amber); border-color: var(--amber); text-shadow: none; }
+.mcp-console__preset:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.mcp-console__panes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-3); }
+/* Fixed height, scrolling inside: an answer arriving must never move the page
+   (it did, by 254px on a phone, until the heights stopped depending on it). */
+.mcp-console__pane { display: flex; flex-direction: column; height: 20rem; min-width: 0; overflow: auto; border: 1px solid var(--green-line); border-radius: 2px; background: var(--bg); padding: var(--sp-3); }
+.mcp-console__pane > .mcp-console__code { flex: 1 1 auto; max-height: none; min-height: 0; }
+.mcp-console__label { display: flex; justify-content: space-between; gap: var(--sp-2); margin: 0 0 var(--sp-2); color: var(--green); font-size: 0.75rem; }
+.mcp-console__meta { color: var(--amber); }
+.mcp-console__code { margin: 0; max-height: 18rem; overflow: auto; color: var(--green-bright); font-size: 0.78rem; line-height: 1.55; white-space: pre; }
+.mcp-console__hint { margin: 0; color: var(--green); font-size: 0.9rem; }
+.mcp-console__lines { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.mcp-console__lines li { color: var(--green-bright); font-size: 0.95rem; line-height: 1.45; overflow-wrap: anywhere; }
+.mcp-console__lines li:first-child { color: var(--amber); }
+.mcp-console__raw { margin-top: var(--sp-3); }
+.mcp-console__raw summary { display: inline-flex; align-items: center; min-height: 44px; color: var(--amber); cursor: pointer; font-size: 0.85rem; }
+
+.mcp-tools__title { margin: 0 0 var(--sp-3); font: 1.6rem/1.1 var(--font-screen); color: var(--green-bright); }
+.mcp-tools__list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2) var(--sp-4); }
+.mcp-tools__item { display: flex; align-items: baseline; gap: var(--sp-3); padding: var(--sp-2) 0; border-bottom: 1px dotted var(--green-line); min-width: 0; }
+.mcp-tools__name { flex: none; color: var(--amber); font-size: 0.85rem; }
+.mcp-tools__note { color: var(--green); font-size: 0.9rem; min-width: 0; }
+
+.mcp-why { margin: 0; color: var(--green-bright); max-width: 62ch; }
+.mcp-details summary { display: inline-flex; align-items: center; min-height: 44px; color: var(--amber); cursor: pointer; }
+.mcp-details summary::marker { content: ""; }
+.mcp-details summary::before { content: "+ "; white-space: pre; }
+.mcp-details[open] summary::before { content: "- "; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The answer paints in a line at a time, like the beam reaching it. */
+  .mcp-console__lines li { animation: mcp-line 0.36s steps(6, end) both; animation-delay: calc(var(--i, 0) * 70ms); }
+  @keyframes mcp-line { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+  .mcp-console__hint--busy::after { content: "..."; display: inline-block; width: 3ch; overflow: hidden; vertical-align: bottom; animation: mcp-dots 1s steps(4, end) infinite; }
+  @keyframes mcp-dots { from { width: 0; } to { width: 4ch; } }
+}
+
+@media (max-width: 900px) {
+  .mcp-console__panes { grid-template-columns: minmax(0, 1fr); }
+  .mcp-tools__list { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .mcp-console__body { padding: var(--sp-3); }
+  .mcp-install__panel { flex-direction: column; }
+  .mcp-tools__item { flex-direction: column; gap: 2px; }
+}
