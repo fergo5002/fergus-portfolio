@@ -33,7 +33,14 @@
 }
 .inst-knob--sm { --knob: 44px; }
 .inst-knob--lg { --knob: 76px; }
+/* A label is tapped to focus its control, so it takes a thumb's 44px; the
+   text sits at the bottom, against the dial it names. */
 .inst-knob__label {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   font-size: 0.72rem;
   line-height: 1.3;
   color: var(--green);
@@ -113,7 +120,8 @@
   grid-column: 1 / -1;
   grid-row: 2;
 }
-.inst-slider__label { font-size: 0.78rem; color: var(--green); min-width: 0; }
+.inst-slider__label { display: flex; align-items: center; min-height: 44px; min-width: 0; font-size: 0.78rem; color: var(--green); }
+.inst-slider--stack .inst-slider__label { align-items: flex-end; }
 .inst-slider__value {
   font-family: var(--font-screen);
   font-size: 1.2rem;
@@ -183,13 +191,17 @@
   border-radius: var(--radius);
   background: var(--bg);
 }
+/* The radio is the lamp: a 44px zone at the start of the option, drawn with
+   no appearance of its own, lit amber when chosen. It sits beside the text
+   rather than over it, so a click on the text reaches it through the label,
+   a test driver's click lands on the radio itself, and nothing covers the
+   words the phone check reads for contrast. */
 .inst-seg__opt {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   min-height: 44px;
-  padding: 0 14px 0 12px;
+  padding: 0 14px 0 44px;
   border-radius: calc(var(--radius) - 2px);
   color: var(--green);
   font-size: 0.82rem;
@@ -198,42 +210,37 @@
   user-select: none;
   -webkit-user-select: none;
 }
-/* The lamp: a pilot light that is lit on the chosen option. */
-.inst-seg__opt::before {
-  content: "";
-  flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--green-line);
-}
 .inst-seg__opt[data-checked] {
   background: color-mix(in srgb, var(--green) 14%, var(--bg));
   color: var(--green-bright);
 }
-.inst-seg__opt[data-checked]::before {
-  background: var(--amber);
-  box-shadow: 0 0 6px var(--amber);
-}
 .inst-seg__opt:hover { color: var(--green-bright); }
 .inst-seg .inst-seg__input {
+  -webkit-appearance: none;
+  appearance: none;
   position: absolute;
-  inset: 0;
-  width: 100%;
+  top: 0;
+  left: 0;
+  width: 44px;
   height: 100%;
-  min-height: 0;
+  min-height: 44px;
   margin: 0;
   padding: 0;
   border: 0;
-  opacity: 0;
+  border-radius: calc(var(--radius) - 2px) 0 0 calc(var(--radius) - 2px);
+  background: radial-gradient(circle at 62% 50%, var(--green-line) 0 3px, transparent 3.6px);
   cursor: inherit;
+}
+.inst-seg .inst-seg__input:checked {
+  background: radial-gradient(circle at 62% 50%, var(--amber) 0 3.5px, transparent 4.2px);
+  filter: drop-shadow(0 0 3px var(--amber));
 }
 .inst-seg__opt:has(.inst-seg__input:focus-visible) {
   outline: 2px solid var(--amber);
   outline-offset: 1px;
 }
 .inst-seg__opt:has(.inst-seg__input:disabled) { opacity: 0.45; cursor: not-allowed; }
-.inst-seg--sm .inst-seg__opt { padding: 0 11px 0 9px; font-size: 0.76rem; }
+.inst-seg--sm .inst-seg__opt { padding: 0 11px 0 44px; font-size: 0.76rem; }
 
 /* ── Toggle ───────────────────────────────────────────────────────────── */
 
@@ -502,7 +509,7 @@
 /* ── Select ───────────────────────────────────────────────────────────── */
 
 .inst-select { display: grid; gap: 6px; min-width: 0; }
-.inst-select__label { font-size: 0.75rem; color: var(--green); }
+.inst-select__label { display: flex; align-items: flex-end; min-height: 44px; font-size: 0.75rem; color: var(--green); }
 .inst-select__box { position: relative; display: block; min-width: 0; }
 .inst-select__box::after {
   content: "";

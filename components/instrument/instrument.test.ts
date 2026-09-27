@@ -151,7 +151,9 @@ describe("the stylesheet", () => {
   const css = readFileSync(join(DIR, "instrument.css"), "utf8").replace(/\r\n/g, "\n").replace(/\/\*[\s\S]*?\*\//g, " ");
 
   it("puts a 44px floor under every tap target the kit draws", () => {
-    for (const selector of [".inst-seg__opt", ".inst-toggle", ".inst-picker__button", ".inst-export__btn", ".inst-slider__input", ".inst-select__input"]) {
+    // The labels are on the list because a <label for> is tapped to focus its
+    // control: the phone check measured the slider labels at 19px and failed them.
+    for (const selector of [".inst-seg__opt", ".inst-toggle", ".inst-picker__button", ".inst-export__btn", ".inst-slider__input", ".inst-select__input", ".inst-slider__label", ".inst-select__label", ".inst-knob__label"]) {
       const block = new RegExp(`${selector.replace(/[.]/g, "\\.")}\\s*\\{[^}]*min-height:\\s*44px`);
       expect(css, selector).toMatch(block);
     }

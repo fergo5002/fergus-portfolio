@@ -68,6 +68,11 @@
 .bench-stage :is(input, textarea, select, button):not([class*="inst-"]) { font-size: 16px; max-width: 100%; }
 .bench-stage :is(button, select, input:not([type="hidden"]), summary):not([class*="inst-"]) { min-height: 44px; }
 .bench-stage button { touch-action: manipulation; }
+/* A control scrolled into view (by focus, by a browser, by a test driver) must
+   land above the fixed status bar, not under it. Measured: with JavaScript
+   off, the headline form's submit button settled under the bar and could not
+   be clicked. */
+.bench-stage :is(button, input, select, textarea, summary, label) { scroll-margin-bottom: calc(var(--status-h) + var(--sp-3)); }
 .bench-stage :is(button, a, input, select, textarea, summary):not([class*="inst-"]):focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 3px;

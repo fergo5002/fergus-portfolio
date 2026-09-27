@@ -3,6 +3,7 @@ import Link from "next/link";
 import { workbenchCopy } from "@/content/tool-workbench";
 import { labCopy } from "@/content/lab";
 import "./workbench.css";
+import "@/components/instrument/instrument.css";
 import JsonLd from "@/components/JsonLd";
 import PromptLine from "@/components/PromptLine";
 import Scramble from "@/components/Scramble";

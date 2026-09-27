@@ -94,6 +94,13 @@ describe("ToolPage renders the instrument shell in order", () => {
   it("stays a server component", () => {
     expect(src).not.toContain('"use client"');
   });
+
+  it("loads the kit's stylesheet with the page, so a studio that arrives later is never unstyled", () => {
+    // Measured on WebKit at 390 before this: 300ms after a studio mounted from
+    // its dynamic chunk, its kit select still had no styles and pushed the
+    // page to 428px. The shell importing the sheet puts it in the route's CSS.
+    expect(src).toContain('import "@/components/instrument/instrument.css";');
+  });
 });
 
 describe("the stylesheets", () => {

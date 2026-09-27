@@ -415,8 +415,12 @@
    the page. The readings are set large in the screen face: the comparison is
    the tool, and loose letters should look like loose letters from across the
    room. */
-.headline-lab { display: grid; gap: var(--sp-3); }
-.headline-lab__screen { display: grid; gap: var(--sp-3); }
+/* minmax(0, 1fr) and min-width: 0, because a grid track otherwise grows to
+   its widest child's min-content: the unwrapping code sample pushed a 320px
+   phone to 364px. */
+.headline-lab { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
+.headline-lab > *, .headline-lab__screen > * { min-width: 0; }
+.headline-lab__screen { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); }
 .headline-lab__top {
   display: flex;
   flex-wrap: wrap;
@@ -445,7 +449,9 @@
 }
 .headline-lab .hcheck__view.is-crawler .hcheck__string { font-size: clamp(1.5rem, 3.6vw, 2.3rem); letter-spacing: 0.04em; }
 .headline-lab__input { display: grid; gap: var(--sp-1); }
-.headline-lab__input .bench-label { min-height: 0; font-size: 0.82rem; color: var(--green); }
+/* 44px tall, because a label is tapped to focus its field; the text sits at
+   the bottom, beside the field it names. */
+.headline-lab__input .bench-label { min-height: 44px; align-items: flex-end; font-size: 0.82rem; color: var(--green); }
 .headline-lab__input .bench-note { margin: 0; }
 .headline-lab__source { font-size: 14px; line-height: 1.5; }
 .headline-lab__fix { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
