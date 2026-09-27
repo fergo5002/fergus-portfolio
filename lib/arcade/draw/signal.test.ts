@@ -86,6 +86,19 @@ describe("Dead Signal's drawer", () => {
     expect(rec.texts.map((t) => t.value)).toContain(screenCopy.signalHint);
   });
 
+  it("keeps the hint on the glass when the player is against a wall", () => {
+    for (const x of [22, 878]) {
+      const s = quiet();
+      s.player.x = x; s.blocked = true;
+      const rec = recorder();
+      drawSignal(rec.pen, s, true);
+      const hint = rec.texts.find((t) => t.value === screenCopy.signalHint)!;
+      const half = (screenCopy.signalHint.length * 20 * 0.5) / 2;
+      expect(hint.x - half, `player at ${x}`).toBeGreaterThanOrEqual(0);
+      expect(hint.x + half, `player at ${x}`).toBeLessThanOrEqual(900);
+    }
+  });
+
   it("captions the kind a wave brings in, on that wave and no other", () => {
     const s = quiet();
     spawnEnemy(s, "shooter", 300, 200);

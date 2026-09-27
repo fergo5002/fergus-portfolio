@@ -1668,6 +1668,7 @@ const MUTATIONS = [
   ...[
     ["the drawer drops a charger's dash line", /        dashes\(pen, e, \{ x: e\.vx, y: e\.vy \}, 280, on \? p\.accentBright : p\.accent, -s\.time \* 90\);/, ""],
     ["the drawer never says MOVE TO FIRE", /    if \(s\.still >= HINT_AFTER \|\| s\.blocked\) \{/, "    if (false) {"],
+    ["the MOVE TO FIRE hint runs off the glass at a wall", /      const x = Math\.min\(900 - 10 - half, Math\.max\(10 \+ half, s\.player\.x\)\);/, "      const x = s.player.x;"],
     ["the drawer captions every wave's kinds, not just the new one", /  const k = INTRODUCED\.find\(\(i\) => i\.wave === s\.level && i\.wave > 1\);/, "  const k = INTRODUCED.find((i) => i.wave <= s.level && i.wave > 1);"],
   ].map(([name, pattern, replace]) => ({
     name: `dead signal: ${name}`, file: "lib/arcade/draw/signal.ts", pattern, replace,

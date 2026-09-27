@@ -28,9 +28,9 @@ import { circle, glowText, line, polygon, text, type Pen } from "./kit";
 
 type Sizes = { caption: number; pop: number; hint: number; chain: number };
 const SIZES: Record<StageKind, Sizes> = {
-  wide: { caption: 11, pop: 20, hint: 16, chain: 14 },
+  wide: { caption: 11, pop: 20, hint: 20, chain: 14 },
   // A phone draws the 900-wide world about 360 pixels across: everything a thumb has to read goes up.
-  tall: { caption: 20, pop: 34, hint: 30, chain: 26 },
+  tall: { caption: 26, pop: 34, hint: 34, chain: 26 },
 };
 
 /** Seconds standing still before the player is told to move. */
@@ -115,7 +115,8 @@ function drawEnemy(pen: Pen, s: SignalState, e: Enemy) {
       if (e.mode === "windup" && !stunned) {
         // A ring closing on it as the shot comes, and a faint line to where it is aiming.
         const k = Math.max(0, Math.min(1, e.cooldown / 0.6));
-        circle(c, e.x, e.y, r + 4 + k * 18, p.accentBright, false, p.accentGlow);
+        circle(c, e.x, e.y, r + 4 + k * 18, p.accentBright, false);
+        circle(c, e.x, e.y, r + 7 + k * 18, p.accentSoft, false);
         c.globalAlpha = 0.5;
         line(c, e, s.player, p.accentSoft, 1);
         c.globalAlpha = 1;
@@ -200,10 +201,14 @@ export function drawSignal(pen: Pen, s: SignalState, hud: boolean, layout: Stage
       c.globalAlpha = 1;
     }
     if (s.still >= HINT_AFTER || s.blocked) {
-      // Always legible, never blinked off: it breathes instead.
-      const below = s.player.y + 44 + sz.hint * 0.7 < 556;
+      // Always legible, never blinked off: it breathes instead. Kept on the glass at the walls.
+      const words = screenCopy.signalHint;
+      c.font = `${sz.hint}px ${pen.theme.display}`;
+      const half = Math.max(c.measureText(words).width || 0, words.length * sz.hint * 0.5) / 2;
+      const x = Math.min(900 - 10 - half, Math.max(10 + half, s.player.x));
+      const below = s.player.y + 40 + sz.hint < 556;
       c.globalAlpha = 0.75 + 0.25 * Math.sin(s.time * 7);
-      glowText(pen, screenCopy.signalHint, s.player.x, below ? s.player.y + 44 + sz.hint * 0.7 : s.player.y - 40, sz.hint, p.bright, p.brightGlow);
+      text(pen, words, x, below ? s.player.y + 40 + sz.hint * 0.7 : s.player.y - 36, sz.hint, p.bright, "center", true);
       c.globalAlpha = 1;
     }
     if (s.combo > 0) {
