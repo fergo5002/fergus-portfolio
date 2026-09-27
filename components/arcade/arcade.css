@@ -790,7 +790,7 @@ html.arcade-open .saver {
 }
 
 /* ----- a typing game's line ---------------------------------------------- */
-.arcade-type {
+.arcade-room .arcade-type {
   display: flex;
   align-items: center;
   gap: var(--sp-2);

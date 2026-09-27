@@ -1641,6 +1641,13 @@ const MUTATIONS = [
     replace: "calc((var(--vv-h, 100dvh) - 150px)",
     tests: "components/arcade/arcade.test.ts",
   },
+  {
+    name: "kernel panic: the room's label rule stacks the typing line again",
+    file: "components/arcade/arcade.css",
+    pattern: /^\.arcade-room \.arcade-type \{/m,
+    replace: ".arcade-type {",
+    tests: "components/arcade/arcade.test.ts",
+  },
 ];
 
 

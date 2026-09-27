@@ -457,6 +457,13 @@ describe("a typing game's text input", () => {
     expect(Number(rule![1])).toBeGreaterThanOrEqual(61 + 56 + 8);
     expect(css).toMatch(/\.arcade-room__inner \{[^}]*padding: var\(--sp-3\) var\(--arcade-gutter\) 56px;/);
   });
+
+  it("keeps the typing line one row, whatever the room's generic label rule says", () => {
+    // `.arcade-room label` (0,1,1) sets display: block and a bottom margin; a bare `.arcade-type` (0,1,0)
+    // loses to it, and the prompt then wraps above the input on a narrow frame, 82px instead of 61.
+    expect(css).toMatch(/\.arcade-room label \{[^}]*display: block;/);
+    expect(css).toMatch(/\.arcade-room \.arcade-type \{\s*display: flex;[^}]*margin: 0;/);
+  });
 });
 
 describe("the Hall of Fame is a section of the front, not a screen", () => {
