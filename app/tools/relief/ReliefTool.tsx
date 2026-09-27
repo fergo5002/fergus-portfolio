@@ -43,6 +43,7 @@ import { buildMesh, writeBinaryStl } from "@/lib/tools/relief/stl";
 import { plotterSvg } from "@/lib/tools/relief/svg";
 import { HOURS, WEEKS, type ReliefEvent } from "@/lib/tools/relief/types";
 import { trackToolRun } from "@/lib/tools/events";
+import { DropSlot, ExportBar, Select, Slider, useIntake } from "@/components/instrument";
 
 /**
  * The tool.
@@ -353,6 +354,9 @@ export default function ReliefTool() {
     }
   }
 
+  /* The whole plate takes a dropped CSV, whichever source is showing. */
+  const intake = useIntake({ accept: ".csv,text/csv", onFiles: ([chosen]) => void onFile(chosen) });
+
   const userId = `${uid}-user`;
   const tokenId = `${uid}-token`;
   const fileId = `${uid}-file`;
@@ -360,7 +364,7 @@ export default function ReliefTool() {
   const hour = String(heightmap.hiAt.row).padStart(2, "0");
 
   return (
-    <div className="relief">
+    <div className="relief" {...intake.stageProps}>
       <fieldset className="relief__sources">
         <legend className="relief__legend">{reliefCopy.sourceLegend}</legend>
         {SOURCES.map((key) => (
@@ -419,38 +423,24 @@ export default function ReliefTool() {
       {source === "csv" ? (
         <div className="relief__panel">
           <p className="relief__hint">{reliefCopy.csvHelp}</p>
-          <label className="relief__label" htmlFor={fileId}>
-            {reliefCopy.fileLabel}
-          </label>
-          <input
-            id={fileId}
-            className="relief__file"
-            type="file"
-            accept=".csv,text/csv"
-            onChange={(e) => void onFile(e.target.files?.[0])}
-          />
+          <DropSlot intake={intake} id={fileId} label={reliefCopy.fileLabel} />
           {table ? (
-            <>
-              <label className="relief__label" htmlFor={columnId}>
-                {reliefCopy.columnLabel}
-              </label>
-              <select
-                id={columnId}
-                className="relief__select"
-                value={column}
-                onChange={(e) => {
-                  const next = Number(e.target.value);
-                  setColumn(next);
-                  readColumn(table.rows, next, table.capped);
-                }}
-              >
-                {table.headers.map((head, i) => (
-                  <option key={`${head}-${i}`} value={i}>
-                    {head === "" ? `${i + 1}` : head}
-                  </option>
-                ))}
-              </select>
-            </>
+            <Select
+              id={columnId}
+              label={reliefCopy.columnLabel}
+              value={String(column)}
+              onChange={(value) => {
+                const next = Number(value);
+                setColumn(next);
+                readColumn(table.rows, next, table.capped);
+              }}
+            >
+              {table.headers.map((head, i) => (
+                <option key={`${head}-${i}`} value={i}>
+                  {head === "" ? `${i + 1}` : head}
+                </option>
+              ))}
+            </Select>
           ) : (
             <p className="relief__hint">{reliefCopy.noFile}</p>
           )}
@@ -487,9 +477,9 @@ export default function ReliefTool() {
         <h2 className="relief__heading">{workbench.explore}</h2>
         <p className="bench-note">{workbench.guide}</p>
         <output className="relief__cell">{workbench.cell(selectedWeek, selectedHour, heightmap.counts[selectedHour][selectedWeek - 1])}</output>
-        <div className="bench-columns">
-          <label className="relief__explore-label">{workbench.week} {selectedWeek}<input type="range" min={1} max={WEEKS} value={selectedWeek} onChange={e => setSelectedWeek(Number(e.target.value))} /></label>
-          <label className="relief__explore-label">{workbench.hour} {selectedHour}:00<input type="range" min={0} max={HOURS - 1} value={selectedHour} onChange={e => setSelectedHour(Number(e.target.value))} /></label>
+        <div className="bench-columns relief__sliders">
+          <Slider label={workbench.week} min={1} max={WEEKS} value={selectedWeek} onChange={setSelectedWeek} layout="stack" />
+          <Slider label={workbench.hour} min={0} max={HOURS - 1} value={selectedHour} onChange={setSelectedHour} format={(h) => `${String(h).padStart(2, "0")}:00`} layout="stack" />
         </div>
         {source === "demo" && <button type="button" className="bench-button" onClick={() => { setEvents(demoEvents(++demoVersion.current)); setPlateSource("demo"); setExportReady(true); setNote(reliefCopy.demoCaption); }}>{workbench.newDemo}</button>}
       </section>
@@ -520,22 +510,14 @@ export default function ReliefTool() {
       </dl>
 
       <h2 className="relief__heading">{reliefCopy.exportsHeading}</h2>
-      <div className="relief__actions">
-        <button type="button" className="relief__button" disabled={!exportReady || busy} onClick={() => void onExport("png")}>
-          {reliefCopy.downloads.png}
-        </button>
-        <button type="button" className="relief__button" disabled={!exportReady || busy} onClick={() => void onExport("svg")}>
-          {reliefCopy.downloads.svg}
-        </button>
-        <button type="button" className="relief__button" disabled={!exportReady || busy} onClick={() => void onExport("stl")}>
-          {reliefCopy.downloads.stl}
-        </button>
-      </div>
-      <details className="bench-details"><summary>{workbench.details}</summary>
-      <p className="relief__hint">{reliefCopy.method}</p>
-      <p className="relief__hint">{reliefCopy.plotterNote}</p>
-      <p className="relief__hint">{reliefCopy.stlNote}</p>
-      </details>
+      <ExportBar
+        label={reliefCopy.exportsHeading}
+        actions={[
+          { label: reliefCopy.downloads.png, kind: "png", disabled: !exportReady || busy, onClick: () => void onExport("png") },
+          { label: reliefCopy.downloads.svg, kind: "svg", disabled: !exportReady || busy, onClick: () => void onExport("svg") },
+          { label: reliefCopy.downloads.stl, kind: "stl", disabled: !exportReady || busy, onClick: () => void onExport("stl") },
+        ]}
+      />
     </div>
   );
 }

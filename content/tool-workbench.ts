@@ -118,7 +118,6 @@ export const reliefWorkbenchCopy = {
   hour: "Hour of the day",
   cell: (week: number, hour: number, count: number) => `Week ${week}, ${String(hour).padStart(2, "0")}:00 · ${count} events`,
   guide: "Peaks are busy hours. Valleys are quiet ones. Move the controls to read the original count behind any part of the terrain.",
-  details: "How the terrain and exports are made",
   stale: "No new landscape is ready. The previous view is shown for reference; exports are paused until a file is accepted or you return to the demo.",
   newDemo: "Try another landscape",
   source: "Landscape on display",

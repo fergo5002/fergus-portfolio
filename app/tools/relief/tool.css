@@ -38,11 +38,9 @@
   max-width: 68ch;
 }
 
-/* 16px exactly, on all three. Anything smaller and iOS zooms the viewport on
+/* 16px exactly. Anything smaller and iOS zooms the viewport on
    focus and drops the visitor into a sideways-scrolled page. */
-.relief__input,
-.relief__file,
-.relief__select {
+.relief__input {
   width: 100%;
   box-sizing: border-box;
   font: inherit;
@@ -56,8 +54,6 @@
 }
 
 .relief__input:focus-visible,
-.relief__file:focus-visible,
-.relief__select:focus-visible,
 .relief__button:focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 2px;
@@ -167,8 +163,7 @@
 .relief__crosshair { position: absolute; width: 14px; height: 14px; transform: translate(-50%, -50%); border: 2px solid var(--amber); border-radius: 50%; pointer-events: none; }
 .relief__crosshair::after { content: ""; position: absolute; inset: 3px; background: var(--amber); border-radius: 50%; }
 .relief__explorer { padding: 20px; background: var(--bg); border: 1px solid var(--green-line); margin-top: 16px; }
-.relief__explore-label { display: grid; gap: 8px; font-size: .85rem; margin: 16px 0; }
-.relief__explore-label input { width: 100%; min-height: 44px; accent-color: var(--amber); }
+.relief__sliders { margin: 12px 0 16px; }
 .relief__cell { color: var(--amber); font-family: var(--font-screen); font-size: 1.5rem; display: block; }
 .relief__readout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .relief__readout .relief__row { display: grid; align-content: start; gap: 8px; padding: 16px; border: 1px solid var(--green-line); }

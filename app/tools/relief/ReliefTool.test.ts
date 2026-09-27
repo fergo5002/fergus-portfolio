@@ -152,16 +152,40 @@ describe("what it reports", () => {
 });
 
 describe("the stylesheet", () => {
+  /**
+   * Since the instrument redesign (2026-09-27) the CSV file, its date column,
+   * the two explorer sliders and the three exports are kit controls from
+   * `components/instrument/`, and the stock `.relief__file`, `.relief__select`
+   * and bare range rules are gone. The floors did not move out of reach: the
+   * kit's own stylesheet is read here, so dropping one still turns this red.
+   */
+  const kit = read("components", "instrument", "instrument.css");
+
+  it("uses the kit for the file, the column, the sliders and the exports", () => {
+    expect(tool).toMatch(/<DropSlot[^>]*id=\{fileId\}/);
+    expect(tool).toMatch(/<Select\s+id=\{columnId\}/);
+    expect([...tool.matchAll(/<Slider\s/g)]).toHaveLength(2);
+    expect(tool).toMatch(/<ExportBar\s/);
+    expect(tool).not.toMatch(/type="range"|type="file"|<select/);
+  });
+
   it("keeps every input at 16px, which is what stops iOS zooming on focus", () => {
-    for (const selector of ["\\.relief__input", "\\.relief__file", "\\.relief__select"]) {
-      expect(css, selector).toMatch(new RegExp(`${selector}[^}]*font-size:\\s*16px`));
-    }
+    expect(css).toMatch(/\.relief__input[^}]*font-size:\s*16px/);
+    expect(kit).toMatch(/\.inst-select \.inst-select__input\s*\{[^}]*font-size:\s*16px/);
+    expect(kit).toMatch(/\.inst-slider \.inst-slider__input\s*\{[^}]*font-size:\s*16px/);
   });
 
   it("gives every control a 44px floor, the select included", () => {
-    for (const selector of ["\\.relief__button", "\\.relief__file", "\\.relief__select"]) {
-      expect(css, selector).toMatch(new RegExp(`${selector}[^}]*min-height:\\s*44px`));
+    expect(css).toMatch(/\.relief__button[^}]*min-height:\s*44px/);
+    expect(css).toMatch(/\.relief__input[^}]*min-height:\s*44px/);
+    for (const selector of [".inst-select .inst-select__input", ".inst-slider .inst-slider__input", ".inst-picker__button", ".inst-export__btn"]) {
+      const block = new RegExp(`${selector.replace(/\./g, "\\.")}\\s*\\{[^}]*min-height:\\s*44px`);
+      expect(kit, selector).toMatch(block);
     }
+  });
+
+  it("no longer tints a stock range with an accent colour", () => {
+    expect(css).not.toContain("accent-color");
   });
 
   it("stops the plate pushing the page sideways at 320", () => {

@@ -6,25 +6,6 @@ import type { ToolEntry } from "./types";
  * key and the component looks the sentence up, so no sentence is ever built
  * inside a function that is supposed to be arithmetic.
  */
-export const relief: ToolEntry = {
-  slug: "relief",
-  name: "Relief",
-  blurb:
-    "Turn a year of your activity into a contour landscape, then take it away as an image, a pen-plotter drawing or a 3D mesh.",
-  privacy: "browser",
-  privacyLine:
-    "Runs in your browser. CSV contents and generated exports are never sent over the network. On the GitHub path, your browser sends the username and pasted token directly to api.github.com; the token is never written to storage.",
-  cantSee: [
-    "Private repositories, unless the token you paste can read them. With no token at all GitHub's limits are far too tight for a year of commits, which is the whole reason the field is there.",
-    "What time it was anywhere but where the author was sitting. The row is the hour off the commit's own local clock, offset and all, and that is deliberate: a laptop set to the wrong zone, or a fortnight abroad, moves the ground.",
-    "A year with fewer than 150 events, or fewer than 30 occupied cells. It refuses instead of drawing, because contours around a handful of cells are noise with rings on them.",
-    "Work. A commit is a commit: a rebase, a squash or a bulk import lands as a ridge at the hour it was replayed, not the hour it was written.",
-    "The zone a CSV was written in. A date with no offset is read as it is typed, so a spreadsheet exported in one country and read in another draws the same ground either way.",
-    "Whether a physical plotter, slicer or printer accepts an export. The page checks the SVG's units and strokes, and the STL's binary layout and closed directed edges, but no physical machine was part of that check.",
-  ],
-  status: "live",
-  order: 40,
-};
 
 /**
  * The tool's own words. `refusal` is keyed by what the pure guard returns, so
@@ -112,3 +93,25 @@ export const reliefCopy = {
     export: "That export could not be made. Nothing was uploaded; try the file again.",
   },
 } as const;
+
+export const relief: ToolEntry = {
+  slug: "relief",
+  name: "Relief",
+  blurb:
+    "Turn a year of your activity into a contour landscape, then take it away as an image, a pen-plotter drawing or a 3D mesh.",
+  purpose: "Turn a year of dated activity into contour ground, then take it away as an image, a plot or a mesh.",
+  privacy: "browser",
+  privacyLine:
+    "Runs in your browser. CSV contents and generated exports are never sent over the network. On the GitHub path, your browser sends the username and pasted token directly to api.github.com; the token is never written to storage.",
+  cantSee: [
+    "Private repositories, unless the token you paste can read them. With no token at all GitHub's limits are far too tight for a year of commits, which is the whole reason the field is there.",
+    "What time it was anywhere but where the author was sitting. The row is the hour off the commit's own local clock, offset and all, and that is deliberate: a laptop set to the wrong zone, or a fortnight abroad, moves the ground.",
+    "A year with fewer than 150 events, or fewer than 30 occupied cells. It refuses instead of drawing, because contours around a handful of cells are noise with rings on them.",
+    "Work. A commit is a commit: a rebase, a squash or a bulk import lands as a ridge at the hour it was replayed, not the hour it was written.",
+    "The zone a CSV was written in. A date with no offset is read as it is typed, so a spreadsheet exported in one country and read in another draws the same ground either way.",
+    "Whether a physical plotter, slicer or printer accepts an export. The page checks the SVG's units and strokes, and the STL's binary layout and closed directed edges, but no physical machine was part of that check.",
+  ],
+  method: [reliefCopy.method, reliefCopy.plotterNote, reliefCopy.stlNote],
+  status: "live",
+  order: 40,
+};
