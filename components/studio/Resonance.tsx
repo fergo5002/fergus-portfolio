@@ -435,14 +435,21 @@ export default function Resonance() {
         return;
       }
       context.strokeStyle = ink;
+      context.fillStyle = ink;
       context.shadowColor = ink;
       context.shadowBlur = 8;
       context.lineCap = "round";
-      for (let i = 1; i < live.length; i++) {
-        const a = live[i - 1];
+      // Each point is a spot of light and each gap between two is a stroke,
+      // so a lone point still glows when frames are far apart.
+      for (let i = 0; i < live.length; i++) {
         const b = live[i];
         context.globalAlpha = trailAlpha(now - b.t, TRAIL_LIFE);
         context.lineWidth = 1 + 3 * context.globalAlpha;
+        context.beginPath();
+        context.arc(b.x * box.width, b.y * box.height, 1 + 2 * context.globalAlpha, 0, Math.PI * 2);
+        context.fill();
+        if (!i) continue;
+        const a = live[i - 1];
         context.beginPath();
         context.moveTo(a.x * box.width, a.y * box.height);
         context.lineTo(b.x * box.width, b.y * box.height);

@@ -6,7 +6,8 @@
  * rebuilding one studio each can change that studio's boundaries without
  * touching anyone else's. Same interface as before: `LAB_URL` and
  * `STUDIO_PREFIX` in the environment. An optional first argument runs only
- * the studio whose module name contains it (atlas, group-lore, pocket-redact).
+ * the studio whose module name contains it (atlas, group-lore, pocket-redact,
+ * resonance).
  */
 import { chromium } from "playwright";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -15,11 +16,13 @@ import assert from "node:assert/strict";
 import atlas from "./studio-boundaries/atlas.mjs";
 import groupLore from "./studio-boundaries/group-lore.mjs";
 import pocketRedact from "./studio-boundaries/pocket-redact.mjs";
+import resonance from "./studio-boundaries/resonance.mjs";
 
 const STUDIOS = [
   ["atlas", atlas],
   ["group-lore", groupLore],
   ["pocket-redact", pocketRedact],
+  ["resonance", resonance],
 ];
 
 const base = process.env.LAB_URL || "http://127.0.0.1:3106",

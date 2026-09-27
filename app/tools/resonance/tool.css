@@ -290,6 +290,11 @@
   border-radius: var(--radius);
 }
 .reso .inst-knob { --knob: 46px; min-width: 66px; }
+/* The seven sound knobs share the row; the chosen voice's four sit together at its end. */
+.reso__dials > .inst-knob { flex: 1 1 0; }
+/* The four sound worlds span the width under the play key and the scope. */
+.reso__worlds .inst-seg { width: 100%; }
+.reso__worlds .inst-seg__opt { flex: 1 1 auto; }
 .reso__voice-dials {
   display: flex;
   flex-wrap: wrap;
