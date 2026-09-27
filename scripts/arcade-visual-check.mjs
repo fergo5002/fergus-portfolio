@@ -14,7 +14,10 @@ try {
   await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
   await page.locator(".arcade-entrance").waitFor();
   await page.screenshot({ path: resolve(out, "01-arrival.png") });
-  await page.getByRole("button", { name: /skip/i }).click();
+  // On a software-rendered headless page the screenshot above can outlast the entrance's
+  // own nine-second watchdog, so skip only if it is still running.
+  await page.getByRole("button", { name: /skip/i }).click({ timeout: 3000 }).catch(() => {});
+  await page.locator(".arcade-entrance").waitFor({ state: "detached", timeout: 15000 });
   await page.locator(".arcade-cabinet").first().waitFor();
   await page.screenshot({ path: resolve(out, "02-gallery.png") });
   const evidence = [];

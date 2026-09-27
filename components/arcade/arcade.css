@@ -18,6 +18,15 @@ html.arcade-open .statusbar {
 html.arcade-entering .nav {
   visibility: hidden;
 }
+/* No burn-in protection over a room that is always moving (attract screens or
+   a game). It also could not tell a keyboard player from an idle one: the
+   room's keydown handler stops propagation, so the screensaver's window
+   listener never hears a key, and measured on 2026-09-27 it came up over a
+   running game after 45 seconds of keys. The root cause is in
+   components/system/Screensaver.tsx (it listens in the bubble phase). */
+html.arcade-open .saver {
+  visibility: hidden;
+}
 
 /* ----- the room --------------------------------------------------------- */
 .arcade-room {

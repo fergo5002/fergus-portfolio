@@ -230,6 +230,10 @@ describe("the room sits inside the tube", () => {
     expect(room).toMatch(/classList\.remove\("arcade-open"\)/);
   });
 
+  it("keeps the screensaver off a room that is always moving, since it cannot hear the room's keys", () => {
+    expect(css).toMatch(/html\.arcade-open \.saver \{\s*visibility: hidden;\s*\}/);
+  });
+
   it("puts focus on the stage when a game starts, never on the back button", () => {
     // The first Space is the launch key. With the back button under focus it was "all cabinets".
     expect(room).toMatch(/screen\.kind === "play" \? "\.arcade-stage"/);
@@ -400,7 +404,7 @@ describe("a game view without the header bar", () => {
 
   it("gives a screen reader the HUD through a hidden status line, written through a ref about once a second", () => {
     expect(game).toMatch(/<p className="arcade-status vh" role="status" aria-live="polite" aria-atomic="true" ref=\{statusRef\} \/>/);
-    expect(frameCallback(game)).toMatch(/if \(statusClock >= 1000 && statusRef\.current\) \{/);
+    expect(frameCallback(game)).toMatch(/if \(\(time - statusAt >= 1000 \|\| state\.phase !== statusPhase\) && statusRef\.current\) \{/);
     expect(frameCallback(game)).toMatch(/statusRef\.current\.textContent = statusLine\(/);
     expect(game).not.toMatch(/arcade-live-hud/);
   });

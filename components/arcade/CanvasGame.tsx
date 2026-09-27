@@ -152,7 +152,10 @@ export default function CanvasGame({ cabinet, seed, replay, theme, boards, onBac
     const ghostCanvas = document.createElement("canvas");
     const ghost = ghostCanvas.getContext("2d");
     const run = runRef.current!;
-    let live = true, acc = 0, finished = false, lastSeq = run.game.eventSeq, statusClock = 1000;
+    // The status line runs on wall time (the frame's own timestamp), not on frame deltas:
+    // SystemProvider caps a delta at 64ms, so on a slow device a second of deltas is several
+    // seconds of real time, and a screen reader lives in real time.
+    let live = true, acc = 0, finished = false, lastSeq = run.game.eventSeq, statusAt = -Infinity, statusPhase = "";
     let lastLabel: string | null = null, lastPhase = run.phase;
     let rect = canvas.getBoundingClientRect(), rectStale = true;
     const view = () => ({ stage: stageFor(cabinet.id, kindRef.current), ghost, touch: coarse, face: cabinet, words: screenCopy });
@@ -168,7 +171,7 @@ export default function CanvasGame({ cabinet, seed, replay, theme, boards, onBac
     window.addEventListener("scroll", onScroll, { passive: true, capture: true });
     stageRef.current?.focus(); audio.relay();
     const play = (name: GameSound) => { if (name === "hurt") audio.thud(); else if (name === "score") audio.key(); else if (name === "start") audio.relay(); else audio.hover(); };
-    const unsubscribe = onFrame((_time, dt) => {
+    const unsubscribe = onFrame((time, dt) => {
       if (!live) return;
       const state = runRef.current!;
       acc = Math.min(100, acc + dt);
@@ -200,9 +203,9 @@ export default function CanvasGame({ cabinet, seed, replay, theme, boards, onBac
           });
         }
       }
-      statusClock += dt;
-      if (statusClock >= 1000 && statusRef.current) {
-        statusClock = 0;
+      if ((time - statusAt >= 1000 || state.phase !== statusPhase) && statusRef.current) {
+        statusAt = time;
+        statusPhase = state.phase;
         const hud = gameHud(state.game);
         statusRef.current.textContent = statusLine({
           title: cabinet.title, phase: state.phase, score: state.game.score, paused: state.paused,
