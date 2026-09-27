@@ -1,0 +1,31 @@
+/* Pixel sprites. Tones resolve to the element's current phosphor, so a theme
+   change reaches the art with no colour of its own in here. */
+.pixel { display: block; overflow: visible; }
+.pixel__ink { fill: currentColor; }
+.pixel__bright { fill: var(--pixel-bright, currentColor); }
+.pixel__mid { fill: currentColor; fill-opacity: .55; }
+.pixel__faint { fill: currentColor; fill-opacity: .2; }
+
+/* At rest, and always under reduced motion, frame 0 is the picture. */
+.pixel__frame--1 { visibility: hidden; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A two-frame boil: the frames swap on a hard step, the way a sprite does,
+     never a crossfade. */
+  .pixel--boil .pixel__frame--0 { animation: pixel-frame-a var(--pixel-period, 1.2s) steps(1, end) infinite; }
+  .pixel--boil .pixel__frame--1 { visibility: visible; animation: pixel-frame-b var(--pixel-period, 1.2s) steps(1, end) infinite; }
+  @keyframes pixel-frame-a { 0%, 49.9% { visibility: visible; } 50%, 100% { visibility: hidden; } }
+  @keyframes pixel-frame-b { 0%, 49.9% { visibility: hidden; } 50%, 100% { visibility: visible; } }
+
+  /* A ring is two bursts and a rest, not a buzz. */
+  .pixel--ring .pixel__frame--0 { animation: pixel-ring-a 1.3s steps(1, end) infinite; }
+  .pixel--ring .pixel__frame--1 { visibility: visible; animation: pixel-ring-b 1.3s steps(1, end) infinite; }
+  @keyframes pixel-ring-a {
+    0%, 7.9% { visibility: hidden; } 8%, 15.9% { visibility: visible; }
+    16%, 23.9% { visibility: hidden; } 24%, 100% { visibility: visible; }
+  }
+  @keyframes pixel-ring-b {
+    0%, 7.9% { visibility: visible; } 8%, 15.9% { visibility: hidden; }
+    16%, 23.9% { visibility: visible; } 24%, 100% { visibility: hidden; }
+  }
+}
