@@ -116,10 +116,11 @@ marked `is-unseen` and paints in when reached, and the page-title and hero scram
 A view-triggered scramble gets the same rect check. The proof is a headed-browser timeline of
 the title text from navigation start: one entry, not a flip to glyphs at 2.5 seconds.
 
-**Two boots.** `lib/boot.ts` now carries `FULL_BOOT` and `PHONE_BOOT` (one head line, two device
-lines, a floor near two seconds) and `pickBootProfile` chooses by coarse pointer or width under
-768. `BOOT_FLOOR_MS` is the full profile's floor and is unchanged. The ownership rules above are
-untouched by this: both profiles boot the same way, one is shorter.
+**Two boots.** `lib/boot.ts` carries `FULL_BOOT` (about 7.3 seconds) and `PHONE_BOOT` (one head
+line, three device lines, no memory test, about 3.8 seconds, inside the 3.2 to 3.9 second window
+Fergus approved on 2026-09-13), and `pickBootProfile` chooses by coarse pointer or width under
+768. `BOOT_FLOOR_MS` is the full profile's floor. The ownership rules below are untouched by
+this: both profiles boot the same way, one is shorter.
 
 **And never disallow `/_next/` in `robots.txt`.** The inline pre-paint script adds `booting` to
 `<html>` on the landing page, `.booting` hides the content, and `BootSequence` is what clears it
@@ -131,8 +132,10 @@ rather than removing it. It is not a licence to block scripts.
 ownership table is in `lib/boot.ts` and it is four rows, not two. Read it before touching the boot
 path. Two rules came out of getting it wrong, both of which shipped:
 
-- **Never tune a delay to outlast the animation.** The sequence is ~430 chained `setTimeout` ticks
-  and a hidden tab clamps each to about a second, so its wall-clock length is unbounded. A 4000ms
+- **Never tune a delay to outlast the animation.** The sequence was ~430 chained `setTimeout` ticks
+  until 2026-09-27 (it is now `bootTimeline`, read off the frame clock, and a tab with no frames
+  is what the watchdog is for), and a hidden tab clamps each to about a second, so its wall-clock
+  length was unbounded. A 4000ms
   failsafe against a 6418ms floor revealed the landing page underneath a still-typing BIOS screen
   on every first visit. The failsafe answers "did the JavaScript arrive", nothing else, and
   `BOOT_FLOOR_MS` is deliberately not an input to it.
@@ -306,6 +309,30 @@ brought with it:
   path as a failed `cd`, a real heading. `scripts/not-found-check.mjs` proves the 404 and runs
   in the phone job; `scripts/phone-check.mjs` reads any 4xx document as a broken asset, so the
   page stays out of it.
+- **The boot is a timeline on the one frame clock** (2026-09-27). `bootTimeline(profile, ms)` in
+  `lib/boot.ts` is a pure function of elapsed time, so a slow machine lands the same words at the
+  same moments in fewer frames and a returning tab catches up; `BootSequence` writes it through
+  refs and never starts a loop of its own. It mounts `/usr/tighsauna`; `presterly` must never
+  come back (`lib/boot.test.ts`). The POST reads the visitor's own machine (`lib/post.ts`: cores,
+  display, refresh rate from frame gaps, locale and zone), client-only, never stored or sent, and
+  the overlay carries `ph-no-capture` so autocapture cannot lift those readings off a skip click.
+  `scripts/boot-check.mjs` proves that with a forced core count and time zone searched for in
+  every `/ingest` body (a local run: it needs a build with a PostHog key). `finish()` unsubscribes
+  from the frame clock before anything else: left running, the timeline carried on behind the
+  revealed page and a skip mid-trace kept drawing the mark for 600ms.
+- **The beam hook: drawing with the gun, not the page** (`lib/beam.ts`). The frame carries a
+  polyline (`beamPts`, `beamCount`, `beamGain`); the sim pass deposits a capsule of energy around
+  it (never burn-in) and clears it. A writer extends a path the tube has not drawn yet and never
+  overwrites it, and gains come from `beamGainFor` or `beamHoldGain` so the light is the same at
+  30 and 165 frames a second. Measure brightness with `gl.readPixels`, never by eye. To see the
+  beam from a browser check, watch `uBeamGain` uploads, not `uBeamCount`: ogl uploads a uniform
+  only when it changes, and a writer that always sends full strokes leaves the count unchanged.
+  The boot's mark and the screensaver both draw through it.
+- **The screensaver is an oscilloscope** (`lib/lissajous.ts`). After 45 idle seconds the page
+  steps aside (`html.is-saving`, like `.booting`) and the beam retraces a slowly retuning
+  Lissajous figure; with no WebGL or the CRT off, the old plate bounces instead. Its idle
+  listeners are capture-phase, because the arcade stops keydown bubbling, and it never starts
+  while the arcade is open. `scripts/saver-check.mjs` skips the wait with Playwright's fake clock.
 - **The experience log's marker, short hash and `(HEAD -> main)` are drawn by CSS**
   (`lib/commit-hash.ts` feeds a `--hash` property). The old `● commit` was a text node in front
   of every entry.
@@ -507,7 +534,7 @@ components/
                 Screensaver, RouteTransition, EjectRig
   physics/      GravityStage (measures the page, drops it, puts it back)
   motion/       RasterReveal (the house reveal), HeroName, TiltCard, Magnetic, TimelineSpine
-  *.tsx         CrtShell, Nav, BootSequence, Typewriter, Terminal, Window, ImageFrame,
+  *.tsx         CrtShell, Nav, BootSequence, Terminal, Window, ImageFrame,
                 SignalPlate, PromptLine, ProjectCard, ExperienceItem, Scramble
 content/        profile.ts, experience.ts, projects.ts, skills.ts   <-- edit content here
 lib/            commands.ts (pure terminal parser + tab completion), system.ts (bus types,

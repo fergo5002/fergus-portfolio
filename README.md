@@ -65,9 +65,16 @@ one frame clock, glass layers and reduced-motion behaviour.
 node scripts/revision-check.mjs
 node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap
 node scripts/phone-polish-check.mjs --base http://localhost:3000
+REVISION_BASE=http://localhost:3000 node scripts/boot-check.mjs
+REVISION_BASE=http://localhost:3000 node scripts/saver-check.mjs
 node scripts/mutation-check.mjs
 docker build -f Dockerfile.parity -t fergus-portfolio-parity .
 ```
+
+The boot types a BIOS that reads the visitor's own machine and has the beam trace
+the site's mark in one stroke; left idle, the beam draws an oscilloscope figure.
+`boot-check` proves the boot's privacy only against a build with a PostHog key
+(any value); CI runs it with `--no-ingest --no-beam --no-shots`.
 
 `revision-check` defaults to port 3210; set `REVISION_BASE` for another server.
 It sends no live email unless explicitly run with `--send`. A local server with
