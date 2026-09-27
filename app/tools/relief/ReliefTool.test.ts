@@ -318,6 +318,10 @@ describe("the stylesheet", () => {
     expect(css).toMatch(/\.relief__plate\s*\{[^}]*touch-action:\s*pan-y/);
   });
 
+  it("leaves the reading hit-testable, so the phone check can measure its contrast", () => {
+    expect(css).not.toMatch(/\.relief__cell\s*\{[^}]*pointer-events:\s*none/);
+  });
+
   it("writes no small capitals, the other half of an eyebrow", () => {
     expect(css).not.toMatch(/text-transform:\s*uppercase/);
   });

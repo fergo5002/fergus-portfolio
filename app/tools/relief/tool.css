@@ -113,7 +113,10 @@
   pointer-events: none;
 }
 
-/* The reading sits in the band, top left, the way a scope prints its cursor. */
+/* The reading sits in the band, top left, the way a scope prints its cursor.
+   It takes the pointer like any text: it is over the band, never the
+   terrain, and with `pointer-events: none` the phone check's hit test fell
+   through to the frame and left the reading unmeasured. */
 .relief__cell {
   position: absolute;
   top: 1px;
@@ -122,7 +125,6 @@
   align-items: center;
   height: var(--osd);
   padding: 0 16px;
-  pointer-events: none;
   font-family: var(--font-screen);
   font-size: clamp(1.4rem, 2.4vw, 1.75rem);
   line-height: 1;

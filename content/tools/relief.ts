@@ -23,7 +23,7 @@ export const reliefCopy = {
   /** On the stage whenever the demo is what is drawn. Short, because it sits beside the figures. */
   demoCaption: "Generated, not measured: a modelled developer's year.",
   githubHelp:
-    "Your username, and a GitHub token with no scopes ticked. A token with nothing ticked can already read every public repository, which is all this needs unless you want your private ones counted. GitHub makes this path slow; a year usually takes about two minutes.",
+    "Your username and a GitHub token with no scopes ticked, which can already read every public repository. GitHub makes this slow: a year takes about two minutes.",
   tokenLabel: "GitHub token",
   userLabel: "GitHub username",
   drawing: "Reading GitHub. Window {done} of {total}, {commits} commits so far.",
