@@ -18,6 +18,12 @@
   min-width: 0;
 }
 :is(.lab, .tool-studio) .studio.atlas p { margin: 0; }
+/* The server's picture is not a studio (the checks wait for ".studio" to mean
+   the instrument has arrived), so the box model the studio sheet would give
+   these is stated here, where both the picture and the instrument get it. */
+.atlas-stage,
+.atlas-graph,
+.atlas-strip { box-sizing: border-box; }
 
 /* ── the stage: the map, its readouts over it, its controls along it ── */
 
@@ -166,7 +172,7 @@
   gap: 10px;
   flex: 0 1 330px;
   min-width: 0;
-  min-height: 44px;
+  min-height: 46px;
   padding: 0 12px;
   border: 1px solid var(--green-line);
   border-radius: var(--radius);
@@ -190,7 +196,8 @@
   flex: 1 1 auto;
   width: auto;
   min-width: 0;
-  min-height: 42px;
+  height: 44px;
+  min-height: 44px;
   margin: 0;
   padding: 0 0 0 2px;
   border: 0;

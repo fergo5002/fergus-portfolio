@@ -82,6 +82,8 @@ export default [
     "pointing-and-dragging",
     async ({ page, assert }) => {
       await page.evaluate(() => window.scrollTo(0, 0));
+      // Off the map, so nothing is pointed at and every dot is at full ink.
+      await page.mouse.move(2, 2);
       await page.waitForTimeout(400);
       const node = await aNode(page);
       assert(node, "found a node");

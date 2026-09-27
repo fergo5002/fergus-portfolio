@@ -25,7 +25,7 @@ import { WORLD_PAD, boundsOf, nodeRadius, viewBoxFor } from "@/lib/studio/atlas-
 export default function AtlasPoster() {
   const graph = buildGraph(atlasExample);
   return (
-    <div className="studio atlas atlas--poster">
+    <div className="atlas atlas--poster">
       <div className="atlas-stage">
         <div className="atlas-graph">
           <Picture graph={graph} shape="wide" />

@@ -62,6 +62,8 @@ const reading = (page) => page.locator(".atlas-reading").first();
  */
 export default async function atlas({ page, open, button, save, assert }) {
   await open("atlas");
+  // Before hydration the stage holds the server's picture of the map; wait for the instrument.
+  await page.locator(".atlas-canvas").waitFor();
   assert.equal(await page.locator(".atlas-canvas").count(), 1);
   await page.waitForFunction(() => document.querySelector(".atlas-reading")?.dataset.files === "34");
   assert.match(await reading(page).textContent(), /^Example notebook · 34 files · 32 read · \d+ connections$/);

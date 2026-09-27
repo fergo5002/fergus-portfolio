@@ -239,6 +239,13 @@ describe("the picture the server draws before the script arrives", () => {
     for (const part of ['class="atlas-stage"', 'class="atlas-graph"', 'class="atlas-strip"']) expect(poster).toContain(part);
     expect(poster).not.toMatch(/<(button|input|select)\b/);
   });
+
+  it("is not a studio, so nothing waiting for the instrument mistakes the picture for it", () => {
+    // The browser checks open a studio by waiting for ".studio"; the picture
+    // answering to it let one count the canvas before hydration (0, not 1).
+    expect(poster).not.toMatch(/class="[^"]*\bstudio\b/);
+    expect(html).toMatch(/^<div class="studio atlas"/);
+  });
 });
 
 describe("the parts rendering cannot see", () => {

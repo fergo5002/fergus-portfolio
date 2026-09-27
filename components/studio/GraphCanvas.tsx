@@ -497,10 +497,12 @@ export default function GraphCanvas({
     pings.current = pings.current.filter((p) => time - p.start < p.dur);
 
     // Trails: while a hand is on the map or it is still settling, whatever
-    // moved on the glass leaves its ghost.
+    // moved on the glass leaves its ghost. Batched into one path per colour
+    // and width, so a thousand moving dots are a handful of strokes.
     const seen = lastSeen.current;
     let budget = MAX_TRAILS;
     const dragged = held.current?.node?.id;
+    const batches = new Map<string, { colour: string; width: number; alpha: number; path: Point[] }>();
     for (const n of nodes.current) {
       const p = screenOf(n);
       const was = seen.get(n.id);
@@ -510,7 +512,23 @@ export default function GraphCanvas({
       budget--;
       const r = Math.min(16, Math.max(2, nodeRadius(n) * camera.current.k));
       const mine = n.id === dragged;
-      segment(g, was, p, mine ? pal.bright : n.kind === "folder" ? pal.accent : pal.ink, r * 1.6, mine ? 0.5 : 0.22);
+      const colour = mine ? pal.bright : n.kind === "folder" ? pal.accent : pal.ink;
+      const width = Math.round(r * 1.6);
+      const key = `${colour}|${width}|${mine}`;
+      const batch = batches.get(key) ?? { colour, width, alpha: mine ? 0.5 : 0.22, path: [] };
+      batch.path.push(was, p);
+      batches.set(key, batch);
+    }
+    for (const b of batches.values()) {
+      g.strokeStyle = b.colour;
+      g.lineWidth = b.width;
+      g.globalAlpha = b.alpha;
+      g.beginPath();
+      for (let i = 0; i < b.path.length; i += 2) {
+        g.moveTo(b.path[i].x, b.path[i].y);
+        g.lineTo(b.path[i + 1].x + 0.01, b.path[i + 1].y);
+      }
+      g.stroke();
       deposited = true;
     }
     g.globalAlpha = 1;
