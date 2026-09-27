@@ -30,7 +30,8 @@ try {
     // The assertion is that focus ENDS on the stage after start. Waiting for it (rather than
     // pressing at once) closes the gap where Space could fire before either focus effect ran
     // and pass for the wrong reason; on the old code this times out on the back button.
-    await page.waitForFunction(() => document.activeElement?.classList.contains("arcade-stage"), null, { timeout: 3000 })
+    // Ten seconds, not three: a software-rendered page on a busy machine can take four seconds to answer at all.
+    await page.waitForFunction(() => document.activeElement?.classList.contains("arcade-stage"), null, { timeout: 10000 })
       .catch(() => { throw new Error(`${id}: focus did not land on the stage after start `); });
     await page.keyboard.press("Space");
     await page.waitForTimeout(200);
