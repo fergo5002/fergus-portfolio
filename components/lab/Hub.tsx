@@ -16,17 +16,15 @@ export default function Hub() {
         <span>12 / 12</span>
       </div>
       <header className="lab-hero">
-        <p>FergusOS / lab</p>
         <h1>{c.title}</h1>
         <p>{c.intro}</p>
       </header>
       <div className="lab-featured">
         {["atlas", "group-lore", "pocket-redact", "prove-it", "resonance"].map(
-          (slug, i) => {
+          (slug) => {
             const tool = labTools.find((t) => t.slug === slug)!;
             return (
               <Link key={slug} href={`/lab/${slug}`}>
-                <b>STUDIO {String(i + 1).padStart(2, "0")}</b>
                 <strong>{tool.name}</strong>
                 <span>{tool.hook}</span>
                 <b>Explore →</b>

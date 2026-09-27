@@ -335,13 +335,10 @@ export const studioCases: InvestigationCase[] = [
   },
 ];
 export const detectiveCopy = {
-  eyebrow: "PROVE IT / THE EVIDENCE ROOM",
-  title: "A good hunch is only the beginning.",
-  intro:
-    "Spend a small investigation budget. Find what would change your mind. Then put your confidence on the record.",
   library: "Case files",
   daily: "Today’s case",
   open: "Open case",
+  choose: "Choose case",
   brief: "The brief",
   hypotheses: "Competing explanations",
   confidence: "Confidence in your selected explanation",
@@ -353,12 +350,42 @@ export const detectiveCopy = {
   again: "Reopen this case",
   next: "Next unsolved case",
   download: "Download case report",
+  exports: "Keep this case",
   cost: "credits",
   prediction: "Before you test: what result would change your mind?",
   predictionPlaceholder:
     "Write a prediction or a result that would rule out your explanation…",
-  debrief: "Case debrief",
   history: "How your belief changed",
-  limits:
-    "These are authored puzzles with simplified, deterministic evidence. Replaying a known case changes the challenge. Progress stays in this tab unless you download a report.",
+  answer: "The explanation",
+  standing: "Not excluded by your evidence",
+  excluded: "Excluded by your evidence",
+  inNotebook: "In notebook",
+  found: "You found it. And you can show why.",
+  thin: "Right answer. The evidence is still thin.",
+  wrong: "A useful wrong turn.",
+  score: "Case score",
+  evidence: "Evidence",
+  distinguishing: "Distinguishing",
+  remain: (n: number) => `${n} explanations remain`,
+  confidenceScore: "Confidence score",
+  solved: (points: number) => `${points} points · reviewed`,
+  unsolved: (credits: number) => `${credits} credits · unsolved`,
 };
+
+/** Supporting labels for Prove It. Read through studioLabels.ProveIt. */
+export const proveItLabels = {
+  case: "Case ",
+  today: " · today",
+  of: "of ",
+  creditsLeft: " credits left",
+  yourPrediction: "Your prediction: ",
+  beforeThisTestExplanation: "Before this test: explanation ",
+  confidence: "% confidence",
+  whatEachExplanationPredicted: "What each explanation predicted",
+  investigation: "Investigation",
+  explanation: "Explanation ",
+  beforeTest: "Before test ",
+  at: " at ",
+  final: "Final: ",
+  at2: " at ",
+} as const;

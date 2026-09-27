@@ -24,12 +24,12 @@ import {
 import {
   Button,
   Field,
-  FileInput,
   NumberField,
   ErrorMessage,
   download,
 } from "@/components/lab/shared";
-import { StudioIntro, Toggle, Range } from "./Furniture";
+import { DropSlot, ExportBar, Segmented, Slider, useIntake } from "@/components/instrument";
+import { Press } from "./Furniture";
 type Drag = {
   x: number;
   y: number;
@@ -161,7 +161,7 @@ export default function PocketRedact() {
         : moveMask(d.rect, p.x - d.x, p.y - d.y, page.width, page.height);
     return normaliseRect(d.x, d.y, p.x, p.y, page.width, page.height);
   }
-  async function example() {
+  async function example(signal?: AbortSignal) {
     const canvas = document.createElement("canvas");
     canvas.width = 900;
     canvas.height = 1160;
@@ -186,7 +186,8 @@ export default function PocketRedact() {
     ctx.strokeStyle = "#bbb";
     ctx.strokeRect(50, 50, 800, 1060);
     const blob = await canvasBlob(canvas);
-    if (!mounted.current) return;
+    // A file chosen while the example was drawing wins: never load over it.
+    if (!mounted.current || signal?.aborted) return;
     load([
       {
         url: URL.createObjectURL(blob),
@@ -198,39 +199,34 @@ export default function PocketRedact() {
       },
     ]);
   }
+  const intake = useIntake({
+    accept: ".pdf,.png,.jpg,.jpeg,.webp,.avif,.bmp",
+    disabled: !!progress,
+    onFiles: ([file]) =>
+      void run(async (signal) => {
+        if (file.size > 40_000_000) throw new Error("File limit: 40 MB.");
+        const next = file.name.toLowerCase().endsWith(".pdf")
+          ? await readPdf(new Uint8Array(await file.arrayBuffer()), setProgress, signal)
+          : await readImage(file);
+        if (signal.aborted || !mounted.current) {
+          releasePages(next);
+          return;
+        }
+        load(next);
+      }),
+  });
+  // The instrument opens on its example, so the page is never an empty form.
+  useEffect(() => {
+    void run(example);
+    // Once, on mount: run and example read refs, not render state.
+  }, []);
   return (
-    <div className="lab-work studio studio-redact">
-      <StudioIntro eyebrow={c.eyebrow} title={c.title} intro={c.intro} />
-      <div className="studio-drop">
-        <div className="studio-toolbar">
-          <FileInput
-            label={c.upload}
-            disabled={!!progress}
-            accept=".pdf,.png,.jpg,.jpeg,.webp,.avif,.bmp"
-            onFile={(file) =>
-              run(async (signal) => {
-                if (file.size > 40_000_000)
-                  throw new Error("File limit: 40 MB.");
-                const next = file.name.toLowerCase().endsWith(".pdf")
-                  ? await readPdf(
-                      new Uint8Array(await file.arrayBuffer()),
-                      setProgress,
-                      signal,
-                    )
-                  : await readImage(file);
-                if (signal.aborted || !mounted.current) {
-                  releasePages(next);
-                  return;
-                }
-                load(next);
-              })
-            }
-          />
-          <Button disabled={!!progress} onClick={() => run(example)}>
-            {c.example}
-          </Button>
-        </div>
-        <p>{c.limits}</p>
+    <div className="lab-work studio studio-redact" {...intake.stageProps}>
+      <div className="studio-intake">
+        <DropSlot intake={intake} id="redact-file" label={c.upload} hint={c.limits} />
+        <Button disabled={!!progress} onClick={() => run(example)}>
+          {c.example}
+        </Button>
       </div>
       <ErrorMessage error={error} />
       {progress && (
@@ -243,20 +239,20 @@ export default function PocketRedact() {
       {page && !previews.length && (
         <>
           <div className="studio-toolbar">
-            <Toggle
+            <Press
               active={mode === "draw"}
               onClick={() => setMode("draw")}
               disabled={!!progress}
             >
               {c.draw}
-            </Toggle>
-            <Toggle
+            </Press>
+            <Press
               active={mode === "select"}
               onClick={() => setMode("select")}
               disabled={!!progress}
             >
               {c.select}
-            </Toggle>
+            </Press>
             <Button
               disabled={!history.past.length || !!progress}
               onClick={undo}
@@ -272,14 +268,15 @@ export default function PocketRedact() {
             <Button disabled={selected < 0 || !!progress} onClick={remove}>
               {c.delete}
             </Button>
-            <Range
+            <Slider
               label={c.zoom}
               min={50}
               max={250}
               step={10}
               value={zoom}
-              display={`${zoom}%`}
+              format={(v) => `${v}%`}
               onChange={setZoom}
+              className="redact-zoom"
             />
             <Button onClick={() => setZoom(100)}>{c.fit}</Button>
           </div>
@@ -478,16 +475,17 @@ export default function PocketRedact() {
             </div>
             <aside className="redact-inspector">
               <h3>{c.search}</h3>
-              <Field label={c.searchType}>
-                <select
-                  value={findMode}
-                  onChange={(e) => setFindMode(e.target.value)}
-                >
-                  <option value="text">{ui.exactText}</option>
-                  <option value="email">{ui.emailLikeText}</option>
-                  <option value="phone">{ui.phoneLongNumbers}</option>
-                </select>
-              </Field>
+              <Segmented
+                label={c.searchType}
+                size="sm"
+                value={findMode}
+                onChange={setFindMode}
+                options={[
+                  { value: "text", label: ui.exactText },
+                  { value: "email", label: ui.emailLikeText },
+                  { value: "phone", label: ui.phoneLongNumbers },
+                ]}
+              />
               {findMode === "text" && (
                 <Field label={c.search}>
                   <input
@@ -599,33 +597,34 @@ export default function PocketRedact() {
             >
               {c.export}
             </Button>
-            <Button
-              disabled={!!progress}
-              onClick={() =>
-                run(async (signal) => {
-                  const canvas = await flatten(page, rects),
-                    blob = await canvasBlob(canvas);
-                  signal.throwIfAborted();
-                  download("redacted-page.png", blob);
-                  canvas.width = 0;
-                })
-              }
-            >
-              {c.png}
-            </Button>
+            <ExportBar
+              label={c.exports}
+              actions={[
+                {
+                  label: c.png,
+                  kind: "png",
+                  disabled: !!progress,
+                  onClick: () =>
+                    void run(async (signal) => {
+                      const canvas = await flatten(page, rects),
+                        blob = await canvasBlob(canvas);
+                      signal.throwIfAborted();
+                      download("redacted-page.png", blob);
+                      canvas.width = 0;
+                    }),
+                },
+              ]}
+            />
           </div>
         </>
       )}
       {previews.length > 0 && (
         <section className="redact-review">
-          <StudioIntro
-            eyebrow="EXPORT / PIXEL REVIEW"
-            title={c.review}
-            intro={c.reviewNote}
-          />
+          <h3>{c.review}</h3>
+          <p className="studio-note">{c.reviewNote}</p>
           <div className="studio-toolbar">
             {previews.map((_, i) => (
-              <Toggle
+              <Press
                 key={i}
                 active={reviewIndex === i}
                 onClick={() => setReviewIndex(i)}
@@ -633,7 +632,7 @@ export default function PocketRedact() {
                 {ui.page}
                 {i + 1}
                 {reviewed.includes(i) ? " ✓" : ""}
-              </Toggle>
+              </Press>
             ))}
           </div>
           <img

@@ -14,12 +14,12 @@ import { importFiles, importGithub, droppedFiles } from "@/lib/studio/intake";
 import {
   Button,
   Field,
-  FileInput,
   ErrorMessage,
   jsonDownload,
   Metrics,
 } from "@/components/lab/shared";
-import { StudioIntro, Toggle } from "./Furniture";
+import { DropSlot, ExportBar, FilePicker, Select, useIntake } from "@/components/instrument";
+import { Press } from "./Furniture";
 import GraphCanvas from "./GraphCanvas";
 const c = studioCopy.atlas;
 export default function Atlas() {
@@ -34,16 +34,13 @@ export default function Atlas() {
     [error, setError] = useState(""),
     [progress, setProgress] = useState(""),
     [limit, setLimit] = useState(60),
-    [over, setOver] = useState(false),
     [media, setMedia] = useState<Record<string, { url: string; kind: string }>>(
       {},
     ),
     mediaRef = useRef<Record<string, { url: string; kind: string }>>({}),
     controller = useRef<AbortController | null>(null),
-    worker = useRef<Worker | null>(null),
-    folder = useRef<HTMLInputElement>(null);
+    worker = useRef<Worker | null>(null);
   useEffect(() => {
-    folder.current?.setAttribute("webkitdirectory", "");
     return () => {
       controller.current?.abort();
       worker.current?.terminate();
@@ -68,6 +65,26 @@ export default function Atlas() {
     connected = graph.links.filter(
       (l) => l.source === selected || l.target === selected,
     );
+  const intake = useIntake({
+    multiple: true,
+    disabled: !!progress,
+    onFiles: (list) =>
+      void run((signal, onMedia) => importFiles(list, setProgress, signal, onMedia)),
+    // Folders arrive as DataTransfer items, which must be read during the drop.
+    onDrop: (data) => {
+      const incoming = droppedFiles(data.items);
+      void run(async (signal, onMedia) => importFiles(await incoming, setProgress, signal, onMedia));
+    },
+  });
+  const mapIntake = useIntake({
+    accept: ".json",
+    disabled: !!progress,
+    onFiles: ([f]) =>
+      void run(async () => {
+        if (f.size > 15_000_000) throw new Error("Saved map limit: 15 MB.");
+        return parseGraph(await f.text());
+      }),
+  });
   async function run(
     loader: (
       signal: AbortSignal,
@@ -140,65 +157,14 @@ export default function Atlas() {
     }
   }
   return (
-    <div className="lab-work studio studio-atlas">
-      <StudioIntro eyebrow={c.eyebrow} title={c.title} intro={c.intro} />
-      <div
-        className={`studio-drop ${over ? "is-over" : ""}`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setOver(true);
-        }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setOver(false);
-          const incoming = droppedFiles(e.dataTransfer.items);
-          void run(async (signal, onMedia) =>
-            importFiles(await incoming, setProgress, signal, onMedia),
-          );
-        }}
-      >
-        <strong>{c.drop}</strong>
-        <div className="studio-toolbar">
-          <Field label={studioCopy.files}>
-            <input
-              type="file"
-              multiple
-              disabled={!!progress}
-              onChange={(e) => {
-                const list = [...(e.target.files ?? [])];
-                e.target.value = "";
-                if (list.length)
-                  void run((signal, onMedia) =>
-                    importFiles(list, setProgress, signal, onMedia),
-                  );
-              }}
-            />
-          </Field>
-          <Field label={studioCopy.folder}>
-            <input
-              ref={folder}
-              type="file"
-              multiple
-              disabled={!!progress}
-              onChange={(e) => {
-                const list = [...(e.target.files ?? [])];
-                e.target.value = "";
-                if (list.length)
-                  void run((signal, onMedia) =>
-                    importFiles(list, setProgress, signal, onMedia),
-                  );
-              }}
-            />
-          </Field>
-          <Button
-            disabled={!!progress}
-            onClick={() => run(async () => atlasExample)}
-          >
-            {studioCopy.example}
-          </Button>
-        </div>
-        <p>{c.limits}</p>
+    <div className="lab-work studio studio-atlas" {...intake.stageProps}>
+      <div className="studio-intake">
+        <DropSlot intake={intake} id="atlas-files" label={studioCopy.files} hint={c.limits}>
+          <FilePicker intake={intake} id="atlas-folder" label={studioCopy.folder} directory variant="quiet" />
+        </DropSlot>
+        <Button disabled={!!progress} onClick={() => run(async () => atlasExample)}>
+          {studioCopy.example}
+        </Button>
       </div>
       <details className="studio-details">
         <summary>{c.github}</summary>
@@ -255,20 +221,19 @@ export default function Atlas() {
             }}
           />
         </Field>
-        <Field label={ui.fileType}>
-          <select
-            value={type}
-            onChange={(e) => {
-              setType(e.target.value);
-              setLimit(60);
-            }}
-          >
-            <option value="all">{ui.allTypes}</option>
-            {[...new Set(graph.nodes.map((n) => n.kind))].sort().map((t) => (
-              <option key={t}>{t}</option>
-            ))}
-          </select>
-        </Field>
+        <Select
+          label={ui.fileType}
+          value={type}
+          onChange={(value) => {
+            setType(value);
+            setLimit(60);
+          }}
+        >
+          <option value="all">{ui.allTypes}</option>
+          {[...new Set(graph.nodes.map((n) => n.kind))].sort().map((t) => (
+            <option key={t}>{t}</option>
+          ))}
+        </Select>
         {(
           [
             ["folder", c.containment],
@@ -276,7 +241,7 @@ export default function Atlas() {
             ["terms", c.terms],
           ] as const
         ).map(([kind, label]) => (
-          <Toggle
+          <Press
             key={kind}
             active={kinds.includes(kind)}
             onClick={() =>
@@ -288,15 +253,15 @@ export default function Atlas() {
             }
           >
             {label}
-          </Toggle>
+          </Press>
         ))}
-        <Toggle
+        <Press
           active={focus}
           disabled={!selected}
           onClick={() => setFocus(!focus)}
         >
           {focus ? c.all : c.focus}
-        </Toggle>
+        </Press>
       </div>
       <div className="atlas-workspace">
         <GraphCanvas
@@ -307,7 +272,6 @@ export default function Atlas() {
           kinds={kinds}
         />
         <aside className="atlas-inspector">
-          <p className="studio-eyebrow">{c.inspect}</p>
           {node ? (
             <>
               <h3>{node.label}</h3>
@@ -415,26 +379,18 @@ export default function Atlas() {
         )}
         {!matches.length && <p>{studioCopy.empty}</p>}
       </details>
-      <div className="studio-toolbar">
-        <Button
-          onClick={() =>
-            jsonDownload("atlas-map.json", { format: "atlas-v1", files })
-          }
-        >
-          {c.export}
-        </Button>
-        <FileInput
-          label={c.load}
-          accept=".json"
-          disabled={!!progress}
-          onFile={(f) =>
-            run(async () => {
-              if (f.size > 15_000_000)
-                throw new Error("Saved map limit: 15 MB.");
-              return parseGraph(await f.text());
-            })
-          }
+      <div className="studio-keep">
+        <ExportBar
+          label={c.exports}
+          actions={[
+            {
+              label: c.export,
+              kind: "json",
+              onClick: () => jsonDownload("atlas-map.json", { format: "atlas-v1", files }),
+            },
+          ]}
         />
+        <DropSlot intake={mapIntake} id="atlas-map" label={c.load} zone />
       </div>
       <p className="studio-note">{c.source}</p>
     </div>

@@ -16,15 +16,9 @@ import {
   type Scale,
 } from "@/lib/studio/music";
 import { createInstrument, renderWav } from "@/lib/studio/audio";
-import {
-  Button,
-  Field,
-  FileInput,
-  ErrorMessage,
-  jsonDownload,
-  download,
-} from "@/components/lab/shared";
-import { StudioIntro, Range, Toggle } from "./Furniture";
+import { Button, ErrorMessage, jsonDownload, download } from "@/components/lab/shared";
+import { DropSlot, ExportBar, Knob, Segmented, useIntake } from "@/components/instrument";
+import { Press } from "./Furniture";
 const c = studioCopy.music;
 type Engine = {
   context: AudioContext;
@@ -258,6 +252,18 @@ export default function Resonance() {
       }),
     [onFrame, reducedMotion],
   );
+  const patchIntake = useIntake({
+    accept: ".json",
+    onFiles: async ([f]) => {
+      try {
+        if (f.size > 50_000) throw new Error("Patch limit: 50 KB.");
+        setPatch(parseStudioPatch(await f.text()));
+        setError("");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      }
+    },
+  });
   function perform(clientX: number, clientY: number) {
     const r = pad.current!.getBoundingClientRect(),
       x = Math.max(0, Math.min(1, (clientX - r.left) / r.width)),
@@ -292,7 +298,6 @@ export default function Resonance() {
         } else if (e.key === "Escape") stop();
       }}
     >
-      <StudioIntro eyebrow={c.eyebrow} title={c.title} intro={c.intro} />
       <div className="music-transport">
         <span
           className={`studio-badge ${playing ? "is-live" : ""}`}
@@ -322,28 +327,24 @@ export default function Resonance() {
           {playing ? c.stop : c.play}
         </Button>
         {!playing && <Button onClick={stop}>{c.stop}</Button>}
-        <Field label={c.preset}>
-          <select
-            value={preset}
-            onChange={(e) => {
-              const n = Number(e.target.value);
-              setPreset(n);
-              setPatch(makePatch(n));
-            }}
-          >
-            {c.presets.map((name, i) => (
-              <option key={name} value={i}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Range
+        <Segmented
+          label={c.preset}
+          size="sm"
+          value={String(preset)}
+          onChange={(value) => {
+            const n = Number(value);
+            setPreset(n);
+            setPatch(makePatch(n));
+          }}
+          options={c.presets.map((name, i) => ({ value: String(i), label: name }))}
+        />
+        <Knob
           label={c.bpm}
           min={40}
           max={180}
           value={patch.bpm}
-          display={`${patch.bpm} BPM`}
+          resetValue={makePatch(preset).bpm}
+          format={(v) => `${v} BPM`}
           onChange={(v) => change("bpm", v)}
         />
       </div>
@@ -409,65 +410,61 @@ export default function Resonance() {
           </button>
         ))}
       </div>
-      <div className="studio-toolbar">
-        <Field label={c.root}>
-          <select
-            value={patch.root}
-            onChange={(e) => {
-              const next = Number(e.target.value);
-              setPatch((p) => ({
-                ...p,
-                root: next,
-                voices: p.voices.map((v) => ({
-                  ...v,
-                  note: quantise(v.note, next, p.scale),
-                })),
-              }));
-            }}
-          >
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i} value={i}>
-                {noteName(60 + i).slice(0, -1)}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label={c.scale}>
-          <select
-            value={patch.scale}
-            onChange={(e) => {
-              const scale = e.target.value as Scale;
-              setPatch((p) => ({
-                ...p,
-                scale,
-                voices: p.voices.map((v) => ({
-                  ...v,
-                  note: quantise(v.note, p.root, scale),
-                })),
-              }));
-            }}
-          >
-            <option value="minor">{ui.minor}</option>
-            <option value="major">{ui.major}</option>
-            <option value="pentatonic">{ui.pentatonic}</option>
-          </select>
-        </Field>
-        <Range
+      <div className="studio-toolbar music-dials">
+        <Knob
+          label={c.root}
+          min={0}
+          max={11}
+          value={patch.root}
+          format={(v) => noteName(60 + v).slice(0, -1)}
+          onChange={(next) =>
+            setPatch((p) => ({
+              ...p,
+              root: next,
+              voices: p.voices.map((v) => ({
+                ...v,
+                note: quantise(v.note, next, p.scale),
+              })),
+            }))
+          }
+        />
+        <Segmented
+          label={c.scale}
+          size="sm"
+          value={patch.scale}
+          onChange={(scale: Scale) =>
+            setPatch((p) => ({
+              ...p,
+              scale,
+              voices: p.voices.map((v) => ({
+                ...v,
+                note: quantise(v.note, p.root, scale),
+              })),
+            }))
+          }
+          options={[
+            { value: "minor", label: ui.minor },
+            { value: "major", label: ui.major },
+            { value: "pentatonic", label: ui.pentatonic },
+          ]}
+        />
+        <Knob
           label={c.volume}
           value={patch.volume}
           min={0}
           max={0.6}
           step={0.01}
-          display={`${Math.round((patch.volume / 0.6) * 100)}%`}
+          format={(v) => `${Math.round((v / 0.6) * 100)}%`}
           onChange={(v) => change("volume", v)}
         />
-        <Range
+        <Knob
           label={c.swing}
           value={patch.swing}
           min={0}
           max={0.45}
           step={0.01}
-          display={`${Math.round(patch.swing * 100)}%`}
+          resetValue={0}
+          format={(v) => `${Math.round(v * 100)}%`}
           onChange={(v) => change("swing", v)}
         />
       </div>
@@ -488,18 +485,18 @@ export default function Resonance() {
                   {String(i + 1).padStart(2, "0")} · {noteName(v.note)}
                 </strong>
                 <div>
-                  <Toggle
+                  <Press
                     active={v.mute}
                     onClick={() => voice(i, { mute: !v.mute })}
                   >
                     {c.mute} {i + 1}
-                  </Toggle>
-                  <Toggle
+                  </Press>
+                  <Press
                     active={v.solo}
                     onClick={() => voice(i, { solo: !v.solo })}
                   >
                     {c.solo} {i + 1}
-                  </Toggle>
+                  </Press>
                 </div>
               </div>
               <div className="music-steps">
@@ -528,46 +525,50 @@ export default function Resonance() {
                 {ui.shapeVoice}
                 {i + 1}
               </summary>
-              <div className="studio-controls">
-                <Range
+              <div className="studio-controls music-voice-dials">
+                <Knob
+                  size="sm"
                   label={`${c.note} ${i + 1}`}
                   value={v.note}
                   min={36}
                   max={96}
-                  display={noteName(v.note)}
+                  format={noteName}
                   onChange={(n) =>
                     voice(i, { note: quantise(n, patch.root, patch.scale) })
                   }
                 />
-                <Range
+                <Knob
+                  size="sm"
                   label={`${c.decay} ${i + 1}`}
                   value={v.decay}
                   min={0.1}
                   max={2}
                   step={0.05}
-                  display={`${v.decay.toFixed(2)}s`}
+                  format={(d) => `${d.toFixed(2)}s`}
                   onChange={(decay) => voice(i, { decay })}
                 />
-                <Range
+                <Knob
+                  size="sm"
                   label={`${c.pan} ${i + 1}`}
                   value={v.pan}
                   min={-1}
                   max={1}
                   step={0.1}
+                  resetValue={0}
+                  format={(p) => (p === 0 ? "C" : p < 0 ? `L${Math.round(-p * 100)}` : `R${Math.round(p * 100)}`)}
                   onChange={(pan) => voice(i, { pan })}
                 />
-                <Field label={`${c.wave} ${i + 1}`}>
-                  <select
-                    value={v.wave}
-                    onChange={(e) =>
-                      voice(i, { wave: e.target.value as Voice["wave"] })
-                    }
-                  >
-                    <option value="sine">{ui.glass}</option>
-                    <option value="triangle">{ui.warm}</option>
-                    <option value="sawtooth">{ui.reed}</option>
-                  </select>
-                </Field>
+                <Segmented
+                  label={`${c.wave} ${i + 1}`}
+                  size="sm"
+                  value={v.wave}
+                  onChange={(wave: Voice["wave"]) => voice(i, { wave })}
+                  options={[
+                    { value: "sine", label: ui.glass },
+                    { value: "triangle", label: ui.warm },
+                    { value: "sawtooth", label: ui.reed },
+                  ]}
+                />
               </div>
             </details>
           </section>
@@ -631,61 +632,54 @@ export default function Resonance() {
         <div>
           <h3>{c.pad}</h3>
           <p>{c.padHelp}</p>
-          <Range
-            label={c.cutoff}
-            value={patch.cutoff}
-            min={150}
-            max={12000}
-            display={`${patch.cutoff} Hz`}
-            onChange={(v) => change("cutoff", v)}
-          />
-          <Range
-            label={c.delay}
-            value={patch.delay}
-            min={0}
-            max={0.65}
-            step={0.01}
-            display={`${Math.round(patch.delay * 100)}%`}
-            onChange={(v) => change("delay", v)}
-          />
+          <div className="music-dials">
+            <Knob
+              label={c.cutoff}
+              value={patch.cutoff}
+              min={150}
+              max={12000}
+              scale="log"
+              format={(v) => `${v} Hz`}
+              onChange={(v) => change("cutoff", v)}
+            />
+            <Knob
+              label={c.delay}
+              value={patch.delay}
+              min={0}
+              max={0.65}
+              step={0.01}
+              format={(v) => `${Math.round(v * 100)}%`}
+              onChange={(v) => change("delay", v)}
+            />
+          </div>
         </div>
       </div>
-      <div className="studio-toolbar">
-        <Button onClick={() => jsonDownload("resonance-patch.json", patch)}>
-          {c.save}
-        </Button>
-        <FileInput
-          label={c.load}
-          accept=".json"
-          onFile={async (f) => {
-            try {
-              if (f.size > 50_000) throw new Error("Patch limit: 50 KB.");
-              setPatch(parseStudioPatch(await f.text()));
-              setError("");
-            } catch (e) {
-              setError(e instanceof Error ? e.message : String(e));
-            }
-          }}
+      <div className="studio-keep">
+        <ExportBar
+          label={c.exports}
+          actions={[
+            { label: c.save, kind: "json", onClick: () => jsonDownload("resonance-patch.json", patch) },
+            {
+              label: rendering ? c.rendering : c.render,
+              kind: "wav",
+              primary: true,
+              disabled: rendering,
+              onClick: async () => {
+                setRendering(true);
+                setError("");
+                try {
+                  const blob = await renderWav(patchRef.current);
+                  if (mounted.current) download("resonance-eight-bars.wav", blob);
+                } catch (e) {
+                  if (mounted.current) setError(e instanceof Error ? e.message : String(e));
+                } finally {
+                  if (mounted.current) setRendering(false);
+                }
+              },
+            },
+          ]}
         />
-        <Button
-          primary
-          disabled={rendering}
-          onClick={async () => {
-            setRendering(true);
-            setError("");
-            try {
-              const blob = await renderWav(patchRef.current);
-              if (mounted.current) download("resonance-eight-bars.wav", blob);
-            } catch (e) {
-              if (mounted.current)
-                setError(e instanceof Error ? e.message : String(e));
-            } finally {
-              if (mounted.current) setRendering(false);
-            }
-          }}
-        >
-          {rendering ? c.rendering : c.render}
-        </Button>
+        <DropSlot intake={patchIntake} id="music-patch" label={c.load} zone />
       </div>
       <p className="studio-note">{c.hint}</p>
     </div>

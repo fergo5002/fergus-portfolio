@@ -1,8 +1,4 @@
 export const redactCopy = {
-  eyebrow: "POCKET REDACT / THE CLEAN COPY",
-  title: "What you cover stays covered.",
-  intro:
-    "Mark the private parts. Inspect every page. Create a fresh document made only from the pixels you approved.",
   upload: "Open a document or image",
   example: "Try the example invoice",
   limits:
@@ -26,6 +22,7 @@ export const redactCopy = {
   coords: "Precise mask",
   add: "Add rectangle",
   export: "Build clean PDF",
+  exports: "Take it away",
   png: "Save this page as PNG",
   review: "Review the exported pixels",
   reviewNote:
@@ -37,7 +34,7 @@ export const redactCopy = {
     "Open a document to start. Or try the example to practise without using a real file.",
   instruction:
     "Draw a rectangle over text to cover it. In Select / move mode, drag a mask or its bottom-right handle. The arrow keys move a selected mask; Delete removes it. Undo keeps up to 80 changes.",
-  sampleTitle: "INVOICE / SAMPLE",
+  sampleTitle: "SAMPLE INVOICE",
   sample: [
     "Client: Rowan Example",
     "Email: rowan@example.org",
@@ -49,3 +46,18 @@ export const redactCopy = {
   ],
   fields: ["Left", "Top", "Width", "Height"],
 };
+
+/** Supporting labels for Pocket Redact. Read through studioLabels.PocketRedact. */
+export const redactLabels = {
+  cancel: "Cancel",
+  documentPages: "Document pages",
+  masks: " masks",
+  redactionEditor: "Redaction editor",
+  drawOrMoveRedactionMasks: "Draw or move redaction masks",
+  exactText: "Exact text",
+  emailLikeText: "Email-like text",
+  phoneLongNumbers: "Phone / long numbers",
+  masksAcross: " masks across ",
+  pages: " pages",
+  page: "Page ",
+} as const;

@@ -172,3 +172,4 @@
     grid-template-rows: minmax(0, 1fr) 200px;
   }
 }
+:is(.lab, .tool-studio) .atlas-stage-foot .atlas-spread { flex: 0 1 300px; }

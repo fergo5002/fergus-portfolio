@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addDays,
+  densityOf,
   availablePresets,
   daysBetween,
   formatDay,
@@ -83,6 +84,25 @@ describe("presets", () => {
     expect(presetOf(presetRange("quarter", span), span)).toBe("quarter");
     expect(presetOf({ start: "2025-05-01" }, span)).toBeNull();
     expect(presetOf({ start: "2026-02-13", end: "2026-03-01" }, span)).toBeNull();
+  });
+});
+
+describe("densityOf", () => {
+  it("counts timestamps into equal buckets across the span, first to last day", () => {
+    const small = { first: "2026-01-01", last: "2026-01-10", days: 9 };
+    const stamps = [at(2026, 1, 1), at(2026, 1, 1), at(2026, 1, 5), at(2026, 1, 10)];
+    // Ten days into five buckets: two days each.
+    expect(densityOf(stamps, small, 5)).toEqual([2, 0, 1, 0, 1]);
+  });
+
+  it("never makes more buckets than there are days", () => {
+    const short = { first: "2026-01-01", last: "2026-01-03", days: 2 };
+    expect(densityOf([at(2026, 1, 1), at(2026, 1, 3)], short, 60)).toEqual([1, 0, 1]);
+  });
+
+  it("ignores a timestamp outside the span rather than inventing a bucket", () => {
+    const small = { first: "2026-01-01", last: "2026-01-10", days: 9 };
+    expect(densityOf([at(2025, 12, 31), at(2026, 1, 11)], small, 5)).toEqual([0, 0, 0, 0, 0]);
   });
 });
 

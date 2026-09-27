@@ -16,14 +16,14 @@ import { unpackZip } from "@/lib/studio/intake";
 import {
   Button,
   Field,
-  FileInput,
   Metrics,
   ErrorMessage,
   download,
   jsonDownload,
   xml,
 } from "@/components/lab/shared";
-import { StudioIntro, Toggle } from "./Furniture";
+import { DateRange, DropSlot, ExportBar, Segmented, Select, Toggle, useIntake } from "@/components/instrument";
+import { densityOf, spanOf } from "@/lib/instrument/dates";
 const c = studioCopy.lore,
   days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export default function GroupLore() {
@@ -55,6 +55,11 @@ export default function GroupLore() {
       [messages, deferred],
     ),
     stats = useMemo(() => loreStats(filtered), [filtered]),
+    span = useMemo(() => spanOf(messages.map((m) => m.at)), [messages]),
+    density = useMemo(
+      () => (span ? densityOf(messages.map((m) => m.at), span, 64) : []),
+      [messages, span],
+    ),
     labels = useMemo(
       () =>
         new Map(
@@ -136,53 +141,50 @@ export default function GroupLore() {
       setError(e instanceof Error ? e.message : String(e));
     }
   }
+  const intake = useIntake({
+    accept: ".txt,.json,.zip",
+    disabled: busy,
+    onFiles: ([file]) => void upload(file),
+  });
   const heatMax = Math.max(1, ...allStats.heat.flat()),
     personMax = Math.max(1, ...allStats.participants.map((p) => p.count));
   const portraitSvg = useMemo(() => {
     const summary = anonymousSummary(filtered),
       max = Math.max(1, ...summary.heat.flat());
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900"><rect width="1200" height="900" fill="#09140f"/><g font-family="monospace"><text x="70" y="95" fill="#ffb347" font-size="18">GROUP LORE / FERGUSOS</text><text x="70" y="200" fill="#e5ffe9" font-size="65">${xml(c.portraitTitle)}</text><text x="70" y="260" fill="#94c8a4" font-size="24">${summary.count.toLocaleString("en-GB")} messages · ${summary.participants.length} voices · ${summary.activeDays} active days</text>${summary.heat.map((row, d) => `<text x="70" y="${338 + d * 44}" fill="#94c8a4" font-size="16">${days[d]}</text>${row.map((n, h) => `<rect x="${135 + h * 40}" y="${314 + d * 44}" width="31" height="31" rx="4" fill="#7bffb0" opacity="${0.08 + (0.92 * n) / max}"/>`).join("")}`).join("")}<text x="135" y="660" fill="#94c8a4" font-size="16">00:00</text><text x="565" y="660" fill="#94c8a4" font-size="16">12:00</text><text x="1010" y="660" fill="#94c8a4" font-size="16">23:00</text><text x="70" y="760" fill="#e5ffe9" font-size="24">${summary.sessions} conversations, each beginning after 30 quiet minutes.</text><text x="70" y="835" fill="#94c8a4" font-size="16">An activity portrait of the selected messages. No names. No quotations.</text></g></svg>`;
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900"><rect width="1200" height="900" fill="#09140f"/><g font-family="monospace"><text x="70" y="200" fill="#e5ffe9" font-size="65">${xml(c.portraitTitle)}</text><text x="70" y="260" fill="#94c8a4" font-size="24">${summary.count.toLocaleString("en-GB")} messages · ${summary.participants.length} voices · ${summary.activeDays} active days</text>${summary.heat.map((row, d) => `<text x="70" y="${338 + d * 44}" fill="#94c8a4" font-size="16">${days[d]}</text>${row.map((n, h) => `<rect x="${135 + h * 40}" y="${314 + d * 44}" width="31" height="31" rx="4" fill="#7bffb0" opacity="${0.08 + (0.92 * n) / max}"/>`).join("")}`).join("")}<text x="135" y="660" fill="#94c8a4" font-size="16">00:00</text><text x="565" y="660" fill="#94c8a4" font-size="16">12:00</text><text x="1010" y="660" fill="#94c8a4" font-size="16">23:00</text><text x="70" y="760" fill="#e5ffe9" font-size="24">${summary.sessions} conversations, each beginning after 30 quiet minutes.</text><text x="70" y="835" fill="#94c8a4" font-size="16">An activity portrait of the selected messages. No names. No quotations.</text></g></svg>`;
   }, [filtered]);
   return (
-    <div className="lab-work studio studio-lore">
-      <StudioIntro eyebrow={c.eyebrow} title={c.title} intro={c.intro} />
-      <div className="studio-drop">
-        <div className="studio-toolbar">
-          <FileInput
-            disabled={busy}
-            label={c.upload}
-            accept=".txt,.json,.zip"
-            onFile={upload}
-          />
-          <Field label={c.dateOrder}>
-            <select
-              value={order}
-              disabled={busy}
-              onChange={(e) => setOrder(e.target.value as typeof order)}
-            >
-              <option value="dmy">{ui.dayMonthYear}</option>
-              <option value="mdy">{ui.monthDayYear}</option>
-            </select>
-          </Field>
-          <Button disabled={busy} onClick={() => read(copy.chat.sample, "dmy")}>
-            {studioCopy.example}
-          </Button>
-        </div>
-        <p>{c.importNote}</p>
-        <details>
-          <summary>{c.paste}</summary>
-          <Field label={c.paste}>
-            <textarea
-              value={raw}
-              onChange={(e) => setRaw(e.target.value)}
-              maxLength={10_000_000}
-            />
-          </Field>
-          <Button disabled={!raw.trim() || busy} onClick={() => read(raw)}>
-            {c.analyse}
-          </Button>
-        </details>
+    <div className="lab-work studio studio-lore" {...intake.stageProps}>
+      <div className="studio-intake">
+        <DropSlot intake={intake} id="lore-file" label={c.upload} hint={c.importNote} />
+        <Segmented
+          label={c.dateOrder}
+          size="sm"
+          value={order}
+          disabled={busy}
+          onChange={setOrder}
+          options={[
+            { value: "dmy", label: ui.dayMonthYear },
+            { value: "mdy", label: ui.monthDayYear },
+          ]}
+        />
+        <Button disabled={busy} onClick={() => read(copy.chat.sample, "dmy")}>
+          {studioCopy.example}
+        </Button>
       </div>
+      <details className="studio-details lore-paste">
+        <summary>{c.paste}</summary>
+        <Field label={c.paste}>
+          <textarea
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
+            maxLength={10_000_000}
+          />
+        </Field>
+        <Button disabled={!raw.trim() || busy} onClick={() => read(raw)}>
+          {c.analyse}
+        </Button>
+      </details>
       <ErrorMessage error={error} />
       {busy && (
         <div className="studio-toolbar" role="status">
@@ -206,24 +208,16 @@ export default function GroupLore() {
           ["Conversations", stats.sessions],
         ]}
       />
-      <div className="studio-toolbar">
-        <Toggle active={pseudo} onClick={() => setPseudo(!pseudo)}>
-          {c.pseudo}
-        </Toggle>
-        <Field label={c.start}>
-          <input
-            type="date"
-            value={filter.start ?? ""}
-            onChange={(e) => change({ start: e.target.value })}
-          />
-        </Field>
-        <Field label={c.end}>
-          <input
-            type="date"
-            value={filter.end ?? ""}
-            onChange={(e) => change({ end: e.target.value })}
-          />
-        </Field>
+      <div className="studio-toolbar lore-filters">
+        <DateRange
+          label={c.dates}
+          span={span}
+          density={density}
+          value={{ start: filter.start, end: filter.end }}
+          onChange={({ start, end }) => change({ start, end })}
+          className="lore-dates"
+        />
+        <Toggle label={c.pseudo} checked={pseudo} onChange={setPseudo} />
         <Button
           onClick={() => {
             setFilter({});
@@ -235,7 +229,6 @@ export default function GroupLore() {
       </div>
       <div className="lore-overview">
         <section className="studio-panel">
-          <p className="studio-eyebrow">{ui.text01WhenYouShowUp}</p>
           <h3>{c.rhythm}</h3>
           <p>{c.rhythmNote}</p>
           <div className="lore-heat-scroll">
@@ -279,7 +272,6 @@ export default function GroupLore() {
           </p>
         </section>
         <section className="studio-panel">
-          <p className="studio-eyebrow">{ui.text02WhoSHere}</p>
           <h3>{c.people}</h3>
           <div className="lore-people">
             {allStats.participants.slice(0, 40).map((p, i) => (
@@ -304,7 +296,6 @@ export default function GroupLore() {
         </section>
       </div>
       <section className="studio-panel">
-        <p className="studio-eyebrow">{ui.text03TheRunningThreads}</p>
         <h3>{c.phrases}</h3>
         <div className="lore-phrases">
           {allStats.phrases.map((p) => (
@@ -342,19 +333,18 @@ export default function GroupLore() {
               onChange={(e) => change({ query: e.target.value })}
             />
           </Field>
-          <Field label={c.person}>
-            <select
-              value={filter.person ?? ""}
-              onChange={(e) => change({ person: e.target.value })}
-            >
-              <option value="">{c.all}</option>
-              {allStats.participants.map((p) => (
-                <option key={p.name} value={p.name}>
-                  {label(p.name)}
-                </option>
-              ))}
-            </select>
-          </Field>
+          <Select
+            label={c.person}
+            value={filter.person ?? ""}
+            onChange={(person) => change({ person })}
+          >
+            <option value="">{c.all}</option>
+            {allStats.participants.map((p) => (
+              <option key={p.name} value={p.name}>
+                {label(p.name)}
+              </option>
+            ))}
+          </Select>
           {filter.hour !== undefined && (
             <Button onClick={() => change({ hour: undefined, day: undefined })}>
               {days[filter.day!]} {filter.hour}:00 · {c.heatClear}
@@ -390,7 +380,7 @@ export default function GroupLore() {
         )}
       </section>
       <p className="studio-note">{c.session}</p>
-      <div className="studio-toolbar">
+      <div className="studio-keep">
         <Button
           primary
           disabled={!filtered.length}
@@ -398,13 +388,16 @@ export default function GroupLore() {
         >
           {c.portrait}
         </Button>
-        <Button
-          onClick={() =>
-            jsonDownload("group-lore-summary.json", anonymousSummary(filtered))
-          }
-        >
-          {c.summary}
-        </Button>
+        <ExportBar
+          label={c.exports}
+          actions={[
+            {
+              label: c.summary,
+              kind: "json",
+              onClick: () => jsonDownload("group-lore-summary.json", anonymousSummary(filtered)),
+            },
+          ]}
+        />
       </div>
       {portrait && (
         <section className="studio-panel lore-portrait">
@@ -415,13 +408,16 @@ export default function GroupLore() {
             width={1200}
             height={900}
           />
-          <Button
-            onClick={() =>
-              download("group-lore-portrait.svg", portraitSvg, "image/svg+xml")
-            }
-          >
-            {c.portraitDownload}
-          </Button>
+          <ExportBar
+            label={c.exports}
+            actions={[
+              {
+                label: c.portraitDownload,
+                kind: "svg",
+                onClick: () => download("group-lore-portrait.svg", portraitSvg, "image/svg+xml"),
+              },
+            ]}
+          />
         </section>
       )}
     </div>

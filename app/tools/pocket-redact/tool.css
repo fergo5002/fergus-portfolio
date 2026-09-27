@@ -164,3 +164,42 @@
     grid-column: 1;
   }
 }
+:is(.lab, .tool-studio) .studio-toolbar .redact-zoom { flex: 1 1 220px; max-width: 340px; }
+/* The review checkbox, drawn: a box in the phosphor line that fills amber
+   with a tick when a page has been inspected. Still a native checkbox. */
+:is(.lab, .tool-studio) .redact-review .lab-check input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: grid;
+  place-content: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--green);
+  border-radius: 4px;
+  background: var(--bg);
+  cursor: pointer;
+}
+:is(.lab, .tool-studio) .redact-review .lab-check input[type="checkbox"]::before {
+  content: "";
+  width: 11px;
+  height: 6px;
+  margin-top: -3px;
+  border-left: 2px solid var(--bg);
+  border-bottom: 2px solid var(--bg);
+  transform: rotate(-45deg) scale(0);
+}
+:is(.lab, .tool-studio) .redact-review .lab-check input[type="checkbox"]:checked {
+  border-color: var(--amber);
+  background: var(--amber);
+}
+:is(.lab, .tool-studio) .redact-review .lab-check input[type="checkbox"]:checked::before {
+  transform: rotate(-45deg) scale(1);
+}
+:is(.lab, .tool-studio) .redact-review .lab-check input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+}

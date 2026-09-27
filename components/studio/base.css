@@ -122,7 +122,7 @@
   min-width: 0;
   font-size: 0.82rem;
 }
-:is(.lab, .tool-studio) :is(input, select, textarea) {
+:is(.lab, .tool-studio) :is(input, select, textarea):not([class*="inst-"]) {
   width: 100%;
   padding: 11px 12px;
   border: 1px solid var(--lab-line);
@@ -133,13 +133,13 @@
   min-width: 0;
   border-radius: 0;
 }
-:is(.lab, .tool-studio) input[type="checkbox"] {
+:is(.lab, .tool-studio) input[type="checkbox"]:not([class*="inst-"]) {
   width: 20px;
   height: 20px;
   min-height: 20px;
   accent-color: var(--green);
 }
-:is(.lab, .tool-studio) select {
+:is(.lab, .tool-studio) select:not([class*="inst-"]) {
   appearance: none;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -168,14 +168,14 @@
 .lab-review {
   margin-top: 24px;
 }
-:is(.lab, .tool-studio) input[type="range"] {
+:is(.lab, .tool-studio) input[type="range"]:not([class*="inst-"]) {
   padding: 0;
   accent-color: var(--green);
 }
-:is(.lab, .tool-studio) input[type="file"] {
+:is(.lab, .tool-studio) input[type="file"]:not([class*="inst-"]) {
   font-size: 16px;
 }
-:is(.lab, .tool-studio) input::file-selector-button {
+:is(.lab, .tool-studio) input:not([class*="inst-"])::file-selector-button {
   padding: 8px;
   background: var(--bg-panel-2);
   border: 1px solid var(--lab-line);
@@ -187,7 +187,7 @@
   resize: vertical;
   line-height: 1.6;
 }
-:is(.lab, .tool-studio) :is(button, a, input, textarea, select):focus-visible {
+:is(.lab, .tool-studio) :is(button, a, input, textarea, select):not([class*="inst-"]):focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 3px;
 }
@@ -522,7 +522,7 @@
   .lab-redacted-preview {
     grid-template-columns: 1fr;
   }
-  :is(.lab, .tool-studio) .bench-surface {
+  :is(.lab, .tool-studio) .bench-stage {
     padding: 14px;
   }
 }

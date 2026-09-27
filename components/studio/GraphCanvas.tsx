@@ -15,7 +15,8 @@ import { useSystem } from "@/components/system/SystemProvider";
 import type { AtlasGraph, AtlasNode } from "@/lib/studio/graph";
 import { studioCopy } from "@/content/studio/copy";
 import { Button, download } from "@/components/lab/shared";
-import { Toggle, Range } from "./Furniture";
+import { Press } from "./Furniture";
+import { Slider } from "@/components/instrument";
 type Node = AtlasNode & SimulationNodeDatum;
 const c = studioCopy.atlas;
 export default function GraphCanvas({
@@ -335,9 +336,9 @@ export default function GraphCanvas({
         )}
         <Button onClick={() => zoom(1.25)}>+</Button>
         <Button onClick={() => zoom(0.8)}>−</Button>
-        {reducedMotion ? <span className="studio-badge">{c.reduced}</span> : <Toggle active={paused} onClick={() => setPaused(!paused)}>
+        {reducedMotion ? <span className="studio-badge">{c.reduced}</span> : <Press active={paused} onClick={() => setPaused(!paused)}>
           {paused ? c.resume : c.pause}
-        </Toggle>}
+        </Press>}
         <Button
           disabled={!selected}
           onClick={() => {
@@ -490,12 +491,13 @@ export default function GraphCanvas({
           {counts.links}
           {ui.visibleConnections}
         </span>
-        <Range
+        <Slider
           label={c.spread}
           min={40}
           max={180}
           value={spacing}
           onChange={setSpacing}
+          className="atlas-spread"
         />
       </div>
     </div>

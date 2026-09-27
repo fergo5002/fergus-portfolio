@@ -289,3 +289,15 @@
 :is(.lab, .tool-studio) .music-steps button[aria-pressed="true"] {
   color: var(--bg);
 }
+:is(.lab, .tool-studio) .music-dials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 18px 24px;
+}
+:is(.lab, .tool-studio) .studio-controls.music-voice-dials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 22px;
+}

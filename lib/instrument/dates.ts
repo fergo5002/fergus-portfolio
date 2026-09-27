@@ -60,6 +60,23 @@ export function spanOf(timestamps: readonly number[]): Span | null {
   return { first, last, days: daysBetween(first, last) };
 }
 
+/**
+ * How many timestamps fall in each of `buckets` equal slices of the span, so
+ * a date range can draw the shape of the data behind its thumbs. Never more
+ * buckets than days; a timestamp outside the span is left out.
+ */
+export function densityOf(timestamps: readonly number[], span: Span, buckets: number): number[] {
+  const days = span.days + 1;
+  const count = Math.max(1, Math.min(Math.floor(buckets), days));
+  const out = Array<number>(count).fill(0);
+  for (const t of timestamps) {
+    const index = daysBetween(span.first, isoDay(t));
+    if (index < 0 || index >= days) continue;
+    out[Math.floor((index * count) / days)] += 1;
+  }
+  return out;
+}
+
 export type PresetId = "all" | "year" | "quarter" | "month";
 
 /** Lengths in days, counted back from the last day in the archive. */
