@@ -331,6 +331,16 @@ describe("the monitor takes its shape from lib/eject.ts", () => {
     expect(src).toMatch(/ejectLean\(f\.pointerX, f\.pointerY, f\.pointerActive, coarse\)/);
   });
 
+  it("hands the tube the pointer in the screen's own space, and nothing from off the glass", () => {
+    // Docked the rectangle is the viewport, so this is the identity. Ejected,
+    // a cursor on the desk used to glow on the glass at its viewport position
+    // and leave a blob in the desk's reflection.
+    expect(src).toContain("const onX = (f.pointerX - r.x0) / sw;");
+    expect(src).toContain("shared.uPointer.value = [onX, 1 - onY];");
+    expect(src).toContain("shared.uPointerActive.value = onGlass ? f.pointerActive : 0;");
+    expect(src).not.toContain("shared.uPointer.value = [f.pointerX, 1 - f.pointerY];");
+  });
+
   it("lets the glass's own rounded corners decide what is tube and what is plastic", () => {
     const main = PRESENT.slice(PRESENT.indexOf("void main()"));
     expect(main).toContain("if (sdRoundBox(toQ(uv) - rc, rh, uCaseB.x) < 0.0) {");

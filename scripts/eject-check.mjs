@@ -26,6 +26,11 @@
  *
  *   REVISION_BASE=http://localhost:3242 node scripts/eject-check.mjs
  *     [--only desktop|phone|phone320|reduced] [--shots dir] [--no-shots] [--gpu]
+ *     [--nudge px]
+ *
+ * `--nudge 4` moves the DOM screen four pixels before the pixel check reads it.
+ * That run is expected to FAIL the corners step: it is the revert that shows
+ * the check can see a disagreement at all.
  *
  * `--gpu` asks headless Chromium for the machine's GPU (ANGLE on D3D11) rather
  * than SwiftShader. The software path is slow enough that the pull-back, which
@@ -42,6 +47,12 @@ const option = (name, fallback) => (args.includes(name) ? args[args.indexOf(name
 const only = option("--only", "");
 const shots = args.includes("--no-shots") ? null : option("--shots", ".revision-check/eject");
 const gpu = args.includes("--gpu");
+// Revert-to-red for the pixel check: shift the DOM screen this many pixels
+// before reading the canvas. A run with --nudge 4 must FAIL that step.
+const nudge = Number(option("--nudge", "0"));
+/** Where the pointer rests between steps: on the desk, clear of every link and
+ *  hover preview on the page, so the photographs show the page as it is. */
+const REST = [720, 800];
 if (shots) await mkdir(shots, { recursive: true });
 
 let failed = 0;
@@ -224,7 +235,7 @@ async function desktop() {
       const control = ejectControl(page);
       assert.equal((await control.locator(".machine__label").innerText()).trim(), "eject");
       await control.click();
-      await page.mouse.move(720, 450);
+      await page.mouse.move(...REST);
       await settle(page, "first eject");
       const box = await page.locator(".ejhw").boundingBox();
       assert.ok(box && box.width > 300, "the hardware is laid out");
@@ -234,9 +245,11 @@ async function desktop() {
     await shot(page, "desktop-green.png");
 
     await step("desktop", "the DOM screen's corners sit on the bezel's inner edge, within 2px", async () => {
-      await page.mouse.move(720, 450);
+      await page.mouse.move(...REST);
       await settle(page, "pointer still");
+      if (nudge) await page.evaluate((n) => (document.querySelector(".crt__assembly").style.translate = `${n}px ${n}px`), nudge);
       const r = await page.evaluate(() => document.querySelector(".crt__assembly").getBoundingClientRect().toJSON());
+      if (nudge) await page.evaluate(() => (document.querySelector(".crt__assembly").style.translate = ""));
       const ys = [r.top + r.height * 0.12, r.top + r.height * 0.88];
       const xs = [r.left + r.width * 0.12, r.left + r.width * 0.88];
       const got = await readCanvas(page, ys, xs);
@@ -297,7 +310,7 @@ async function desktop() {
       await page.waitForFunction(() => window.scrollY < 5, null, { timeout: 10_000 });
       return m;
     });
-    await page.mouse.move(720, 450);
+    await page.mouse.move(...REST);
     await settle(page, "back at the top");
     await shot(page, "desktop-channel.png");
 
@@ -306,13 +319,13 @@ async function desktop() {
       const cap = await page.locator(".ejhw__ctl--colour .ejhw__knob").boundingBox();
       await page.mouse.click(cap.x + cap.width / 2, cap.y + cap.height / 2);
       await page.waitForFunction(() => document.documentElement.dataset.theme === "amber");
-      await page.mouse.move(720, 450);
+      await page.mouse.move(...REST);
       await settle(page, "amber");
       await shot(page, "desktop-amber.png");
       await page.locator(".ejhw__ctl--colour input").focus();
       await page.keyboard.press("ArrowRight");
       await page.waitForFunction(() => document.documentElement.dataset.theme === "ice");
-      await page.mouse.move(720, 450);
+      await page.mouse.move(...REST);
       await settle(page, "ice");
       await shot(page, "desktop-ice.png");
       return [before, "amber", "ice"];
@@ -347,12 +360,12 @@ async function desktop() {
     });
 
     await step("desktop", "power collapses the picture to a line inside the glass and brings it back", async () => {
-      await page.mouse.move(720, 450);
+      await page.mouse.move(...REST);
       await page.waitForTimeout(1200);
       const power = page.locator(".ejhw__btn--power");
       assert.equal(await power.getAttribute("aria-pressed"), "true");
       await power.click();
-      await page.mouse.move(720, 450);
+      await page.mouse.move(...REST);
       assert.equal(await power.getAttribute("aria-pressed"), "false");
       await page.waitForFunction(() => {
         const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--boot-open"));

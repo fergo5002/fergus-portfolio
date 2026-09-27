@@ -597,7 +597,9 @@ vec3 room(vec2 uv, vec2 rectMin, vec2 rectMax, float screenLuma) {
     // neon frame within a few millimetres. It has to decay.
     float up = smoothstep(-0.02, 0.06, q.y - rc.y);
     plastic *= 0.72 + 0.5 * up;
-    plastic += uPhosphor * exp(-dScreen * 90.0) * 0.22;
+    // Only while the tube is lit: screenLuma rests near 0.075 and is zero once
+    // the power switch has collapsed the picture, when the rim should go dark.
+    plastic += uPhosphor * exp(-dScreen * 90.0) * 0.22 * clamp(screenLuma * 13.0, 0.0, 1.0);
 
     // A light somewhere behind you, caught by the case: it slides along the
     // rim and across the face as you lean, the way a window's reflection moves
@@ -916,9 +918,6 @@ export default function PhosphorScreen() {
 
       shared.uTime.value = time / 1000;
       shared.uTap.value = Number.isFinite(f.tapAt) ? (now - f.tapAt) / 1000 : 999;
-      shared.uTapPos.value = [f.tapX, 1 - f.tapY];
-      shared.uPointer.value = [f.pointerX, 1 - f.pointerY];
-      shared.uPointerActive.value = f.pointerActive;
       shared.uScrollVel.value = f.scrollVelocity;
       shared.uDegauss.value = Number.isFinite(f.degaussAt) ? (now - f.degaussAt) / 1000 : 999;
       shared.uLive.value = f.live;
@@ -940,6 +939,21 @@ export default function PhosphorScreen() {
       const r = ejectScreenRect(g);
       // GL's origin is bottom-left, so the CSS-space rect flips in y.
       pu.uScreenRect.value = [r.x0, 1 - r.y1, r.x1, 1 - r.y0];
+
+      // The pointer and a tap, in the tube's own space. Docked that is the
+      // viewport and this is the identity. Ejected, the tube is the screen
+      // rectangle, and the persistence buffer is the tube's image: a cursor
+      // resting on the desk used to deposit its glow at its viewport position,
+      // which put a halo on the glass nowhere near it and a bright blob in the
+      // desk's reflection. Off the glass it deposits nothing.
+      const sw = r.x1 - r.x0;
+      const sh = r.y1 - r.y0;
+      const onX = (f.pointerX - r.x0) / sw;
+      const onY = (f.pointerY - r.y0) / sh;
+      const onGlass = onX >= 0 && onX <= 1 && onY >= 0 && onY <= 1;
+      shared.uPointer.value = [onX, 1 - onY];
+      shared.uPointerActive.value = onGlass ? f.pointerActive : 0;
+      shared.uTapPos.value = [(f.tapX - r.x0) / sw, 1 - (f.tapY - r.y0) / sh];
 
       // The monitor around it: case, chin, base, the recess the DOM controls
       // sit in and the LED beside the power button, all from lib/eject.ts, the

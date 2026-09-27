@@ -1573,6 +1573,13 @@ const MUTATIONS = [
     tests: "components/system/PhosphorScreen.test.ts",
   },
   {
+    name: "eject: the tube takes the pointer in viewport space again, so a cursor on the desk glows on the glass",
+    file: "components/system/PhosphorScreen.tsx",
+    pattern: /shared\.uPointer\.value = \[onX, 1 - onY\];/,
+    replace: "shared.uPointer.value = [f.pointerX, 1 - f.pointerY];",
+    tests: "components/system/PhosphorScreen.test.ts",
+  },
+  {
     name: "eject: the assembly becomes a scroll container again",
     file: "app/globals.css",
     pattern: /  overflow: clip;\r?\n  transform-origin: 50% 50%;/,
