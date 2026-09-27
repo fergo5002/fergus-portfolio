@@ -192,3 +192,16 @@ describe("the eject block in globals.css", () => {
     expect(block).not.toContain("overflow: hidden;");
   });
 });
+
+describe("the knobs read the pure rules for a tap and a dial between channels", () => {
+  it("taps through knobTap, never arithmetic of its own", () => {
+    expect(hw).toMatch(/const tapped = knobTap\(value, min, max, tapStep\);/);
+  });
+  it("lets the channel dial rest between channels and say so", () => {
+    // On /contact or a 404 the dial used to read "channel 1, home", and
+    // ArrowLeft and Home did nothing because the input sat at its minimum.
+    expect(hw).toMatch(/min=\{Math\.min\(min, shown\)\}/);
+    expect(hw).toMatch(/channel < 0 \? copy\.channelOff :/);
+    expect(hw).toMatch(/angle\(rest\)/);
+  });
+});

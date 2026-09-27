@@ -42,6 +42,13 @@ export const SAVER_SPIN_MS = 24_000;
 export const SAVER_JOIN = 1.67 * BEAM_RADIUS;
 /** A frame further than this from the last write means the tab was away: blank and jump. */
 const MAX_GAP_MS = 250;
+/**
+ * The most of the figure one stroke may cover, in radians of θ. Eight points
+ * over more than this draw straight chords across the figure (a 200ms stall on
+ * the 5:4 figure did), so a longer sweep keeps its newest stretch and leaves a
+ * gap behind it, the way a scope that missed a sweep would.
+ */
+export const SAVER_MAX_STROKE = 0.8;
 /** A join never skips more of the curve than this, even where the beam all but stops. */
 const MAX_JOIN_THETA = 0.25;
 /** Where the beam is brighter because it is slower, and dimmer where faster, within these bounds. */
@@ -155,7 +162,7 @@ export function saverStep(w: SaverWriter | null, env: SaverEnv): SaverStep {
   // frame sweeps from the same place.
   if (env.pending.length > 0) return { writer: w, pts: null, gain: 0 };
 
-  const start = joinFrom(w.theta, fig, env.aspect);
+  const start = Math.max(joinFrom(w.theta, fig, env.aspect), target - SAVER_MAX_STROKE);
   if (start >= target) return { writer: w, pts: null, gain: 0 };
 
   const pts: BeamPoint[] = [];

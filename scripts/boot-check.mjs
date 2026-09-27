@@ -136,6 +136,14 @@ function watcher({ cores }) {
     } else if (s.started !== null && s.finished === null) {
       s.finished = performance.now();
       s.bootingAtEnd = booting;
+      // finish() reveals the page and drops the overlay in one synchronous
+      // commit (flushSync), so both usually arrive in the same mutation batch:
+      // the reveal is then the same instant as the drop.
+      if (!booting && s.revealedAt === null) {
+        s.revealedAt = s.finished;
+        s.revealedPhase = s.phases[s.phases.length - 1] ?? null;
+        s.sameCommit = true;
+      }
     }
   };
   new MutationObserver(sample).observe(document, {
@@ -329,12 +337,14 @@ async function coldBoot(engine) {
     await step(engine, "html.booting holds until the overlay goes", async () => {
       assert.equal(boot.bootingWhenMounted, true, "the page was not hidden when the overlay mounted");
       assert.notEqual(boot.revealedAt, null, "booting was never seen removed under the overlay, or the watcher missed it");
-      // finish() removes the class and asks React to drop the overlay in the
-      // same call; the overlay leaves at React's next commit.
+      // finish() removes the class and drops the overlay in one synchronous
+      // commit. Before it did (2026-09-27) the overlay left at React's next
+      // commit, behind a software-rendered frame, and outlived the reveal by
+      // up to 284ms under load.
       assert.ok(["collapse", "done"].includes(boot.revealedPhase), `revealed during ${boot.revealedPhase}`);
       assert.ok(boot.finished - boot.revealedAt < 250, `overlay outlived the reveal by ${Math.round(boot.finished - boot.revealedAt)}ms`);
       assert.equal(boot.bootingAtEnd, false);
-      return { revealedPhase: boot.revealedPhase, overlayGoneAfterMs: Math.round(boot.finished - boot.revealedAt), bootMs: Math.round(boot.finished - boot.started) };
+      return { revealedPhase: boot.revealedPhase, overlayGoneAfterMs: Math.round(boot.finished - boot.revealedAt), sameCommit: Boolean(boot.sameCommit), bootMs: Math.round(boot.finished - boot.started) };
     });
 
     await step(engine, "the page is fully visible afterwards", async () => {

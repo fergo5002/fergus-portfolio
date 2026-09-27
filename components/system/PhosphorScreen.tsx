@@ -953,7 +953,12 @@ export default function PhosphorScreen() {
       const onGlass = onX >= 0 && onX <= 1 && onY >= 0 && onY <= 1;
       shared.uPointer.value = [onX, 1 - onY];
       shared.uPointerActive.value = onGlass ? f.pointerActive : 0;
-      shared.uTapPos.value = [(f.tapX - r.x0) / sw, 1 - (f.tapY - r.y0) / sh];
+      const tapU = (f.tapX - r.x0) / sw;
+      const tapV = (f.tapY - r.y0) / sh;
+      shared.uTapPos.value = [tapU, 1 - tapV];
+      // Likewise a tap: a press on the chin's buttons or the desk is not a touch
+      // on the glass, and its ring would otherwise sweep up through the picture.
+      if (tapU < 0 || tapU > 1 || tapV < 0 || tapV > 1) shared.uTap.value = 999;
 
       // The monitor around it: case, chin, base, the recess the DOM controls
       // sit in and the LED beside the power button, all from lib/eject.ts, the

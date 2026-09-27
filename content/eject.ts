@@ -23,6 +23,8 @@ export const ejectCopy = {
   powerOnHint: "Switch the tube on",
   powerOffHint: "Switch the tube off",
   /** How the dial's positions are spoken. "~" is read as "tilde" otherwise. */
+  /** What the dial says on a page that is not one of its channels. */
+  channelOff: "between channels",
   channelValue: (n: number, label: string) => `channel ${n}, ${label === "~" ? "home" : label}`,
   contrastValue: (percent: number) => `${percent} percent`,
   /** The on-screen display, drawn by the tube itself in the corner of the picture. */

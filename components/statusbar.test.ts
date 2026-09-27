@@ -56,3 +56,17 @@ describe("the status bar on a narrow screen", () => {
     }
   });
 });
+
+describe("the status bar on a missing page", () => {
+  it("lets the prerendered path stand at hydration, then writes the real one", () => {
+    // The not-found page is prerendered once, at /_not-found, and served for
+    // every missing URL, so its server HTML says ~/_not-found while the browser
+    // knows the real path. A plain text node there is a hydration mismatch
+    // (React #418) on every 404; scripts/not-found-check.mjs catches it in a
+    // production build (2026-09-27), which a dev server never shows.
+    const seg = source.match(/<span\s+key=\{mounted \? "client" : "server"\}[\s\S]*?<\/span>\s*<\/span>/);
+    expect(seg, "the path segment remounts once mounted").not.toBeNull();
+    expect(seg![0].match(/suppressHydrationWarning/g)?.length).toBe(3);
+    expect(source).toMatch(/useEffect\(\(\) => setMounted\(true\), \[\]\);/);
+  });
+});

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useSystem } from "@/components/system/SystemProvider";
 import {
   BOOTING_CLASS,
@@ -145,6 +146,10 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     }, profile.strikeMs);
 
     let struckAt = -1;
+    // Armed below, at mount, and re-armed from the first frame the sequence
+    // actually runs: a tab opened in the background gets no frames until it is
+    // shown, and a boot that started late must not be cut off part-way.
+    let watchdog = 0;
     let lastTime = -1;
     let lastStep = -1;
     let handoff = 0;
@@ -188,7 +193,11 @@ export default function BootSequence({ children }: { children: React.ReactNode }
       if (lastTime >= 0 && post === null) gaps.push(time - lastTime);
       lastTime = time;
       if (!struck) return;
-      if (struckAt < 0) struckAt = time;
+      if (struckAt < 0) {
+        struckAt = time;
+        window.clearTimeout(watchdog);
+        watchdog = window.setTimeout(() => finishRef.current(), BOOT_WATCHDOG_MS);
+      }
       const snap = bootTimeline(profile, profile.strikeMs + (time - struckAt));
 
       const overlay = overlayRef.current;
@@ -286,7 +295,7 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     // frames at all: a tab that never comes back, a main thread that never
     // yields). Goes through finish() rather than stripping the class, so the
     // tube still powers on properly instead of the overlay simply vanishing.
-    const watchdog = window.setTimeout(() => finishRef.current(), BOOT_WATCHDOG_MS);
+    watchdog = window.setTimeout(() => finishRef.current(), BOOT_WATCHDOG_MS);
 
     // Take ownership only once the replacement is actually in place. Disarming
     // first would leave a window, however narrow, in which a throw above has cut
@@ -339,8 +348,11 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     f.targetLive = 1;
     clearBeam(f);
 
+    // One commit, in this task: as a plain state update the overlay waited for
+    // React's next commit, behind a software-rendered frame, and outlived the
+    // reveal by up to 284ms.
     document.documentElement.classList.remove(BOOTING_CLASS);
-    setBooting(false);
+    flushSync(() => setBooting(false));
 
     // Decoration from here down: the degauss thump and the CRT power-on that
     // make the revealed site "switch on" rather than pop in. Wrapped because

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { shortPwd } from "@/lib/system";
 import { cssString, readouts } from "@/lib/readouts";
 import { INITIAL_SHELL, shellStore } from "@/lib/shell";
@@ -35,6 +35,13 @@ export default function StatusBar() {
   const rowRef = useRef<HTMLSpanElement>(null);
   const pwd = path === "/" ? "~" : `~${path}`;
   const short = shortPwd(path);
+  // The not-found page is prerendered once, at /_not-found, and served for
+  // every missing URL, so on a 404 the server wrote ~/_not-found while the
+  // browser knows the path asked for. The path segment keeps whatever the
+  // server wrote through hydration and is remounted once mounted, which
+  // writes the real one. Everywhere else the two are the same text.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const row = rowRef.current;
@@ -115,9 +122,14 @@ export default function StatusBar() {
         <span className="statusbar__lamp" data-on="0" />
         <span className="statusbar__seg statusbar__brand">FergusOS</span>
         <span className="statusbar__seg statusbar__ro statusbar__ro--up" data-ro="up" />
-        <span className="statusbar__seg statusbar__pwd" title={pwd}>
-          <span className="statusbar__pwd-full">{pwd}</span>
-          <span className="statusbar__pwd-short">{short}</span>
+        <span
+          key={mounted ? "client" : "server"}
+          className="statusbar__seg statusbar__pwd"
+          title={pwd}
+          suppressHydrationWarning
+        >
+          <span className="statusbar__pwd-full" suppressHydrationWarning>{pwd}</span>
+          <span className="statusbar__pwd-short" suppressHydrationWarning>{short}</span>
         </span>
         <span className="statusbar__seg statusbar__ro statusbar__ro--mem" data-ro="mem" />
         <span className="statusbar__seg statusbar__ro statusbar__ro--fps" data-ro="fps" />

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSystem } from "./SystemProvider";
 import { clearBeam, readBeam, writeBeam } from "@/lib/beam";
 import { saverStep } from "@/lib/lissajous";
+import { saverCopy as copy } from "@/content/machine";
 import type { SaverWriter } from "@/lib/lissajous";
 
 /** Idle time before the screen saves itself. */
@@ -82,14 +83,18 @@ export default function Screensaver() {
     if (active !== "beam") return;
     const root = document.documentElement;
     root.classList.add(SAVING_CLASS);
-    let start = -1;
+    // The saver's clock is the tube's: the frame deltas, capped at 64ms as the
+    // tube's decay is. Its top-up is what decayed over a period, so on a slow
+    // machine real time would top up more than the tube lost and the figure
+    // would creep brighter.
+    let tube = 0;
     let writer: SaverWriter | null = null;
 
-    const unsubscribe = onFrame((time) => {
-      if (start < 0) start = time;
+    const unsubscribe = onFrame((_time, dt) => {
+      tube += dt;
       const f = frame.current;
       const step = saverStep(writer, {
-        elapsedMs: time - start,
+        elapsedMs: tube,
         aspect: window.innerWidth / Math.max(1, window.innerHeight),
         pending: readBeam(f),
       });
@@ -162,7 +167,7 @@ export default function Screensaver() {
   if (active === "beam") {
     return (
       <div className="saver saver--beam" aria-hidden="true">
-        <span className="saver__wake">move to wake</span>
+        <span className="saver__wake">{copy.wake}</span>
       </div>
     );
   }
@@ -170,8 +175,8 @@ export default function Screensaver() {
   return (
     <div className="saver" aria-hidden="true">
       <div ref={plateRef} className="saver__plate">
-        <span className="saver__title">FergusOS</span>
-        <span className="saver__sub">no signal · move to wake</span>
+        <span className="saver__title">{copy.plateTitle}</span>
+        <span className="saver__sub">{copy.plateSub}</span>
       </div>
     </div>
   );

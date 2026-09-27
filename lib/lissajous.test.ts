@@ -7,6 +7,7 @@ import {
   SAVER_HOLD_MS,
   SAVER_JOIN,
   SAVER_LEVEL,
+  SAVER_MAX_STROKE,
   SAVER_PERIOD_MS,
   SAVER_RATIOS,
   figureAt,
@@ -126,6 +127,32 @@ describe("saverStep, the beam's writer", () => {
     expect(after.pts).not.toBeNull();
   });
 
+  it("draws only the latest stretch after a stall, never a chord across the figure", () => {
+    // A 200ms stall used to count as continuous and put eight points over
+    // three radians: straight bright lines through the middle of a 5:4 figure
+    // (code review, 2026-09-27). The stroke keeps its newest stretch instead.
+    const env = (elapsedMs: number) => ({ elapsedMs, aspect: 1.6, pending: [] });
+    const at = 4 * SAVER_HOLD_MS + 100; // inside the 5:4 figure
+    expect(SAVER_RATIOS[4]).toEqual([5, 4]);
+    const a = saverStep(null, env(at));
+    const b = saverStep(a.writer, env(at + 16));
+    const stalled = saverStep(b.writer, env(at + 16 + 200));
+    expect(stalled.pts).not.toBeNull();
+    const span = ((Math.PI * 2) / SAVER_PERIOD_MS) * (at + 216) - b.writer.theta;
+    expect(span).toBeGreaterThan(SAVER_MAX_STROKE);
+    // Every chord stays within the beam's own width of the true curve: the
+    // stroke follows the figure rather than cutting across it.
+    const pts = stalled.pts!;
+    const fig = figureAt(at + 216);
+    const target = ((Math.PI * 2) / SAVER_PERIOD_MS) * (at + 216);
+    const theta = (i: number) => target - SAVER_MAX_STROKE + (SAVER_MAX_STROKE * i) / (pts.length - 1);
+    for (let i = 1; i < pts.length; i++) {
+      const mid = { x: (pts[i - 1].x + pts[i].x) / 2, y: (pts[i - 1].y + pts[i].y) / 2 };
+      const curve = lissajousPoint((theta(i - 1) + theta(i)) / 2, fig, 1.6);
+      expect(beamLength([mid, curve], 1.6)).toBeLessThan(2 * BEAM_RADIUS);
+    }
+  });
+
   it("blanks the gun across a change of ratio instead of joining two figures", () => {
     const env = (elapsedMs: number) => ({ elapsedMs, aspect: 1.6, pending: [] });
     const a = saverStep(null, env(SAVER_HOLD_MS - 40));
@@ -160,11 +187,29 @@ describe("the Screensaver draws with the beam", () => {
     expect(src).toMatch(/saver__plate/);
   });
 
+  it("runs on the tube's own clock, the capped frame deltas its decay runs on", () => {
+    // The gain tops up what the phosphor lost over a period. The tube decays by
+    // each frame's delta capped at 64ms, so on a slow machine real time would
+    // top up more than decayed and the figure would creep brighter.
+    expect(src).toMatch(/onFrame\(\(_time, dt\) => \{/);
+    expect(src).toMatch(/tube \+= dt;/);
+    expect(src).toMatch(/elapsedMs: tube,/);
+  });
+
   it("hears keys the arcade stops from bubbling, and never saves over the arcade", () => {
     // The arcade room stops keydown propagation, as its contract requires. A
     // bubble-phase listener never heard a keyboard player, who then got the
     // saver over a running game after 45 seconds.
     expect(src).toMatch(/capture: true/);
     expect(src).toMatch(/arcade-open/);
+  });
+});
+
+describe("the saver's words live in content", () => {
+  it("renders no copy of its own", () => {
+    // CLAUDE.md: all editable copy lives in content/*.ts (code review, 2026-09-27).
+    const src = readFileSync(join(process.cwd(), "components", "system", "Screensaver.tsx"), "utf8");
+    expect(src).not.toMatch(/>[^<>{}\n]*[a-z]{3}[^<>{}\n]*</);
+    expect(src).toMatch(/\{copy\.wake\}/);
   });
 });

@@ -15,6 +15,7 @@ import {
   POWER_OPEN,
   channelIndex,
   contrastFromDial,
+  dialRest,
   dialFromContrast,
   ejectCase,
   ejectLayout,
@@ -23,6 +24,7 @@ import {
   placeBox,
   powerBand,
   powerOpen,
+  knobTap,
 } from "./eject";
 import { navDoor, navItems } from "@/content/nav";
 import { THEMES } from "./system";
@@ -411,5 +413,30 @@ describe("ejectLean", () => {
   it("never leans on touch, where the pointer only exists under a finger on a control", () => {
     // A tap would move the monitor under the finger that is pressing it.
     expect(ejectLean(1, 1, 1, true)).toEqual([0, 0]);
+  });
+});
+
+describe("a knob under a tap (code review, 2026-09-27)", () => {
+  it("moves to the next detent and stops at the last rather than skipping it", () => {
+    // Contrast taps by 4 up to 20: from 17 a tap used to wrap straight to 0
+    // and switch the scanlines off, skipping the printed 20.
+    expect(knobTap(17, 0, 20, 4)).toBe(20);
+    expect(knobTap(12, 0, 20, 4)).toBe(16);
+  });
+  it("goes round to the first detent only from the last", () => {
+    expect(knobTap(20, 0, 20, 4)).toBe(0);
+    expect(knobTap(6, 0, 6, 1)).toBe(0);
+  });
+  it("takes a dial resting off its detents to the first", () => {
+    expect(knobTap(-1, 0, 6, 1)).toBe(0);
+  });
+});
+
+describe("the channel dial on a page that is not a channel", () => {
+  it("rests half a detent before channel 1, not on it", () => {
+    expect(channelIndex("/contact", false)).toBe(-1);
+    expect(dialRest(-1)).toBe(-0.5);
+    expect(dialRest(0)).toBe(0);
+    expect(dialRest(3)).toBe(3);
   });
 });

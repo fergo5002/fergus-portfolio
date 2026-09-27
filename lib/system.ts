@@ -279,6 +279,17 @@ export function memoryAddress(progress: number): string {
 }
 
 /**
+ * The fraction a per-frame ease `x += (t - x) * k` should move over `dtMs`, so
+ * that it means the same at any refresh rate: `k` itself at the 60Hz reference,
+ * and two half-length frames together move exactly as far as one. A bare `k`
+ * per frame eases twice as fast at 120Hz as at 60.
+ */
+export function easeFactor(k: number, dtMs: number): number {
+  if (!(dtMs > 0)) return 0;
+  return 1 - Math.pow(1 - k, dtMs / (1000 / 60));
+}
+
+/**
  * The working directory as the phone status bar shows it.
  *
  * The bar has about 90px for this once the brand, three 44px controls and the

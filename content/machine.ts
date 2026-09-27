@@ -24,3 +24,10 @@ export const machineCopy = {
   viewMachine: "Eject. Step out of the screen and use the machine itself.",
   viewPage: "Back into the screen",
 } as const;
+
+/** The screensaver: the line under the beam's figure, and the plate shown when there is no tube to draw on. */
+export const saverCopy = {
+  wake: "move to wake",
+  plateTitle: "FergusOS",
+  plateSub: "no signal · move to wake",
+} as const;

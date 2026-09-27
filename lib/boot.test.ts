@@ -500,7 +500,11 @@ describe("BootSequence is wired to the failsafe", () => {
   it("reveals the page and drops the overlay together", () => {
     // Separated by the power-on flourish, a throw between them stranded the
     // overlay on top of a visible site.
-    expect(src).toMatch(/classList\.remove\(BOOTING_CLASS\);\s*\n\s*setBooting\(false\);/);
+    // And in the same task: the overlay is dropped with flushSync, so the reveal
+    // and the drop are one commit. As a plain state update it waited for
+    // React's next commit, behind a software-rendered frame, and the overlay
+    // outlived the reveal by up to 284ms (scripts/boot-check.mjs, 2026-09-27).
+    expect(src).toMatch(/classList\.remove\(BOOTING_CLASS\);\s*\n\s*flushSync\(\(\) => setBooting\(false\)\);/);
   });
 
   it("reads the one frame clock and never starts a loop of its own", () => {
@@ -556,6 +560,16 @@ describe("BootSequence is wired to the failsafe", () => {
     expect(src).toMatch(/finishedRef\.current = true;\s*\n\s*stopFrames\.current\(\);/);
   });
 
+  it("re-arms the watchdog from the first frame the boot actually runs", () => {
+    // The watchdog is armed at mount, but the sequence only advances on frames.
+    // A tab opened in the background gets none until it is shown, and a boot
+    // that started 15 seconds late was cut off 5 seconds in (code review,
+    // 2026-09-27). Armed at mount still covers a boot that never gets a frame.
+    expect(src).toMatch(
+      /if \(struckAt < 0\) \{\s*struckAt = time;\s*window\.clearTimeout\(watchdog\);\s*watchdog = window\.setTimeout\(\(\) => finishRef\.current\(\), BOOT_WATCHDOG_MS\);/,
+    );
+  });
+
   it("draws the mark with the beam through lib/beam.ts, and lets go of it", () => {
     expect(src).toMatch(/writeBeam\(frame\.current, /);
     expect(src).toMatch(/clearBeam\(/);
@@ -580,7 +594,7 @@ describe("BootSequence is wired to the failsafe", () => {
     // the reveal is wrapped, so a failure in decoration cannot take the page
     // with it, and cannot escape when the watchdog is the caller (a throw inside
     // a setTimeout callback reaches no error boundary at all).
-    expect(src).toMatch(/setBooting\(false\);[\s\S]{0,400}\btry\s*\{[\s\S]{0,400}degauss\(\)/);
+    expect(src).toMatch(/setBooting\(false\)\);[\s\S]{0,400}\btry\s*\{[\s\S]{0,400}degauss\(\)/);
   });
 });
 

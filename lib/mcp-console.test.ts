@@ -88,3 +88,15 @@ describe("the tool notes on the page", () => {
     expect(Object.keys(mcpCopy.toolNotes).sort()).toEqual([...TOOL_NAMES].sort());
   });
 });
+
+describe("the console's panels", () => {
+  it("hands the observer the current send from an effect, never a write during render", () => {
+    // React may discard a render under concurrent features, and a ref written
+    // in the body would then hold a function from a render that never
+    // committed (code review, 2026-09-27; BootSequence keeps the same rule).
+    const { readFileSync } = require("node:fs") as typeof import("node:fs");
+    const { join } = require("node:path") as typeof import("node:path");
+    const src = readFileSync(join(process.cwd(), "components", "mcp", "McpPanels.tsx"), "utf8");
+    expect(src).toMatch(/useEffect\(\(\) => \{\s*sendRef\.current = send;\s*\}\);/);
+  });
+});

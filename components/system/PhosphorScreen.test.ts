@@ -373,3 +373,14 @@ describe("the power switch works inside the glass while ejected", () => {
     expect(src).toMatch(/pu\.uLineFade\.value = offAt < 0 \? 1 : Math\.exp\(/);
   });
 });
+
+describe("ejected, a tap off the glass rings nothing (code review, 2026-09-27)", () => {
+  it("maps the tap into the tube and drops it when it lands on the desk or the chin", () => {
+    // A press on the chin's degauss or power button is a pointerdown below the
+    // glass. Mapped into the tube it sits outside 0..1, and the shockwave then
+    // swept up through the picture on every button press on a phone.
+    expect(src).toMatch(/const tapU = \(f\.tapX - r\.x0\) \/ sw;/);
+    expect(src).toMatch(/const tapV = \(f\.tapY - r\.y0\) \/ sh;/);
+    expect(src).toMatch(/if \(tapU < 0 \|\| tapU > 1 \|\| tapV < 0 \|\| tapV > 1\) shared\.uTap\.value = 999;/);
+  });
+});

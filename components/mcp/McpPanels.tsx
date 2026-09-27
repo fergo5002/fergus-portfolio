@@ -123,7 +123,9 @@ export function McpConsole({ endpoint }: { endpoint: string }) {
   // Held in a ref so the observer below is set up once and still calls the
   // current `send`.
   const sendRef = useRef(send);
-  sendRef.current = send;
+  useEffect(() => {
+    sendRef.current = send;
+  });
 
   useEffect(() => {
     const root = rootRef.current;

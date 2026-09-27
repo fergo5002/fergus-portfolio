@@ -9,6 +9,8 @@ import {
   EJECT_COLOURS,
   EJECT_HARDWARE,
   channelIndex,
+  dialRest,
+  knobTap,
   contrastFromDial,
   dialFromContrast,
   ejectCase,
@@ -80,7 +82,11 @@ function Knob(props: KnobProps) {
   const { name, label, box, labelH, min, max, value, tapStep, sweep, valueText, ticks, onTurn, onCommit } = props;
   const [held, setHeld] = useState<number | null>(null);
   const drag = useRef<{ id: number; x: number; y: number; from: number; at: number; moved: boolean } | null>(null);
-  const shown = Math.max(min, held ?? value);
+  // A value below `min` is a dial resting between detents (the channel dial
+  // on a page that is not a channel): drawn half a detent before the first,
+  // and still a value the native input can hold, so the keyboard moves on.
+  const shown = held ?? value;
+  const rest = held ?? dialRest(value);
   const angle = (v: number) => -sweep / 2 + ((v - min) / Math.max(1, max - min)) * sweep;
   const step = dragPx(max - min + 1);
 
@@ -89,7 +95,8 @@ function Knob(props: KnobProps) {
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
     e.currentTarget.parentElement?.querySelector("input")?.focus({ preventScroll: true });
-    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, from: shown, at: shown, moved: false };
+    const from = Math.max(min, shown);
+    drag.current = { id: e.pointerId, x: e.clientX, y: e.clientY, from, at: from, moved: false };
   };
   const onPointerMove = (e: ReactPointerEvent<HTMLSpanElement>) => {
     const d = drag.current;
@@ -109,7 +116,7 @@ function Knob(props: KnobProps) {
     if (!d || d.id !== e.pointerId) return;
     drag.current = null;
     setHeld(null);
-    const tapped = value + tapStep > max ? min : Math.max(min, value + tapStep);
+    const tapped = knobTap(value, min, max, tapStep);
     const next = d.moved ? d.at : tapped;
     if (next !== value) onCommit(next);
   };
@@ -141,12 +148,12 @@ function Knob(props: KnobProps) {
             style={{ "--at": `${angle(t.at)}deg`, "--tick": t.colour } as CSSProperties}
           />
         ))}
-        <span className="ejhw__cap" style={{ "--turn": `${angle(shown)}deg` } as CSSProperties} />
+        <span className="ejhw__cap" style={{ "--turn": `${angle(rest)}deg` } as CSSProperties} />
         <input
           ref={props.inputRef}
           type="range"
           className="ejhw__range"
-          min={min}
+          min={Math.min(min, shown)}
           max={max}
           step={1}
           value={shown}
@@ -400,7 +407,7 @@ export default function EjectHardware() {
           value={channel}
           tapStep={1}
           sweep={270}
-          valueText={copy.channelValue(Math.max(0, channel) + 1, spoken.label)}
+          valueText={channel < 0 ? copy.channelOff : copy.channelValue(channel + 1, spoken.label)}
           ticks={EJECT_CHANNELS.map((_, i) => ({ at: i }))}
           inputRef={channelRef}
           onTurn={(v) => {

@@ -365,6 +365,25 @@ export function channelIndex(path: string, arcadeOpen: boolean): number {
   );
 }
 
+/**
+ * Where the dial rests: its detent, or half a detent before the first when the
+ * page is not one of its channels (`/contact`, a 404), so it never claims a
+ * channel the visitor is not on.
+ */
+export function dialRest(channel: number): number {
+  return channel < 0 ? -0.5 : channel;
+}
+
+/**
+ * Where a tap on a knob goes: the next detent, stopping at the last rather than
+ * wrapping past it, and round to the first only from the last. A dial resting
+ * off its detents goes to the first.
+ */
+export function knobTap(value: number, min: number, max: number, step: number): number {
+  if (value >= max) return min;
+  return Math.min(max, Math.max(min, value + step));
+}
+
 /** One detent per phosphor, in the theme list's order. */
 export const EJECT_COLOURS: readonly Theme[] = THEMES;
 
