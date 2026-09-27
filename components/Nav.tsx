@@ -37,9 +37,16 @@ const items = [
  * is not a page. It is a program the terminal hosts, so this asks the shell to
  * run the door command and makes sure the drawer is there to hear it. `open` rather than
  * `toggle`, because a drawer that is already open must stay open to run it.
+ *
+ * Pressed while the arcade is up, it leaves, the same way the other nav links
+ * do (2026-09-27). The room's own header bar is gone, and a phone has no
+ * Escape key, so this is a touch screen's way out.
  */
-function openArcade(): void {
-  if (shellStore.get().arcade !== "closed") return;
+function toggleArcade(): void {
+  if (shellStore.get().arcade !== "closed") {
+    shellStore.dispatch({ type: "close" });
+    return;
+  }
   requestCommand("cd arcade");
   shellStore.dispatch({ type: "open" });
 }
@@ -115,7 +122,7 @@ export default function Nav() {
             <button
               type="button"
               className={`nav__link nav__link--cmd${arcadeOpen ? " is-active" : ""}`}
-              onClick={openArcade}
+              onClick={toggleArcade}
               aria-current={arcadeOpen ? "location" : undefined}
             >
               cd arcade

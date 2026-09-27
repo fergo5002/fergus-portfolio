@@ -19,6 +19,12 @@ describe("cd arcade in the nav (Fergus, 2026-09-06)", () => {
     expect(code(nav)).toContain('shellStore.dispatch({ type: "open" })');
   });
 
+  it("leaves an open arcade when pressed again, because a touch screen has no Escape key (2026-09-27)", () => {
+    const toggle = /function toggleArcade\(\): void \{([\s\S]*?)\n\}/.exec(code(nav))?.[1] ?? "";
+    expect(toggle).toMatch(/if \(shellStore\.get\(\)\.arcade !== "closed"\) \{\s*shellStore\.dispatch\(\{ type: "close" \}\);\s*return;\s*\}/);
+    expect(code(nav)).toMatch(/onClick=\{toggleArcade\}/);
+  });
+
   it("never becomes a link: there is no /arcade route to crawl", () => {
     expect(code(nav)).not.toMatch(/href:\s*"\/arcade"/);
   });
