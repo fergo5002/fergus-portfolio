@@ -21,10 +21,14 @@ try {
   }
   await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
   await page.locator(".statusbar__prompt").click(); await page.locator(".term__input").fill("cd arcade poker"); await page.locator(".term__input").press("Enter");
-  await page.locator(".arcade-room").getByRole("button", { name: /^sound off$/i }).click(); await page.locator(".arcade-room").getByRole("button", { name: /^sound on$/i }).waitFor();
-  await page.getByRole("button", { name: /start solo run/i }).click(); await page.waitForTimeout(8500);
+  // Sound lives in the game view now that the room's header bar is gone.
+  await page.getByRole("button", { name: /start solo run/i }).click(); await page.locator(".arcade-canvas").waitFor();
+  await page.locator(".arcade-play").getByRole("button", { name: /^sound off$/i }).click(); await page.locator(".arcade-play").getByRole("button", { name: /^sound on$/i }).waitFor();
+  await page.waitForTimeout(8500);
   await page.locator(".arcade-stage").focus();
-  for (let i = 0; i < 32 && !await page.locator(".arcade-results").count(); i++) {
+  // The first Enter starts the run from its card; the rest bank hands. Headless WebGL
+  // runs the page slowly, so the loop allows for a long countdown and GAME OVER hold.
+  for (let i = 0; i < 60 && !await page.locator(".arcade-results").count(); i++) {
     // Exercise the real keyboard control. When completion moves focus to the
     // result, a late Enter is harmless instead of targeting a removed button.
     await page.keyboard.press("Enter");
