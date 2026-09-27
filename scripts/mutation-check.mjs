@@ -1556,6 +1556,13 @@ const MUTATIONS = [
     tests: "components/studio/PocketRedact.test.ts",
   },
   {
+    name: "pocket redact: the find modes stop shrinking and push a 320px phone sideways",
+    file: "app/tools/pocket-redact/tool.css",
+    pattern: /\.redact__modes \{\r?\n  flex: 0 1 auto;/,
+    replace: ".redact__modes {\n  flex: none;",
+    tests: "components/studio/PocketRedact.test.ts",
+  },
+  {
     name: "pocket redact: a mask a visitor already drew stays lit as a candidate",
     file: "lib/studio/redaction.ts",
     pattern: /return boxes\.filter\(\r?\n(\s+)\(b\) =>\r?\n(\s+)!masks\.some\(/,

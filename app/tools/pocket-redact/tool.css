@@ -425,8 +425,12 @@
   border-color: var(--green-line);
   color: var(--green);
 }
+/* Allowed to shrink, so on a 320px phone the kit wraps its options instead
+   of pushing the page sideways (measured: 341px wide before this). */
 :is(.lab, .tool-studio) .studio.redact .redact__modes {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 :is(.lab, .tool-studio) .studio.redact .redact__caveat,
 :is(.lab, .tool-studio) .studio.redact .redact__note {

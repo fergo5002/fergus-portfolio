@@ -120,6 +120,12 @@ describe("no eyebrow and no stock control", () => {
     expect(css).toMatch(/\.redact__inspected input\[type="checkbox"\]\s*\{[^}]*appearance:\s*none/);
   });
 
+  it("lets the find modes shrink and wrap, so a 320px phone never scrolls sideways", () => {
+    // The phone check measured the page at 341px on a 320px iPhone when the
+    // modes were `flex: none`.
+    expect(css).toMatch(/\.redact__modes \{\s*flex: 0 1 auto;\s*min-width: 0;\s*max-width: 100%;/);
+  });
+
   it("keeps every colour a token, except the paper's own white and the mask's black", () => {
     const hex = [...css.matchAll(/#[0-9a-fA-F]{3,8}\b/g)].map((m) => m[0].toLowerCase());
     expect(hex.filter((h) => !["#000", "#fff", "#000000", "#ffffff"].includes(h))).toEqual([]);
