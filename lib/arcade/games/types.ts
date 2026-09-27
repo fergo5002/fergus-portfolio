@@ -74,6 +74,14 @@ export type BaseState = {
   banner: Banner | null;
 };
 
+/**
+ * How a run was started. `touch` is a phone or tablet run: a typing game may
+ * ask a touch keyboard for easier characters and move slower. A module that
+ * has no use for it ignores it. It is recorded in the state, never guessed
+ * mid-run, so the same seed and the same options always make the same game.
+ */
+export type GameOptions = { touch?: boolean };
+
 /** What an unattended player remembers between ticks. */
 export type DemoMemory = { lastAct: number; flag: boolean; mark: number };
 export type DemoPlan = { hold: Set<string>; press: string[] };
@@ -81,7 +89,7 @@ export type DemoPlan = { hold: Set<string>; press: string[] };
 export type GameModule<S extends BaseState = BaseState> = {
   readonly id: GameId;
   readonly input: "keys" | "text";
-  create(seed: number): S;
+  create(seed: number, options?: GameOptions): S;
   /** One fixed step. The engine has already advanced time, particles, the flash and the banner. */
   step(state: S, dt: number, keys: ReadonlySet<string>): void;
   press(state: S, key: string): void;

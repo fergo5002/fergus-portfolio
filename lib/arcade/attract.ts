@@ -1,4 +1,4 @@
-import { createGame, MODULES, pressGame, stepGame, type GameId, type GameState } from "./engine";
+import { createGame, MODULES, pressGame, stepGame, type GameId, type GameOptions, type GameState } from "./engine";
 import type { DemoMemory, DemoPlan } from "./games/types";
 
 /**
@@ -66,14 +66,14 @@ export type Attract = {
   step(dt: number): void;
 };
 
-export function createAttract(id: GameId, seed: number): Attract {
+export function createAttract(id: GameId, seed: number, options?: GameOptions): Attract {
   const rng = seededRng((seed ^ 0x9e3779b9) >>> 0);
   const nextSeed = () => Math.floor(rng() * 0xffffffff) >>> 0;
   let memory = createAttractMemory();
   let acc = 0, overFor = 0;
   const attract: Attract = {
     id,
-    state: createGame(id, nextSeed()),
+    state: createGame(id, nextSeed(), options),
     restarts: 0,
     lit: new Map(),
     step(dt) {
@@ -98,7 +98,7 @@ export function createAttract(id: GameId, seed: number): Attract {
     if (s.over) {
       overFor += TICK;
       if (overFor >= HOLD_AFTER_OVER) {
-        attract.state = createGame(id, nextSeed());
+        attract.state = createGame(id, nextSeed(), options);
         memory = createAttractMemory();
         attract.restarts++;
         overFor = 0;

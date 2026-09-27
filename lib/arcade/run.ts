@@ -41,13 +41,15 @@ export const BEAT = 0.7;
 /** Seconds the GAME OVER screen holds before the result panel is due. */
 export const OVER_HOLD = 1.6;
 
-export function createRun(id: GameId, seed: number, options: { best?: number; skipCard?: boolean } = {}): Run {
+export function createRun(id: GameId, seed: number, options: { best?: number; skipCard?: boolean; touch?: boolean } = {}): Run {
+  // A touch run's card demo plays the touch profile too, so it shows the words a phone is asked for.
+  const profile = { touch: options.touch === true };
   return {
     id,
     phase: options.skipCard ? "countdown" : "card",
     clock: 0,
-    game: createGame(id, seed),
-    demo: createAttract(id, (seed ^ 0x5bd1e995) >>> 0),
+    game: createGame(id, seed, profile),
+    demo: createAttract(id, (seed ^ 0x5bd1e995) >>> 0, profile),
     best: Math.max(0, options.best ?? 0),
     paused: false,
   };

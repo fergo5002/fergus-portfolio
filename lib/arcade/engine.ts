@@ -1,7 +1,7 @@
 import { panic, type PanicState } from "./games/panic";
 import { poker, type PokerState } from "./games/poker";
 import { signal, type SignalState } from "./games/signal";
-import { advanceBase, GAME_IDS, MAX_STEP, type GameEvent, type GameId, type GameModule, type Hud } from "./games/types";
+import { advanceBase, GAME_IDS, MAX_STEP, type GameEvent, type GameId, type GameModule, type GameOptions, type Hud } from "./games/types";
 
 /**
  * The arcade's registry and dispatcher. Deterministic: no DOM, timers,
@@ -16,7 +16,7 @@ import { advanceBase, GAME_IDS, MAX_STEP, type GameEvent, type GameId, type Game
  */
 
 export { GAME_IDS, WORLD, MAX_STEP } from "./games/types";
-export type { GameId, Point, Particle, GameEvent, GameSound, Banner, Hud, BaseState, GameModule } from "./games/types";
+export type { GameId, Point, Particle, GameEvent, GameSound, Banner, Hud, BaseState, GameModule, GameOptions } from "./games/types";
 export type { SignalState, PokerState, PanicState };
 
 export type GameState = SignalState | PokerState | PanicState;
@@ -28,8 +28,8 @@ function moduleOf<S extends GameState>(s: S): GameModule<S> {
   return MODULES[s.id] as unknown as GameModule<S>;
 }
 
-export function createGame<Id extends GameId>(id: Id, seed: number): StateOf<Id> {
-  return (MODULES[id] as unknown as GameModule<StateOf<Id>>).create(seed);
+export function createGame<Id extends GameId>(id: Id, seed: number, options?: GameOptions): StateOf<Id> {
+  return (MODULES[id] as unknown as GameModule<StateOf<Id>>).create(seed, options);
 }
 
 /** One fixed step, capped at `MAX_STEP`, of a run that is still going. */
