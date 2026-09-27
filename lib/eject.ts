@@ -145,8 +145,8 @@ export const EJECT_CASE = {
 export const EJECT_HARDWARE = {
   /** Every control's target, square. */
   control: 44,
-  /** Between controls, where there is room. */
-  gap: 12,
+  /** Between controls, where there is room: enough that no two printed names touch. */
+  gap: 20,
   /** Between controls at the narrowest. */
   minGap: 4,
   /** The printed name under each control. */

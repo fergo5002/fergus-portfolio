@@ -51,12 +51,15 @@ html:not(.is-ejecting) .ejhw {
 }
 
 .ejhw__name {
-  display: block;
+  /* Flex so a name wider than its control overflows both sides evenly. */
+  display: flex;
+  justify-content: center;
   height: calc(13px * var(--u));
-  font-size: calc(10px * var(--u));
+  /* 9px: "contrast" is the longest name, and at the narrowest chin (320px) its
+     centre is 48px from the next one's. Nine-pixel mono clears it by six. */
+  font-size: calc(9px * var(--u));
   line-height: calc(13px * var(--u));
-  letter-spacing: 0.04em;
-  text-align: center;
+  letter-spacing: 0.02em;
   white-space: nowrap;
   color: var(--green-faint);
 }
@@ -268,7 +271,9 @@ html:not(.is-ejecting) .ejhw {
   align-items: flex-end;
   gap: var(--sp-2);
   font-family: var(--font-screen);
-  font-size: 2.4rem;
+  /* The assembly is the viewport before it is scaled, so vw is the screen's
+     own width: a readout sized to the picture, not to the phone. */
+  font-size: clamp(1.5rem, 2.6vw, 2.4rem);
   line-height: 1;
   color: var(--green);
   text-shadow: var(--glow);

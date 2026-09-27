@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import {
   EJECT_CASE,
   ejectGeometry,
+  ejectLayout,
   ejectLean,
   ejectScaleFor,
   ejectTransform,
@@ -61,11 +62,41 @@ export default function EjectRig() {
     };
     const observer = new ResizeObserver(remeasure);
 
+    // The page itself, faintly, in the desk: the shader can only reflect the
+    // tube's glow, and the words on the glass are DOM. Mirrored where the base
+    // meets the desk, so the chin and the base reflect first and the glass
+    // below them, the way lacquer shows it; only the bottom of the picture,
+    // at a tenth of its light. Offsets are pre-transform pixels, like the
+    // radius below. Not on touch, where a second draw of the whole display is
+    // exactly the budget phones do not have, and not while the tube is
+    // squashed by the power switch, where the mirror line would sit in the
+    // glass.
+    const canReflect = !coarse && CSS.supports("-webkit-box-reflect", "below 0px");
+    let reflecting = false;
+    const reflect = (on: boolean) => {
+      if (!canReflect || on === reflecting) return;
+      reflecting = on;
+      if (!on) {
+        assembly.style.removeProperty("-webkit-box-reflect");
+        return;
+      }
+      const L = ejectLayout(window.innerWidth, window.innerHeight);
+      const gap = 2 * (L.chin + EJECT_CASE.base) * window.innerHeight;
+      assembly.style.setProperty(
+        "-webkit-box-reflect",
+        `below ${gap.toFixed(1)}px linear-gradient(transparent 80%, rgb(255 255 255 / 0.09))`,
+      );
+    };
+
     // The glass's corners, clipped to the radius the shader draws its own
     // with. Pre-transform pixels: the assembly is the viewport before it is
     // scaled, and the shader's radius is a fraction of the screen's height.
     const clipCorners = () => {
       assembly.style.borderRadius = `${EJECT_CASE.glass * window.innerHeight}px`;
+      if (reflecting) {
+        reflecting = false;
+        reflect(true);
+      }
     };
 
     const engage = () => {
@@ -89,6 +120,7 @@ export default function EjectRig() {
       spacer.style.height = "0px";
       assembly.style.transform = "";
       assembly.style.borderRadius = "";
+      reflect(false);
       screen.style.transform = "";
       if (glass) glass.style.transform = "";
       lastGlass = "";
@@ -108,7 +140,9 @@ export default function EjectRig() {
       const [px, py] = ejectLean(f.pointerX, f.pointerY, f.pointerActive, coarse);
       const g = ejectGeometry(f.eject, px, py, ejectScaleFor(window.innerWidth));
       // Squashed with the raster when the monitor's power switch is off.
-      assembly.style.transform = ejectTransform(g, powerBand(f.boot));
+      const band = powerBand(f.boot);
+      assembly.style.transform = ejectTransform(g, band);
+      reflect(band === 1);
       // Mirror the real scroll position, so the page inside the monitor is the
       // page the document actually is.
       screen.style.transform = `translate3d(0, ${-window.scrollY}px, 0)`;

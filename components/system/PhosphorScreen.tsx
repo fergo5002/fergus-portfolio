@@ -500,15 +500,16 @@ vec3 room(vec2 uv, vec2 rectMin, vec2 rectMax, float screenLuma) {
   float onDesk = smoothstep(horizon + 0.0015, horizon - 0.0015, q.y);
   float ahead = floorY - q.y;
   if (onDesk > 0.0) {
-    vec3 desk = vec3(0.026, 0.024, 0.022);
+    vec3 desk = vec3(0.030, 0.028, 0.025);
     // Wood-ish grain, very low contrast, and not worth a hash on the cheap path.
     if (uMobile < 0.5) desk *= 0.85 + 0.3 * hash21(vec2(q.x * 90.0, floor(q.y * 260.0)));
     desk *= mix(0.5, 1.0, smoothstep(horizon, floorY - 0.02, q.y));
 
-    // The pool: brightest at the base, spreading a little wider than the case.
-    float across = max(abs(q.x - bc.x) - bh.x * 0.75, 0.0);
-    float pool = exp(-max(ahead, 0.0) * 3.8) * exp(-across * 6.5);
-    desk += uPhosphor * screenLuma * pool * 0.85 * flicker;
+    // The pool: brightest at the base, spreading wider than the case and
+    // foreshortened, because the desk is seen at a low angle.
+    float across = max(abs(q.x - bc.x) - bh.x * 0.85, 0.0);
+    float pool = exp(-max(ahead, 0.0) * 4.2) * exp(-across * 4.0);
+    desk += uPhosphor * screenLuma * pool * 3.8 * flicker;
     // Behind the base, the spill that clears the case.
     desk += uPhosphor * spill * 0.22;
 
@@ -530,8 +531,8 @@ vec3 room(vec2 uv, vec2 rectMin, vec2 rectMax, float screenLuma) {
   col += uPhosphor * spill * 0.35 * exp(-abs(q.y - horizon) * 900.0);
 
   // Contact shadow round the base.
-  vec2 cs = vec2((q.x - bc.x) / (bh.x * 0.8), (q.y - floorY) / max(uCaseB.y * 1.6, 1e-4));
-  col *= 1.0 - 0.7 * onDesk * exp(-dot(cs, cs) * 1.4);
+  vec2 cs = vec2((q.x - bc.x) / (bh.x * 0.62), (q.y - floorY) / max(uCaseB.y * 1.1, 1e-4));
+  col *= 1.0 - 0.6 * onDesk * exp(-dot(cs, cs) * 1.6);
 
   // ── dust in the beam ─────────────────────────────────────────────────────
   // Only visible where the light is, which is the only place dust is ever
@@ -556,14 +557,16 @@ vec3 room(vec2 uv, vec2 rectMin, vec2 rectMax, float screenLuma) {
   float lx = uLean.x;
   if (abs(lx) > 0.01) {
     float sgn = sign(lx);
-    float depth = bh.y * 0.14 * abs(lx);
+    float depth = bh.y * 0.08 * abs(lx);
     float t = ((q.x - bc.x) * sgn - bh.x) / max(depth, 1e-5);
     if (t > 0.0 && t < 1.0) {
       float topY = bc.y + bh.y - uCase.w - t * bh.y * 0.3;
       float botY = caseFoot + uCase.w * 0.5 + t * bh.y * 0.06;
       float inY = smoothstep(botY - 0.001, botY + 0.001, q.y) * smoothstep(topY + 0.001, topY - 0.001, q.y);
-      vec3 flank = vec3(0.072, 0.070, 0.066) * mix(0.62, 0.22, t);
-      flank += uPhosphor * spill * 0.05;
+      // Darker than the front and darker still towards the back, catching
+      // the screen's spill along the edge that faces it.
+      vec3 flank = vec3(0.072, 0.070, 0.066) * mix(0.85, 0.35, t);
+      flank += uPhosphor * spill * mix(0.16, 0.04, t);
       col = mix(col, flank, inY);
     }
   }

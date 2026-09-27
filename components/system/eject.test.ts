@@ -125,7 +125,14 @@ describe("the spacer follows the page inside the monitor", () => {
   });
 
   it("squashes the page with the picture when the tube is switched off", () => {
-    expect(rig).toContain("ejectTransform(g, powerBand(f.boot))");
+    expect(rig).toContain("const band = powerBand(f.boot);");
+    expect(rig).toContain("assembly.style.transform = ejectTransform(g, band);");
+  });
+
+  it("reflects the page in the desk only on a fine pointer, and never while squashed", () => {
+    expect(rig).toContain('const canReflect = !coarse && CSS.supports("-webkit-box-reflect", "below 0px");');
+    expect(rig).toContain("reflect(band === 1);");
+    expect(body(rig, "const release = () =>")).toContain("reflect(false);");
   });
 
   it("clips the glass to the same corner radius the shader draws", () => {
