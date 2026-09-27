@@ -67,7 +67,8 @@ export default function CanvasGame({ cabinet, seed, replay, theme, boards, onBac
   const rootRef = useRef<HTMLDivElement>(null), canvasRef = useRef<HTMLCanvasElement>(null), stageRef = useRef<HTMLDivElement>(null);
   const statusRef = useRef<HTMLParagraphElement>(null), typeRef = useRef<HTMLInputElement>(null), resultRef = useRef<HTMLDivElement>(null);
   const runRef = useRef<Run | null>(null);
-  if (!runRef.current) runRef.current = createRun(cabinet.id, seed, { best: bestFor(cabinet.id, boards), skipCard: replay && !typing });
+  // A coarse pointer is a phone or a tablet: the run records the touch profile, which a typing game reads (the room never renders on the server).
+  if (!runRef.current) runRef.current = createRun(cabinet.id, seed, { best: bestFor(cabinet.id, boards), skipCard: replay && !typing, touch: window.matchMedia("(pointer: coarse)").matches });
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const keys = useRef(new Set<string>()), physical = useRef(new Map<string, string>());

@@ -67,15 +67,15 @@ export const cabinets: readonly Cabinet[] = [
     title: "KERNEL PANIC",
     subtitle: "type fast. the kernel is watching.",
     genre: "TYPING DEFENCE",
-    description: "rogue processes are falling towards the kernel. type a process's name and it dies before it lands. let three through and the kernel panics.",
-    objective: "type each falling name before it reaches the kernel. a wrong letter clears the line. the waves get faster.",
-    controls: "type on the keyboard. backspace takes a letter back. on a phone, tap to start and the keyboard comes up.",
+    description: "rogue processes are falling towards the kernel. type a name and it dies before it lands. forks split in two, sudo clears the screen, and three landings panic the kernel.",
+    objective: "type each falling name before it reaches the kernel. the first letter locks on to the lowest match. clean kills build the combo to x4, and every twelfth in a row drops a sudo.",
+    controls: "type on the keyboard. a wrong letter breaks the combo. backspace steps back, and from the first letter lets go. on a phone, tap to start and the keyboard comes up: phone runs ask for letters and spaces only.",
     action: "TYPE",
     card: {
-      lines: ["PROCESSES FALL TOWARDS THE KERNEL.", "TYPE A NAME TO KILL IT.", "LET THREE LAND AND IT PANICS."],
+      lines: ["PROCESSES FALL TOWARDS THE KERNEL.", "TYPE A NAME TO KILL IT.", "LET THREE LAND AND THE KERNEL PANICS."],
       keys: [
-        { caps: ["A", "…", "Z"], keys: ["type"], label: "TYPE A NAME", touch: ["KEYBOARD"] },
-        { caps: ["⌫"], keys: ["erase"], label: "TAKE BACK" },
+        { caps: ["K", "I", "L", "L"], keys: ["type"], label: "TYPE THE NAME" },
+        { caps: ["⌫"], keys: ["erase"], label: "STEP BACK" },
       ],
     },
     overLine: "KERNEL PANIC",
@@ -114,6 +114,25 @@ export const screenCopy = {
   table: { banked: "BANKED", target: "TARGET", worth: "WORTH", draws: "DRAWS", hand: "HAND" },
   /** Kernel Panic's floor. */
   kernel: "KERNEL",
+  /**
+   * What Kernel Panic's screen halts on. `{pid}`, `{comm}` and the hex fields
+   * are filled from the run by `lib/arcade/draw/panic.ts`; the drawer prefixes
+   * each line with a timestamp where the screen is wide enough.
+   */
+  panicDump: [
+    "Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b",
+    "CPU: 0 PID: {pid} Comm: {comm} Not tainted 6.9.0-fergusos #1",
+    "Hardware name: FergusOS Phosphor CRT, BIOS 1.0 09/2026",
+    "Call Trace:",
+    " <TASK>",
+    " dump_stack_lvl+{a}/0x70",
+    " panic+{b}/0x3a0",
+    " kernel_line_breach+{c}/0x40",
+    " do_exit+{d}/0xb20",
+    " </TASK>",
+    "Kernel Offset: {offset} from 0xffffffff81000000",
+    "---[ end Kernel panic - not syncing: Attempted to kill init! ]---",
+  ],
 } as const;
 
 export const collectionCopy = {

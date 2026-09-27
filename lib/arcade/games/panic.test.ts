@@ -45,6 +45,9 @@ function type(s: PanicState, word: string) {
   for (const c of word) pressGame(s, `char:${c}`);
 }
 
+/** Read through a call, so a test that set the banner to null can read it again. */
+const bannerOf = (s: PanicState) => s.banner;
+
 function steps(s: PanicState, seconds: number) {
   for (let i = 0; i < Math.round(seconds / TICK); i++) stepGame(s, TICK, new Set());
 }
@@ -250,7 +253,7 @@ describe("Kernel Panic: waves", () => {
     s.banner = null;
     stepGame(s, TICK, new Set());
     expect(s.wave).toBe(2);
-    expect(s.banner?.text).toBe("WAVE 02");
+    expect(bannerOf(s)?.text).toBe("WAVE 02");
     expect(gameHud(s).stage).toEqual({ label: "WAVE", value: 2 });
   });
 
