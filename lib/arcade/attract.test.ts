@@ -32,32 +32,6 @@ describe("seededRng", () => {
 });
 
 describe("the unattended player", () => {
-  it("launches Breakpoint's ball within three seconds and breaks a brick within forty", () => {
-    const launched = run("bounce", 3, (a) => !a.state.ball.attached);
-    expect(launched.reached).toBe(true);
-    const scored = run("bounce", 40, (a) => a.state.score > 0);
-    expect(scored.reached).toBe(true);
-  });
-
-  it("returns a serve in Phosphor Pong within thirty seconds", () => {
-    const hit = run("pong", 30, (a) => a.state.score > 0);
-    expect(hit.reached).toBe(true);
-  });
-
-  it("eats in Ouroboros within twenty-five seconds and is still alive at six", () => {
-    const alive = run("snake", 6);
-    expect(alive.attract.restarts).toBe(0);
-    const ate = run("snake", 25, (a) => a.state.score > 0);
-    expect(ate.reached).toBe(true);
-  });
-
-  it("scores Under the Terminal within ninety seconds by moving through the maze", () => {
-    const moved = run("under", 5, (a) => a.state.turn > 3);
-    expect(moved.reached).toBe(true);
-    const scored = run("under", 90, (a) => a.state.score > 0);
-    expect(scored.reached).toBe(true);
-  });
-
   it("survives ten seconds of Dead Signal and builds a kill chain within twenty", () => {
     const alive = run("signal", 10);
     expect(alive.attract.restarts).toBe(0);
@@ -81,7 +55,7 @@ describe("the unattended player", () => {
 
 describe("restarting", () => {
   it("holds the finished screen for a beat and then deals a fresh game", () => {
-    const attract = createAttract("bounce", 3);
+    const attract = createAttract("signal", 3);
     attract.state.over = true;
     const seed = attract.state.seed;
     for (let i = 0; i < 60; i++) attract.step(TICK);
@@ -93,21 +67,16 @@ describe("restarting", () => {
     expect(attract.state.seed).not.toBe(seed);
   });
 
-  it("never spends the daily dungeon seed, so the demo cannot spoil today's board", () => {
-    const today = Number(new Date().toISOString().slice(0, 10).replaceAll("-", ""));
-    const attract = createAttract("under", today);
-    expect(attract.state.seed).not.toBe(today >>> 0);
-  });
 });
 
 describe("attractPlan", () => {
-  it("holds a direction for the games that steer and presses for the games that turn", () => {
+  it("holds a direction for the game that steers and presses for the game that deals", () => {
     const rng = seededRng(1), memory = createAttractMemory();
     const signal = attractPlan(createGame("signal", 1), rng, memory);
     expect([...signal.hold].every((k) => ["up", "down", "left", "right", "action"].includes(k))).toBe(true);
-    const under = createGame("under", 1);
-    under.time = 5;
-    const plan = attractPlan(under, rng, memory);
+    const poker = createGame("poker", 1);
+    poker.time = 5;
+    const plan = attractPlan(poker, rng, createAttractMemory());
     expect(plan.press.length).toBeGreaterThan(0);
     expect(plan.hold.size).toBe(0);
   });

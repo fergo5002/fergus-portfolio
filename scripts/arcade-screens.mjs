@@ -68,14 +68,14 @@ async function desktop(theme) {
     await page.waitForTimeout(800);
     await shot("hall-of-fame");
     await page.getByRole("button", { name: /all cabinets/i }).first().click();
-    await page.locator(".arcade-cabinet[data-game=bounce]").click();
+    await page.locator(".arcade-cabinet[data-game=signal]").click();
     await page.waitForTimeout(900);
-    await shot("detail-bounce");
+    await shot("detail-signal");
         await page.getByRole("button", { name: /start solo run/i }).click();
     await page.locator(".arcade-stage").focus();
     await page.keyboard.press("Space");
     await page.waitForTimeout(2500);
-    await shot("play-bounce");
+    await shot("play-signal");
     await page.getByRole("button", { name: /^pause$/i }).click();
     await page.waitForTimeout(300);
     await shot("play-paused");

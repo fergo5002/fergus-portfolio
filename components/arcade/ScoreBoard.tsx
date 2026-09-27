@@ -79,7 +79,7 @@ export default function ScoreBoard({ game, boards, score, ticket, onBoards }: Pr
     <section className="arcade-board" aria-label={copy.board}>
       <div className="arcade-board__head">
         <h3>{copy.board}</h3>
-        <span>{game === "under" ? copy.today : copy.allTime}</span>
+        <span>{copy.allTime}</span>
       </div>
       {score !== undefined && score > 0 && posted === null && (
         <form

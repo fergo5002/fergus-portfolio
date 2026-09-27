@@ -3,20 +3,21 @@ import { createGame, pressGame, stepGame, type GameId } from "./engine";
 import { blankGrid, centre, toLines, write } from "./grid";
 import type { ProgramSpec } from "./program";
 
-/** The same engine on the legacy character host, for ProgramSpec compatibility. */
+/**
+ * The same engine on the legacy character host, for ProgramSpec compatibility.
+ *
+ * The terminal hands every collection id to the arcade room, so nothing on the
+ * site starts this; it exists so `ARCADE_GAMES` can say a cabinet is built and
+ * so a host that only speaks ProgramSpec still gets a working game. It draws
+ * the title and the score rather than a picture: the picture is the room's job.
+ */
 export function vectorProgram(id: GameId): ProgramSpec {
   return { id, title: GAME_TITLES[id], start(host) {
     const s = createGame(id, 1), held = new Set<string>(); let disposed = false;
     const draw = () => {
       const grid = blankGrid(host.cols, host.rows);
-      centre(grid, 0, GAME_TITLES[id]); write(grid, 1, 1, `score ${s.score}`);
-      const put = (x: number, y: number, glyph: string) => write(grid, Math.max(0, Math.min(host.cols - 1, Math.round(x))), Math.max(2, Math.min(host.rows - 2, Math.round(y))), glyph);
-      if (id === "snake") { s.snake.forEach(p => put(p.x / 30 * host.cols, 2 + p.y / 16 * (host.rows - 4), "o")); put(s.food.x / 30 * host.cols, 2 + s.food.y / 16 * (host.rows - 4), "*"); }
-      else if (id === "under") {
-        for (let y = 0; y < s.map.length; y++) for (let x = 0; x < s.map[y].length; x++) if (s.seen[y][x]) put(x, y + 2, s.map[y][x] ? "#" : ".");
-        put(s.player.x, s.player.y + 2, "@"); put(s.food.x, s.food.y + 2, "k"); put(s.exit.x, s.exit.y + 2, ">");
-      } else if (id === "poker") { s.cards.forEach((c, i) => write(grid, 2 + i * 6, 5, `${s.held[i] ? "[" : " "}${c % 13 + 2}${s.held[i] ? "]" : " "}`)); centre(grid, 8, s.handName); }
-      else { put(s.player.x / 900 * host.cols, 2 + s.player.y / 560 * (host.rows - 4), id === "pong" ? "|" : "@"); put(s.ball.x / 900 * host.cols, 2 + s.ball.y / 560 * (host.rows - 4), "O"); }
+      centre(grid, 0, GAME_TITLES[id]); write(grid, 1, 2, `score ${s.score}`);
+      if (id === "poker") { s.cards.forEach((c, i) => write(grid, 2 + i * 6, 5, `${s.held[i] ? "[" : " "}${c % 13 + 2}${s.held[i] ? "]" : " "}`)); centre(grid, 8, s.handName); }
       centre(grid, host.rows - 1, "arrows move . space action"); host.draw(toLines(grid));
     };
     draw(); return {

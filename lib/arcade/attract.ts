@@ -1,4 +1,4 @@
-import { createGame, pressGame, stepGame, type GameId, type GameState, type Point } from "./engine";
+import { createGame, pressGame, stepGame, type GameId, type GameState } from "./engine";
 import { evaluateHand } from "./poker-rules";
 
 /**
@@ -8,13 +8,12 @@ import { evaluateHand } from "./poker-rules";
  * makes a row of cabinets read as machines rather than posters. The demo is
  * the real engine with an unattended player: deterministic, DOM-free, and
  * deliberately imperfect. A servo that never misses reads as a screensaver;
- * a hand that wobbles, catches the ball on the magnet now and then, and dies
- * eventually reads as somebody playing.
+ * a hand that wobbles, keeps the wrong card now and then, and dies eventually
+ * reads as somebody playing.
  *
- * Two rules. It never uses the daily dungeon seed, because a demo that showed
- * today's maze would be a spoiler for today's board. And it runs at the
- * engine's fixed 60Hz step through `step(dt)`, so the gallery can drive six of
- * these from the site's one frame clock without any of them owning a timer.
+ * It runs at the engine's fixed 60Hz step through `step(dt)`, so the gallery
+ * can drive every cabinet from the site's one frame clock without any of them
+ * owning a timer.
  */
 
 export type Rng = () => number;
@@ -34,9 +33,9 @@ export type AttractPlan = { hold: Set<string>; press: string[] };
 export type AttractMemory = {
   /** Game time of the last discrete decision, for pacing. */
   lastAct: number;
-  /** A per-rally choice: whether to try the magnet catch this time. */
+  /** A two-step decision in flight: poker has toggled its holds and draws next. */
   flag: boolean;
-  /** Game time of a moment worth waiting from (the magnet catch). */
+  /** Game time of a moment worth waiting from. */
   mark: number;
 };
 
@@ -46,112 +45,6 @@ export function createAttractMemory(): AttractMemory {
 
 const TICK = 1 / 60;
 const HOLD_AFTER_OVER = 2.4;
-const DIRS: Record<string, Point> = { right: { x: 1, y: 0 }, left: { x: -1, y: 0 }, down: { x: 0, y: 1 }, up: { x: 0, y: -1 } };
-const same = (a: Point, b: Point) => a.x === b.x && a.y === b.y;
-
-function dirName(d: Point): string {
-  if (d.x > 0) return "right";
-  if (d.x < 0) return "left";
-  return d.y > 0 ? "down" : "up";
-}
-
-function breakpoint(s: GameState, rng: Rng, m: AttractMemory, hold: Set<string>, press: string[]) {
-  const b = s.ball;
-  if (b.attached) {
-    if (s.rally === -1) {
-      // Caught on the magnet. Hold it for a beat, then let go: releasing is the launch.
-      if (m.mark < 0) m.mark = s.time;
-      if (s.time - m.mark < 0.6) hold.add("action");
-      else m.flag = false;
-      return;
-    }
-    m.mark = -1;
-    if (s.time - m.lastAct > 0.8) {
-      press.push("action");
-      m.lastAct = s.time;
-      m.flag = rng() < 0.3;
-    }
-    return;
-  }
-  const aim = b.x + Math.sin(s.time * 2.1) * 26;
-  if (s.player.x < aim - 9) hold.add("right");
-  else if (s.player.x > aim + 9) hold.add("left");
-  if (m.flag && b.vy > 0 && b.y > s.player.y - 90 && s.charge >= 25) hold.add("action");
-}
-
-function pong(s: GameState, rng: Rng, m: AttractMemory, hold: Set<string>, press: string[]) {
-  const b = s.ball;
-  const aim = b.y + Math.sin(s.time * 1.7) * 22;
-  if (s.player.y < aim - 10) hold.add("down");
-  else if (s.player.y > aim + 10) hold.add("up");
-  if (b.vx < 0 && b.x < 170 && s.charge >= 60 && s.time - m.lastAct > 1.5 && rng() < 0.6) {
-    press.push("action");
-    m.lastAct = s.time;
-  }
-}
-
-function ouroboros(s: GameState, rng: Rng, press: string[]) {
-  const head = s.snake[0];
-  if (!head) return;
-  const blocked = (p: Point) =>
-    p.x < 0 || p.x >= 30 || p.y < 0 || p.y >= 16 || s.snake.some((q) => same(q, p)) || s.snake2.some((q) => same(q, p));
-  const freeAround = (p: Point) =>
-    Object.values(DIRS).filter((d) => !blocked({ x: p.x + d.x, y: p.y + d.y })).length;
-  let best: { name: string; cost: number } | null = null;
-  for (const [name, d] of Object.entries(DIRS)) {
-    if (d.x === -s.direction.x && d.y === -s.direction.y) continue;
-    const next = { x: head.x + d.x, y: head.y + d.y };
-    let cost = Math.abs(next.x - s.food.x) + Math.abs(next.y - s.food.y);
-    if (blocked(next) && s.phase <= 0) cost += 100;
-    else cost += (4 - freeAround(next)) * 3;
-    cost += rng() * 0.5;
-    if (!best || cost < best.cost) best = { name, cost };
-  }
-  if (!best) return;
-  if (best.cost >= 100 && s.charge >= 65 && s.phase <= 0) press.push("action");
-  const chosen = DIRS[best.name];
-  if (!same(chosen, s.queued)) press.push(best.name);
-}
-
-/** Breadth-first search over the dungeon floor; the first step of the shortest path. */
-function firstStep(map: number[][], from: Point, to: Point): Point | null {
-  if (same(from, to)) return null;
-  const h = map.length, w = map[0]?.length ?? 0;
-  const prev = new Map<number, number>();
-  const key = (p: Point) => p.y * w + p.x;
-  const queue: Point[] = [from];
-  prev.set(key(from), -1);
-  while (queue.length) {
-    const p = queue.shift()!;
-    for (const d of Object.values(DIRS)) {
-      const n = { x: p.x + d.x, y: p.y + d.y };
-      if (n.y < 0 || n.y >= h || n.x < 0 || n.x >= w || map[n.y][n.x] !== 0 || prev.has(key(n))) continue;
-      prev.set(key(n), key(p));
-      if (same(n, to)) {
-        let cur = key(n);
-        while (prev.get(cur) !== key(from)) cur = prev.get(cur)!;
-        return { x: cur % w, y: Math.floor(cur / w) };
-      }
-      queue.push(n);
-    }
-  }
-  return null;
-}
-
-function under(s: GameState, rng: Rng, m: AttractMemory, press: string[]) {
-  if (s.time - m.lastAct < 0.22) return;
-  m.lastAct = s.time;
-  const near = s.enemies.filter((e) => Math.hypot(e.x - s.player.x, e.y - s.player.y) <= 2.5).length;
-  if (near >= 2 && s.charge >= 45) {
-    press.push("action");
-    return;
-  }
-  const heart = s.lives <= 3 ? s.hearts.find((h) => Math.abs(h.x - s.player.x) + Math.abs(h.y - s.player.y) <= 8) : undefined;
-  const target = heart ?? (s.hasKey ? s.exit : s.food);
-  const step = firstStep(s.map, s.player, target);
-  const d = step ? { x: step.x - s.player.x, y: step.y - s.player.y } : Object.values(DIRS)[Math.floor(rng() * 4)];
-  press.push(dirName(d));
-}
 
 function deadSignal(s: GameState, m: AttractMemory, hold: Set<string>, press: string[]) {
   let fx = (450 - s.player.x) * 0.6, fy = (280 - s.player.y) * 0.6;
@@ -217,18 +110,6 @@ export function attractPlan(s: GameState, rng: Rng, memory: AttractMemory): Attr
   const hold = new Set<string>(), press: string[] = [];
   if (s.over) return { hold, press };
   switch (s.id) {
-    case "bounce":
-      breakpoint(s, rng, memory, hold, press);
-      break;
-    case "pong":
-      pong(s, rng, memory, hold, press);
-      break;
-    case "snake":
-      ouroboros(s, rng, press);
-      break;
-    case "under":
-      under(s, rng, memory, press);
-      break;
     case "signal":
       deadSignal(s, memory, hold, press);
       break;
@@ -248,22 +129,14 @@ export type Attract = {
   step(dt: number): void;
 };
 
-export function todaySeed(): number {
-  return Number(new Date().toISOString().slice(0, 10).replaceAll("-", "")) >>> 0;
-}
-
 export function createAttract(id: GameId, seed: number): Attract {
   const rng = seededRng((seed ^ 0x9e3779b9) >>> 0);
-  const nextSeed = () => {
-    let s = Math.floor(rng() * 0xffffffff) >>> 0;
-    if (id === "under" && s === todaySeed()) s = (s + 1) >>> 0;
-    return s;
-  };
+  const nextSeed = () => Math.floor(rng() * 0xffffffff) >>> 0;
   let memory = createAttractMemory();
   let acc = 0, overFor = 0;
   const attract: Attract = {
     id,
-    state: createGame(id, nextSeed(), "solo"),
+    state: createGame(id, nextSeed()),
     restarts: 0,
     step(dt) {
       if (!Number.isFinite(dt) || dt <= 0) return;
@@ -279,7 +152,7 @@ export function createAttract(id: GameId, seed: number): Attract {
     if (s.over) {
       overFor += TICK;
       if (overFor >= HOLD_AFTER_OVER) {
-        attract.state = createGame(id, nextSeed(), "solo");
+        attract.state = createGame(id, nextSeed());
         memory = createAttractMemory();
         attract.restarts++;
         overFor = 0;

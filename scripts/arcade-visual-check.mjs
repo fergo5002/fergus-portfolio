@@ -16,7 +16,7 @@ try {
   await page.locator(".arcade-cabinet").first().waitFor();
   await page.screenshot({ path: resolve(out, "02-gallery.png") });
   const evidence = [];
-  for (const id of ["bounce", "pong", "snake", "under", "signal", "poker"]) {
+  for (const id of ["signal", "poker"]) {
     await page.locator(`.arcade-cabinet[data-game=${id}]`).click();
     await page.getByRole("button", { name: /start solo run/i }).click();
     // No explicit focus: the first Space after starting must reach the game, not a button.
@@ -30,9 +30,8 @@ try {
     await page.keyboard.press("Space");
     await page.waitForTimeout(200);
     if (!await page.locator(".arcade-play").count()) throw new Error(`${id}: the first Space after start left the game`);
-    if (id === "under") for (let i = 0; i < 6; i++) await page.keyboard.press("ArrowRight");
     if (id === "poker") { await page.keyboard.press("1"); await page.keyboard.press("Space"); await page.keyboard.press("Enter"); }
-    if (["bounce", "signal"].includes(id)) { await page.keyboard.down("ArrowRight"); await page.waitForTimeout(250); await page.keyboard.up("ArrowRight"); }
+    if (id === "signal") { await page.keyboard.down("ArrowRight"); await page.waitForTimeout(250); await page.keyboard.up("ArrowRight"); }
     await page.waitForTimeout(1500);
     const status = await page.locator(".arcade-live-hud").textContent();
     await page.screenshot({ path: resolve(out, `game-${id}.png`) });

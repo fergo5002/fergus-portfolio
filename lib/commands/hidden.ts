@@ -10,7 +10,7 @@ import { argOf, ok } from "./shared";
  * `arcade` row in `top`.
  *
  * `arcade` with no argument returns the cabinet, and `arcade <game>` returns
- * that game, so `cd arcade bounce` skips the list. Both are `{ type:
+ * that game, so `cd arcade poker` skips the list. Both are `{ type:
  * "program" }`: this file starts nothing and draws nothing, because
  * `lib/commands.ts` is pure and `components/Terminal.tsx` is the only thing
  * allowed to act on a result.

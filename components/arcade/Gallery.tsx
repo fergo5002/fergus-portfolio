@@ -8,7 +8,7 @@ import { useSystem } from "@/components/system/SystemProvider";
 import AttractScreen from "./AttractScreen";
 
 /**
- * The room's front: six cabinets, each playing itself.
+ * The room's front: the cabinets, each playing itself.
  *
  * A cabinet is a list item with a stretched button, not a button wrapping a
  * canvas and a list, because a `<button>` may only hold phrasing content and
@@ -66,7 +66,7 @@ export default function Gallery({ boards, theme, live, onSelect }: Props) {
               <span className="cabinet__row">
                 <span className="cabinet__no">{String(i + 1).padStart(2, "0")}</span>
                 <span className="cabinet__genre">{c.genre}</span>
-                <span className="cabinet__players">{c.multiplayer ? copy.players2 : copy.players1}</span>
+                <span className="cabinet__players">{copy.players1}</span>
               </span>
               <span className="cabinet__title">{c.title}</span>
               <span className="cabinet__line">{c.subtitle}</span>

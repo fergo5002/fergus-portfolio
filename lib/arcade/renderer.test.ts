@@ -10,7 +10,7 @@ import { GREEN_PHOSPHOR } from "./theme";
  * context: every method is a no-op that remembers it was called, every
  * property set is kept. That is enough to prove two things that matter and
  * that a screenshot cannot: the renderer never paints a colour that did not
- * come from the theme, and it draws all six games and the ghost layer without
+ * come from the theme, and it draws every game and the ghost layer without
  * throwing. What it cannot prove is what any of it looks like.
  */
 
@@ -57,7 +57,7 @@ describe("the renderer paints only the theme", () => {
   }
 
   it("draws the world into the ghost layer and composites it, so motion leaves phosphor trails", () => {
-    const s = createGame("bounce", 5);
+    const s = createGame("signal", 5);
     const main = recordingContext(), ghost = recordingContext();
     renderGame(main.ctx, s, 900, 560, GREEN_PHOSPHOR, { ghost: ghost.ctx });
     expect(ghost.rec.calls).toContain("fillRect");

@@ -24,7 +24,7 @@ export default function HallOfFame({ boards, onBack, onSelect }: Props) {
           <section className="arcade-fame__board window" key={c.id} style={{ "--i": i } as React.CSSProperties} aria-label={`${c.title} ${copy.board}`}>
             <div className="window__bar">
               <span className="window__title">{c.title}</span>
-              <span className="arcade-fame__when">{c.id === "under" ? copy.today : copy.allTime}</span>
+              <span className="arcade-fame__when">{copy.allTime}</span>
             </div>
             <div className="arcade-fame__body">
               <BoardTable game={c.id} snapshot={boards} limit={10} />

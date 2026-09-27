@@ -147,24 +147,6 @@ html.arcade-entering .nav {
   font-size: 0.82rem;
   margin-bottom: var(--sp-2);
 }
-.arcade-room textarea {
-  display: block;
-  width: 100%;
-  min-height: 96px;
-  padding: var(--sp-2) var(--sp-3);
-  font: inherit;
-  font-size: 16px;
-  color: var(--green-bright);
-  background: var(--bg);
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
-  resize: vertical;
-  margin-bottom: var(--sp-3);
-}
-.arcade-room textarea:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 2px;
-}
 
 /* ----- the bar: the room's own nav -------------------------------------- */
 .arcade-bar {
@@ -743,27 +725,6 @@ html.arcade-entering .nav {
   width: 100%;
 }
 
-/* ----- the link (two cabinets over the network) ------------------------- */
-.arcade-link {
-  padding: var(--sp-3) var(--sp-4) var(--sp-4);
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
-  background: var(--bg-panel);
-}
-.arcade-link h3 {
-  font-family: var(--font-screen);
-  font-weight: 400;
-  font-size: 1.5rem;
-  color: var(--green-bright);
-}
-.arcade-link > p {
-  margin: var(--sp-2) 0 var(--sp-3);
-  font-size: 0.86rem;
-}
-.arcade-link__output {
-  margin-top: var(--sp-3);
-}
-
 /* ----- playing ---------------------------------------------------------- */
 .arcade-play__head {
   display: flex;
@@ -888,24 +849,6 @@ html.arcade-entering .nav {
 }
 .arcade-controls .arcade-btn {
   touch-action: none;
-}
-.arcade-p2 {
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  color: var(--amber);
-  text-align: center;
-}
-.arcade-p2 > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
-  max-width: 220px;
-}
-.arcade-p2 .arcade-btn {
-  color: var(--amber);
-  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
-  padding: 0 12px;
 }
 .arcade-hold {
   display: flex;

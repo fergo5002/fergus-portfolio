@@ -22,7 +22,7 @@ import { withAlpha, type ArcadeTheme } from "./theme";
  */
 
 export type RenderOptions = {
-  /** Under the Terminal follows the player on a narrow screen. */
+  /** A narrow screen: the HUD's type goes up so it stays readable. */
   compact?: boolean;
   /** A second context, the same pixel size, that keeps the phosphor's memory. */
   ghost?: CanvasRenderingContext2D | null;
@@ -172,138 +172,6 @@ function grid(c: Ctx, p: Palette) {
 
 /* ── the world, one game at a time ──────────────────────────────────────── */
 
-function drawBreakpoint(c: Ctx, s: GameState, p: Palette, theme: ArcadeTheme, hud: boolean) {
-  for (const brick of s.bricks) {
-    if (!brick.hp) continue;
-    const hard = brick.hp > 1;
-    box(c, brick.x, brick.y, 62, 22, hard ? p.accentFill : p.inkFill, hard ? p.accent : p.ink, hard ? p.accentSoft : p.inkSoft);
-    if (hard) line(c, { x: brick.x + 10, y: brick.y + 11 }, { x: brick.x + 52, y: brick.y + 11 }, p.accent, 1);
-  }
-  box(c, s.player.x - 59, s.player.y - 6, 118, 12, p.bright, null, p.brightGlow);
-  box(c, s.player.x - 65, s.player.y - 12, 130, 24, null, p.dim);
-  if (s.ball.attached) {
-    circle(c, s.player.x, s.player.y - 16, 24, s.charge >= 25 ? p.accent : p.dim);
-    if (hud) {
-      text(c, p, theme, "LAUNCH THE SIGNAL", 450, 347, 30, p.bright, "center", true);
-      text(c, p, theme, "SPACE / ACTION", 450, 376, 14, p.accent, "center");
-    }
-  }
-  if (hud && s.combo >= 8) text(c, p, theme, `×${Math.min(5, 1 + Math.floor(s.combo / 8))} CHAIN`, 450, 53, 14, p.accent, "center");
-}
-
-function drawBall(c: Ctx, s: GameState, p: Palette) {
-  s.trail.forEach((t, i) => {
-    c.globalAlpha = (1 - i / 20) * 0.3;
-    circle(c, t.x, t.y, Math.max(1, 7 - i * 0.25), p.ink, true);
-  });
-  c.globalAlpha = 1;
-  circle(c, s.ball.x, s.ball.y, 7, p.bright, true, p.brightGlow);
-  circle(c, s.ball.x, s.ball.y, 11, p.dim);
-}
-
-function drawPong(c: Ctx, s: GameState, p: Palette, theme: ArcadeTheme, hud: boolean) {
-  const y = 280 + Math.sin(s.time * 0.7) * 130;
-  for (let i = 0; i < 5; i++) {
-    c.globalAlpha = 0.25 + i * 0.08;
-    c.beginPath();
-    c.ellipse(450, y, 20 + i * 15, 12 + i * 11, s.time * 0.4 + i * 0.5, 0, Math.PI * 2);
-    c.strokeStyle = i % 2 ? p.dim : p.accent;
-    c.lineWidth = 2;
-    c.stroke();
-  }
-  c.globalAlpha = 1;
-  circle(c, 450, y, 12, p.bg, true);
-  circle(c, 450, y, 12, p.accent, false, p.accentGlow);
-  for (const [i, paddle] of [s.player, s.rival].entries()) {
-    const powered = i === 0 ? s.phase > 0 : s.phase2 > 0;
-    box(c, paddle.x - 5, paddle.y - 49, 10, 98, i ? p.accent : p.bright, null, i ? p.accentGlow : p.brightGlow);
-    if (powered) box(c, paddle.x - 13, paddle.y - 57, 26, 114, null, i ? p.accent : p.ink);
-  }
-  if (hud) {
-    text(c, p, theme, String(s.points[0]).padStart(2, "0"), 330, 118, 78, p.ink, "center", true);
-    text(c, p, theme, String(s.points[1]).padStart(2, "0"), 570, 118, 78, p.accent, "center", true);
-    if (s.serve > 0) text(c, p, theme, "GET READY", 450, 470, 26, p.bright, "center", true);
-    if (s.rally > 3) text(c, p, theme, `${s.rally} HIT RALLY`, 450, 539, 13, p.accent, "center");
-  }
-}
-
-function drawOuroboros(c: Ctx, s: GameState, p: Palette, theme: ArcadeTheme, hud: boolean) {
-  const cell = 29, ox = 15, oy = 49;
-  box(c, ox - 2, oy - 2, 874, 468, null, p.dim);
-  for (const [i, tail] of [s.snake, s.snake2].entries()) {
-    const phase = i ? s.phase2 : s.phase;
-    const colour = i ? p.accent : p.ink;
-    tail.forEach((seg, j) => {
-      c.globalAlpha = phase > 0 ? 0.5 : 0.45 + 0.55 * (1 - j / tail.length);
-      box(c, ox + seg.x * cell + 3, oy + seg.y * cell + 3, cell - 6, cell - 6, colour, null);
-      if (!j) box(c, ox + seg.x * cell + 1, oy + seg.y * cell + 1, cell - 2, cell - 2, null, p.bright, i ? p.accentGlow : p.brightGlow);
-    });
-    c.globalAlpha = 1;
-    if (hud && phase > 0) text(c, p, theme, i ? "AMBER IS PHASING" : "GREEN IS PHASING", i ? 880 : 20, 542, 13, colour, i ? "right" : "left");
-  }
-  const fx = ox + s.food.x * cell + 14, fy = oy + s.food.y * cell + 14;
-  polygon(c, fx, fy, 11, 4, s.time, p.accent, p.accentGlow);
-  circle(c, fx, fy, 3, p.accentBright, true);
-  if (hud && s.serve > 0) {
-    box(c, 225, 235, 450, 90, p.scrim, null);
-    text(c, p, theme, `READY ${Math.ceil(s.serve)}`, 450, 276, 36, p.bright, "center", true);
-    text(c, p, theme, "CHOOSE YOUR DIRECTION", 450, 303, 14, p.accent, "center");
-  }
-}
-
-function drawUnder(c: Ctx, s: GameState, p: Palette, theme: ArcadeTheme, hud: boolean, compact: boolean) {
-  const cell = 29, ox = 29, oy = 43;
-  c.save();
-  if (compact) {
-    c.beginPath();
-    c.rect(0, 33, 900, 505);
-    c.clip();
-    const px = ox + s.player.x * cell + cell / 2, py = oy + s.player.y * cell + cell / 2;
-    c.translate(-Math.min(900, Math.max(0, px * 2 - 450)), -Math.min(550, Math.max(33, py * 2 - 280)));
-    c.scale(2, 2);
-  }
-  for (let y = 0; y < s.map.length; y++) {
-    for (let x = 0; x < s.map[y].length; x++) {
-      if (!s.seen[y][x]) continue;
-      const dist = Math.hypot(x - s.player.x, y - s.player.y);
-      c.globalAlpha = dist > 5 ? 0.3 : 1;
-      if (s.map[y][x]) {
-        box(c, ox + x * cell + 1, oy + y * cell + 1, cell - 2, cell - 2, p.wall, null);
-        box(c, ox + x * cell + 4, oy + y * cell + 4, cell - 8, cell - 8, null, p.dim);
-      } else box(c, ox + x * cell, oy + y * cell, cell, cell, p.floor, null);
-    }
-  }
-  c.globalAlpha = 1;
-  const at = (q: Point) => ({ x: ox + q.x * cell + cell / 2, y: oy + q.y * cell + cell / 2 });
-  const exit = at(s.exit);
-  if (s.seen[s.exit.y][s.exit.x]) {
-    box(c, exit.x - 11, exit.y - 11, 22, 22, null, s.hasKey ? p.accent : p.dim, s.hasKey ? p.accentGlow : undefined);
-    text(c, p, theme, "»", exit.x, exit.y + 7, 22, s.hasKey ? p.accent : p.ink, "center");
-  }
-  if (!s.hasKey && s.seen[s.food.y][s.food.x]) {
-    const k = at(s.food);
-    circle(c, k.x - 4, k.y - 2, 5, p.accent, false, p.accentGlow);
-    line(c, { x: k.x, y: k.y }, { x: k.x + 9, y: k.y + 7 }, p.accent);
-  }
-  for (const h of s.hearts) {
-    if (!s.seen[h.y][h.x]) continue;
-    const q = at(h);
-    text(c, p, theme, "+", q.x, q.y + 8, 25, p.bright, "center");
-  }
-  for (const e of s.enemies) {
-    if (Math.hypot(e.x - s.player.x, e.y - s.player.y) > 5) continue;
-    const q = at(e);
-    polygon(c, q.x, q.y, 10, e.kind === 1 ? 4 : 3, -Math.PI / 2, p.accent, p.accentGlow);
-    if (e.hp > 1) circle(c, q.x, q.y, 3, p.accent, true);
-  }
-  const me = at(s.player);
-  circle(c, me.x, me.y, 10, p.ink, false, p.inkGlow);
-  text(c, p, theme, "@", me.x, me.y + 6, 18, p.bright, "center");
-  if (s.phase > 0) circle(c, me.x, me.y, (0.5 - s.phase) * 180, p.bright, false, p.brightGlow);
-  c.restore();
-  if (hud) text(c, p, theme, `${s.hasKey ? "KEY SECURED" : "FIND KEY"}  /  TURN ${s.turn}`, 880, 548, 12, p.accent, "right");
-}
-
 function drawDeadSignal(c: Ctx, s: GameState, p: Palette, theme: ArcadeTheme, hud: boolean) {
   for (const e of s.enemies) {
     polygon(c, e.x, e.y, e.kind === 2 ? 16 : 12, 3 + e.kind, s.time * (e.kind === 1 ? -1 : 1), p.accent, p.accentGlow);
@@ -349,15 +217,10 @@ function drawCircuitPoker(c: Ctx, s: GameState, p: Palette, theme: ArcadeTheme, 
   }
 }
 
-function drawWorld(c: Ctx, s: GameState, p: Palette, theme: ArcadeTheme, hud: boolean, compact: boolean) {
+function drawWorld(c: Ctx, s: GameState, p: Palette, theme: ArcadeTheme, hud: boolean) {
   c.lineWidth = 2;
   c.lineJoin = "round";
   c.lineCap = "round";
-  if (s.id === "bounce" || s.id === "pong") drawBall(c, s, p);
-  if (s.id === "bounce") drawBreakpoint(c, s, p, theme, hud);
-  if (s.id === "pong") drawPong(c, s, p, theme, hud);
-  if (s.id === "snake") drawOuroboros(c, s, p, theme, hud);
-  if (s.id === "under") drawUnder(c, s, p, theme, hud, compact);
   if (s.id === "signal") drawDeadSignal(c, s, p, theme, hud);
   if (s.id === "poker") drawCircuitPoker(c, s, p, theme, hud);
   c.globalCompositeOperation = "lighter";
@@ -375,11 +238,11 @@ function drawHud(c: Ctx, s: GameState, p: Palette, theme: ArcadeTheme, compact: 
   const size = compact ? 21 : 14, y = compact ? 24 : 22;
   line(c, { x: 12, y: 32 }, { x: 888, y: 32 }, p.dim, 1);
   text(c, p, theme, `SCORE ${String(s.score).padStart(6, "0")}`, 18, y, size, p.ink);
-  const middle = s.id === "poker" ? `CIRCUIT ${String(s.level).padStart(2, "0")}` : s.id === "snake" ? `LENGTH ${s.snake.length}` : `SECTOR ${String(s.level).padStart(2, "0")}`;
+  const middle = s.id === "poker" ? `CIRCUIT ${String(s.level).padStart(2, "0")}` : `SECTOR ${String(s.level).padStart(2, "0")}`;
   text(c, p, theme, middle, 450, y, size, p.accent, "center");
-  const right = s.id === "pong" ? "FIRST TO 7" : s.id === "poker" ? `${s.hands} HANDS LEFT` : s.id === "snake" ? `PHASE ${Math.floor(s.charge)}%` : `HULL ${"◆".repeat(Math.max(0, s.lives))}`;
+  const right = s.id === "poker" ? `${s.hands} HANDS LEFT` : `HULL ${"◆".repeat(Math.max(0, s.lives))}`;
   text(c, p, theme, right, 882, y, size, p.ink, "right");
-  if (s.messageTime > 0 && s.id !== "under") {
+  if (s.messageTime > 0) {
     box(c, 170, 277, 560, 42, p.scrim, null);
     text(c, p, theme, s.message, 450, 304, 16, p.accent, "center");
   }
@@ -393,7 +256,7 @@ function drawHud(c: Ctx, s: GameState, p: Palette, theme: ArcadeTheme, compact: 
 /** The finished screen, so an attract loop and a paused result both read as the tube's own. */
 function drawOver(c: Ctx, s: GameState, p: Palette, theme: ArcadeTheme) {
   box(c, 0, 0, WORLD.w, WORLD.h, p.scrim, null);
-  const won = s.won && (s.mode !== "solo" || s.id === "poker" || s.id === "snake");
+  const won = s.won;
   text(c, p, theme, won ? "CIRCUIT COMPLETE" : "SIGNAL LOST", 450, 268, 64, won ? p.bright : p.accent, "center", true);
   text(c, p, theme, `${s.score.toLocaleString("en-IE")} PTS`, 450, 318, 30, p.ink, "center", true);
 }
@@ -417,7 +280,7 @@ export function renderGame(c: Ctx, s: GameState, width: number, height: number, 
     ghost.globalAlpha = 1;
     ghost.fillStyle = p.fade;
     ghost.fillRect(0, 0, WORLD.w, WORLD.h);
-    drawWorld(ghost, s, p, theme, hud, options.compact === true);
+    drawWorld(ghost, s, p, theme, hud);
     ghost.restore();
   }
 
@@ -436,7 +299,7 @@ export function renderGame(c: Ctx, s: GameState, width: number, height: number, 
     grid(c, p);
   } else {
     grid(c, p);
-    drawWorld(c, s, p, theme, hud, options.compact === true);
+    drawWorld(c, s, p, theme, hud);
   }
   if (hud) drawHud(c, s, p, theme, options.compact === true);
   if (s.over) drawOver(c, s, p, theme);

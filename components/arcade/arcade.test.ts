@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -310,6 +310,21 @@ describe("the entrance is a power-cycle told with the tube's own machinery", () 
     expect(entrance).toMatch(/onFrame\(/);
     expect(entrance).not.toMatch(/requestAnimationFrame/);
     expect(entrance).toMatch(/barRef\.current\.textContent = /);
+  });
+});
+
+describe("arcade multiplayer is retired (2026-09-27)", () => {
+  it("has no lobby, no peer link and no second player left in the room", () => {
+    expect(existsSync(join(process.cwd(), "components", "arcade", "NetworkLobby.tsx"))).toBe(false);
+    expect(existsSync(join(process.cwd(), "lib", "arcade", "network.ts"))).toBe(false);
+    const detail = code(read("components", "arcade", "CabinetDetail.tsx"));
+    for (const [name, src] of [["room", room], ["game", game], ["detail", detail]] as const) {
+      expect(src, name).not.toMatch(/NetworkLobby|arcade\/network|\bp2(up|down|left|right|action)\b|mode === "local"|\bGameMode\b|\bLink\b/);
+    }
+  });
+
+  it("leaves Overlap's own WebRTC tool code where it was", () => {
+    expect(existsSync(join(process.cwd(), "lib", "tools", "overlap", "webrtc.ts"))).toBe(true);
   });
 });
 

@@ -10,6 +10,6 @@ describe("leaderboard responses", () => {
     const response = await GET();
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect((await response.json()).boards).toHaveLength(6);
+    expect((await response.json()).boards.map((b: { game: string }) => b.game)).toEqual(["signal", "poker"]);
   });
 });

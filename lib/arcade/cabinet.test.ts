@@ -4,8 +4,9 @@ import type { ArcadeGame } from "@/lib/arcade/games";
 import { arcadeCopy, GAME_TITLES } from "@/content/arcade";
 import type { ProgramHost, ProgramSpec } from "@/lib/arcade/program";
 
-const READY: ArcadeGame = { id: "bounce", title: "bounce", spec: { id: "bounce", title: "bounce", start: () => ({ tick: () => {}, key: () => {}, dispose: () => {} }) }, board: true };
-const PLANNED: ArcadeGame = { id: "pong", title: GAME_TITLES.pong, spec: null, board: true };
+const READY: ArcadeGame = { id: "poker", title: GAME_TITLES.poker, spec: { id: "poker", title: GAME_TITLES.poker, start: () => ({ tick: () => {}, key: () => {}, dispose: () => {} }) }, board: true };
+// A registered cabinet nobody has built yet. A fixture, because every real cabinet is built.
+const PLANNED: ArcadeGame = { id: "future", title: "future cabinet", spec: null, board: true };
 const GAMES = [READY, PLANNED];
 
 describe("cabinetReduce", () => {
@@ -51,7 +52,7 @@ describe("cabinetReduce", () => {
 
 describe("cabinetView", () => {
   const render = (cols: number, rows: number) =>
-    cabinetView(initialCabinetState(), GAMES, { available: true, boards: [{ game: "bounce", rows: [{ initials: "FOR", score: 12 }] }] }, cols, rows);
+    cabinetView(initialCabinetState(), GAMES, { available: true, boards: [{ game: "poker", rows: [{ initials: "FOR", score: 12 }] }] }, cols, rows);
 
   it("fills the grid exactly, at both sizes", () => {
     for (const [cols, rows] of [[48, 20], [32, 16]] as const) {
@@ -63,9 +64,9 @@ describe("cabinetView", () => {
 
   it("names every game, and marks the ones nobody has built", () => {
     const text = render(48, 20).join("\n");
-    expect(text).toContain("bounce");
-    expect(text).toContain(GAME_TITLES.pong);
-    expect(text).toContain(`(${GAME_TITLES.pong})`);
+    expect(text).toContain(GAME_TITLES.poker);
+    expect(text).toContain("future cabinet");
+    expect(text).toContain("(future cabinet)");
   });
 
   it("puts a cursor on the selection and nowhere else", () => {

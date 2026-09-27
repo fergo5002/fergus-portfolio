@@ -6,11 +6,9 @@ import { cabinets, collectionCopy as copy } from "@/content/arcade-collection";
 import { arcadeCopy } from "@/content/arcade";
 import { fetchBoards } from "@/lib/arcade/board-client";
 import type { BoardSnapshot } from "@/lib/arcade/board";
-import { GAME_IDS, type GameId, type GameMode } from "@/lib/arcade/engine";
+import { GAME_IDS, type GameId } from "@/lib/arcade/engine";
 import type { ProgramSpec } from "@/lib/arcade/program";
-import type { Link } from "@/lib/arcade/network";
 import { arcadeSession, markArcadeEntered, setArcadeBoards } from "@/lib/arcade/session";
-import { todaySeed } from "@/lib/arcade/attract";
 import { shellStore } from "@/lib/shell";
 import { useSystem } from "@/components/system/SystemProvider";
 import ArcadeEntrance from "./ArcadeEntrance";
@@ -42,7 +40,7 @@ type Screen =
   | { kind: "gallery" }
   | { kind: "fame" }
   | { kind: "detail"; game: GameId }
-  | { kind: "play"; game: GameId; mode: GameMode; seed: number; count: number; link: Link | null };
+  | { kind: "play"; game: GameId; seed: number; count: number };
 
 type Props = { program: ProgramSpec; onExit(lines: string[]): void };
 
@@ -52,7 +50,6 @@ function Room({ program, onExit }: Props) {
   const { reducedMotion, audioLive, setAudioEnabled, setScrollLocked, setEjected, setGravity, degauss, frame, audio } = useSystem();
   const theme = useArcadeTheme();
   const roomRef = useRef<HTMLElement>(null);
-  const linkRef = useRef<Link | null>(null);
   const exitRef = useRef(onExit);
   exitRef.current = onExit;
   const [longEntrance] = useState(() => !arcadeSession().entered);
@@ -107,7 +104,6 @@ function Room({ program, onExit }: Props) {
       html.classList.remove("arcade-entering");
       shellStore.dispatch({ type: "arcade", phase: "closed" });
       setScrollLocked(false);
-      linkRef.current?.close();
       // Belt and braces with the entrance's own cleanup: never leave the tube dark.
       frame.current.bootTarget = 1;
       if (frame.current.boot < 1) frame.current.boot = 1;
@@ -135,16 +131,13 @@ function Room({ program, onExit }: Props) {
     exitRef.current([arcadeCopy.left]);
   }, [degauss]);
 
-  const start = (game: GameId, mode: GameMode, link: Link | null = null, netSeed?: number) => {
-    linkRef.current = link;
-    const seed = game === "under" ? todaySeed() : netSeed ?? (crypto.getRandomValues(new Uint32Array(1))[0] ?? 1) >>> 0;
+  const start = (game: GameId) => {
+    const seed = (crypto.getRandomValues(new Uint32Array(1))[0] ?? 1) >>> 0;
     const next = count + 1;
     setCount(next);
-    setScreen({ kind: "play", game, mode, seed, count: next, link });
+    setScreen({ kind: "play", game, seed, count: next });
   };
   const back = () => {
-    linkRef.current?.close();
-    linkRef.current = null;
     setScreen({ kind: "gallery" });
   };
 
@@ -213,13 +206,11 @@ function Room({ program, onExit }: Props) {
           <CanvasGame
             key={`${cabinet.id}-${screen.count}`}
             cabinet={cabinet}
-            mode={screen.mode}
             seed={screen.seed}
-            link={screen.link}
             theme={theme}
             boards={boards}
             onBack={back}
-            onReplay={() => start(cabinet.id, screen.mode)}
+            onReplay={() => start(cabinet.id)}
             onBoards={refreshBoards}
           />
         ) : screen.kind === "detail" && cabinet ? (
@@ -228,7 +219,7 @@ function Room({ program, onExit }: Props) {
             boards={boards}
             theme={theme}
             onBack={back}
-            onStart={(mode, link, seed) => start(cabinet.id, mode, link ?? null, seed)}
+            onStart={() => start(cabinet.id)}
             onBoards={refreshBoards}
           />
         ) : screen.kind === "fame" ? (

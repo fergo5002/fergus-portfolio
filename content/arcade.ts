@@ -14,10 +14,6 @@ export const NARROW_COLS = 32;
 
 /** Game titles, by id. A game plan adds one line here and one in lib/arcade/games.ts. */
 export const GAME_TITLES: Record<string, string> = {
-  bounce: "breakpoint",
-  pong: "phosphor pong",
-  snake: "ouroboros",
-  under: "under the terminal",
   poker: "circuit poker",
   signal: "dead signal",
 };
@@ -88,11 +84,6 @@ export const arcadeCopy = {
     scoreLabel: "score",
     /** Printed by neofetch, above the board block, once the door has been found. */
     neofetchHeading: "Arcade",
-  },
-
-  bounce: {
-    score: "bounces",
-    footer: "arrows steer . space flips",
   },
 
   initials: {

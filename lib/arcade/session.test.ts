@@ -58,8 +58,8 @@ describe("the run the visitor just posted", () => {
   it("is remembered for the tab so the table can light that row, and nowhere else", () => {
     resetArcadeSession();
     expect(arcadeSession().lastPosted).toBeNull();
-    rememberPosted({ game: "bounce", initials: "FOR", score: 1200 });
-    expect(arcadeSession().lastPosted).toEqual({ game: "bounce", initials: "FOR", score: 1200 });
+    rememberPosted({ game: "poker", initials: "FOR", score: 1200 });
+    expect(arcadeSession().lastPosted).toEqual({ game: "poker", initials: "FOR", score: 1200 });
     resetArcadeSession();
     expect(arcadeSession().lastPosted).toBeNull();
   });

@@ -876,7 +876,7 @@ const MUTATIONS = [
     replace: "if (false) return { state: { index, note: arcadeCopy.cabinet.notReady }, launch: null };",
   },
   {
-    name: "the cd door is looked up on the whole argument again, so `cd arcade bounce` dies",
+    name: "the cd door is looked up on the whole argument again, so `cd arcade signal` dies",
     file: "lib/commands/nav.ts",
     pattern: /const doorName = \(args\[0\] \?\? ""\)\.toLowerCase\(\)\.replace\(\/\^\\\/\+\|\\\/\+\$\/g, ""\);/,
     replace: "const doorName = dest;",
@@ -982,12 +982,6 @@ const MUTATIONS = [
     file: "components/arcade/ArcadeScreen.tsx",
     pattern: /    instance\?\.resize\?\.\(fit\.cols, fit\.rows\);\r?\n/,
     replace: "",
-  },
-  {
-    name: "Bounce keeps an old column outside a smaller grid",
-    file: "lib/arcade/bounce.ts",
-    pattern: /  state\.x = Math\.max\(0, Math\.min\(state\.x, cols - 1\)\);/,
-    replace: "  state.x = state.x;",
   },
   {
     name: "keyup remaps current modifiers instead of releasing the key that went down",
