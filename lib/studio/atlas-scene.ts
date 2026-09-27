@@ -31,7 +31,7 @@ export const PALETTE_TOKENS = {
   line: "--green-line",
 } as const;
 
-export type AtlasPalette = { [K in keyof typeof PALETTE_TOKENS]: string };
+export type AtlasPalette = { -readonly [K in keyof typeof PALETTE_TOKENS]: string };
 
 export class AtlasPaletteError extends Error {
   constructor(token: string) {
@@ -69,6 +69,9 @@ export function keep(halfLifeMs: number, elapsedMs: number): number {
 }
 
 // ── the layout ──────────────────────────────────────────────────────────
+
+/** Every kind of link on show, which is how a map opens. */
+export const DEFAULT_KINDS: readonly LinkKind[] = ["folder", "reference", "terms"];
 
 export type SimNode = AtlasNode & SimulationNodeDatum;
 export type SimLink = { source: SimNode; target: SimNode; kind: LinkKind; evidence: string };
