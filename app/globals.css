@@ -1075,6 +1075,15 @@ html.crt-off body {
   color: var(--green-dim);
   font-size: 0.8rem;
 }
+/* Drawn, not written: the git-log marker, a short hash, and HEAD on the
+   current role. None of it is text in the document (lib/commit-hash.test.ts). */
+.exp__commit::before {
+  content: "● commit " var(--hash, "");
+}
+.exp__commit[data-head]::after {
+  content: " (HEAD -> main)";
+  color: var(--amber);
+}
 .exp__org {
   font-size: 1.5rem;
   margin: 0;
