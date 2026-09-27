@@ -272,7 +272,7 @@ function split(s: PanicState, parent: Proc) {
     if (!free.length) return;
     const name = pick(s, free);
     taken.add(name[0]);
-    spawnProcess(s, name, "child", clamp(parent.x + side * 70, 70, 830), parent.y, parent.speed * 1.15);
+    spawnProcess(s, name, "child", clamp(parent.x + side * 100, 70, 830), parent.y, parent.speed * 1.15);
   }
 }
 

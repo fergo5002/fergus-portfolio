@@ -130,7 +130,7 @@ function forkMark(pen: Pen, x: number, y: number, h: number, colour: string) {
   c.stroke();
 }
 
-function drawProcess(pen: Pen, s: PanicState, p: Proc, locked: boolean, sz: Sizes, hud: boolean) {
+function drawProcess(pen: Pen, s: PanicState, p: Proc, locked: boolean, sz: Sizes, hud: boolean): void {
   const { c, p: pal } = pen;
   const chip = chipOf(pen, p, sz);
   const sudo = p.kind === "sudo";
@@ -166,7 +166,6 @@ function drawProcess(pen: Pen, s: PanicState, p: Proc, locked: boolean, sz: Size
   }
   if (p.kind === "fork") forkMark(pen, chip.left + chip.w + sz.pad + 6, chip.top + chip.h * 0.35, chip.h * 0.7, danger ? pal.accent : pal.ink);
   if (locked) brackets(pen, chip, sudo ? pal.accentBright : pal.bright, sudo ? pal.accentGlow : pal.brightGlow);
-  return chip;
 }
 
 const pidOf = (p: Proc) => 300 + ((p.id * 7919) % 9600);
@@ -255,23 +254,24 @@ export function drawPanic(pen: Pen, s: PanicState, hud: boolean, layout: StageKi
 
   const lock = targetOf(s);
   const chips = new Map<number, Chip>();
-  for (const proc of s.processes) chips.set(proc.id, drawProcess(pen, s, proc, proc === lock, sz, hud));
+  for (const proc of s.processes) chips.set(proc.id, chipOf(pen, proc, sz));
 
-  drawKernel(pen, s, sz);
-  const lockChip = lock ? chips.get(lock.id) : undefined;
-  const aim = lock && lockChip ? letterAt(pen, lock, lockChip, Math.min(lock.name.length - 1, s.buffer.length), sz) : null;
-  drawTurret(pen, s, aim);
-
-  // A shot for every right letter: the turret to the letter, fading fast.
+  // A shot for every right letter: the turret to the letter, fading fast, under the chips.
   for (const shot of s.shots) {
     const proc = s.processes.find((q) => q.id === shot.pid);
     const chip = proc ? chips.get(proc.id) : undefined;
     const to = proc && chip ? letterAt(pen, proc, chip, shot.index, sz) : shot.to;
     c.globalAlpha = Math.min(1, shot.life / 0.1);
     line(c, CANNON, to, p.bright, 2, p.brightGlow);
-    circle(c, to.x, to.y, 4, p.bright, true, p.brightGlow);
     c.globalAlpha = 1;
   }
+
+  for (const proc of s.processes) drawProcess(pen, s, proc, proc === lock, sz, hud);
+
+  drawKernel(pen, s, sz);
+  const lockChip = lock ? chips.get(lock.id) : undefined;
+  const aim = lock && lockChip ? letterAt(pen, lock, lockChip, Math.min(lock.name.length - 1, s.buffer.length), sz) : null;
+  drawTurret(pen, s, aim);
 
   for (const pop of s.pops) {
     c.globalAlpha = Math.min(1, pop.life * 2.5);
