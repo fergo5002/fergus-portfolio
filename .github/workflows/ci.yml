@@ -119,6 +119,10 @@ jobs:
         run: node scripts/gravity-check.mjs
         env:
           REVISION_BASE: http://localhost:3000
+      - name: a missing page is a 404 test card with a way home
+        run: node scripts/not-found-check.mjs
+        env:
+          REVISION_BASE: http://localhost:3000
       - name: phone check through the hidden arcade door
         run: node scripts/arcade-phone-check.mjs --base http://localhost:3000 --out .phone-check/arcade
       - name: tools workflows on desktop and phones
