@@ -115,6 +115,10 @@ jobs:
         run: node scripts/home-terminal-check.mjs
         env:
           REVISION_BASE: http://localhost:3000
+      - name: gravity drops only what is visible and puts it back
+        run: node scripts/gravity-check.mjs
+        env:
+          REVISION_BASE: http://localhost:3000
       - name: phone check through the hidden arcade door
         run: node scripts/arcade-phone-check.mjs --base http://localhost:3000 --out .phone-check/arcade
       - name: tools workflows on desktop and phones
