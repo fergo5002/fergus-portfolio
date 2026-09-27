@@ -26,6 +26,8 @@ export type KeySpec = {
   cluster?: boolean;
   /** What the caps say on a touch screen, where there is no keyboard to point at. */
   touch?: readonly string[];
+  /** The label beside the touch caps, when the keyboard's would repeat the cap ("DRAW  DRAW"). */
+  touchLabel?: string;
 };
 
 export type ScreenWords = {
@@ -65,9 +67,10 @@ function lifeIcon(pen: Pen, icon: "hull" | "hand" | "core", x: number, y: number
   }
 }
 
-function meter(pen: Pen, x: number, y: number, w: number, h: number, value: number, ready?: number) {
+/** A segmented meter, the arcade way: ten cells, lit as it fills, with a notch where it is ready to spend. */
+export function meter(pen: Pen, x: number, y: number, w: number, h: number, value: number, ready?: number, cells = 10) {
   const { c, p } = pen;
-  const cells = 10, gap = Math.max(2, w / 80), cw = (w - gap * (cells - 1)) / cells;
+  const gap = Math.max(2, w / 80), cw = (w - gap * (cells - 1)) / cells;
   const charged = ready === undefined || value >= ready - 1e-9;
   for (let i = 0; i < cells; i++) {
     const cx = x + i * (cw + gap);
@@ -202,6 +205,7 @@ function capRow(pen: Pen, spec: KeySpec, x: number, y: number, touch: boolean, l
   const { p } = pen;
   const labels = touch && spec.touch ? spec.touch : spec.caps;
   const touchRow = touch && spec.touch !== undefined;
+  const label = touchRow && spec.touchLabel ? spec.touchLabel : spec.label;
   const caps: CapBox[] = [];
   let right = x;
   if (spec.cluster && !touchRow && labels.length === 4) {
@@ -211,7 +215,7 @@ function capRow(pen: Pen, spec: KeySpec, x: number, y: number, touch: boolean, l
     for (let i = 1; i < 4; i++) caps.push({ label: labels[i], x: x + (i - 1) * (w + gap), y: y + h + gap, w, h, lit: capLit(spec, i, lit) });
     right = x + 3 * w + 2 * gap;
     caps.forEach((cap) => drawCap(pen, cap, size));
-    text(pen, spec.label, right + h * 0.6, y + h + gap + h * 0.72, labelSize, p.bright, "left", true);
+    text(pen, label, right + h * 0.6, y + h + gap + h * 0.72, labelSize, p.bright, "left", true);
     return 2 * h + gap;
   }
   labels.forEach((label, i) => {
@@ -220,11 +224,11 @@ function capRow(pen: Pen, spec: KeySpec, x: number, y: number, touch: boolean, l
     right += w + h * 0.18;
   });
   caps.forEach((cap) => drawCap(pen, cap, size));
-  text(pen, spec.label, right + h * 0.42, y + h * 0.72, labelSize, p.bright, "left", true);
+  text(pen, label, right + h * 0.42, y + h * 0.72, labelSize, p.bright, "left", true);
   return h;
 }
 
-function drawDemo(pen: Pen, frame: Rect, words: ScreenWords, drawDemoWorld: (scale: number) => void) {
+function drawDemo(pen: Pen, frame: Rect, words: ScreenWords, drawDemoWorld: (scale: number) => void, big = false) {
   const { c, p } = pen;
   box(c, frame.x, frame.y, frame.w, frame.h, p.bg, null);
   c.save();
@@ -235,8 +239,9 @@ function drawDemo(pen: Pen, frame: Rect, words: ScreenWords, drawDemoWorld: (sca
   drawDemoWorld(frame.w / 900);
   c.restore();
   box(c, frame.x, frame.y, frame.w, frame.h, null, p.dim);
-  box(c, frame.x + 8, frame.y + 8, 58, 20, p.scrim, null);
-  text(pen, words.demo, frame.x + 37, frame.y + 23, 12, p.accent, "center");
+  const k = big ? 2 : 1;
+  box(c, frame.x + 8 * k, frame.y + 8 * k, 58 * k, 20 * k, p.scrim, null);
+  text(pen, words.demo, frame.x + 37 * k, frame.y + 23 * k, 12 * k, p.accent, "center");
 }
 
 /**
@@ -276,7 +281,7 @@ export function drawCard(pen: Pen, stage: Stage, run: Run, face: CabinetFace, wo
   let y = 250;
   if (room >= 320) {
     const w = 820, h = Math.min(room - 30, w * (560 / 900));
-    drawDemo(pen, { x: 40, y, w, h: Math.round(h) }, words, drawDemoWorld);
+    drawDemo(pen, { x: 40, y, w, h: Math.round(h) }, words, drawDemoWorld, true);
     y += Math.round(h) + 50;
   } else {
     // No room for a screen within the screen: the demo plays behind the card instead.
@@ -314,7 +319,7 @@ export function drawGameOver(pen: Pen, stage: Stage, run: Run, face: CabinetFace
   text(pen, words.finalScore, cx, cy + 4 * k, 13 * k, p.accent, "center");
   glowText(pen, grouped(shown), cx, cy + 86 * k, 96 * k, p.bright, p.brightGlow);
   if (hud.stage) text(pen, `${words.reached} ${hud.stage.label} ${String(hud.stage.value).padStart(2, "0")}`, cx, cy + 124 * k, 15 * k, p.ink, "center");
-  if (isNewBest(run) && tally >= 1 && Math.floor(t * 2.4) % 2 === 0) {
+  if (isNewBest(run) && tally >= 1 && (t * 1.25) % 1 < 0.7) {
     glowText(pen, words.newBest, cx, cy + 176 * k, 46 * k, p.accent, p.accentGlow);
     circle(c, cx - 150 * k, cy + 162 * k, 5 * k, p.accent, true);
     circle(c, cx + 150 * k, cy + 162 * k, 5 * k, p.accent, true);

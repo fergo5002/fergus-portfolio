@@ -41,16 +41,17 @@ export function targetFor(level: number): number {
 }
 
 /**
- * Where things happen on the wide screen, in world pixels, for the tube's
- * light. The drawer lays the wide screen out around exactly these points, and
- * maps them onto its tall layout for a phone (`lib/arcade/draw/poker.ts`).
+ * Where things happen on the wide table, in world pixels, for the tube's
+ * light: the middle of each card, and the hand's name under them. The drawer
+ * lays the wide table out around exactly these points and maps them onto its
+ * tall layout for a phone (`lib/arcade/draw/poker.ts`).
  */
-export const CARD_PITCH = 172;
-export const CARD_Y = 330;
+export const CARD_PITCH = 164;
+export const CARD_Y = 218;
 export function cardAnchor(i: number): Point {
   return { x: 450 + (i - 2) * CARD_PITCH, y: CARD_Y };
 }
-export const HAND_ANCHOR: Point = { x: 450, y: 480 };
+export const HAND_ANCHOR: Point = { x: 450, y: 392 };
 
 const circuit = (n: number) => `CIRCUIT ${String(n).padStart(2, "0")}`;
 
@@ -126,7 +127,7 @@ export const poker: GameModule<PokerState> = {
         s.level++;
         s.score += 100 * (s.level - 1);
         s.target = targetFor(s.level); s.bank = 0; s.hands = POKER_HANDS;
-        banner(s, circuit(s.level), `TARGET ${s.target}`);
+        banner(s, "CIRCUIT COMPLETE", `${circuit(s.level)} // TARGET ${s.target}`, 2.2);
       } else if (s.hands === 0) {
         s.over = true;
         return;
@@ -137,11 +138,11 @@ export const poker: GameModule<PokerState> = {
     }
   },
 
+  /** No HUD meter: the target is the whole game, so the table draws it big (`draw/poker.ts`). */
   hud(s) {
     return {
       lives: { current: s.hands, max: POKER_HANDS, icon: "hand" },
       stage: { label: "CIRCUIT", value: s.level },
-      meter: { label: "TARGET", value: Math.min(1, s.bank / s.target) },
     };
   },
 

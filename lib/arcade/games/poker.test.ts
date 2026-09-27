@@ -43,7 +43,7 @@ describe("Circuit Poker", () => {
     expect(s.score).toBe(score + 20 + 100);
     expect(s.target).toBe(targetFor(2));
     expect(s.bank).toBe(0); expect(s.hands).toBe(3);
-    expect(s.banner?.text).toBe("CIRCUIT 02");
+    expect(s.banner).toMatchObject({ text: "CIRCUIT COMPLETE", sub: `CIRCUIT 02 // TARGET ${targetFor(2)}` });
   });
 
   it("breaks the circuit when the last hand is banked short of the target", () => {
@@ -62,14 +62,20 @@ describe("Circuit Poker", () => {
     expect(s.events.at(-1)).toMatchObject({ sound: "start", at: HAND_ANCHOR });
   });
 
-  it("shows hands as icons, the circuit as the stage and the bank against the target as the meter", () => {
+  it("shows hands left as icons and the circuit as the stage; the table owns the target meter", () => {
     const s = createGame("poker", 7);
-    s.bank = 90;
+    s.bank = 90; s.hands = 2;
     expect(gameHud(s)).toEqual({
-      lives: { current: 3, max: 3, icon: "hand" },
+      lives: { current: 2, max: 3, icon: "hand" },
       stage: { label: "CIRCUIT", value: 1 },
-      meter: { label: "TARGET", value: 0.5 },
     });
+  });
+
+  it("says what a banked hand was worth, in a banner", () => {
+    const s = createGame("poker", 8);
+    s.handName = "ONE PAIR"; s.handPoints = 70; s.bank = 0;
+    pressGame(s, "bank");
+    expect(s.banner).toMatchObject({ text: "ONE PAIR", sub: "+70 BANKED", size: "small" });
   });
 
   it("keeps the published target curve", () => {

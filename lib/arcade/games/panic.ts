@@ -122,13 +122,17 @@ export const panic: GameModule<PanicState> = {
     return s.buffer;
   },
 
-  /** Types the lowest process's name a letter at a time, fumbling now and then. */
+  /**
+   * Types the lowest process's name a letter at a time, fumbling now and then.
+   * It waits until a name has fallen a third of the way, so an attract screen
+   * shows names falling rather than a player who kills them on sight.
+   */
   demo(s, m, rng) {
     const press: string[] = [];
-    if (s.time - m.lastAct < 0.16) return { hold: new Set(), press };
+    if (s.time - m.lastAct < 0.24) return { hold: new Set(), press };
     m.lastAct = s.time;
     const lowest = [...s.processes].sort((a, b) => b.y - a.y)[0];
-    if (!lowest) return { hold: new Set(), press };
+    if (!lowest || (!s.buffer && lowest.y < KERNEL_Y * 0.36)) return { hold: new Set(), press };
     if (s.buffer && !lowest.name.startsWith(s.buffer)) {
       press.push("erase");
       return { hold: new Set(), press };

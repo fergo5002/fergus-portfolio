@@ -37,8 +37,8 @@ export const cabinets: readonly Cabinet[] = [
     card: {
       lines: ["THE BEAM AIMS ITSELF. YOU DODGE.", "KILLS CHARGE THE PULSE.", "THREE HITS AND THE SIGNAL IS LOST."],
       keys: [
-        { caps: ["↑", "←", "↓", "→"], keys: ["up", "left", "down", "right"], label: "MOVE / WASD", cluster: true, touch: ["D-PAD", "DRAG"] },
-        { caps: ["SPACE"], keys: ["action"], label: "PULSE", touch: ["DISCHARGE"] },
+        { caps: ["↑", "←", "↓", "→"], keys: ["up", "left", "down", "right"], label: "MOVE / WASD", cluster: true, touch: ["D-PAD", "DRAG"], touchLabel: "MOVE" },
+        { caps: ["SPACE"], keys: ["action"], label: "PULSE", touch: ["DISCHARGE"], touchLabel: "THE PULSE" },
       ],
     },
     overLine: "SIGNAL LOST",
@@ -55,9 +55,9 @@ export const cabinets: readonly Cabinet[] = [
     card: {
       lines: ["HOLD THE CARDS THAT MAKE A HAND.", "DRAW UP TO TWICE, THEN BANK IT.", "THREE HANDS TO BEAT THE TARGET."],
       keys: [
-        { caps: ["1", "2", "3", "4", "5"], keys: ["1", "2", "3", "4", "5"], label: "HOLD", touch: ["TAP A CARD"] },
-        { caps: ["SPACE"], keys: ["action"], label: "DRAW", touch: ["DRAW"] },
-        { caps: ["ENTER"], keys: ["bank"], label: "BANK", touch: ["BANK"] },
+        { caps: ["1", "2", "3", "4", "5"], keys: ["1", "2", "3", "4", "5"], label: "HOLD A CARD", touch: ["TAP A CARD"], touchLabel: "TO HOLD IT" },
+        { caps: ["SPACE"], keys: ["action"], label: "DRAW THE REST", touch: ["DRAW"], touchLabel: "THE REST" },
+        { caps: ["ENTER"], keys: ["bank"], label: "BANK THE HAND", touch: ["BANK"], touchLabel: "THE HAND" },
       ],
     },
     overLine: "CIRCUIT BROKEN",
@@ -110,6 +110,10 @@ export const screenCopy = {
   held: "HELD",
   bank: "BANK",
   lives: { hull: "HULL", hand: "HANDS", core: "KERNEL" },
+  /** Circuit Poker's table. */
+  table: { banked: "BANKED", target: "TARGET", worth: "WORTH", draws: "DRAWS", hand: "HAND" },
+  /** Kernel Panic's floor. */
+  kernel: "KERNEL",
 } as const;
 
 export const collectionCopy = {

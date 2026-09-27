@@ -1,4 +1,5 @@
 import { KERNEL_Y, targetOf, type PanicState } from "../games/panic";
+import { screenCopy } from "@/content/arcade-collection";
 import { box, line, text, type Pen } from "./kit";
 
 /**
@@ -10,7 +11,7 @@ export function drawPanic(pen: Pen, s: PanicState, _hud: boolean) {
   const { c, p } = pen;
   line(c, { x: 20, y: KERNEL_Y }, { x: 880, y: KERNEL_Y }, s.flash > 0 ? p.accent : p.bright, 2, s.flash > 0 ? p.accentGlow : p.brightGlow);
   box(c, 20, KERNEL_Y + 6, 860, 22, p.inkSoft, null);
-  text(pen, "KERNEL", 450, KERNEL_Y + 23, 18, p.dim, "center", true);
+  text(pen, screenCopy.kernel, 450, KERNEL_Y + 23, 18, p.dim, "center", true);
   const target = targetOf(s);
   for (const proc of s.processes) {
     const danger = proc.y > KERNEL_Y - 90;
