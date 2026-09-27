@@ -271,6 +271,45 @@ this programme earns, each with the reason on its own PR: `@duckdb/duckdb-wasm` 
 `playwright-core` plus `@sparticuz/chromium` (On the glass), and `playwright` as a devDependency
 for the phone check. Nothing else without an argument.
 
+## The September 2026 redesign: site surfaces (2026-09-26)
+
+Fergus asked for the site to be more novel while staying understated. The rules each change
+brought with it:
+
+- **The status strip's readouts are back, drawn rather than written.** Uptime, scroll as a hex
+  memory address, fps, pointer, clock and phosphor, plus a drive lamp that flickers while the
+  machine is busy. `StatusBar` writes each value into a `--ro` custom property on its own span
+  and `globals.css` draws it with `content`, so none of it reaches the server HTML or a text
+  extractor, and each write restyles one small span rather than repainting type. Values come
+  from the pure `lib/readouts.ts`. Readouts give way as the strip narrows, and below 560px the
+  phone bar is still the four labelled controls. `components/statusbar.test.ts` guards this.
+- **Hover previews choose a side when they open** (`lib/preview-placement.ts`): below unless
+  that runs under the status strip, above unless that runs under the nav, otherwise the side
+  with more room. The strip is the floor, not the viewport edge.
+- **Gravity skips `.vh` text.** A `Range` reports a clipped word's full layout box, so
+  HeroName's hidden copy of the name used to fall as whole words on top of its own letters.
+  `scripts/gravity-check.mjs` drives the real switch and runs in the phone job.
+- **The contact cards are pixel sprites** (`lib/pixel.ts`, `components/pixel/`): character
+  grids merged into integer rectangles, drawn at a whole number of screen pixels per sprite
+  pixel, two-frame boils that rest on frame 0 under reduced motion.
+- **The writing index draws each piece's argument** (`lib/writing-figures.ts`): wordless SVG
+  shapes, because SVG text is document text. Tests require one figure per published article.
+  The row link's stretched layer sits under the text; text must be the top thing where it is
+  drawn or the phone instrument counts it as unread.
+- **`/mcp` leads with the server working.** A console makes real JSON-RPC calls to the
+  relative `/api/mcp` and declares itself in `_meta` clientInfo as `fergusoreilly.dev-console`,
+  which the endpoint's analytics read, so its calls never count as agent traffic. It keeps its
+  own copy of the protocol constants, pinned to the server's by test, rather than importing
+  `lib/mcp.ts` and bundling every article into the browser. Its panes have a fixed height:
+  an answer arriving must not move the page.
+- **A missing page is a no-signal test card** (`app/not-found.tsx`): shapes only, the requested
+  path as a failed `cd`, a real heading. `scripts/not-found-check.mjs` proves the 404 and runs
+  in the phone job; `scripts/phone-check.mjs` reads any 4xx document as a broken asset, so the
+  page stays out of it.
+- **The experience log's marker, short hash and `(HEAD -> main)` are drawn by CSS**
+  (`lib/commit-hash.ts` feeds a `--hash` property). The old `● commit` was a text node in front
+  of every entry.
+
 ## The arcade room sits inside the tube (2026-09-05)
 
 `cd arcade` opens a room that is part of the machine, not a page over it. `ArcadeExperience.tsx`

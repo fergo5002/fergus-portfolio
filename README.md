@@ -34,12 +34,14 @@ Editable copy lives in `content/`:
 
 Images in `public/img/` are built by `scripts/build-images.mjs`. Change the recipe,
 not the derived image. Use `--tigh-only` or `--remand-only` to rebuild one card.
-The Remand card is an authored illustration, not a product screenshot.
+The Remand card is an authored illustration (an idea pushed through Reddit threads
+comes out as a demand signal), not a product screenshot or measured data.
 
 ## Meeting requests
 
 Main pages link to Contact with a single Get in touch button. Contact alone holds
-the coffee and call cards, with bespoke phosphor mug and rotary phone illustrations.
+the coffee and call cards, with a pixel-art mug and telephone drawn as 28 by 20
+sprites in the tube's phosphor (`components/pixel/`, `lib/pixel.ts`).
 
 `/contact?meet=coffee` and `/contact?meet=call` offer 30-minute weekday windows
 between 10:00 and 17:00 in Europe/Dublin, at least 24 hours ahead, for 28 days.
