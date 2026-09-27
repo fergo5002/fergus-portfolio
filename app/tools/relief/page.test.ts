@@ -35,6 +35,12 @@ describe("the page", () => {
     expect(page).not.toContain("A year of your activity");
   });
 
+  it("hands the shell's stage the instrument and nothing else, so the terrain is the first thing in it", () => {
+    // No `notes` or second lede passed in to sit beside it: the shell's own
+    // test pins that nothing but the heading is above the stage.
+    expect(page).toMatch(/<ToolPage tool=\{relief\} talk=\{reliefCopy\.talk\}>\s*<ReliefTool \/>\s*<\/ToolPage>/);
+  });
+
   it("imports its own stylesheet and leaves globals.css alone", () => {
     expect(page).toContain('import "./tool.css"');
   });

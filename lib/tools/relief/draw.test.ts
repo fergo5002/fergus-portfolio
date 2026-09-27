@@ -13,6 +13,7 @@ import {
   paletteFromTokens,
   pickPlate,
   planPlate,
+  platePoint,
   planRidgeline,
   plateGeometry,
 } from "./draw";
@@ -313,5 +314,17 @@ describe("pickPlate", () => {
   it("keeps a point off the plot on its nearest edge", () => {
     expect(pickPlate(g, -40, -40)).toEqual({ week: 1, hour: 0 });
     expect(pickPlate(g, g.width + 40, g.height + 40)).toEqual({ week: 52, hour: 23 });
+  });
+
+  it("puts every cell's crosshair where picking it back gives the same cell", () => {
+    for (const width of [320, 760]) {
+      const plate = plateGeometry(width);
+      for (let week = 1; week <= 52; week++) {
+        for (let hour = 0; hour < 24; hour++) {
+          const p = platePoint(plate, week, hour);
+          expect(pickPlate(plate, p.x, p.y)).toEqual({ week, hour });
+        }
+      }
+    }
   });
 });

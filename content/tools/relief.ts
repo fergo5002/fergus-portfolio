@@ -13,21 +13,19 @@ import type { ToolEntry } from "./types";
  */
 export const reliefCopy = {
   description:
-    "Draw a year of commits or any dated CSV as contour ground, then take it away as a PNG, a strokes-only SVG in millimetres or a binary STL whose directed edges close. Runs in your browser.",
+    "Draw a year of commits or any dated CSV as ground, a ridge a week or contours from above, then take it away as a PNG, a strokes-only SVG in millimetres or a binary STL whose directed edges close. Runs in your browser.",
   talk: "Want one of your own year, on paper, in a frame?",
   sources: {
     demo: "Demo",
     github: "GitHub",
     csv: "CSV",
   },
-  demoCaption:
-    "Generated, not measured. A modelled developer's year from a fixed seed, so the page has ground on it before you give it any.",
+  /** On the stage whenever the demo is what is drawn. Short, because it sits beside the figures. */
+  demoCaption: "Generated, not measured: a modelled developer's year.",
   githubHelp:
     "Your username, and a GitHub token with no scopes ticked. A token with nothing ticked can already read every public repository, which is all this needs unless you want your private ones counted. GitHub makes this path slow; a year usually takes about two minutes.",
   tokenLabel: "GitHub token",
   userLabel: "GitHub username",
-  csvHelp:
-    "Any CSV with a column of dates. Pick the column and the tool does the rest. The file is read in this tab and never sent anywhere.",
   drawing: "Reading GitHub. Window {done} of {total}, {commits} commits so far.",
   backoff:
     "GitHub asked this tab to slow down. Waiting about {seconds} seconds, then trying this window once more.",
@@ -39,36 +37,48 @@ export const reliefCopy = {
     flat: "That is flat. Every hour of the year carries much the same load, so there is nothing for a contour to follow.",
   },
   method:
-    "Counts per hour per week, compressed with a logarithm against the 98th percentile so one enormous hour cannot flatten the rest, smoothed twice, then contoured at six levels. Hours wrap at midnight; weeks do not.",
+    "Counts per hour per week, compressed with a logarithm against the 98th percentile so one enormous hour cannot flatten the rest, smoothed twice, then drawn two ways from the same ground: a ridge a week across the hours, and contours at six levels. Hours wrap at midnight; weeks do not. The crosshair reads the raw count, never the smoothed height.",
   downloads: {
     png: "PNG",
     svg: "SVG in millimetres",
     stl: "Binary STL mesh",
   },
   plotterNote:
-    "The SVG contains strokes and no fills, reports its dimensions in millimetres, and groups paths by contour level. It contains no text or font dependency.",
+    "The SVG is the view on screen. It contains strokes and no fills, reports its dimensions in millimetres, and groups paths by contour level, or by week for the ridgeline, whose hidden lines are removed before they are written. It contains no text or font dependency.",
   stlNote:
     "The binary STL is 102mm by 46mm, with 2mm of base and up to 12mm of relief. Its directed edges close exactly in the edge check: two triangles a cell on top, the same grid underneath, and a wall joining them.",
 
   /* Added with the page. The pure modules return keys and throw named errors;
      every sentence a visitor reads is in this object. */
+  /** The source control's name. Not drawn: the three options say what they are. */
   sourceLegend: "What to draw",
   drawGithub: "Draw my year",
   stop: "Stop",
-  useDemo: "Back to the demo",
   fileLabel: "CSV file",
-  noFile: "No file chosen yet, so the sheet below is still the demo.",
+  /** Under the file button, where it is read at the moment of choosing. */
+  fileHint: "Any CSV with a column of dates. It is read in this tab and never sent anywhere.",
   columnLabel: "Which column holds the date",
+  /** The view control's name, likewise not drawn. */
+  viewLabel: "View",
+  views: { ridgeline: "Ridgeline", contour: "Contour" },
+  /** A new seed for the modelled year. Only offered while the demo is drawn. */
+  anotherDemo: "Another year",
+  ridgeAlt:
+    "A ridgeline of the year. Fifty-two ridges, one a week, stacked from week 1 at the back to week 52 at the front, each one that week's activity across the twenty-four hours from midnight on the left. The readout under it gives the count at the crosshair.",
   plateAlt:
-    "A contour plate. Fifty-two weeks left to right, twenty-four hours top to bottom, six levels, every second one drawn heavier. The numbers under it say what is on it.",
+    "A contour plate. Fifty-two weeks left to right, twenty-four hours top to bottom, six levels, every second one drawn heavier. The readout under it gives the count at the crosshair.",
+  /** The accessible name of the export row. Not drawn: the buttons say what they make. */
   exportsHeading: "Take it away",
-  readout: {
-    heading: "What is on the sheet",
-    events: "Events",
-    occupied: "Hours with anything in them",
-    busiest: "Highest smoothed peak",
-    ceiling: "The top of the scale",
-  },
+  week: "Week",
+  hour: "Hour",
+  /** The crosshair's reading: the raw count in one cell, never the smoothed height. */
+  cell: (week: number, hour: number, count: number) =>
+    `week ${week} · ${String(hour).padStart(2, "0")}:00 · ${count} ${count === 1 ? "event" : "events"}`,
+  /** The year in one line: what is on the sheet and what full height means. */
+  figures: (events: number, occupied: number, ceiling: number) =>
+    `${events.toLocaleString("en-IE")} events · ${occupied.toLocaleString("en-IE")} of 1,248 hours · peaks top out at ${ceiling} an hour`,
+  stale:
+    "No new landscape is ready. The last one stays up, and exports wait until a file is accepted or you go back to the demo.",
   drawn: "Drawn. {events} events across {occupied} of the 1,248 hours in the year.",
   truncated:
     "GitHub did not return a complete year. What is drawn is incomplete, which is worth knowing before you take it away.",
@@ -98,8 +108,8 @@ export const relief: ToolEntry = {
   slug: "relief",
   name: "Relief",
   blurb:
-    "Turn a year of your activity into a contour landscape, then take it away as an image, a pen-plotter drawing or a 3D mesh.",
-  purpose: "Turn a year of dated activity into contour ground, then take it away as an image, a plot or a mesh.",
+    "Turn a year of your activity into a landscape, one ridge a week, then take it away as an image, a pen-plotter drawing or a 3D mesh.",
+  purpose: "Turn a year of dated activity into terrain, one ridge a week, then take it away as an image, a plot or a mesh.",
   privacy: "browser",
   privacyLine:
     "Runs in your browser. CSV contents and generated exports are never sent over the network. On the GitHub path, your browser sends the username and pasted token directly to api.github.com; the token is never written to storage.",

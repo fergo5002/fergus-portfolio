@@ -232,6 +232,14 @@ export function pickPlate(g: PlateGeometry, x: number, y: number): { week: numbe
   };
 }
 
+/** Where a cell sits on the contour plate, for the crosshair: the inverse of `pickPlate`. */
+export function platePoint(g: PlateGeometry, week: number, hour: number): Point {
+  return {
+    x: g.padLeft + ((week - 1) / (WEEKS - 1)) * g.plotWidth,
+    y: g.padTop + (hour / (HOURS - 1)) * g.plotHeight,
+  };
+}
+
 /** Plays the list. The only part that needs a real canvas. */
 export function paint(ctx: Ctx2D, ops: readonly DrawOp[]): void {
   for (const op of ops) {
