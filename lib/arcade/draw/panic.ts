@@ -1,5 +1,5 @@
 import { screenCopy } from "@/content/arcade-collection";
-import { DUMP_TIME, KERNEL_Y, multiplier, SPAWN_Y, targetOf, type Dump, type PanicState, type Proc } from "../games/panic";
+import { captionOf, CHIP_TYPE, chipGeometry, DUMP_TIME, KERNEL_Y, multiplier, SPAWN_Y, targetOf, type ChipGeometry, type Dump, type PanicState, type Proc } from "../games/panic";
 import type { Point } from "../games/types";
 import type { StageKind } from "../layout";
 import { box, circle, glowText, line, text, type Pen } from "./kit";
@@ -20,27 +20,28 @@ import { box, circle, glowText, line, text, type Pen } from "./kit";
  * its last stretch before the kernel turns amber; a sudo is amber all the way
  * down, on a lit chip, because it is the one thing on screen you want to hit.
  *
+ * Every chip is drawn to `chipGeometry`, the box the spawner spaces chips
+ * by, and every string is fitted into it (a name shrinks if the face is wider
+ * than the model allows; the small print is squeezed with `maxWidth`), so what
+ * is drawn never outgrows what was kept clear.
+ *
  * When the kernel panics the screen halts on a panic dump typed out a line at
  * a time over the frozen processes. All colour comes from the palette.
  */
 
-type Sizes = { name: number; child: number; pid: number; prompt: number; kernel: number; mult: number; pop: number; dump: number; dumpGap: number; pad: number };
+export { chipLeft } from "../games/panic";
+
+type Sizes = { prompt: number; kernel: number; mult: number; pop: number; dump: number; dumpGap: number; pad: number };
 const SIZES: Record<StageKind, Sizes> = {
-  wide: { name: 28, child: 23, pid: 10, prompt: 26, kernel: 17, mult: 34, pop: 22, dump: 13, dumpGap: 17, pad: 8 },
+  wide: { prompt: 26, kernel: 17, mult: 34, pop: 22, dump: 13, dumpGap: 17, pad: CHIP_TYPE.wide.pad },
   // A phone draws the 900-wide world about 360 pixels across: everything a thumb has to read goes up by two thirds.
-  tall: { name: 46, child: 38, pid: 17, prompt: 40, kernel: 26, mult: 50, pop: 34, dump: 22, dumpGap: 28, pad: 12 },
+  tall: { prompt: 40, kernel: 26, mult: 50, pop: 34, dump: 22, dumpGap: 28, pad: CHIP_TYPE.tall.pad },
 };
 
 /** Where a process's amber stretch begins, in world pixels above the kernel. */
 const DANGER = 110;
 const PROMPT_Y = KERNEL_Y + 62;
 const CANNON: Point = { x: 450, y: KERNEL_Y - 4 };
-const EDGE = 12;
-
-/** The left edge of a chip `w` wide centred on `x`, pushed in from the sides so it stays on the glass. */
-export function chipLeft(x: number, w: number): number {
-  return Math.max(EDGE, Math.min(900 - EDGE - w, x - w / 2));
-}
 
 /** A number as the kernel prints a pointer offset. */
 const hex = (n: number) => `0x${(n >>> 0).toString(16)}`;
@@ -79,26 +80,39 @@ function measure(pen: Pen, value: string, size: number): number {
   return pen.c.measureText(value).width || value.length * size * 0.45;
 }
 
-type Chip = { left: number; top: number; w: number; h: number; size: number; baseline: number };
+/** A chip as drawn: the model's geometry, and the name's fitted size and start. */
+type Chip = ChipGeometry & { fit: number; x0: number; baseline: number };
 
-function chipOf(pen: Pen, p: Proc, sz: Sizes): Chip {
-  const size = p.kind === "child" ? sz.child : sz.name;
-  const w = measure(pen, p.name, size) + sz.pad * 2;
-  const h = size + sz.pad;
-  return { left: chipLeft(p.x, w), top: p.y - size * 0.82, w, h, size, baseline: p.y };
+function chipOf(pen: Pen, p: Proc, layout: StageKind): Chip {
+  const g = chipGeometry(p, layout);
+  const inner = g.chip.w - CHIP_TYPE[layout].pad * 2;
+  const full = measure(pen, p.name, g.size);
+  const fit = full > inner ? g.size * (inner / full) : g.size;
+  const x0 = g.chip.x + (g.chip.w - measure(pen, p.name, fit)) / 2;
+  return { ...g, fit, x0, baseline: p.y };
+}
+
+/** Small print in the mono, never wider than `max`. */
+function print(pen: Pen, value: string, x: number, y: number, size: number, colour: string, max: number) {
+  const { c } = pen;
+  c.font = `${size}px ${pen.theme.mono}`;
+  c.fillStyle = colour;
+  c.textAlign = "left";
+  c.textBaseline = "alphabetic";
+  c.fillText(value, x, y, max);
 }
 
 /** The middle of letter `index` of a process's name, for a shot to land on. */
-function letterAt(pen: Pen, p: Proc, chip: Chip, index: number, sz: Sizes): Point {
-  const before = measure(pen, p.name.slice(0, index), chip.size);
-  const own = measure(pen, p.name[index] ?? " ", chip.size);
-  return { x: chip.left + sz.pad + before + own / 2, y: chip.top + chip.h / 2 };
+function letterAt(pen: Pen, p: Proc, chip: Chip, index: number): Point {
+  const before = measure(pen, p.name.slice(0, index), chip.fit);
+  const own = measure(pen, p.name[index] ?? " ", chip.fit);
+  return { x: chip.x0 + before + own / 2, y: chip.chip.y + chip.chip.h / 2 };
 }
 
-function brackets(pen: Pen, chip: Chip, colour: string, glow: string) {
+function brackets(pen: Pen, box: { x: number; y: number; w: number; h: number }, colour: string, glow: string) {
   const { c } = pen;
-  const k = Math.min(12, chip.h * 0.4), o = 5;
-  const l = chip.left - o, r = chip.left + chip.w + o, t = chip.top - o, b = chip.top + chip.h + o;
+  const k = Math.min(12, box.h * 0.4), o = 5;
+  const l = box.x - o, r = box.x + box.w + o, t = box.y - o, b = box.y + box.h + o;
   for (const [x, y, dx, dy] of [[l, t, 1, 1], [r, t, -1, 1], [l, b, 1, -1], [r, b, -1, -1]] as const) {
     c.beginPath();
     c.moveTo(x + dx * k, y);
@@ -115,57 +129,56 @@ function brackets(pen: Pen, chip: Chip, colour: string, glow: string) {
   }
 }
 
-/** A fork's mark: the branch it is about to become. */
-function forkMark(pen: Pen, x: number, y: number, h: number, colour: string) {
+/** A fork's mark, inside its box: the branch it is about to become. */
+function forkMark(pen: Pen, r: { x: number; y: number; w: number; h: number }, colour: string) {
   const { c } = pen;
+  const x = r.x + r.w / 2, arm = r.w * 0.45;
   c.beginPath();
-  c.moveTo(x, y + h * 0.5);
-  c.lineTo(x, y);
-  c.moveTo(x, y + h * 0.1);
-  c.lineTo(x - h * 0.35, y - h * 0.3);
-  c.moveTo(x, y + h * 0.1);
-  c.lineTo(x + h * 0.35, y - h * 0.3);
+  c.moveTo(x, r.y + r.h * 0.85);
+  c.lineTo(x, r.y + r.h * 0.5);
+  c.lineTo(x - arm, r.y + r.h * 0.15);
+  c.moveTo(x, r.y + r.h * 0.5);
+  c.lineTo(x + arm, r.y + r.h * 0.15);
   c.strokeStyle = colour;
   c.lineWidth = 2;
   c.stroke();
 }
 
-function drawProcess(pen: Pen, s: PanicState, p: Proc, locked: boolean, sz: Sizes, hud: boolean): void {
+function drawProcess(pen: Pen, s: PanicState, p: Proc, locked: boolean, chip: Chip, layout: StageKind, hud: boolean): void {
   const { c, p: pal } = pen;
-  const chip = chipOf(pen, p, sz);
+  const r = chip.chip;
   const sudo = p.kind === "sudo";
   const danger = !sudo && p.y > KERNEL_Y - DANGER;
   const ink = sudo ? pal.accentBright : danger ? pal.accent : p.kind === "child" ? pal.ink : pal.bright;
   const edge = sudo ? pal.accent : locked ? pal.bright : danger ? pal.accent : p.hit > 0 ? pal.bright : pal.dim;
   const pulse = sudo ? 0.5 + 0.5 * Math.sin(s.time * 6) : 0;
   const glow = sudo ? pal.accentGlow : p.hit > 0 || locked ? pal.brightGlow : undefined;
-  box(c, chip.left, chip.top, chip.w, chip.h, sudo ? pal.panel : pal.panel, edge, glow, locked || sudo ? 2 : 1);
+  box(c, r.x, r.y, r.w, r.h, pal.panel, edge, glow, locked || sudo ? 2 : 1);
   if (sudo) {
     c.globalAlpha = 0.5 + pulse * 0.5;
-    box(c, chip.left, chip.top, chip.w, chip.h, pal.accentFill, null);
+    box(c, r.x, r.y, r.w, r.h, pal.accentFill, null);
     c.globalAlpha = 1;
   }
 
   // The letters typed so far, inverted: dark on phosphor.
   const typed = locked ? s.buffer.length : 0;
-  const x0 = chip.left + sz.pad;
   if (typed > 0) {
-    const w = measure(pen, p.name.slice(0, typed), chip.size);
-    box(c, x0 - 2, chip.top + 3, w + 4, chip.h - 6, sudo ? pal.accent : pal.bright, null);
-    text(pen, p.name.slice(0, typed), x0, chip.baseline, chip.size, pal.bg, "left", true);
+    const w = measure(pen, p.name.slice(0, typed), chip.fit);
+    box(c, chip.x0 - 2, r.y + 3, w + 4, r.h - 6, sudo ? pal.accent : pal.bright, null);
+    text(pen, p.name.slice(0, typed), chip.x0, chip.baseline, chip.fit, pal.bg, "left", true);
   }
   const rest = p.name.slice(typed);
-  const restX = x0 + (typed ? measure(pen, p.name.slice(0, typed), chip.size) : 0);
-  if (typed === 0 && !danger && !sudo && p.kind !== "child") glowText(pen, rest, restX, chip.baseline, chip.size, ink, pal.inkGlow, "left");
-  else text(pen, rest, restX, chip.baseline, chip.size, ink, "left", true);
+  const restX = chip.x0 + (typed ? measure(pen, p.name.slice(0, typed), chip.fit) : 0);
+  if (typed === 0 && !danger && !sudo && p.kind !== "child") glowText(pen, rest, restX, chip.baseline, chip.fit, ink, pal.inkGlow, "left");
+  else text(pen, rest, restX, chip.baseline, chip.fit, ink, "left", true);
 
   if (hud) {
-    text(pen, `${sudo ? "uid 0 " : ""}pid ${pidOf(p)}`, chip.left, chip.top - 4, sz.pid, sudo ? pal.accent : pal.dim);
-    const tag = sudo ? screenCopy.panicTags.sudo : p.kind === "fork" ? screenCopy.panicTags.fork : "";
-    if (tag) text(pen, tag, chip.left, chip.top + chip.h + sz.pid + 5, sz.pid, sudo ? pal.accentBright : pal.ink);
+    const t = CHIP_TYPE[layout];
+    print(pen, `${sudo ? "uid 0 " : ""}pid ${pidOf(p)}`, chip.label.x, r.y - 4, t.pid, sudo ? pal.accent : pal.dim, chip.label.w);
+    if (chip.caption) print(pen, captionOf(p.kind), chip.caption.x, chip.caption.y + t.pid + 1, t.pid, sudo ? pal.accentBright : pal.ink, chip.caption.w);
   }
-  if (p.kind === "fork") forkMark(pen, chip.left + chip.w + sz.pad + 6, chip.top + chip.h * 0.35, chip.h * 0.7, danger ? pal.accent : pal.ink);
-  if (locked) brackets(pen, chip, sudo ? pal.accentBright : pal.bright, sudo ? pal.accentGlow : pal.brightGlow);
+  if (chip.mark) forkMark(pen, chip.mark, danger ? pal.accent : pal.ink);
+  if (locked) brackets(pen, r, sudo ? pal.accentBright : pal.bright, sudo ? pal.accentGlow : pal.brightGlow);
 }
 
 const pidOf = (p: Proc) => 300 + ((p.id * 7919) % 9600);
@@ -254,23 +267,23 @@ export function drawPanic(pen: Pen, s: PanicState, hud: boolean, layout: StageKi
 
   const lock = targetOf(s);
   const chips = new Map<number, Chip>();
-  for (const proc of s.processes) chips.set(proc.id, chipOf(pen, proc, sz));
+  for (const proc of s.processes) chips.set(proc.id, chipOf(pen, proc, layout));
 
   // A shot for every right letter: the turret to the letter, fading fast, under the chips.
   for (const shot of s.shots) {
     const proc = s.processes.find((q) => q.id === shot.pid);
     const chip = proc ? chips.get(proc.id) : undefined;
-    const to = proc && chip ? letterAt(pen, proc, chip, shot.index, sz) : shot.to;
+    const to = proc && chip ? letterAt(pen, proc, chip, shot.index) : shot.to;
     c.globalAlpha = Math.min(1, shot.life / 0.1);
     line(c, CANNON, to, p.bright, 2, p.brightGlow);
     c.globalAlpha = 1;
   }
 
-  for (const proc of s.processes) drawProcess(pen, s, proc, proc === lock, sz, hud);
+  for (const proc of s.processes) drawProcess(pen, s, proc, proc === lock, chips.get(proc.id)!, layout, hud);
 
   drawKernel(pen, s, sz);
   const lockChip = lock ? chips.get(lock.id) : undefined;
-  const aim = lock && lockChip ? letterAt(pen, lock, lockChip, Math.min(lock.name.length - 1, s.buffer.length), sz) : null;
+  const aim = lock && lockChip ? letterAt(pen, lock, lockChip, Math.min(lock.name.length - 1, s.buffer.length)) : null;
   drawTurret(pen, s, aim);
 
   for (const pop of s.pops) {

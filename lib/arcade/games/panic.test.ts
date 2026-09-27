@@ -17,9 +17,13 @@ import {
   targetOf,
   TOUCH_CHARS,
   TOUCH_WORDS,
+  chipGeometry,
+  TOP_ZONE_END,
   type PanicState,
+  type Proc,
   type ProcKind,
 } from "./panic";
+import type { Rect } from "../layout";
 
 /**
  * KERNEL PANIC: typing defence. These pin the rules a player feels: the
@@ -343,6 +347,73 @@ describe("Kernel Panic: the whole game", () => {
     }
     expect(s.misses).toBeGreaterThan(0);
     expect(s.kills).toBeGreaterThan(3 * s.misses);
+  });
+});
+
+describe("Kernel Panic: chips never collide near the top", () => {
+  const LAYOUTS = ["wide", "tall"] as const;
+  const hit = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+  const collide = (a: Proc, b: Proc) => LAYOUTS.some((l) => hit(chipGeometry(a, l).bounds, chipGeometry(b, l).bounds));
+
+  it("gives every chip a box that holds its name, its pid, its caption and its lock brackets, on the glass", () => {
+    for (const layout of LAYOUTS) {
+      for (const [name, kind] of [["mkfs.ext4 /dev/sda", "proc"], ["fork()", "fork"], ["sudo", "sudo"], ["ls", "child"]] as const) {
+        for (const x of [20, 450, 880]) {
+          const g = chipGeometry({ name, kind, x, y: 200 }, layout);
+          for (const part of [g.chip, g.label, g.caption, g.mark].filter((r): r is Rect => r !== null)) {
+            expect(part.x, `${layout} ${name} at ${x}`).toBeGreaterThanOrEqual(g.bounds.x);
+            expect(part.x + part.w).toBeLessThanOrEqual(g.bounds.x + g.bounds.w);
+            expect(part.y).toBeGreaterThanOrEqual(g.bounds.y);
+            expect(part.y + part.h).toBeLessThanOrEqual(g.bounds.y + g.bounds.h);
+            expect(part.x, `${layout} ${name} off the left edge`).toBeGreaterThanOrEqual(0);
+            expect(part.x + part.w, `${layout} ${name} off the right edge`).toBeLessThanOrEqual(900);
+          }
+          expect(g.caption !== null).toBe(kind === "fork" || kind === "sudo");
+          expect(g.mark !== null).toBe(kind === "fork");
+        }
+      }
+    }
+  });
+
+  for (const touch of [true, false]) {
+    it(`never spawns a chip into another, over twenty seeds and several waves${touch ? " on the touch profile" : ""}`, () => {
+      let spawned = 0, waves = 0;
+      for (let seed = 1; seed <= 20; seed++) {
+        const s = createGame("panic", seed, { touch }), memory = createAttractMemory(), rng = seededRng(seed);
+        const seen = new Set<number>();
+        for (let i = 0; i < 60 * 120 && !s.over; i++) {
+          const plan = MODULES.panic.demo(s, memory, rng);
+          for (const k of plan.press) pressGame(s, k);
+          stepGame(s, TICK, plan.hold);
+          for (const p of s.processes) {
+            if (seen.has(p.id)) continue;
+            seen.add(p.id);
+            spawned++;
+            for (const q of s.processes) if (q !== p) expect(collide(p, q), `seed ${seed}, t=${s.time.toFixed(2)}: ${p.name} spawned into ${q.name}`).toBe(false);
+          }
+          // And while both are still near the top, they stay apart.
+          const top = s.processes.filter((p) => p.y < TOP_ZONE_END);
+          for (let a = 0; a < top.length; a++) for (let b = a + 1; b < top.length; b++) {
+            expect(collide(top[a], top[b]), `seed ${seed}, t=${s.time.toFixed(2)}: ${top[a].name} and ${top[b].name} met near the top`).toBe(false);
+          }
+        }
+        waves += s.wave;
+      }
+      expect(spawned).toBeGreaterThan(400);
+      expect(waves / 20, "the runs reach several waves").toBeGreaterThanOrEqual(3);
+    });
+  }
+
+  it("places a fork's children clear of what is already there, even on a crowded row", () => {
+    const s = fresh(1, true);
+    const fork = put(s, "fork", 300, "fork", 450);
+    put(s, "cron", 300, "proc", 180);
+    put(s, "nginx", 300, "proc", 720);
+    type(s, "fork");
+    const children = s.processes.filter((p) => p.kind === "child");
+    expect(children).toHaveLength(2);
+    for (const c of children) for (const q of s.processes) if (q !== c) expect(collide(c, q), `${c.name} on ${q.name}`).toBe(false);
+    expect(s.processes.some((p) => p.id === fork.id)).toBe(false);
   });
 });
 

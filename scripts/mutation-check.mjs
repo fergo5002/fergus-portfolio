@@ -1560,7 +1560,7 @@ const MUTATIONS = [
     ["a touch run asks a phone for symbols", /"git push force", "shutdown now"/, '"git push --force", "shutdown now"'],
     ["the panic dump never ends the run", /      if \(s\.time - s\.dump\.at >= DUMP_TIME\) s\.over = true;/, ""],
     ["the waves never advance", /      s\.wave\+\+;/, ""],
-    ["a spawn rolls Math.random instead of the seed", /  let best = lo \+ rand\(s\) \* \(hi - lo\), bestGap = -1;/, "  let best = lo + Math.random() * (hi - lo), bestGap = -1;"],
+    ["a spawn rolls Math.random instead of the seed", /\(\) => 40 \+ rand\(s\) \* 820\)/, "() => 40 + Math.random() * 820)"],
     ["the attract typist never fumbles", /    if \(lock && rng\(\) < 0\.025\) \{/, "    if (false) {"],
   ].map(([name, pattern, replace]) => ({
     name: `kernel panic: ${name}`, file: "lib/arcade/games/panic.ts", pattern, replace,
@@ -1611,6 +1611,28 @@ const MUTATIONS = [
     pattern: /  typeable: DESKTOP_CHARS,/,
     replace: "",
     tests: "lib/arcade/games/modules.test.ts",
+  },
+  // ── Kernel Panic: chips never collide near the top ──
+  ...[
+    ["a chip spawns without checking for room", /    if \(!clearOf\(s, c\)\) continue;/, "", "lib/arcade/games/panic.test.ts"],
+    ["near the top a chip falls into the one below it", /      if \(p\.y < TOP_ZONE_END\) nudge\(s, p, p\.speed \* dt\);\n      else p\.y \+= p\.speed \* dt;/, "      p.y += p.speed * dt;", "lib/arcade/games/panic.test.ts"],
+    ["a nudge closes a gap completely (the rounding fix reverted)", / - 1e-6\)\)/g, "))", "lib/arcade/games/panic.test.ts"],
+    ["a knock pushes a chip into its neighbour", /    nudge\(s, target, -KNOCK\);/, "    target.y -= KNOCK;", "lib/arcade/games/panic.test.ts"],
+    ["a chip's box forgets its caption", /  const parts = \[chip, label, caption, mark\]/, "  const parts = [chip, label, mark]", "lib/arcade/games/panic.test.ts"],
+  ].map(([name, pattern, replace, tests]) => ({ name: `kernel panic: ${name}`, file: "lib/arcade/games/panic.ts", pattern, replace, tests })),
+  {
+    name: "kernel panic: the drawer stops fitting a name into its chip",
+    file: "lib/arcade/draw/panic.ts",
+    pattern: /  const fit = full > inner \? g\.size \* \(inner \/ full\) : g\.size;/,
+    replace: "  const fit = g.size;",
+    tests: "lib/arcade/draw/panic.test.ts",
+  },
+  {
+    name: "kernel panic: the drawer lets the pid label run past its box",
+    file: "lib/arcade/draw/panic.ts",
+    pattern: /  c\.fillText\(value, x, y, max\);/,
+    replace: "  c.fillText(value, x, y);",
+    tests: "lib/arcade/draw/panic.test.ts",
   },
 ];
 

@@ -1,3 +1,5 @@
+import { screenCopy } from "@/content/arcade-collection";
+import type { Rect } from "../layout";
 import { banner, baseState, clamp, emit, rand, sound, type BaseState, type GameModule, type Point } from "./types";
 
 /**
@@ -29,6 +31,14 @@ import { banner, baseState, clamp, emit, rand, sound, type BaseState, type GameM
  *  - **Waves.** Each wave is a fixed number of processes. Clear the screen of
  *    the last of them for a bonus and a banner; the next wave falls faster,
  *    spawns sooner, allows more on screen and draws longer commands.
+ *  - **Room.** Every chip has a box (`chipGeometry`, which the drawer draws
+ *    to): its name, its pid over it, a fork's or a sudo's caption under it,
+ *    a fork's mark and the lock's brackets. A chip is only ever placed where
+ *    that box, on the wide stage and the phone's tall one alike, clears every
+ *    live chip's; with no room the spawn waits a beat. Near the top a chip
+ *    never falls into the chip below it in its column (it trails it until
+ *    that one is clear of the top), and a knock or a lurch never pushes a
+ *    chip into a neighbour.
  *
  * **The touch profile** (`create(seed, { touch: true })`, recorded in the
  * state): a phone keyboard hides digits and symbols behind a second layer and
@@ -74,6 +84,8 @@ export type PanicState = BaseState & {
   /** Seconds of wrong-letter feedback left, for the prompt. */
   miss: number;
   sudoOwed: boolean;
+  /** Fork children with nowhere to fall from where the fork died, waiting for room at the top. */
+  queued: string[];
   shots: Shot[];
   pops: Pop[];
   /** Where processes have hit the kernel, for the cracks in its line. */
@@ -185,6 +197,110 @@ function tierWeights(n: number): [number, number, number] {
   return [0.2, 0.4, 0.4];
 }
 
+/* ── a chip's box, shared with the drawer ──────────────────────────────────── */
+
+export type ChipLayout = "wide" | "tall";
+/** The type a chip is drawn in, in world units. A phone's tall stage draws everything about two thirds bigger. */
+export const CHIP_TYPE = {
+  wide: { name: 28, child: 23, pid: 10, pad: 8 },
+  tall: { name: 46, child: 38, pid: 17, pad: 12 },
+} as const;
+/**
+ * The widest a character may be, as a fraction of its size: the display face
+ * for names, the mono for the pid and the caption. The drawer fits every
+ * string into the width these allow, so no text is ever wider than its box,
+ * whatever face the browser ends up with.
+ */
+export const DISPLAY_ADVANCE = 0.5;
+export const MONO_ADVANCE = 0.62;
+/** A chip's baseline above this is near the top, where chips are kept apart as they fall. */
+export const TOP_ZONE_END = SPAWN_Y + 200;
+const EDGE = 12;
+/** Room kept around every chip for the lock's brackets and their glow. */
+const HALO = 6;
+const LAYOUTS: readonly ChipLayout[] = ["wide", "tall"];
+
+export type ChipGeometry = { size: number; chip: Rect; label: Rect; caption: Rect | null; mark: Rect | null; bounds: Rect };
+type Placed = { name: string; kind: ProcKind; x: number; y: number };
+
+/** The left edge of a block `w` wide centred on `x`, pushed in from the sides so it stays on the glass. */
+export function chipLeft(x: number, w: number): number {
+  return Math.max(EDGE, Math.min(900 - EDGE - w, x - w / 2));
+}
+const onGlass = (left: number, w: number) => Math.max(EDGE, Math.min(900 - EDGE - w, left));
+
+/** The pid label a chip carries, at its longest. */
+export const pidLabel = (kind: ProcKind) => (kind === "sudo" ? "uid 0 pid 0000" : "pid 0000");
+export const captionOf = (kind: ProcKind) => (kind === "sudo" ? screenCopy.panicTags.sudo : kind === "fork" ? screenCopy.panicTags.fork : "");
+
+/** Where every part of a process's chip is drawn on a layout, in world units, and the box around all of it. */
+export function chipGeometry(p: Placed, layout: ChipLayout): ChipGeometry {
+  const t = CHIP_TYPE[layout];
+  const size = p.kind === "child" ? t.child : t.name;
+  const w = [...p.name].length * DISPLAY_ADVANCE * size + t.pad * 2;
+  const h = size + t.pad;
+  const fork = p.kind === "fork";
+  const gap = t.pad, markW = h * 0.5;
+  const left = chipLeft(p.x, w + (fork ? gap + markW : 0));
+  const chip = { x: left, y: p.y - size * 0.82, w, h };
+  const mark = fork ? { x: left + w + gap, y: chip.y, w: markW, h } : null;
+  const lw = pidLabel(p.kind).length * MONO_ADVANCE * t.pid;
+  const label = { x: onGlass(left, lw), y: chip.y - 4 - t.pid, w: lw, h: t.pid + 2 };
+  const words = captionOf(p.kind);
+  const cw = words.length * MONO_ADVANCE * t.pid;
+  const caption = words ? { x: onGlass(left, cw), y: chip.y + h + 2, w: cw, h: t.pid + 6 } : null;
+  const parts = [chip, label, caption, mark].filter((r): r is Rect => r !== null);
+  const x0 = Math.min(...parts.map((r) => r.x)), y0 = Math.min(...parts.map((r) => r.y));
+  const x1 = Math.max(...parts.map((r) => r.x + r.w)), y1 = Math.max(...parts.map((r) => r.y + r.h));
+  return { size, chip, label, caption, mark, bounds: { x: x0 - HALO, y: y0 - HALO, w: x1 - x0 + HALO * 2, h: y1 - y0 + HALO * 2 } };
+}
+
+const meets = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+const column = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w;
+
+/** Whether a chip placed like `c` would clear every live chip but `ignore`, on both layouts. */
+function clearOf(s: PanicState, c: Placed, ignore?: Proc): boolean {
+  for (const layout of LAYOUTS) {
+    const a = chipGeometry(c, layout).bounds;
+    for (const q of s.processes) if (q !== ignore && meets(a, chipGeometry(q, layout).bounds)) return false;
+  }
+  return true;
+}
+
+/**
+ * A clear x for a new chip at height `y`: one that spreads the top out, or
+ * with `prefer` the clear x nearest it. Null when there is no room.
+ */
+function place(s: PanicState, name: string, kind: ProcKind, y: number, prefer?: number): number | null {
+  let best: number | null = null, bestScore = -Infinity;
+  const xs = prefer === undefined ? Array.from({ length: 24 }, () => 40 + rand(s) * 820) : Array.from({ length: 70 }, (_, i) => 36 + i * 12);
+  for (const x of xs) {
+    const c = { name, kind, x, y };
+    if (!clearOf(s, c)) continue;
+    const near = s.processes.filter((q) => q.y < SPAWN_Y + 140);
+    const score = prefer !== undefined ? -Math.abs(x - prefer) : near.length ? Math.min(...near.map((q) => Math.abs(q.x - x))) : 0;
+    if (score > bestScore) { best = x; bestScore = score; }
+  }
+  return best;
+}
+
+/** Move a chip by `dy`, but never into a neighbour it is clear of now. */
+function nudge(s: PanicState, p: Proc, dy: number) {
+  let move = dy;
+  for (const layout of LAYOUTS) {
+    const a = chipGeometry(p, layout).bounds;
+    for (const q of s.processes) {
+      if (q === p) continue;
+      const b = chipGeometry(q, layout).bounds;
+      if (!column(a, b) || meets(a, b)) continue;
+      // Stop a hair short, so rounding never leaves two chips touching and read as already overlapping.
+      if (dy < 0 && b.y + b.h <= a.y) move = Math.max(move, -Math.max(0, a.y - (b.y + b.h) - 1e-6));
+      if (dy > 0 && b.y >= a.y + a.h) move = Math.min(move, Math.max(0, b.y - (a.y + a.h) - 1e-6));
+    }
+  }
+  p.y += move;
+}
+
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 
 /** Clean kills in a row, as a multiplier: x1, then x2 at three, x3 at six, x4 at nine. */
@@ -216,18 +332,12 @@ export function spawnProcess(s: PanicState, name: string, kind: ProcKind, x: num
   return p;
 }
 
-/** An x for a new name that keeps it on screen and away from anything still near the top. */
-function spawnX(s: PanicState, name: string): number {
-  const half = Math.min(200, name.length * 7);
-  const lo = 90 + half, hi = 810 - half;
-  const near = s.processes.filter((p) => p.y < SPAWN_Y + 140);
-  let best = lo + rand(s) * (hi - lo), bestGap = -1;
-  for (let i = 0; i < 5; i++) {
-    const x = i === 0 ? best : lo + rand(s) * (hi - lo);
-    const gap = near.length ? Math.min(...near.map((p) => Math.abs(p.x - x))) : 999;
-    if (gap > bestGap) { best = x; bestGap = gap; }
-  }
-  return best;
+/** A new chip at the top, if there is room for it. */
+function spawnAtTop(s: PanicState, name: string, kind: ProcKind, speed: number): boolean {
+  const x = place(s, name, kind, SPAWN_Y);
+  if (x === null) return false;
+  spawnProcess(s, name, kind, x, SPAWN_Y, speed);
+  return true;
 }
 
 function pick<T>(s: PanicState, list: readonly T[]): T {
@@ -243,10 +353,7 @@ function speedFor(s: PanicState, name: string): number {
 function spawnWaveProcess(s: PanicState): boolean {
   const words = wordsOf(s);
   const taken = new Set(s.processes.map((p) => p.name[0]));
-  if (s.wave >= 2 && rand(s) < 0.14 && !taken.has(words.fork[0])) {
-    spawnProcess(s, words.fork, "fork", spawnX(s, words.fork), SPAWN_Y, speedFor(s, words.fork) * 0.9);
-    return true;
-  }
+  if (s.wave >= 2 && rand(s) < 0.14 && !taken.has(words.fork[0])) return spawnAtTop(s, words.fork, "fork", speedFor(s, words.fork) * 0.9);
   const [a, b] = tierWeights(s.wave);
   const roll = rand(s);
   const list = roll < a ? words.short : roll < a + b ? words.medium : words.long;
@@ -254,25 +361,34 @@ function spawnWaveProcess(s: PanicState): boolean {
   const free = list.filter((n) => !taken.has(n[0]) && !(s.sudoOwed && n[0] === words.sudo[0]));
   if (!free.length) return false;
   const name = pick(s, free);
-  spawnProcess(s, name, "proc", spawnX(s, name), SPAWN_Y, speedFor(s, name));
-  return true;
+  return spawnAtTop(s, name, "proc", speedFor(s, name));
 }
 
 function spawnSudo(s: PanicState) {
-  const name = wordsOf(s).sudo;
-  spawnProcess(s, name, "sudo", spawnX(s, name), SPAWN_Y, fallSpeed(s.wave, s.touch) * 0.8);
-  s.sudoOwed = false;
+  if (spawnAtTop(s, wordsOf(s).sudo, "sudo", fallSpeed(s.wave, s.touch) * 0.8)) s.sudoOwed = false;
 }
 
+/**
+ * Two children fall from where the fork died, each as near its side of it as
+ * there is room for; if the row is full they start a little higher, and if
+ * there is nowhere at all they wait for room at the top.
+ */
 function split(s: PanicState, parent: Proc) {
   const words = wordsOf(s);
-  const taken = new Set(s.processes.map((p) => p.name[0]));
+  const taken = new Set([...s.processes.map((p) => p.name[0]), ...s.queued.map((n) => n[0])]);
   for (const side of [-1, 1]) {
     const free = words.children.filter((n) => !taken.has(n[0]));
     if (!free.length) return;
     const name = pick(s, free);
     taken.add(name[0]);
-    spawnProcess(s, name, "child", clamp(parent.x + side * 100, 70, 830), parent.y, parent.speed * 1.15);
+    let x: number | null = null, y = parent.y;
+    for (let rise = 0; x === null; rise += 30) {
+      y = Math.max(SPAWN_Y, parent.y - rise);
+      x = place(s, name, "child", y, clamp(parent.x + side * 100, 70, 830));
+      if (y === SPAWN_Y) break;
+    }
+    if (x !== null) spawnProcess(s, name, "child", x, y, parent.speed * 1.15);
+    else s.queued.push(name);
   }
 }
 
@@ -313,7 +429,7 @@ function wrong(s: PanicState, target: Proc | null) {
   s.chain = 0;
   s.misses++;
   s.miss = 0.35;
-  if (target) target.y += LURCH;
+  if (target) nudge(s, target, LURCH);
 }
 
 function panicNow(s: PanicState, p: Proc) {
@@ -336,7 +452,7 @@ export const panic: GameModule<PanicState> = {
       ...baseState("panic", seed),
       touch, wave: 1, integrity: KERNEL_INTEGRITY, processes: [], nextId: 1, lock: null, buffer: "",
       toSpawn: waveSize(1, touch), spawnClock: 0.8, chain: 0, kills: 0, misses: 0, miss: 0,
-      sudoOwed: false, shots: [], pops: [], scars: [], wipe: 0, dump: null,
+      sudoOwed: false, queued: [], shots: [], pops: [], scars: [], wipe: 0, dump: null,
     };
     banner(s, waveLabel(1), "TYPE A NAME TO KILL IT");
     return s;
@@ -358,7 +474,7 @@ export const panic: GameModule<PanicState> = {
     }
 
     // Waves: the last of a wave cleared means a bonus, a banner and a breather.
-    if (s.toSpawn <= 0 && s.processes.length === 0) {
+    if (s.toSpawn <= 0 && s.processes.length === 0 && s.queued.length === 0) {
       s.score += 50 * s.wave;
       s.wave++;
       s.toSpawn = waveSize(s.wave, s.touch);
@@ -370,12 +486,19 @@ export const panic: GameModule<PanicState> = {
     s.spawnClock -= dt;
     const onScreen = s.processes.filter((p) => p.kind !== "sudo").length;
     if (s.sudoOwed && !s.processes.some((p) => p.name[0] === wordsOf(s).sudo[0])) spawnSudo(s);
+    const waiting = s.queued[0];
+    if (waiting && !s.processes.some((p) => p.name[0] === waiting[0]) && spawnAtTop(s, waiting, "child", fallSpeed(s.wave, s.touch) * 1.15)) s.queued.shift();
     if (s.spawnClock <= 0 && s.toSpawn > 0 && onScreen < screenCap(s.wave, s.touch)) {
-      if (spawnWaveProcess(s)) s.toSpawn--;
-      s.spawnClock = spawnGap(s.wave, s.touch) * (0.8 + rand(s) * 0.4);
+      // No room at the top: try again in a moment rather than after a whole gap.
+      if (spawnWaveProcess(s)) { s.toSpawn--; s.spawnClock = spawnGap(s.wave, s.touch) * (0.8 + rand(s) * 0.4); }
+      else s.spawnClock = 0.25;
     }
 
-    for (const p of s.processes) p.y += p.speed * dt;
+    // Lowest first: near the top a chip never falls into the one below it in its column; it trails it.
+    for (const p of [...s.processes].sort((a, b) => b.y - a.y)) {
+      if (p.y < TOP_ZONE_END) nudge(s, p, p.speed * dt);
+      else p.y += p.speed * dt;
+    }
     const landed = s.processes.filter((p) => p.y >= KERNEL_Y);
     if (!landed.length) return;
     s.processes = s.processes.filter((p) => p.y < KERNEL_Y);
@@ -423,7 +546,7 @@ export const panic: GameModule<PanicState> = {
 
     s.buffer += c;
     target.hit = 0.12;
-    target.y -= KNOCK;
+    nudge(s, target, -KNOCK);
     s.shots.push({ pid: target.id, to: { x: target.x, y: target.y }, index: s.buffer.length - 1, life: SHOT_LIFE });
     if (s.shots.length > 24) s.shots.splice(0, s.shots.length - 24);
     sound(s, "hit", target, 0.16);
