@@ -269,6 +269,12 @@ describe("the parts rendering cannot see", () => {
     expect(canvas).not.toMatch(/\bdt\b/);
   });
 
+  it("draws no streak when the camera eases on its own (bringing a node clear of the inspector)", () => {
+    const easing = canvas.slice(canvas.indexOf("const e = ease.current;"), canvas.indexOf("if (dirty.current) paint();"));
+    expect(easing).toContain("if (hop.current) hop.current.last = null;");
+    expect(easing).toContain("for (const p of pings.current) p.last = null;");
+  });
+
   it("paints the first frame whether or not the observer has seen it", () => {
     // The bug this replaces: a canvas below the fold drew nothing until
     // scrolled to, so every full-page photograph of the phone was blank.

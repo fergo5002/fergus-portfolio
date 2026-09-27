@@ -606,6 +606,10 @@ export default function GraphCanvas({
       };
       if (t >= 1) ease.current = null;
       dirty.current = true;
+      // A camera move nobody's hand made leaves no streak: the beam and the
+      // pings pick up from where they now are on the glass.
+      if (hop.current) hop.current.last = null;
+      for (const p of pings.current) p.last = null;
     }
     if (dirty.current) paint();
     phosphor(time, settling || Boolean(held.current) || Boolean(pinch.current));

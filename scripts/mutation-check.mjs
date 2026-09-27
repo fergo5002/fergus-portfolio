@@ -1529,6 +1529,12 @@ const MUTATIONS = [
       "dirty.current = true;",
     ],
     [
+      "atlas: an eased camera move drags the beam across the map as a streak",
+      "components/studio/GraphCanvas.tsx",
+      /if \(hop\.current\) hop\.current\.last = null;/,
+      ";",
+    ],
+    [
       "atlas: the beam walks under reduced motion",
       "components/studio/GraphCanvas.tsx",
       /if \(reducedMotion \|\| !el\) return;/,
