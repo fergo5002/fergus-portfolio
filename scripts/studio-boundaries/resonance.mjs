@@ -115,6 +115,26 @@ export default [
   [
     "resonance-pad-trail-fades-to-nothing",
     async ({ page, open, assert }) => {
+      // Record what reaches the trail's canvas as it happens. Pointer moves are
+      // frame-aligned in Chromium and a headless frame lands every 250ms or so,
+      // so one pixel sample at one instant can fall either side of the single
+      // bright frame (it did: 0, then 235, on two runs of the same build).
+      await page.addInitScript(() => {
+        const calls = (window.__trail = { fill: 0, stroke: 0, clear: 0, peak: 0 });
+        for (const name of ["fill", "stroke", "clearRect"]) {
+          const native = CanvasRenderingContext2D.prototype[name];
+          CanvasRenderingContext2D.prototype[name] = function (...args) {
+            if (this.canvas?.classList?.contains("reso__trail")) {
+              if (name === "clearRect") calls.clear++;
+              else {
+                calls[name]++;
+                calls.peak = Math.max(calls.peak, this.globalAlpha);
+              }
+            }
+            return native.apply(this, args);
+          };
+        }
+      });
       await open("resonance");
       const pad = page.locator(".reso__pad");
       await pad.scrollIntoViewIfNeeded();
@@ -127,14 +147,19 @@ export default [
       // point or two (measured: moves and frames both about 250ms apart).
       for (let i = 1; i <= 4; i++)
         await page.mouse.move(box.x + 20 + i * 40, box.y + box.height - 20 - i * 36, { steps: 10 });
-      await page.waitForTimeout(80);
-      const drawn = await page.evaluate(readGlass, ".reso__trail");
       await page.mouse.up();
-      assert.ok(drawn.lit > 50, `the trail glows behind the finger (${drawn.lit} lit pixels)`);
+      const drawn = await page.evaluate(() => ({ ...window.__trail }));
+      assert.ok(drawn.fill > 4 && drawn.stroke > 2, `the trail is drawn behind the finger (${JSON.stringify(drawn)})`);
+      assert.ok(drawn.peak > 0.3, `and it glows (brightest point at ${drawn.peak.toFixed(2)})`);
       await page.waitForTimeout(1400);
       const gone = await page.evaluate(readGlass, ".reso__trail");
       assert.equal(gone.lit, 0, "the trail fades to nothing and the glass is cleared");
-      return { drawn: drawn.lit, gone: gone.lit };
+      // Then it lets go of the frame clock: no more frames touch its canvas.
+      const settled = await page.evaluate(() => window.__trail.clear);
+      await page.waitForTimeout(800);
+      const later = await page.evaluate(() => window.__trail.clear);
+      assert.equal(later, settled, "the faded trail takes no more frames");
+      return { drawn, gone: gone.lit, clears: later };
     },
   ],
   [
