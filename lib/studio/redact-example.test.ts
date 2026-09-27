@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { EXAMPLE_PAGE, drawExample, exampleMask, exampleSheet, EXAMPLE_ADVANCE } from "./redact-example";
+import {
+  EXAMPLE_ADVANCE,
+  EXAMPLE_PAGE,
+  EXAMPLE_SRC,
+  drawExample,
+  exampleMask,
+  exampleSheet,
+  exampleSvg,
+} from "./redact-example";
 import { redactCopy } from "@/content/studio/redact";
 
 /**
@@ -51,6 +59,39 @@ describe("the example sheet", () => {
     const f = sheet.frame;
     expect(f.x + f.width).toBeLessThanOrEqual(EXAMPLE_PAGE.width);
     expect(f.y + f.height).toBeLessThanOrEqual(EXAMPLE_PAGE.height);
+  });
+});
+
+describe("the image the server renders", () => {
+  const svg = exampleSvg(exampleSheet());
+
+  it("is a standalone SVG the size of the page", () => {
+    expect(svg).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="900" height="1160" viewBox="0 0 900 1160">/);
+    expect(svg.endsWith("</svg>")).toBe(true);
+    // Nothing that could taint a canvas or reach the network.
+    expect(svg).not.toMatch(/foreignObject|href=|url\(|@import/);
+  });
+
+  it("stretches every run to its layout width, so it agrees with the lit boxes whatever the face", () => {
+    const sheet = exampleSheet();
+    for (const run of [sheet.title, ...sheet.lines]) {
+      expect(svg).toContain(`textLength="${run.width.toFixed(1)}" lengthAdjust="spacingAndGlyphs">${run.text.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</text>`);
+    }
+    expect(svg).toContain('font-family="monospace"');
+  });
+
+  it("escapes what it writes", () => {
+    const hostile = { ...exampleSheet(), title: { ...exampleSheet().title, text: `<script>&"` } };
+    const out = exampleSvg(hostile);
+    expect(out).not.toContain("<script>");
+    expect(out).toContain("&lt;script&gt;&amp;&quot;");
+  });
+
+  it("travels as a data URI, so the words are an image and not the page's text", () => {
+    expect(EXAMPLE_SRC.startsWith("data:image/svg+xml,")).toBe(true);
+    expect(decodeURIComponent(EXAMPLE_SRC.slice("data:image/svg+xml,".length))).toBe(svg);
+    expect(EXAMPLE_SRC).not.toContain(" ");
+    expect(EXAMPLE_SRC).not.toContain("@");
   });
 });
 

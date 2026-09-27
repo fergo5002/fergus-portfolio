@@ -1,39 +1,58 @@
+/**
+ * Every word Pocket Redact says on its stage. The limits, the method and what
+ * it cannot see live in the shell's one disclosure (`content/tools/pocket-redact.ts`).
+ */
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
 export const redactCopy = {
-  upload: "Open a document or image",
-  example: "Try the example invoice",
-  limits:
-    "PDFs up to 20 pages / 40 MB, 12 megapixels per page and 64 megapixels per document. Images up to 12 megapixels. Files stay in this browser.",
+  upload: "Open a file",
+  example: "Example invoice",
+  pageAlt: (n: number) => `Page ${n} of your document`,
+  proofAlt: (n: number) => `Page ${n} of the clean copy, reopened`,
+  editor: "Redaction editor",
+  editorHelp: "Drag to cover. N adds a mask, arrows move it, Alt and arrows resize it, Delete removes it.",
+  tools: "Mask tools",
   draw: "Draw masks",
   select: "Select / move",
   undo: "Undo",
   redo: "Redo",
-  zoom: "Zoom",
+  delete: "Delete selected",
+  lens: "Zoom",
+  zoomIn: "Zoom in",
+  zoomOut: "Zoom out",
   fit: "Fit page",
   search: "Find text to cover",
-  searchType: "Find mode",
-  suggestions: "Candidates on this page",
-  apply: "Cover these text boxes",
-  noText:
-    "This page has no extracted text. Draw masks manually; image text is not recognised automatically.",
-  searchNote:
-    "Candidates cover complete text boxes, sometimes a whole line. Inspect their size before applying. Email and number patterns are suggestions, not a complete privacy scan.",
-  delete: "Delete selected",
-  clear: "Clear this page",
-  coords: "Precise mask",
-  add: "Add rectangle",
-  export: "Build clean PDF",
-  exports: "Take it away",
-  png: "Save this page as PNG",
-  review: "Review the exported pixels",
-  reviewNote:
-    "These previews come from reopening the exact PDF bytes. Inspect every page before downloading. Rasterisation removes original text, forms, links and metadata; visible information outside your masks remains.",
-  save: "Download reviewed PDF",
-  reviewed: "I have inspected this exported page",
+  searchType: "Find",
+  modes: { text: "Text", email: "Emails", phone: "Numbers" },
+  patterns: { email: "email-shaped text", phone: "long numbers" },
+  lit: (n: number) => `${n} lit`,
+  apply: "Cover all",
+  caveat: "Suggestions, not a complete privacy scan.",
+  noText: "No text found on this page, so draw the masks yourself.",
+  masks: (n: number) => plural(n, "mask", "masks"),
+  pageMasks: (page: number, n: number) => `Page ${page}, ${plural(n, "mask", "masks")}`,
+  page: (page: number) => `Page ${page}`,
+  pages: "Pages",
+  build: "Build clean PDF",
+  opening: "Opening…",
+  burning: "Burning the masks in…",
+  cancel: "Cancel",
+  reopening: "Reopening the clean copy…",
+  scanning: "Reading it back…",
+  /** The reading line over the reopened page, once the scan has passed. */
+  reading: ({ masks, solid, before, after }: { masks: number; solid: number; before: number; after: number }) =>
+    after > 0
+      ? `${plural(after, "piece", "pieces")} of text survived`
+      : solid < masks
+        ? `${masks - solid} of ${plural(masks, "mask", "masks")} not solid black`
+        : `${masks ? `${plural(masks, "mask", "masks")} solid black` : "No masks"} · text found ${before} → ${after}`,
+  proofNote: "The file you'll download, reopened. Anything left uncovered is still on it.",
+  inspected: "I have inspected this exported page",
   back: "Back to editing",
-  empty:
-    "Open a document to start. Or try the example to practise without using a real file.",
-  instruction:
-    "Draw a rectangle over text to cover it. In Select / move mode, drag a mask or its bottom-right handle. The arrow keys move a selected mask; Delete removes it. Undo keeps up to 80 changes.",
+  exports: "Take it away",
+  save: (done: number, total: number) => `Download reviewed PDF (${done}/${total})`,
+  png: "Save this page as PNG",
+  failed: "A mask came back less than solid black, so this copy is not offered.",
   sampleTitle: "SAMPLE INVOICE",
   sample: [
     "Client: Rowan Example",
@@ -44,20 +63,10 @@ export const redactCopy = {
     "Consulting session: EUR 240.00",
     "Total due: EUR 240.00",
   ],
-  fields: ["Left", "Top", "Width", "Height"],
 };
 
-/** Supporting labels for Pocket Redact. Read through studioLabels.PocketRedact. */
-export const redactLabels = {
-  cancel: "Cancel",
-  documentPages: "Document pages",
-  masks: " masks",
-  redactionEditor: "Redaction editor",
-  drawOrMoveRedactionMasks: "Draw or move redaction masks",
-  exactText: "Exact text",
-  emailLikeText: "Email-like text",
-  phoneLongNumbers: "Phone / long numbers",
-  masksAcross: " masks across ",
-  pages: " pages",
-  page: "Page ",
-} as const;
+/**
+ * Kept for the `studioLabels` barrel in `labels.ts`, which other studios share.
+ * Pocket Redact's words are all in `redactCopy` now.
+ */
+export const redactLabels = {} as const;

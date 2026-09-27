@@ -5,6 +5,11 @@ export const pocketRedact: ToolEntry = {
   "name": "Pocket Redact",
   "blurb": "Cover sensitive areas of a PDF or image, then create and reopen a fresh flattened document to inspect the result.",
   "purpose": "Cover what is private in a PDF or image, then check the clean copy before you share it.",
+  "method": [
+    "Building the clean copy draws every page into pixels, burns each mask in as solid black and writes a new PDF that holds nothing but those images. The original's text, fonts, links and metadata are not carried over.",
+    "It then reopens that new file the way it opened yours, reads the pixels under every mask and looks for any text left in it. The download is that reopened file, and it is offered only when every mask came back black and you have looked at every page.",
+    "Find reads the text a PDF carries. It lights whole text boxes, sometimes a whole line, and the email and number patterns can miss things, so treat what it lights as suggestions. An image carries no text, so its masks are yours to draw."
+  ],
   "cantSee": [
     "Raster export removes text search, links, forms, signatures and accessibility structure. Maximum 20 pages, 40 MB, 12 megapixels per page and 64 megapixels per document.",
     "Only the areas you mark are covered. Review every exported page before sharing; filenames and anything visibly left on the page may still identify you."

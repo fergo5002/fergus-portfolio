@@ -129,10 +129,11 @@ if (!process.argv[2] || process.argv[2] === "mobile") {
           timeout: 120000,
         });
         await p.locator(".studio").waitFor();
+        // Pocket Redact opens on its example; the click waits for its controls.
         if (slug === "pocket-redact")
           await p
             .getByRole("button", {
-              name: "Try the example invoice",
+              name: "Example invoice",
               exact: true,
             })
             .click();
