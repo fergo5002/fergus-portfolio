@@ -1,5 +1,6 @@
 import type { ContourLayer } from "./contour";
-import { HOURS, WEEKS, type Polyline } from "./types";
+import { ridgeLayout, ridgelines, type RidgeLayout } from "./ridgeline";
+import { HOURS, WEEKS, type Field, type Polyline } from "./types";
 
 /**
  * The plotter file.
@@ -88,6 +89,55 @@ export function plotterSvg(layers: readonly ContourLayer[], sheet: Sheet = A4_LA
     `<g fill="none" stroke="black" stroke-width="${STROKE_MM}" stroke-linecap="round" stroke-linejoin="round">`,
     groups,
     `<path id="neatline" d="M${x0} ${y0}L${x1} ${y0}L${x1} ${y1}L${x0} ${y1}Z"/>`,
+    `</g>`,
+    `</svg>`,
+  ].join("");
+}
+
+/**
+ * The ridgeline's layout on a sheet, in millimetres, in the sheet's own
+ * coordinates. The same proportions as the screen (a peak ten ridges tall,
+ * the spacing a fixed share of the width) so the paper looks like the page,
+ * centred between the top and bottom margins.
+ */
+export function sheetRidgeLayout(sheet: Sheet): RidgeLayout {
+  const inner = sheet.widthMm - 2 * sheet.marginMm;
+  const spacing = inner * 0.0068;
+  const amplitude = spacing * 10;
+  const drawn = amplitude + (WEEKS - 1) * spacing;
+  const padTop = (sheet.heightMm - drawn) / 2;
+  return ridgeLayout({
+    width: sheet.widthMm,
+    spacing,
+    amplitude,
+    padX: sheet.marginMm,
+    padTop,
+    padBottom: sheet.heightMm - drawn - padTop,
+  });
+}
+
+/**
+ * The ridgeline for a pen. Only the strokes a viewer can see, because a pen
+ * has no fill to hide the rest behind: `ridgelines` has already cut every
+ * stretch that stands behind a nearer week. One group per week, back to
+ * front, and the same rules as the contour file: millimetres on the root, no
+ * fill, no text.
+ */
+export function ridgelineSvg(field: Field, sheet: Sheet = A4_LANDSCAPE): string {
+  const layout = sheetRidgeLayout(sheet);
+  const at = (p: { x: number; y: number }) => `${round(p.x)} ${round(p.y)}`;
+  const groups = ridgelines(field, layout)
+    .map((ridge) => {
+      const paths = ridge.visible
+        .map((line) => `<path d="M${at(line[0])}${line.slice(1).map((p) => `L${at(p)}`).join("")}"/>`)
+        .join("");
+      return `<g id="week-${String(ridge.week).padStart(2, "0")}" data-week="${ridge.week}">${paths}</g>`;
+    })
+    .join("");
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${sheet.widthMm}mm" height="${sheet.heightMm}mm" viewBox="0 0 ${sheet.widthMm} ${sheet.heightMm}">`,
+    `<g fill="none" stroke="black" stroke-width="${STROKE_MM}" stroke-linecap="round" stroke-linejoin="round">`,
+    groups,
     `</g>`,
     `</svg>`,
   ].join("");

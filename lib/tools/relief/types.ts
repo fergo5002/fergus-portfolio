@@ -13,6 +13,9 @@ export const WEEKS = 52;
 export const HOURS = 24;
 export const MS_WEEK = 7 * 24 * 60 * 60 * 1000;
 
+/** The two ways the page shows one field: stacked week ridges, or contours seen from above. */
+export type ReliefView = "ridgeline" | "contour";
+
 /** One dated thing, already reduced to its cell. Nothing identifying survives. */
 export type ReliefEvent = { week: number; hour: number };
 
