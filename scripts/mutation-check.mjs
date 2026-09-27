@@ -1406,6 +1406,56 @@ const MUTATIONS = [
     pattern: /const topologyA = saddle > 0 \|\| \(saddle === 0 && k === 10\);/,
     replace: "const topologyA = k === 10;",
   },
+  // ── the tools instrument redesign (2026-09-27) ──
+  {
+    name: "tools: an eyebrow comes back into a studio",
+    file: "components/studio/Atlas.tsx",
+    pattern: /<h3>\{node\.label\}<\/h3>/,
+    replace: '<p className="studio-eyebrow">FILE / INSPECTOR</p>\n              <h3>{node.label}</h3>',
+    tests: "components/studio/eyebrow.test.ts",
+  },
+  {
+    name: "tools: the shell puts a second lede back between the heading and the stage",
+    file: "components/tools/ToolPage.tsx",
+    pattern: /<div className="bench-stage">\{children\}<\/div>/,
+    replace: '<p className="tool__intro">{tool.blurb}</p>\n      <div className="bench-stage">{children}</div>',
+    tests: "components/tools/ToolPage.test.ts",
+  },
+  {
+    name: "tools: a kit knob is rebuilt as a div with a slider role",
+    file: "components/instrument/Knob.tsx",
+    pattern: /<input\r?\n(\s+)ref=\{inputRef\}\r?\n(\s+)id=\{id\}\r?\n(\s+)className="inst-knob__input"\r?\n(\s+)type="range"/,
+    replace: '<div\n$1ref={inputRef}\n$2id={id}\n$3className="inst-knob__input"\n$4role="slider"',
+    tests: "components/instrument/instrument.test.ts",
+  },
+  {
+    name: "tools: a kit segmented control drops its native radios for divs",
+    file: "components/instrument/Segmented.tsx",
+    pattern: /type="radio"/,
+    replace: 'role="radio"',
+    tests: "components/instrument/instrument.test.ts",
+  },
+  {
+    name: "tools: the drop slot hands a refused file to the tool anyway",
+    file: "components/instrument/DropSlot.tsx",
+    pattern: /if \(screened\.accepted\.length\) now\.onFiles\(screened\.accepted\);/,
+    replace: "now.onFiles(files);",
+    tests: "components/instrument/instrument.test.ts",
+  },
+  {
+    name: "tools: the index previews keep animating off screen",
+    file: "components/tools/ToolPreview.tsx",
+    pattern: /if \(!visibleRef\.current\) return;/,
+    replace: ";",
+    tests: "components/tools/ToolPreview.test.ts",
+  },
+  {
+    name: "tools: the index previews ignore reduced motion",
+    file: "components/tools/ToolPreview.tsx",
+    pattern: /    if \(reducedMotion\) return;\r?\n/,
+    replace: "",
+    tests: "components/tools/ToolPreview.test.ts",
+  },
   // ── the room inside the tube (2026-09-05 overhaul) ──
   {
     name: "the arcade room loses data-lenis-prevent, so a stopped Lenis eats every wheel event",

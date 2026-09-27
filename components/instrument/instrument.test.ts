@@ -131,9 +131,11 @@ describe("behaviour the browser does not give for free", () => {
     expect(src).toMatch(/depth\.current \+= 1|depth\.current\+\+/);
   });
 
-  it("a refused file is said out loud", () => {
+  it("a refused file is said out loud and never reaches the tool", () => {
     const src = read("DropSlot.tsx");
     expect(src).toMatch(/role="alert"/);
+    expect(src).toMatch(/if \(screened\.accepted\.length\) now\.onFiles\(screened\.accepted\);/);
+    expect(src).not.toMatch(/onFiles\(files\)/);
   });
 
   it("carries no sentence of its own: every word comes from content", () => {

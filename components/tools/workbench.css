@@ -179,35 +179,81 @@
 .bench-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .bench-columns > * { min-width: 0; }
 
-/* ── the tools index ─────────────────────────────────────────────────── */
+/* ── the tools index ─────────────────────────────────────────────────
+   Five cards, three over two on a wide screen. Each card is one link: a live
+   preview of the tool (components/tools/ToolPreview.tsx), its name, its one
+   sentence and a way in. Nothing else. */
 
-.bench-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px; padding: 28px 0; border-bottom: 1px solid var(--green-line); }
-.bench-intro h1 { max-width: 23ch; margin: 0 0 22px; color: var(--green-bright); font-family: var(--font-screen); font-size: clamp(2.7rem, 6vw, 4.8rem); line-height: 1; }
-.bench-intro p { max-width: 60ch; margin: 8px 0 0; }
-.bench-intro__count { color: var(--amber); font-family: var(--font-screen); font-size: 7rem; line-height: 1; }
-.bench-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin: 0; padding: 0; list-style: none; }
-.bench-card { position: relative; min-width: 0; border: 1px solid var(--green-line); background: var(--bg-panel); }
-.bench-card:last-child { grid-column: 1 / -1; }
-.bench-card__link { display: grid; gap: 14px; height: 100%; padding: 24px; color: var(--green); text-decoration: none; }
-.bench-card__link:hover,
-.bench-card__link:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; background: var(--bg-panel-2); }
-.bench-card h2 { margin: 0; color: var(--green-bright); font-family: var(--font-screen); font-size: 1.85rem; }
-.bench-card p { margin: 0; }
-.bench-card__purpose { color: var(--amber); font-size: 1.04rem; }
-.bench-card__input { color: var(--green); font-size: 0.78rem; }
-.bench-card__open { display: flex; align-items: center; justify-content: space-between; padding-top: 16px; border-top: 1px solid var(--green-line); color: var(--amber); }
-.bench-card__open::after { content: "\2197"; font-size: 1.3rem; }
-.bench-preview { display: block; width: 100%; height: 135px; background: var(--bg); stroke: var(--green); stroke-width: 1.6; }
-.bench-preview__grid { stroke: var(--green-line); stroke-width: 0.5; }
-.bench-preview__secondary { stroke: var(--amber); }
+.bench-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bench-card { grid-column: span 2; min-width: 0; }
+.bench-card:nth-child(n + 4) { grid-column: span 3; }
+.bench-card__link {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  color: var(--green);
+  text-decoration: none;
+  text-shadow: none;
+}
+.bench-card__link:hover { border-color: var(--amber); }
+.bench-card__link:focus-visible { border-color: var(--amber); outline: 2px solid var(--amber); outline-offset: 3px; }
+.bench-card__screen {
+  display: block;
+  aspect-ratio: 20 / 9;
+  border-bottom: 1px solid var(--green-line);
+  background: var(--bg);
+}
+.bench-card__body { display: grid; align-content: start; gap: 8px; padding: 16px 18px 18px; }
+.bench-card h2 { margin: 0; color: var(--green-bright); font-family: var(--font-screen); font-size: 1.9rem; line-height: 1; }
+.bench-card__purpose { margin: 0; color: var(--green); font-size: 0.9rem; line-height: 1.5; }
+.bench-card__open { display: inline-flex; align-items: center; gap: 8px; margin-top: 2px; color: var(--amber); font-size: 0.85rem; }
+.bench-card__open::after { content: "\2192"; }
+
+/* The previews: every stroke and fill is a theme token, so the amber and ice
+   phosphors repaint them with nothing here to change. */
+.bench-preview { display: block; width: 100%; height: 100%; }
+.bench-attract__grid { fill: none; stroke: var(--green-line); stroke-width: 0.5; }
+.bench-attract__line { stroke: var(--green); stroke-width: 1.4; }
+.bench-attract__node { fill: var(--bg-panel); stroke: var(--green-bright); stroke-width: 1.6; }
+.bench-attract__hub { fill: var(--bg-panel); stroke: var(--amber); stroke-width: 2; }
+.bench-attract__signal { fill: var(--amber); }
+.bench-attract__signal-line { stroke: var(--amber); stroke-width: 1.2; }
+.bench-attract__page { fill: var(--bg-panel-2); stroke: var(--green); stroke-width: 1.2; }
+.bench-attract__text { fill: var(--green); fill-opacity: 0.55; }
+.bench-attract__mask { fill: var(--amber); }
+.bench-attract__scan { stroke: var(--amber); stroke-width: 1.5; }
+.bench-attract__cell { fill: var(--green); }
+.bench-attract__contour { fill: none; stroke: var(--green); stroke-width: 1; }
+.bench-attract__contour-strong { fill: none; stroke: var(--green-bright); stroke-width: 1.8; }
+.bench-attract__step { fill: var(--green); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .bench-card__link { transition: border-color 140ms ease-out; }
+  .bench-card__open::after { transition: transform 140ms ease-out; }
+  .bench-card__link:hover .bench-card__open::after { transform: translateX(3px); }
+}
+@media (max-width: 900px) {
+  .bench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bench-card,
+  .bench-card:nth-child(n + 4) { grid-column: auto; }
+  .bench-card:last-child { grid-column: 1 / -1; }
+}
 
 @media (max-width: 620px) {
   .bench-grid,
   .bench-columns { grid-template-columns: minmax(0, 1fr); }
   .bench-card:last-child { grid-column: auto; }
-  .bench-card__link { padding: 20px; }
-  .bench-intro { grid-template-columns: minmax(0, 1fr); padding-top: 12px; }
-  .bench-intro__count { display: none; }
   .bench-metrics > div { padding: 12px 8px; }
   .bench-metrics dt { font-size: 0.72rem; overflow-wrap: anywhere; }
   .bench-stage { padding: calc(var(--bar) + 14px) 14px 14px; }

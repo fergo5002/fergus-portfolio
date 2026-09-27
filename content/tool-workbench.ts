@@ -24,30 +24,12 @@ export const instrumentCopy = {
   },
 } as const;
 
-/** Product copy shared by the work surfaces, separate from the tool registry. */
+/** The shell's and the index's own words, separate from the tool registry. */
 export const workbenchCopy = {
   indexTitle: "tools",
-  title: "Small tools. Useful results.",
-  description: "Find a connection. Make something. Get a useful answer. Free tools for your files, your ideas and your curiosity.",
   back: "All tools",
   open: "Open tool",
-  limits: "How to read the result",
-  details: "Method and limitations",
-  privacyDetails: "Connection details",
   noAccount: "No account. No installation.",
-  example: "Start with an example or bring your own data.",
-  tools: {
-    atlas: { purpose: "Find the thread in your files", input: "Files, folders, ZIP or a public GitHub repo", output: "A graph you can pull apart, search and explore", category: "Exploring", preview: "Files → connections" },
-    "group-lore": { purpose: "Discover your group chat's history", input: "WhatsApp, Telegram or Discord exports", output: "Find the rhythms. Follow a thread. Keep a portrait", category: "Connections", preview: "Your chat, over time" },
-    "pocket-redact": { purpose: "Cover it. Check it. Take it away", input: "A PDF or an image", output: "Inspect a fresh PDF containing only visible pixels", category: "Documents", preview: "Marked → flattened → reviewed" },
-    "prove-it": { purpose: "Find the evidence that changes your mind", input: "Twelve cases. A limited investigation budget", output: "Test your theory and compare what you learnt", category: "Thinking", preview: "A claim needs evidence" },
-    resonance: { purpose: "Make a little music machine", input: "Four voices, sixteen steps and your hands", output: "Play, sequence and shape sound. Keep a patch or WAV", category: "Making", preview: "Four voices. Your rhythm." },
-    "headline-check": { purpose: "Make your headline readable", input: "A URL or a little HTML", output: "Compare the visible words with extracted text", category: "Web", preview: "HTML → readable words" },
-    drift: { purpose: "Keep your writing sounding like you", input: "Your writing + a draft", output: "Find changed habits and sentences to revisit", category: "Writing", preview: "Your voice / this draft" },
-    relief: { purpose: "Turn your year into a landscape", input: "Dated CSV or GitHub commits", output: "Explore your terrain. Export PNG, SVG or STL", category: "Making", preview: "52 weeks × 24 hours" },
-    overlap: { purpose: "Find the people you both know", input: "Two LinkedIn connection exports", output: "A searchable list of shared connections", category: "Connections", preview: "Two lists. Common ground." },
-    "second-visit": { purpose: "Find out who comes back", input: "A bookings or orders CSV", output: "Retention curves and useful follow-up lists", category: "Business", preview: "First visit → next visit" },
-  } as Record<string, { purpose: string; input: string; output: string; category: string; preview: string }>,
 };
 
 export const localOverlapCopy = {
