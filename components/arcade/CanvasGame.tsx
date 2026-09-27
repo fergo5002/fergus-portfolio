@@ -9,6 +9,7 @@ import { clientToStage, stageFor, stageKind, toWorld, type StageKind } from "@/l
 import { eventPoint, renderRun } from "@/lib/arcade/renderer";
 import { countdownLabel, createRun, isNewBest, pauseRun, pressRun, resultDue, stepRun, type Run } from "@/lib/arcade/run";
 import { bestFor, rememberBest } from "@/lib/arcade/session";
+import { steerKeys } from "@/lib/arcade/steer";
 import { diffInput, pressesFor } from "@/lib/arcade/text-input";
 import type { ArcadeTheme } from "@/lib/arcade/theme";
 import { pushImpact } from "@/lib/system";
@@ -82,6 +83,8 @@ export default function CanvasGame({ cabinet, seed, replay, theme, boards, onBac
   /** The value the room last saw in the text input, for the diff. */
   const typedRef = useRef("");
   const composing = useRef(false);
+  /** Where a held finger is steering Dead Signal, in world pixels; null when no finger is down. */
+  const steerTo = useRef<{ x: number; y: number } | null>(null);
   /** The single end-of-run event. React is never used to draw a frame; this runs once, when GAME OVER has held. */
   const finishRef = useRef<(s: GameState) => void>(() => {});
   finishRef.current = (s) => {
@@ -92,7 +95,7 @@ export default function CanvasGame({ cabinet, seed, replay, theme, boards, onBac
   };
   const stage = stageFor(cabinet.id, kind);
 
-  const release = useCallback(() => { keys.current.clear(); physical.current.clear(); }, []);
+  const release = useCallback(() => { keys.current.clear(); physical.current.clear(); steerTo.current = null; }, []);
   const pause = useCallback((value: boolean) => {
     const done = pauseRun(runRef.current!, value);
     setPaused(done && value);
@@ -176,7 +179,18 @@ export default function CanvasGame({ cabinet, seed, replay, theme, boards, onBac
       if (!live) return;
       const state = runRef.current!;
       acc = Math.min(100, acc + dt);
+      // A held finger steers every frame, not only when a pointer event
+      // arrives, so the ship stops on the finger instead of sailing past it.
+      const s = state.game;
+      if (steerTo.current && s.id === "signal" && state.phase === "play" && !state.paused) {
+        keys.current.clear();
+        for (const k of steerKeys(s.player, steerTo.current)) keys.current.add(k);
+      }
       while (acc >= 1000 / 60) { stepRun(state, 1 / 60, keys.current); acc -= 1000 / 60; }
+      // The game can change what is typed without a keystroke (a locked word
+      // lands, the panic dump halts), and the field must follow it, or the
+      // next letter is read against letters the game has already dropped.
+      if (typing && !composing.current && typedOf(state.game) !== typedRef.current) syncTyped();
       const v = view();
       renderRun(ctx, state, canvas.width, canvas.height, themeRef.current, v);
       const label = countdownLabel(state);
@@ -260,12 +274,27 @@ export default function CanvasGame({ cabinet, seed, replay, theme, boards, onBac
   const typeKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") return; // bubbles to the room, which leaves
     const run = runRef.current!;
+    // While paused nothing is being typed, so P and M are the room's again:
+    // the pause screen says P carries on, and focus is in this field.
+    const k = e.key.toLowerCase();
+    if (run.paused && (k === "p" || k === "m")) {
+      e.preventDefault();
+      if (!e.repeat) { if (k === "p") pause(false); else setAudioEnabled(!audioLive); }
+      return;
+    }
     if (run.phase === "card" && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); press("action"); return; }
     if (e.key === "Enter") e.preventDefault();
   };
   const typed = (e: FormEvent<HTMLInputElement>) => {
     const run = runRef.current!;
     const value = e.currentTarget.value;
+    if (run.phase === "card") {
+      // Android reports Space as keydown "Unidentified", which typeKey never
+      // sees, so a space or newline arriving in the field starts the run too.
+      e.currentTarget.value = typedRef.current;
+      if (/[ \n]/.test(diffInput(typedRef.current, value).insert)) press("action");
+      return;
+    }
     if (run.phase !== "play" || run.paused) { e.currentTarget.value = typedRef.current; return; }
     for (const key of pressesFor(diffInput(typedRef.current, value))) pressRun(run, key);
     typedRef.current = value;
@@ -277,11 +306,9 @@ export default function CanvasGame({ cabinet, seed, replay, theme, boards, onBac
     if (s.id !== "signal" || run.phase !== "play" || run.paused) return;
     const r = e.currentTarget.getBoundingClientRect();
     const at = toWorld(stage, clientToStage(stage, r, e.clientX, e.clientY));
+    steerTo.current = at;
     keys.current.clear();
-    if (at.x < s.player.x - 15) keys.current.add("left");
-    if (at.x > s.player.x + 15) keys.current.add("right");
-    if (at.y < s.player.y - 15) keys.current.add("up");
-    if (at.y > s.player.y + 15) keys.current.add("down");
+    for (const k of steerKeys(s.player, at)) keys.current.add(k);
   };
   const canvasDown = (e: PointerEvent<HTMLCanvasElement>) => {
     const run = runRef.current!;

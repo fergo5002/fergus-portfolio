@@ -513,3 +513,23 @@ describe("the direction pad is for thumbs", () => {
     expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\) \{\s*\.arcade-dpad \{\s*display: none;\s*\}\s*\}/);
   });
 });
+
+describe("the room keeps a typing game's field and a held finger honest (code review, 2026-09-27)", () => {
+  const room = read("components", "arcade", "CanvasGame.tsx");
+  it("resyncs the field from the game each frame, outside a composition", () => {
+    // A process landing released the lock but the field kept the dead word's
+    // letters, so the next letter was misread as a fresh first letter.
+    expect(room).toMatch(/if \(typing && !composing\.current && typedOf\(state\.game\) !== typedRef\.current\) syncTyped\(\);/);
+  });
+  it("hears P and M from the typing field while paused", () => {
+    expect(room).toMatch(/if \(run\.paused && \(k === "p" \|\| k === "m"\)\)/);
+  });
+  it("starts a typing game from the card on a typed space or newline", () => {
+    // Android reports Space as keydown "Unidentified", so the key handler never sees it.
+    expect(room).toMatch(/if \(run\.phase === "card"\) \{[\s\S]{0,500}\/\[ \\n\]\/\.test\(/);
+  });
+  it("steers towards a held finger every frame, not only on pointer events", () => {
+    expect(room).toMatch(/steerTo\.current = at;/);
+    expect(room).toMatch(/for \(const k of steerKeys\(s\.player, steerTo\.current\)\) keys\.current\.add\(k\);/);
+  });
+});

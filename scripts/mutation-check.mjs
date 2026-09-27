@@ -1567,6 +1567,20 @@ const MUTATIONS = [
     tests: "lib/arcade/games/panic.test.ts",
   })),
   {
+    name: "room: the typing field stops following the game between keystrokes",
+    file: "components/arcade/CanvasGame.tsx",
+    pattern: /if \(typing && !composing\.current && typedOf\(state\.game\) !== typedRef\.current\) syncTyped\(\);/,
+    replace: "",
+    tests: "components/arcade/arcade.test.ts",
+  },
+  {
+    name: "room: a held finger steers only when a pointer event arrives, so the ship sails past it",
+    file: "components/arcade/CanvasGame.tsx",
+    pattern: /for \(const k of steerKeys\(s\.player, steerTo\.current\)\) keys\.current\.add\(k\);/,
+    replace: "",
+    tests: "components/arcade/arcade.test.ts",
+  },
+  {
     name: "kernel panic: the combo meter sits full from the first sudo on",
     file: "lib/arcade/games/panic.ts",
     pattern: /return \(\(\(chain - 1\) % SUDO_EVERY\) \+ 1\) \/ SUDO_EVERY;/,
