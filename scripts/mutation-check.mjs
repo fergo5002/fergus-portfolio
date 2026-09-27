@@ -1511,6 +1511,18 @@ const MUTATIONS = [
       "viewBox={viewBoxFor(bounds, 0)}",
     ],
     [
+      "atlas: the server's picture answers to .studio, so a check counts the canvas before it exists",
+      "components/studio/AtlasPoster.tsx",
+      /<div className="atlas atlas--poster">/,
+      '<div className="studio atlas atlas--poster">',
+    ],
+    [
+      "atlas: the map is laid out square again and fills neither a laptop's stage nor a phone's",
+      "lib/studio/atlas-scene.ts",
+      /\{ wide: \{ x: 0\.022, y: 0\.1 \}, tall: \{ x: 0\.1, y: 0\.022 \} \}/,
+      "{ wide: { x: 0.05, y: 0.05 }, tall: { x: 0.05, y: 0.05 } }",
+    ],
+    [
       "atlas: the map paints nothing until the observer has seen it (the blank phone photograph)",
       "components/studio/GraphCanvas.tsx",
       /if \(live\.current\) dirty\.current = true;\r?\n(\s*)else paint\(\);/,
