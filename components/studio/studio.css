@@ -7,7 +7,10 @@
   font-size: 0.92rem;
   line-height: 1.6;
 }
-:is(.lab, .tool-studio) .studio * {
+/* Every studio descendant may shrink, except the kit's controls, which carry
+   their own floors (a knob label's 44px) and their own min-width: 0 where a
+   track must shrink. */
+:is(.lab, .tool-studio) .studio *:not([class*="inst-"]) {
   min-width: 0;
   box-sizing: border-box;
 }
@@ -40,7 +43,7 @@
   margin: 18px 0 10px;
   color: var(--green-bright);
 }
-:is(.lab, .tool-studio) .studio p {
+:is(.lab, .tool-studio) .studio p:not([class*="inst-"]) {
   margin: 0 0 14px;
 }
 :is(.lab, .tool-studio) .studio-toolbar {

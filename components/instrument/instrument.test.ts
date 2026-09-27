@@ -168,6 +168,14 @@ describe("the stylesheet", () => {
     expect(css).toMatch(/\.inst-select \.inst-select__input\s*\{[^}]*overflow:\s*hidden/);
   });
 
+  it("is not overridden by the studios' blanket min-width reset", () => {
+    // The studios reset min-width on every descendant at higher specificity
+    // than a kit class, which took the knob labels' 44px floor to 21px wide.
+    const studio = readFileSync(join(process.cwd(), "components", "studio", "studio.css"), "utf8").replace(/\r\n/g, "\n");
+    expect(studio).toMatch(/\.studio \*:not\(\[class\*="inst-"\]\)\s*\{[^}]*min-width: 0/);
+    expect(studio).not.toMatch(/\.studio \*\s*\{[^}]*min-width: 0/);
+  });
+
   it("keeps every visible input at 16px, which stops iOS zooming on focus", () => {
     expect(css).toMatch(/\.inst-select__input\s*\{[^}]*font-size:\s*16px/);
     // The segmented radio is a visible 44px lamp, so the phone check reads its
