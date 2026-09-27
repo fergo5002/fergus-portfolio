@@ -34,3 +34,27 @@ export function panName(pan: number): string {
   if (amount < 5) return "C";
   return `${pan < 0 ? "L" : "R"}${amount}`;
 }
+
+/** The voices' range, as `parseStudioPatch` enforces it. */
+const LOWEST = 36;
+const HIGHEST = 96;
+
+/**
+ * The Note knob's detents: every note in the key across the voices' range,
+ * lowest first. The knob carries an index into this list rather than a MIDI
+ * note, because the kit's Knob reports a drag relative to where it started:
+ * a chromatic knob snapped to the key either refuses a single arrow press (C3
+ * to C♯3 quantises back to C3) or flickers between two notes mid-drag.
+ */
+export function keyNotes(root: number, scale: Scale): number[] {
+  const out: number[] = [];
+  for (let n = LOWEST; n <= HIGHEST; n++) if (quantise(n, root, scale) === n) out.push(n);
+  return out;
+}
+
+/** A note's detent on the Note knob, or the nearest one for a note off the key. */
+export function noteIndex(note: number, notes: readonly number[]): number {
+  let best = 0;
+  for (let i = 1; i < notes.length; i++) if (Math.abs(notes[i] - note) < Math.abs(notes[best] - note)) best = i;
+  return best;
+}

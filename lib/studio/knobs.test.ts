@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { makePatch, quantise } from "./music";
-import { SCALES, TONES, hz, keyName, panName, percent, retune, scaleAt, scaleIndex, toneAt, toneIndex } from "./knobs";
+import { SCALES, TONES, hz, keyName, keyNotes, noteIndex, panName, percent, retune, scaleAt, scaleIndex, toneAt, toneIndex } from "./knobs";
 
 /**
  * The knob row's arithmetic. The kit's Knob carries a number, so the stepped
@@ -49,6 +49,33 @@ describe("the key and scale knobs retune the voices", () => {
   it("leaves a voice already in the key where it is", () => {
     const p = makePatch(0);
     expect(retune(p, p.root, p.scale).voices.map((v) => v.note)).toEqual(p.voices.map((v) => v.note));
+  });
+});
+
+describe("the note knob", () => {
+  it("turns through the notes of the key, one detent a note, so no press is snapped back", () => {
+    // C3 in C minor: a chromatic knob would go to C#3, which quantises back
+    // to C3, and the arrow key would do nothing at all.
+    expect(quantise(49, 0, "minor")).toBe(48);
+    const notes = keyNotes(0, "minor");
+    const at = notes.indexOf(48);
+    expect(notes[at + 1]).toBe(50);
+    expect(notes[at - 1]).toBe(46);
+  });
+
+  it("holds every note in the key across the voice's range, and nothing else", () => {
+    for (const [root, scale] of [[0, "minor"], [9, "minor"], [0, "major"], [5, "pentatonic"]] as const) {
+      const notes = keyNotes(root, scale);
+      const expected = Array.from({ length: 61 }, (_, i) => 36 + i).filter((n) => quantise(n, root, scale) === n);
+      expect(notes, `${root} ${scale}`).toEqual(expected);
+    }
+  });
+
+  it("finds a voice's place on the knob, and the nearest place for a note off the key", () => {
+    const notes = keyNotes(0, "minor");
+    expect(noteIndex(48, notes)).toBe(notes.indexOf(48));
+    expect(noteIndex(49, notes)).toBe(notes.indexOf(48));
+    expect(notes[noteIndex(96, notes)]).toBe(96);
   });
 });
 
