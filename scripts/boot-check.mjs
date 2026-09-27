@@ -421,6 +421,74 @@ async function skipPartWay(engine) {
   }
 }
 
+/**
+ * A skip while the beam is drawing the mark must take the beam with it.
+ *
+ * Found 2026-09-27: `finish()` dropped the overlay but left the boot's frame
+ * callback subscribed, so the timeline ran on behind the revealed page and
+ * the beam kept tracing the mark into the phosphor for about 600ms after the
+ * skip (and the mode switch's relay could still throw after one). Watched here
+ * through the shader's own `uBeamCount` uploads, the one path the beam reaches
+ * the tube by, with the overlay's presence recorded at each upload.
+ */
+async function skipDuringTrace(engine) {
+  const run = await newPage(engine, "skip-trace");
+  const { page, browser, errors } = run;
+  try {
+    await page.addInitScript(() => {
+      const log = (window.__beamUploads = []);
+      const names = new WeakMap();
+      for (const Type of [window.WebGLRenderingContext, window.WebGL2RenderingContext]) {
+        if (!Type) continue;
+        const proto = Type.prototype;
+        const location = proto.getUniformLocation;
+        const uniform1f = proto.uniform1f;
+        proto.getUniformLocation = function (program, name) {
+          const result = location.call(this, program, name);
+          if (result) names.set(result, name);
+          return result;
+        };
+        proto.uniform1f = function (where, value) {
+          if (names.get(where) === "uBeamCount") log.push({ t: performance.now(), value, overlay: !!document.querySelector(".boot") });
+          return uniform1f.call(this, where, value);
+        };
+      }
+    });
+    await page.goto(base + "/", { waitUntil: "commit" });
+    await page.bringToFront();
+    // Skip once the beam is seen drawing, not merely once the trace has begun:
+    // on a phone the first beam frame can land after a tap at the phase's start,
+    // and a skip before it tests nothing.
+    await waitFor(page, "the beam to draw", () => window.__beamUploads.some((u) => u.value > 0 && u.overlay));
+    const skippedIn = await phase(page);
+    // The skip button hides while the tube is graphic; the overlay itself is
+    // the skip, anywhere on it.
+    await (engine === "webkit" ? page.touchscreen.tap(195, 120) : page.mouse.click(720, 200));
+    await page.locator(".boot").waitFor({ state: "detached", timeout: 3000 });
+    const goneAt = await page.evaluate(() => performance.now());
+    await page.waitForTimeout(1500);
+    await step(engine, "a skip mid-trace takes the beam with it", async () => {
+      const r = await page.evaluate((goneAt) => {
+        const all = window.__beamUploads;
+        return {
+          visibility: document.visibilityState,
+          beamSeenBefore: all.some((u) => u.t <= goneAt && u.value > 0),
+          litAfter: all.filter((u) => u.t > goneAt && u.value > 0).map((u) => ({ ms: Math.round(u.t - goneAt), points: u.value })),
+        };
+      }, goneAt);
+      // The instrument first: a probe that never saw the beam proves nothing.
+      assert.ok(r.beamSeenBefore, `INSTRUMENT DEGRADED, not a result: no beam upload seen before the skip (${JSON.stringify({ skippedIn, ...r })})`);
+      assert.deepEqual(r.litAfter, [], `the beam kept drawing after the skip in ${skippedIn}`);
+      return { skippedIn, visibility: r.visibility };
+    });
+    await step(engine, "no page errors while skipping mid-trace", async () => {
+      assert.deepEqual(errors, []);
+    });
+  } finally {
+    await browser.close();
+  }
+}
+
 function judgeIngest(engine, captured) {
   const all = captured.flat();
   return step(engine, "no /ingest body carries the core count or the time zone", async () => {
@@ -665,6 +733,7 @@ await step("server", "the boot's words are not in the server HTML", async () => 
 for (const engine of args.includes("--beam-only") || args.includes("--shots-only") ? [] : engines) {
   const cold = await coldBoot(engine);
   const skip = await skipPartWay(engine);
+  await skipDuringTrace(engine);
   if (checkIngest) await judgeIngest(engine, [cold.ingest ?? [], skip.ingest ?? []]);
   await reducedMotion(engine);
   if (!args.includes("--no-shots")) await moments(engine);

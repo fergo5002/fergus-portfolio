@@ -1453,6 +1453,13 @@ const MUTATIONS = [
     tests: "lib/boot.test.ts",
   },
   {
+    name: "boot: finish() leaves the frame callback running, so a skip mid-trace keeps drawing the mark",
+    file: "components/BootSequence.tsx",
+    pattern: /finishedRef\.current = true;\r?\n(\s*)stopFrames\.current\(\);/,
+    replace: "finishedRef.current = true;",
+    tests: "lib/boot.test.ts",
+  },
+  {
     name: "boot: PRIVACY: the boot overlay drops ph-no-capture, so autocapture can lift the visitor's readings",
     file: "components/BootSequence.tsx",
     pattern: /className="boot ph-no-capture"/,

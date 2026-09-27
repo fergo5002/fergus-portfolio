@@ -546,6 +546,16 @@ describe("BootSequence is wired to the failsafe", () => {
     expect(src).toMatch(/className="boot ph-no-capture"/);
   });
 
+  it("stops reading the frame clock the moment it finishes", () => {
+    // Otherwise the timeline runs on behind the revealed page: a skip mid-trace
+    // left the beam tracing the mark into the phosphor for about 600ms after
+    // the overlay went, and a skip before the mode switch could still throw its
+    // relay (2026-09-27; scripts/boot-check.mjs "a skip mid-trace takes the
+    // beam with it" is the browser half of this guard).
+    expect(src).toMatch(/stopFrames\.current = unsubscribe;/);
+    expect(src).toMatch(/finishedRef\.current = true;\s*\n\s*stopFrames\.current\(\);/);
+  });
+
   it("draws the mark with the beam through lib/beam.ts, and lets go of it", () => {
     expect(src).toMatch(/writeBeam\(frame\.current, /);
     expect(src).toMatch(/clearBeam\(/);

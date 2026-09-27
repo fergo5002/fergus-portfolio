@@ -93,6 +93,11 @@ export default function BootSequence({ children }: { children: React.ReactNode }
   // dependency so that the mount effect keeps a stable identity: re-running it
   // would restrike the tube mid-sequence.
   const finishRef = useRef<() => void>(() => {});
+  // Unsubscribes the sequence from the frame clock. `finish()` calls it first:
+  // left running, the timeline carried on behind the revealed page, tracing
+  // the mark into the phosphor after a skip and throwing the mode switch's
+  // relay after one made earlier.
+  const stopFrames = useRef<() => void>(() => {});
   const overlayRef = useRef<HTMLDivElement>(null);
   const headRef = useRef<HTMLDivElement>(null);
   const memRef = useRef<HTMLDivElement>(null);
@@ -274,6 +279,7 @@ export default function BootSequence({ children }: { children: React.ReactNode }
       // changes inside a frame callback, so it is handed to a timeout.
       if (snap.done && !handoff) handoff = window.setTimeout(() => finishRef.current(), 0);
     });
+    stopFrames.current = unsubscribe;
 
     // Covers the case disarming the inline failsafe opens up: this component
     // mounted, took ownership of the reveal, and then stalled part-way (no
@@ -314,6 +320,7 @@ export default function BootSequence({ children }: { children: React.ReactNode }
   const finish = useCallback(() => {
     if (finishedRef.current) return;
     finishedRef.current = true;
+    stopFrames.current();
 
     try {
       sessionStorage.setItem(SESSION_KEY, "1");
