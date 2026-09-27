@@ -36,7 +36,16 @@ export default function AtlasInspector({
 }) {
   const more = view.total - view.related.length;
   return (
-    <aside className="atlas-inspector" aria-label={copy.inspector} data-lenis-prevent="">
+    <aside
+      className="atlas-inspector"
+      aria-label={copy.inspector}
+      data-lenis-prevent=""
+      onKeyDown={(event) => {
+        if (event.key !== "Escape") return;
+        event.preventDefault();
+        onClose();
+      }}
+    >
       <div className="atlas-inspector__head">
         <h2 className="atlas-inspector__title">{view.label}</h2>
         <button type="button" className="atlas-inspector__close" aria-label={copy.close} onClick={onClose}>

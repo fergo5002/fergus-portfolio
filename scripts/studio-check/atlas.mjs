@@ -123,6 +123,17 @@ export default async function atlas({ page, open, button, save, assert }) {
   });
   await page.getByText("Finding connections…", { exact: true }).waitFor({ state: "hidden" });
   await page.waitForFunction(() => document.querySelector(".atlas-reading")?.dataset.files === "3");
+  // The map itself takes a drop. Synthetic: a real desktop drag cannot be
+  // driven headless, so this proves the stage's handler, not the OS path.
+  const dropped = await page.evaluateHandle(() => {
+    const d = new DataTransfer();
+    d.items.add(new File(["# first\n[[second]]\norchid lantern"], "first.md", { type: "text/markdown" }));
+    d.items.add(new File(["# second\norchid lantern"], "second.md", { type: "text/markdown" }));
+    return d;
+  });
+  for (const type of ["dragenter", "dragover", "drop"]) await page.dispatchEvent(".atlas-graph", type, { dataTransfer: dropped });
+  await page.waitForFunction(() => document.querySelector(".atlas-reading")?.dataset.files === "2");
+
   await button("Back to the example").click();
   await page.waitForFunction(() => document.querySelector(".atlas-reading")?.dataset.files === "34");
   assert.equal(await button("Back to the example").count(), 0, "the way back goes once it is back");

@@ -163,7 +163,7 @@
 .atlas-find {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex: 0 1 330px;
   min-width: 0;
   min-height: 44px;

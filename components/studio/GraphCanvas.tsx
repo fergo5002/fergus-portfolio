@@ -741,7 +741,11 @@ export default function GraphCanvas({
     nodes.current = scene.nodes;
     links.current = scene.links;
     byId.current = new Map(scene.nodes.map((n) => [n.id, n]));
-    adj.current = adjacency(graph.links, kinds);
+    // The beam walks what is drawn, so in focus it stays inside the neighbourhood.
+    adj.current = adjacency(
+      scene.links.map((l) => ({ source: l.source.id, target: l.target.id, kind: l.kind })),
+      kinds,
+    );
     hop.current = null;
     pings.current = [];
     lastSeen.current.clear();

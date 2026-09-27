@@ -1501,8 +1501,8 @@ const MUTATIONS = [
     [
       "atlas: the inspector's own scroll is eaten by the page's smooth scroll",
       "components/studio/AtlasInspector.tsx",
-      /aria-label=\{copy\.inspector\} data-lenis-prevent=""/,
-      "aria-label={copy.inspector}",
+      /\s*data-lenis-prevent=""\r?\n(\s*)onKeyDown/,
+      "\n$1onKeyDown",
     ],
     [
       "atlas: the server draws a different framing from the canvas, so the hand-over jumps",
