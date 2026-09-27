@@ -71,7 +71,19 @@ function save(name: string, body: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export default function SecondVisitTool() {
+/**
+ * The worked example, modelled once on the server so its curve and numbers are
+ * in the first paint and in the HTML. Everything but the per-customer rows,
+ * which are a third of a megabyte and only feed the downloads; the page fills
+ * them in by modelling the same file in the background, and keeps the
+ * downloads off until it has.
+ */
+export type SecondVisitDemo = {
+  analysis: Analysis;
+  conversion: { ignored: number; ambiguousDates: boolean };
+};
+
+export default function SecondVisitTool({ demo }: { demo?: SecondVisitDemo }) {
   const runner = useRef<Runner | null>(null);
   const [where, setWhere] = useState<Runner["where"] | null>(null);
   const [parsed, setParsed] = useState<Awaited<ReturnType<Runner["parse"]>> | null>(null);
@@ -79,15 +91,17 @@ export default function SecondVisitTool() {
   const [venueTown, setVenueTown] = useState("");
   const [asOfIso, setAsOfIso] = useState("");
   const [params, setParams] = useState<ModelParams>(PRODUCTION_PARAMS);
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [analysis, setAnalysis] = useState<Analysis | null>(demo?.analysis ?? null);
+  /** False while the analysis on screen is the server's summary, with no rows behind the downloads. */
+  const [full, setFull] = useState(!demo);
   const [message, setMessage] = useState<string | null>(null);
-  const [conversion, setConversion] = useState<{ ignored: number; ambiguousDates: boolean } | null>(null);
+  const [conversion, setConversion] = useState<{ ignored: number; ambiguousDates: boolean } | null>(demo?.conversion ?? null);
   const [busy, setBusy] = useState(false);
   const [timing, setTiming] = useState({ parseMs: 0, modelMs: 0 });
-  const [example, setExample] = useState(false);
+  const [example, setExample] = useState(Boolean(demo));
   const [horizonDay, setHorizonDay] = useState(90);
   /** The newest attended date in the file, the default end, once a first analysis has found it. */
-  const [fileEnd, setFileEnd] = useState<string | null>(null);
+  const [fileEnd, setFileEnd] = useState<string | null>(demo?.analysis.asOfIso ?? null);
   const generation = useRef(0);
   const sliderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -95,8 +109,10 @@ export default function SecondVisitTool() {
     const made = makeRunner();
     runner.current = made;
     setWhere(made.where);
-    // Open on the made-up sauna, so the curve is on screen before anything is chosen.
-    void read(demoCsv(), DEMO_VENUE_TOWN);
+    // The server drew the made-up sauna. Model the same file here, quietly and
+    // without clearing the screen, so the downloads and the settings have the
+    // full analysis behind them.
+    void read(demoCsv(), DEMO_VENUE_TOWN, ++generation.current, true);
     return () => {
       generation.current++;
       if (sliderTimer.current) clearTimeout(sliderTimer.current);
@@ -107,18 +123,22 @@ export default function SecondVisitTool() {
 
   const towns = useMemo(() => townOptions(), []);
 
-  async function read(text: string, defaultTown: string, ticket = ++generation.current) {
+  /** `quiet` refreshes what is already on screen: nothing is cleared and no busy line is shown. */
+  async function read(text: string, defaultTown: string, ticket = ++generation.current, quiet = false) {
     if (sliderTimer.current) clearTimeout(sliderTimer.current);
     const active = runner.current;
     if (!active) return;
-    setBusy(true);
-    setMessage(null);
-    setAnalysis(null);
-    setConversion(null);
-    setParsed(null);
-    setRoles(null);
-    setParams(PRODUCTION_PARAMS);
-    setFileEnd(null);
+    if (!quiet) {
+      setBusy(true);
+      setMessage(null);
+      setAnalysis(null);
+      setFull(false);
+      setConversion(null);
+      setParsed(null);
+      setRoles(null);
+      setParams(PRODUCTION_PARAMS);
+      setFileEnd(null);
+    }
     setExample(defaultTown === DEMO_VENUE_TOWN);
     try {
       const result = await active.parse(text);
@@ -135,6 +155,7 @@ export default function SecondVisitTool() {
         if (analysed.used === 0) { setMessage(secondVisitCopy.refusals.badDates); }
         else {
           setAnalysis(analysed.analysis);
+          setFull(true);
           setFileEnd(analysed.analysis.asOfIso);
           setTiming({ parseMs: result.ms, modelMs: analysed.ms });
         }
@@ -206,6 +227,7 @@ export default function SecondVisitTool() {
         return;
       }
       setAnalysis(result.analysis);
+      setFull(true);
       setTiming((current) => ({ ...current, modelMs: result.ms }));
       void trackToolRun({ tool: "second-visit", outcome: "ok", ms: round100(result.ms) });
     } catch {
@@ -229,7 +251,7 @@ export default function SecondVisitTool() {
   function invalidate() {
     generation.current++;
     if (sliderTimer.current) clearTimeout(sliderTimer.current);
-    setAnalysis(null); setConversion(null); setBusy(false);
+    setAnalysis(null); setFull(false); setConversion(null); setBusy(false);
   }
 
   function download(name: string, body: string, type: string) {
@@ -413,29 +435,31 @@ export default function SecondVisitTool() {
               ...exportFiles(analysis).map((file) => ({
                 label: file.name,
                 kind: "csv" as const,
-                disabled: busy,
+                disabled: busy || !full,
                 onClick: () => download(file.file, file.csv, "text/csv;charset=utf-8"),
               })),
               {
                 label: secondVisitCopy.report.button,
                 kind: "html" as const,
-                disabled: busy,
+                disabled: busy || !full,
                 onClick: () => download(secondVisitCopy.report.file, reportHtml(analysis), "text/html;charset=utf-8"),
               },
             ]}
           />
-          <p className="sv__hint">{secondVisitCopy.labels.modelMs} {timing.modelMs} ms</p>
         </section>
       ) : null}
 
-      {parsed && roles ? <details className="bench-details sv__setup" open={!analysis}>
+      {/* Rendered while the server's example is on screen too, before the file has
+          been read here, so the line does not appear under the results later. */}
+      {(parsed && roles) || analysis ? <details className="bench-details sv__setup" open={!analysis}>
       <summary>{workbench.setup}</summary>
       {parsed && roles ? (
         <section className="sv__step">
           <h2>{secondVisitCopy.steps.columns.title}</h2>
           <p>{secondVisitCopy.steps.columns.hint}</p>
           <p className="sv__hint">
-            {parsed.rows} {secondVisitCopy.labels.rows}, {secondVisitCopy.labels.parseMs} {timing.parseMs} ms
+            {parsed.rows} {secondVisitCopy.labels.rows}, {secondVisitCopy.labels.parseMs} {timing.parseMs} ms,{" "}
+            {secondVisitCopy.labels.modelMs} {timing.modelMs} ms
             {where === null ? "" : ` (${where})`}
           </p>
           {parsed.truncated ? <p className="sv__warn" role="status">{secondVisitCopy.refusals.truncated}</p> : null}

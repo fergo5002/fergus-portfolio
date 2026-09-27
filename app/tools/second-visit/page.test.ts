@@ -53,6 +53,14 @@ describe("the page", () => {
     expect(source).toContain("TIGH_CREDIT");
   });
 
+  it("models the worked example on the server, leaving the per-customer rows behind", () => {
+    // The curve and the numbers are in the first paint; the rows (a third of a
+    // megabyte, only for the downloads) are modelled again in the browser.
+    expect(source).toContain("analyse({ bookings: demoRead.bookings");
+    expect(source).toContain("rows: []");
+    expect(source).toContain("<SecondVisitTool demo={demo} />");
+  });
+
   it("is a server component: the island is imported, not inlined", () => {
     expect(source).not.toContain('"use client"');
     expect(source).toContain("SecondVisitTool");

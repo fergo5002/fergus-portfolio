@@ -161,8 +161,18 @@ describe("the stylesheet", () => {
     expect(css).toMatch(/--knob:\s*(4[4-9]|[5-9]\d)px/);
   });
 
-  it("keeps every text input at 16px, which stops iOS zooming on focus", () => {
+  it("clips a long option label inside the select, which WebKit otherwise lets widen the page", () => {
+    // Isolated on WebKit at 390: the Prove It case picker's box measured 328px
+    // wide with 397px of scrollable content, and the page 428px. Adding this
+    // one declaration took the page back to 390; removing it put 428 back.
+    expect(css).toMatch(/\.inst-select \.inst-select__input\s*\{[^}]*overflow:\s*hidden/);
+  });
+
+  it("keeps every visible input at 16px, which stops iOS zooming on focus", () => {
     expect(css).toMatch(/\.inst-select__input\s*\{[^}]*font-size:\s*16px/);
+    // The segmented radio is a visible 44px lamp, so the phone check reads its
+    // font size like any input: it measured 13px before this.
+    expect(css).toMatch(/\.inst-seg \.inst-seg__input\s*\{[^}]*font-size:\s*16px/);
   });
 
   it("takes every colour from the theme tokens", () => {

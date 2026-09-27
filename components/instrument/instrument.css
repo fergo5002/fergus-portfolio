@@ -229,6 +229,7 @@
   border: 0;
   border-radius: calc(var(--radius) - 2px) 0 0 calc(var(--radius) - 2px);
   background: radial-gradient(circle at 62% 50%, var(--green-line) 0 3px, transparent 3.6px);
+  font-size: 16px;
   cursor: inherit;
 }
 .inst-seg .inst-seg__input:checked {
@@ -540,7 +541,9 @@
   color: var(--green-bright);
   font: inherit;
   font-size: 16px;
+  overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
   cursor: pointer;
 }
 .inst-select__input:hover:not(:disabled) { border-color: var(--green); }

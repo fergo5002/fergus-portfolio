@@ -1450,6 +1450,20 @@ const MUTATIONS = [
     tests: "components/tools/ToolPreview.test.ts",
   },
   {
+    name: "tools: the kit select lets a long option label widen a WebKit page again",
+    file: "components/instrument/instrument.css",
+    pattern: /  font-size: 16px;\r?\n  overflow: hidden;\r?\n  text-overflow: ellipsis;/,
+    replace: "  font-size: 16px;\n  text-overflow: ellipsis;",
+    tests: "components/instrument/instrument.test.ts",
+  },
+  {
+    name: "tools: Second Visit offers downloads from the server's rowless example",
+    file: "app/tools/second-visit/SecondVisitTool.tsx",
+    pattern: /disabled: busy \|\| !full,/,
+    replace: "disabled: busy,",
+    tests: "app/tools/second-visit/SecondVisitTool.test.ts",
+  },
+  {
     name: "tools: the index previews ignore reduced motion",
     file: "components/tools/ToolPreview.tsx",
     pattern: /    if \(reducedMotion\) return;\r?\n/,

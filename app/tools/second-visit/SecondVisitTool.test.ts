@@ -93,6 +93,20 @@ describe("the island is wired to the things it claims", () => {
     expect(offenders).toEqual([]);
   });
 
+  it("keeps the downloads off until the full analysis, rows and all, is in", () => {
+    // The server's example has no rows, so a download taken from it would be a
+    // header with nothing under it.
+    expect(source.split("disabled: busy || !full")).toHaveLength(3);
+    expect(source).toContain("useState(!demo)");
+  });
+
+  it("refreshes the server's example quietly, without clearing what is on screen", () => {
+    expect(source).toContain("read(demoCsv(), DEMO_VENUE_TOWN, ++generation.current, true)");
+    const quiet = source.slice(source.indexOf("if (!quiet) {"), source.indexOf("setExample(defaultTown === DEMO_VENUE_TOWN)"));
+    expect(quiet).toContain("setAnalysis(null);");
+    expect(quiet).toContain("setBusy(true);");
+  });
+
   it("draws every word from the content file", () => {
     expect(source).toContain('from "@/content/tools/second-visit"');
     expect(Object.keys(secondVisitCopy)).toContain("refusals");
