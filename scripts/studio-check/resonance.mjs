@@ -41,6 +41,23 @@ export default async function resonance({ page, open, button, save, assert, repo
   assert.equal(patch.bpm, 120);
   // The pad pressed while it played is in the saved patch (it opens dark).
   assert.equal(patch.voices[0].steps[1], true);
+  // Opening a patch: a good one sets the face, a bad one is named and changes nothing.
+  const picker = page.getByLabel("Open patch", { exact: true });
+  await picker.setInputFiles({
+    name: "slow.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify({ ...patch, bpm: 133 })),
+  });
+  await page.waitForFunction(() => document.querySelector(".reso__readout")?.textContent?.includes("133"));
+  assert.equal(await page.getByLabel("Tempo", { exact: true }).inputValue(), "133");
+  await picker.setInputFiles({
+    name: "bad.json",
+    mimeType: "application/json",
+    buffer: Buffer.from('{"format":"resonance-v1","voices":[{"note":999,"period":0}]}'),
+  });
+  await page.locator(".reso__error[role=alert]").waitFor();
+  assert.equal(await page.getByLabel("Tempo", { exact: true }).inputValue(), "133", "a refused patch leaves the face alone");
+  await page.getByLabel("Tempo", { exact: true }).fill("120");
   const wav = await readFile(await save("Render 8 bars to WAV"));
   assert.equal(wav.toString("ascii", 0, 4), "RIFF");
   assert(wav.length > 1_000_000);
