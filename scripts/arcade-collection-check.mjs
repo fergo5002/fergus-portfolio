@@ -2,6 +2,7 @@ import { webkit, chromium, devices } from "playwright";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { killOneProcess, statusPoints } from "./arcade-panic-smoke.mjs";
+import { moveUntilScored } from "./arcade-signal-smoke.mjs";
 const args = process.argv.slice(2);
 const option = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
 const base = option("--base", "http://localhost:3000"), out = resolve(option("--out", ".phone-check/arcade"));
@@ -57,7 +58,11 @@ for (const profile of [{ name: "webkit-390", engine: webkit, device: "iPhone 12"
       await page.locator(".arcade-canvas").tap();
       await phase(page, "play");
       if (id === "poker") { await page.getByRole("button", { name: "Hold card 1", exact: true }).tap(); check(await page.getByRole("button", { name: "Hold card 1", exact: true }).getAttribute("aria-pressed") === "true", "Poker hold did not respond"); await page.getByRole("button", { name: "DRAW", exact: true }).tap(); }
-      else if (id === "signal") { await page.locator(".arcade-action-button").tap(); for (const key of ["→", "↓", "←", "↑"]) await page.locator(".arcade-dpad").getByRole("button", { name: key, exact: true }).tap(); }
+      else if (id === "signal") {
+        await page.locator(".arcade-action-button").tap(); for (const key of ["→", "↓", "←", "↑"]) await page.locator(".arcade-dpad").getByRole("button", { name: key, exact: true }).tap();
+        // Moving is what fires: holding the pad must score a kill.
+        evidence.push({ profile: profile.name, game: "signal", scoredByMoving: await moveUntilScored(page, { touch: true }) });
+      }
       else {
         check(await page.locator(".arcade-type__input").evaluate(el => el === document.activeElement), `${profile.name}: the tap that started Kernel Panic did not focus its text input`);
         // A coarse pointer is the touch profile: a phone is only ever asked for letters and spaces.

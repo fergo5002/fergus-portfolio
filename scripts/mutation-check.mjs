@@ -1649,6 +1649,30 @@ const MUTATIONS = [
     replace: ".arcade-type {",
     tests: "components/arcade/arcade.test.ts",
   },
+  // ── Dead Signal (2026-09-27): the rebalance that made it losable ──
+  ...[
+    ["unlosable again: the beam fires while standing still", /    if \(s\.moving\) \{\r?\n      s\.shotClock -= dt;/, "    if (true) {\n      s.shotClock -= dt;"],
+    ["unlosable again: contact kills the enemy", /function touch\(s: SignalState, e: Enemy\) \{\r?\n  hurt\(s, s\.player\);/, "function touch(s: SignalState, e: Enemy) {\n  hurt(s, s.player);\n  e.hp = 0;"],
+    ["unlosable again: touching an enemy costs nothing", /      if \(s\.invincible <= 0 && distance\(e, s\.player\) < PLAYER_R \+ KINDS\[e\.kind\]\.radius - 3\) touch\(s, e\);/, ""],
+    ["the long grace after a hit comes back", /export const HIT_GRACE = 0\.6;/, "export const HIT_GRACE = 1.7;"],
+    ["enemy kinds collapse to one", /  const kind = pickKind\(s\);/, '  const kind: EnemyKind = (pickKind(s), "drifter");'],
+    ["the waves never advance", /        s\.level\+\+;/, ""],
+    ["shooters never fire", /        fireShot\(s, e\);/, ""],
+    ["a charger chases the player through its dash instead of keeping its line", /        e\.x \+= e\.vx \* v \* dt; e\.y \+= e\.vy \* v \* dt;/, "        e.x += ux * v * dt; e.y += uy * v * dt;"],
+    ["a splitter dies whole", /    if \(e\.kind === "splitter"\) split\(s, e, from\);/, ""],
+    ["a spawn rolls Math.random instead of the seed", /  const side = Math\.floor\(rand\(s\) \* 4\), t = rand\(s\);/, "  const side = Math.floor(Math.random() * 4), t = rand(s);"],
+  ].map(([name, pattern, replace]) => ({
+    name: `dead signal: ${name}`, file: "lib/arcade/games/signal.ts", pattern, replace,
+    tests: "lib/arcade/games/signal.test.ts lib/arcade/games/modules.test.ts",
+  })),
+  ...[
+    ["the drawer drops a charger's dash line", /        dashes\(pen, e, \{ x: e\.vx, y: e\.vy \}, 280, on \? p\.accentBright : p\.accent, -s\.time \* 90\);/, ""],
+    ["the drawer never says MOVE TO FIRE", /    if \(s\.still >= HINT_AFTER \|\| s\.blocked\) \{/, "    if (false) {"],
+    ["the drawer captions every wave's kinds, not just the new one", /  const k = INTRODUCED\.find\(\(i\) => i\.wave === s\.level && i\.wave > 1\);/, "  const k = INTRODUCED.find((i) => i.wave <= s.level && i.wave > 1);"],
+  ].map(([name, pattern, replace]) => ({
+    name: `dead signal: ${name}`, file: "lib/arcade/draw/signal.ts", pattern, replace,
+    tests: "lib/arcade/draw/signal.test.ts",
+  })),
 ];
 
 

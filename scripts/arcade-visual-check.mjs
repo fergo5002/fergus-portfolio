@@ -2,6 +2,7 @@ import { chromium } from "playwright";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { killOneProcess } from "./arcade-panic-smoke.mjs";
+import { moveUntilScored, stillScoresNothing } from "./arcade-signal-smoke.mjs";
 const base = process.env.ARCADE_BASE || "http://localhost:3210";
 const out = resolve(".phone-check/arcade-rebuild"); await mkdir(out, { recursive: true });
 const browser = await chromium.launch();
@@ -40,7 +41,13 @@ try {
     if (await page.locator(".arcade-play").getAttribute("data-phase") === "card") throw new Error(`${id}: the first Space did not start the run from its card`);
     await phase("play");
     if (id === "poker") { await page.keyboard.press("1"); await page.keyboard.press("Space"); await page.keyboard.press("Enter"); }
-    if (id === "signal") { await page.keyboard.down("ArrowRight"); await page.waitForTimeout(250); await page.keyboard.up("ArrowRight"); }
+    let signal = null;
+    if (id === "signal") {
+      // Moving is what fires: a kill must score through the real keys, and standing still must score nothing.
+      const scored = await moveUntilScored(page);
+      const held = await stillScoresNothing(page);
+      signal = { scored, held };
+    }
     if (id === "panic") {
       if (!await page.locator(".arcade-type__input").evaluate(e => e === document.activeElement)) throw new Error("panic: starting the run did not hand focus to its text input");
       // Type one falling process to death through the real input, then require the status line to have scored it.
@@ -52,7 +59,7 @@ try {
     const status = await page.locator(".arcade-status").textContent();
     if (!/points/.test(status ?? "")) throw new Error(`${id}: the screen-reader status line is empty or stale: ${status}`);
     await page.screenshot({ path: resolve(out, `game-${id}.png`) });
-    evidence.push({ id, status });
+    evidence.push({ id, status, ...(signal ? { signal } : {}) });
     if (id !== "panic") await page.getByRole("button", { name: /all cabinets/i }).first().click();
   }
   // Escape leaves the arcade even from inside the typing game's own text input.
