@@ -157,7 +157,10 @@ export default function Resonance() {
     for (const row of cells.current) for (const cell of row) cell?.removeAttribute("data-current");
     for (const head of heads.current) head?.removeAttribute("data-hit");
     if (countRef.current) countRef.current.textContent = "";
-    if (playheadRef.current) playheadRef.current.style.transform = "";
+    if (playheadRef.current) {
+      playheadRef.current.style.transform = "";
+      playheadRef.current.removeAttribute("data-on");
+    }
   }, []);
 
   const stop = useCallback(() => {
@@ -373,6 +376,7 @@ export default function Resonance() {
       if (!line || !here) return;
       const there = columns.current[column + 1]?.left ?? here.left + here.width + PAD_GAP;
       line.style.transform = `translate3d(${here.left + (position - column) * (there - here.left)}px, 0, 0)`;
+      line.setAttribute("data-on", "");
     };
     const off = onFrame((time) => {
       const e = engine.current;
