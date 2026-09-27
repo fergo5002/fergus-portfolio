@@ -1,5 +1,5 @@
 export const homeCopy = {
-  startup: "startup",
+  current: "current",
   previously: "previously",
   academic: "academic",
   academicValue: "1.1 / 4.0 GPA",

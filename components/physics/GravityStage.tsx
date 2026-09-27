@@ -118,8 +118,10 @@ function measure(root: HTMLElement, limit: number): Candidate[] {
     const parent = textNode.parentElement;
     if (!parent || !text.trim()) continue;
     // Screen-reader-only text has no visible box worth dropping, and the stage
-    // must never be measured into its own next run.
-    if (parent.closest(".term__srhint, .skiplink, .gravity, .gravity-hud")) continue;
+    // must never be measured into its own next run. `.vh` is in the list because
+    // a Range reports a clipped word's full layout box: HeroName's hidden copy of
+    // the name used to fall as whole words on top of its own letters.
+    if (parent.closest(".vh, .term__srhint, .skiplink, .gravity, .gravity-hud")) continue;
     const cs = styleFor(parent);
     if (cs.visibility === "hidden" || cs.display === "none" || cs.opacity === "0") continue;
 

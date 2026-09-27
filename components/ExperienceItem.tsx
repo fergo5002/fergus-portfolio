@@ -1,4 +1,6 @@
+import type { CSSProperties } from "react";
 import type { ExperienceEntry } from "@/content/experience";
+import { shortHash } from "@/lib/commit-hash";
 import Scramble from "./Scramble";
 import RasterReveal from "./motion/RasterReveal";
 import TiltCard from "./motion/TiltCard";
@@ -20,9 +22,15 @@ export default function ExperienceItem({
       <TiltCard max={4}>
         <article className="exp" id={item.id} style={{ scrollMarginTop: "calc(var(--nav-h) + 24px)" }}>
           <div className="exp__head">
-            <span className="exp__commit" aria-hidden="true">
-              ● commit
-            </span>
+            {/* Costume, so it is drawn rather than written: the marker, a short
+                hash and, on the current role, git's own HEAD decoration all
+                come from CSS `content` (globals.css, `.exp__commit`). */}
+            <span
+              className="exp__commit"
+              aria-hidden="true"
+              data-head={index === 0 ? "" : undefined}
+              style={{ "--hash": `"${shortHash(item.id)}"` } as CSSProperties}
+            />
             <h2 className="exp__org">
               <Scramble text={item.org} trigger="view" speed={24} />
               {item.isNew && <span className="badge">NEW</span>}

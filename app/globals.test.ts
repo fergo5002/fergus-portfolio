@@ -291,6 +291,14 @@ describe("the full-screen flashes are half what they were", () => {
     expect(opacities(keyframes("channel-static"))).toEqual([0.425, 0]);
     expect(opacities(keyframes("channel-band"))).toEqual([0.5, 0]);
   });
+
+  it("opens the page from a line that is lit from its first frame (2026-09-27)", () => {
+    // Out of scope for the halving above, and a different kind of guard: the
+    // boot folds its mark into a bright line and the page's power-on takes over
+    // from it. When the power-on faded in from nothing, the handoff showed about
+    // a hundred milliseconds of black between the two lines.
+    expect(opacities(keyframes("power-on"))).toEqual([1, 1, 1, 1]);
+  });
 });
 
 /**

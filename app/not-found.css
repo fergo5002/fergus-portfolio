@@ -1,0 +1,90 @@
+/* The 404 test card: the bars a set shows when nothing is broadcasting, in
+   the phosphor's own tones. Every colour comes from a theme token. */
+
+.nosignal__card {
+  position: relative;
+  width: min(100%, 560px);
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--green-line);
+  border-radius: 2px;
+  background: var(--bg);
+}
+.nosignal__bars {
+  position: absolute;
+  inset: 0 0 28% 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  opacity: 0.85;
+}
+.nosignal__bars i:nth-child(1) { background: var(--green-bright); }
+.nosignal__bars i:nth-child(2) { background: var(--amber); }
+.nosignal__bars i:nth-child(3) { background: color-mix(in srgb, var(--green) 70%, var(--bg)); }
+.nosignal__bars i:nth-child(4) { background: var(--green); }
+.nosignal__bars i:nth-child(5) { background: color-mix(in srgb, var(--amber) 60%, var(--bg)); }
+.nosignal__bars i:nth-child(6) { background: color-mix(in srgb, var(--green) 35%, var(--bg)); }
+.nosignal__bars i:nth-child(7) { background: color-mix(in srgb, var(--amber) 30%, var(--bg)); }
+.nosignal__strip {
+  position: absolute;
+  inset: 72% 0 0 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+}
+.nosignal__strip i:nth-child(odd) { background: color-mix(in srgb, var(--green) 55%, var(--bg)); }
+.nosignal__strip i:nth-child(even) { background: var(--bg-panel); }
+/* The alignment ring every test card carries, with its crosshair. */
+.nosignal__ring {
+  position: absolute;
+  top: 36%;
+  left: 50%;
+  width: 34%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--bg);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--green-bright);
+}
+.nosignal__ring::before,
+.nosignal__ring::after {
+  content: "";
+  position: absolute;
+  background: var(--green-bright);
+}
+.nosignal__ring::before { left: 50%; top: -14%; bottom: -14%; width: 2px; transform: translateX(-50%); }
+.nosignal__ring::after { top: 50%; left: -14%; right: -14%; height: 2px; transform: translateY(-50%); }
+.nosignal__static {
+  position: absolute;
+  inset: -8%;
+  opacity: 0.22;
+  background-image:
+    repeating-linear-gradient(0deg, transparent 0 2px, color-mix(in srgb, var(--bg) 70%, transparent) 2px 3px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+
+.nosignal__missing { margin: 0; color: var(--amber); font-size: 0.9rem; overflow-wrap: anywhere; }
+.nosignal__title { margin: 0; }
+.nosignal__line { margin: 0; color: var(--green); }
+.nosignal__links { list-style: none; display: flex; flex-wrap: wrap; gap: var(--sp-2) var(--sp-4); margin: 0; padding: 0; }
+.nosignal__links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--amber);
+  text-decoration-style: dotted;
+  text-underline-offset: 5px;
+}
+.nosignal__links a:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The static crawls in hard steps, a transform on one small element rather
+     than a repainted background. */
+  .nosignal__static { animation: nosignal-static 0.5s steps(5, end) infinite; }
+  @keyframes nosignal-static {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(-3%, 2%); }
+    50% { transform: translate(2%, -3%); }
+    75% { transform: translate(-2%, -1%); }
+    100% { transform: translate(0, 0); }
+  }
+}

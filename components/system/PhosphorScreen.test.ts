@@ -211,6 +211,58 @@ describe("the power-on strike was left alone", () => {
   });
 });
 
+/**
+ * The beam hook (2026-09-27). Anything that draws with the gun rather than
+ * with the page hands `lib/beam.ts` a polyline, and the sim pass deposits a
+ * capsule of light along it. Same rule as every emitter above: into the
+ * persistence buffer's energy, where it decays, never straight to the screen
+ * and never into burn-in. Greps again, with the same limit: they prove the
+ * lines are where they were put. `lib/beam.test.ts` carries the arithmetic,
+ * and `scripts/boot-check.mjs` reads the pixels.
+ */
+describe("the beam deposits into the phosphor and nowhere else", () => {
+  const code = SIM.replace(/\/\/[^\n]*/g, "");
+
+  it("declares the path, its length and its gain in the sim pass", () => {
+    expect(SIM).toContain("uniform vec2  uBeamPts[${MAX_BEAM_POINTS}];");
+    expect(SIM).toContain("uniform float uBeamCount;");
+    expect(SIM).toContain("uniform float uBeamGain;");
+  });
+
+  it("lays a capsule along the path into the energy the rest of the pass decays", () => {
+    const deposit = "add += exp(-bk * bk) * uBeamGain;";
+    expect(code).toContain(deposit);
+    expect(code).toContain("float bk = bd / ${BEAM_R};");
+    // Before the line that turns `add` into phosphor energy, or it is dropped.
+    expect(code.indexOf(deposit)).toBeLessThan(code.indexOf("energy += uPhosphor * add;"));
+    expect(block(code, "if (uBeamCount > 0.5)")).toContain("bd = min(bd, length(bq - ba - bv * bh));");
+  });
+
+  it("takes its gain from the CPU and never from uEmit", () => {
+    // The normalisation is baked into beamGain by lib/beam.ts. The uEmit count
+    // above pins the other half of this.
+    expect(block(code, "if (uBeamCount > 0.5)")).not.toContain("uEmit");
+  });
+
+  it("never burns in and never draws in the present pass", () => {
+    expect(code.slice(code.indexOf("float staticMask"))).not.toContain("uBeam");
+    expect(PRESENT).not.toContain("uBeam");
+  });
+
+  it("splices the radius from lib/beam.ts as a float", () => {
+    expect(src).toContain("const BEAM_R = BEAM_RADIUS.toFixed(4);");
+  });
+
+  it("flips y into GL's space, hands over the gain, and consumes the path once drawn", () => {
+    expect(src).toContain("bp[i * 2 + 1] = 1 - f.beamPts[i * 2 + 1];");
+    expect(src).toContain("su.uBeamCount.value = f.beamCount;");
+    expect(src).toContain("su.uBeamGain.value = f.beamGain;");
+    // Cleared only after the sim pass has actually rendered it, so a frame the
+    // phone throttle skips leaves the path for the writer to extend.
+    expect(src).toMatch(/renderer\.render\(\{ scene: simMesh, target: next \}\);\s*\n\s*clearBeam\(f\);/);
+  });
+});
+
 describe("the rain is finer and dimmer on a phone (Fergus, 2026-09-06)", () => {
   // Seen on both mobile engines, every route: at 32 columns across a 0.6 dpr
   // buffer the rain cells were about 12 CSS pixels square and read as blocky
@@ -228,5 +280,107 @@ describe("the rain is finer and dimmer on a phone (Fergus, 2026-09-06)", () => {
     const samples = PRESENT.match(/rain\(uv[^;]*\) \* uRain/g) ?? [];
     expect(samples.length).toBeGreaterThan(0);
     for (const sample of samples) expect(PRESENT).toContain(`${sample} * rainGain`);
+  });
+});
+
+/**
+ * The ejected monitor (2026-09-27). The case, the chin, the base, the control
+ * recess, the grille and the LED are all placed by `lib/eject.ts`, which also
+ * places the DOM controls on the same chin. These pin the shader's half of that
+ * contract: the room takes every size from a uniform, and the lines that build
+ * the case are exactly the ones `lib/eject.test.ts` ports into TypeScript and
+ * checks against the DOM. Greps, with the usual limit: they prove the lines are
+ * where they were put, and `scripts/eject-check.mjs` reads the pixels.
+ */
+describe("the monitor takes its shape from lib/eject.ts", () => {
+  const ROOM = PRESENT.slice(PRESENT.indexOf("vec3 room("), PRESENT.indexOf("void main()"));
+
+  it("found the room", () => {
+    expect(ROOM.length).toBeGreaterThan(2000);
+  });
+
+  it("builds the case from uniforms, with no size of its own", () => {
+    expect(PRESENT).toContain("uniform vec4  uCase;");
+    expect(PRESENT).toContain("uniform vec2  uCaseB;");
+    // The two lines lib/eject.test.ts ports. Change one here and the port in
+    // that file no longer describes the shader.
+    expect(ROOM).toContain("vec2 bh = vec2(rh.x + uCase.x, rh.y + (uCase.y + uCase.z) * 0.5);");
+    expect(ROOM).toContain("vec2 bc = rc - vec2(0.0, (uCase.z - uCase.y) * 0.5);");
+    expect(ROOM).toContain("float dBezel = sdRoundBox(q - bc, bh, uCase.w);");
+    expect(ROOM).toContain("float dScreen = sdRoundBox(q - rc, rh, uCaseB.x);");
+    // The old literals are gone, so there is no second definition to drift.
+    expect(ROOM).not.toContain("rh.x + 0.030");
+    expect(ROOM).not.toContain("rh.y + 0.056");
+    expect(ROOM).not.toContain("vec2(0.0, 0.026)");
+  });
+
+  it("puts the LED where the layout puts it, dimming with the power", () => {
+    expect(PRESENT).toContain("uniform vec3  uLed;");
+    expect(ROOM).toContain("float dLed = length(q - toQ(uLed.xy));");
+    expect(ROOM).toContain("plastic += uPhosphor * exp(-dLed * 300.0) * 1.3 * uLed.z;");
+    expect(ROOM).not.toContain("rh.x * 0.80");
+  });
+
+  it("hands the shader the same case the DOM hardware is placed from, every frame", () => {
+    expect(src).toContain("const c = ejectCase(g, layout);");
+    expect(src).toContain("pu.uCase.value = c.uCase;");
+    expect(src).toContain("pu.uCaseB.value = [c.glass, c.base];");
+    expect(src).toContain("pu.uDeck.value = boxToGl(placeBox(c, layout.deck), vw, vh);");
+    // The lean every consumer of the geometry uses, so the monitor, the
+    // controls and the bezel cannot lean by different amounts.
+    expect(src).toMatch(/ejectLean\(f\.pointerX, f\.pointerY, f\.pointerActive, coarse\)/);
+  });
+
+  it("hands the tube the pointer in the screen's own space, and nothing from off the glass", () => {
+    // Docked the rectangle is the viewport, so this is the identity. Ejected,
+    // a cursor on the desk used to glow on the glass at its viewport position
+    // and leave a blob in the desk's reflection.
+    expect(src).toContain("const onX = (f.pointerX - r.x0) / sw;");
+    expect(src).toContain("shared.uPointer.value = [onX, 1 - onY];");
+    expect(src).toContain("shared.uPointerActive.value = onGlass ? f.pointerActive : 0;");
+    expect(src).not.toContain("shared.uPointer.value = [f.pointerX, 1 - f.pointerY];");
+  });
+
+  it("lets the glass's own rounded corners decide what is tube and what is plastic", () => {
+    const main = PRESENT.slice(PRESENT.indexOf("void main()"));
+    expect(main).toContain("if (sdRoundBox(toQ(uv) - rc, rh, uCaseB.x) < 0.0) {");
+  });
+});
+
+describe("the power switch works inside the glass while ejected", () => {
+  const main = PRESENT.slice(PRESENT.indexOf("void main()"));
+
+  it("collapses the raster in the screen's own space and leaves the room standing", () => {
+    const ejected = block(main, "if (uEject > 0.001)");
+    expect(ejected).toContain("float sy = suv.y - 0.5;");
+    expect(ejected).toContain("if (abs(sy) > halfBand) {");
+    expect(ejected).toContain("room(uv, rectMin, rectMax, tubeGlow(suv) * openT)");
+  });
+
+  it("keeps the docked power-on exactly as it was", () => {
+    expect(main).toContain("float openT = smoothstep(0.05, 0.62, uPower);");
+    expect(main).toContain("float halfBand = mix(0.0016, 0.5, openT);");
+    expect(main).toMatch(/if \(abs\(yFromMid\) > halfBand\) \{\s*gl_FragColor = vec4\(0\.0, 0\.0, 0\.0, 1\.0\);\s*return;\s*\}/);
+    // One strike line for both, untouched.
+    expect(main.match(/\* strike \* 1\.4;/g)).toHaveLength(1);
+  });
+
+  it("fades the last line only when the monitor's own switch turned the tube off", () => {
+    expect(main).toContain("strike *= strikeMask;");
+    // The boot and the arcade's power-cycle both switch the tube off too, and
+    // neither may be touched by this: they run docked.
+    expect(src).toContain("const switchedOff = f.ejectTarget === 1 && f.bootTarget === 0;");
+    expect(src).toMatch(/pu\.uLineFade\.value = offAt < 0 \? 1 : Math\.exp\(/);
+  });
+});
+
+describe("ejected, a tap off the glass rings nothing (code review, 2026-09-27)", () => {
+  it("maps the tap into the tube and drops it when it lands on the desk or the chin", () => {
+    // A press on the chin's degauss or power button is a pointerdown below the
+    // glass. Mapped into the tube it sits outside 0..1, and the shockwave then
+    // swept up through the picture on every button press on a phone.
+    expect(src).toMatch(/const tapU = \(f\.tapX - r\.x0\) \/ sw;/);
+    expect(src).toMatch(/const tapV = \(f\.tapY - r\.y0\) \/ sh;/);
+    expect(src).toMatch(/if \(tapU < 0 \|\| tapU > 1 \|\| tapV < 0 \|\| tapV > 1\) shared\.uTap\.value = 999;/);
   });
 });

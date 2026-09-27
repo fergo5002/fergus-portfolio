@@ -612,12 +612,7 @@ html.crt-off body {
   opacity: 0.6;
 }
 
-/* ----- typewriter / cursor ---------------------------------------------- */
-.tw__line {
-  min-height: 1.6em;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
+/* ----- cursor ------------------------------------------------------------ */
 .cursor {
   color: var(--green-bright);
 }
@@ -1075,6 +1070,15 @@ html.crt-off body {
   color: var(--green-dim);
   font-size: 0.8rem;
 }
+/* Drawn, not written: the git-log marker, a short hash, and HEAD on the
+   current role. None of it is text in the document (lib/commit-hash.test.ts). */
+.exp__commit::before {
+  content: "● commit " var(--hash, "");
+}
+.exp__commit[data-head]::after {
+  content: " (HEAD -> main)";
+  color: var(--amber);
+}
 .exp__org {
   font-size: 1.5rem;
   margin: 0;
@@ -1264,7 +1268,10 @@ html.crt-off body {
   /* CRT power-on: played when the boot finishes. The classic CRT turn-off
      collapses the picture to a bright line then a dot; we run it in reverse so
      content "switches on": expanding from a thin bright line with a brightness
-     bloom that settles to normal. Added/removed by BootSequence.finish(). */
+     bloom that settles to normal. Added/removed by BootSequence.finish(), which
+     also moves the origin to the middle of the viewport, where the boot's fold
+     line is. The line is visible from the first frame (2026-09-27): it takes
+     over from that fold, and fading it in left a dark gap between the two. */
   .power-on {
     animation: power-on 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
     transform-origin: center;
@@ -1273,7 +1280,7 @@ html.crt-off body {
     0% {
       transform: scaleY(0.004);
       filter: brightness(3.2);
-      opacity: 0;
+      opacity: 1;
     }
     9% {
       transform: scaleY(0.004);
@@ -1486,6 +1493,47 @@ html.js .exp__spine {
 .statusbar__pwd-short {
   display: none;
 }
+/* The readouts. Every value is written by StatusBar into its own `--ro` and
+   drawn here, so none of it is text in the document (components/statusbar.test.ts
+   guards that). Minimum widths are set in `ch` so the strip does not shuffle
+   when the values first arrive after hydration. */
+.statusbar__ro::after {
+  content: var(--ro, "");
+}
+.statusbar__ro--up { min-width: 11ch; }
+.statusbar__ro--up::before { content: "up "; opacity: 0.7; }
+.statusbar__ro--mem { min-width: 10ch; letter-spacing: 0.02em; }
+.statusbar__ro--fps { min-width: 6ch; }
+.statusbar__ro--fps::after { content: var(--ro, "") " fps"; }
+.statusbar__ro--pos { min-width: 7ch; opacity: 0.8; }
+.statusbar__ro--clock { min-width: 8ch; color: var(--green-bright); }
+.statusbar__ro--theme { opacity: 0.8; }
+/* The drive light: dark at rest, flickering amber while the machine works. */
+.statusbar__lamp {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--green-line);
+}
+.statusbar__lamp[data-on="1"] {
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+}
+/* They give way in order as the strip narrows: pointer and phosphor first,
+   then memory and frame rate. The location and the clock stay longest. */
+@media (max-width: 1199px) {
+  .statusbar__ro--pos,
+  .statusbar__ro--theme { display: none; }
+}
+@media (max-width: 999px) {
+  .statusbar__ro--mem,
+  .statusbar__ro--fps { display: none; }
+}
+@media (max-width: 768px) {
+  .statusbar__ro--up,
+  .statusbar__ro--clock,
+  .statusbar__lamp { display: none; }
+}
 
 /* ----- screensaver -------------------------------------------------------- */
 .saver {
@@ -1514,6 +1562,25 @@ html.js .exp__spine {
   color: var(--green-bright);
 }
 .saver__sub {
+  font-size: 0.68rem;
+  color: var(--green-dim);
+}
+/* The beam draws the saver on the tube itself (lib/lissajous.ts), so the page
+   steps aside the way it does for the boot and the phosphor shows through. */
+.is-saving .screen,
+.is-saving .nav,
+.is-saving .statusbar {
+  visibility: hidden;
+}
+.saver--beam {
+  background: transparent;
+  pointer-events: none;
+}
+.saver__wake {
+  position: absolute;
+  left: 50%;
+  bottom: var(--sp-5);
+  transform: translateX(-50%);
   font-size: 0.68rem;
   color: var(--green-dim);
 }
@@ -1548,8 +1615,7 @@ html.js .exp__spine {
 }
 
 /* ----- boot extras -------------------------------------------------------- */
-.boot__mem,
-.boot__bar {
+.boot__mem {
   margin-top: var(--sp-2);
   color: var(--green);
   font-variant-numeric: tabular-nums;
@@ -2167,13 +2233,18 @@ html.js .exp__spine {
 html.is-ejecting .crt__assembly {
   position: fixed;
   inset: 0;
-  overflow: hidden;
+  /* `clip`, not `hidden`. Both clip the rounded corners, but `hidden` makes
+     this a scroll container, and a channel change's scroll-to-top reaches for
+     the nearest one: it scrolled the assembly's own contents out from under
+     the glass instead of the document. `clip` scrolls nothing. */
+  overflow: clip;
   transform-origin: 50% 50%;
   will-change: transform;
-  /* Rounded to match the shader's screen SDF corner radius, so the DOM content
-     is clipped by the same curve the bezel is drawn against. */
+  /* Rounded to match the shader's glass corner radius, so the DOM content is
+     clipped by the same curve the bezel is drawn against. EjectRig writes the
+     exact radius from lib/eject.ts on engage; this is only the first frame's. */
   border-radius: 10px;
-  /* Above the tube canvas, below nothing else. */
+  /* Above the tube canvas, below the monitor's hardware (eject.css). */
   z-index: 2;
 }
 
@@ -2209,6 +2280,21 @@ html.is-ejecting .statusbar {
   bottom: 0;
   left: 0;
   right: 0;
+}
+/* The sheen on the glass slides with the pointer while ejected (EjectRig), so
+   it is cut larger than the glass and never shows its own edge. Seen from
+   across the room the glass catches more of the light than it does up close. */
+html.is-ejecting .crt__glass {
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+  will-change: transform;
+  background: linear-gradient(
+    104deg,
+    rgba(255, 255, 255, 0) 36%,
+    rgba(255, 255, 255, 0.028) 46%,
+    rgba(255, 255, 255, 0) 58%
+  );
 }
 
 /* ----- scroll lock -------------------------------------------------------

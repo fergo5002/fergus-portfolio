@@ -116,10 +116,11 @@ marked `is-unseen` and paints in when reached, and the page-title and hero scram
 A view-triggered scramble gets the same rect check. The proof is a headed-browser timeline of
 the title text from navigation start: one entry, not a flip to glyphs at 2.5 seconds.
 
-**Two boots.** `lib/boot.ts` now carries `FULL_BOOT` and `PHONE_BOOT` (one head line, two device
-lines, a floor near two seconds) and `pickBootProfile` chooses by coarse pointer or width under
-768. `BOOT_FLOOR_MS` is the full profile's floor and is unchanged. The ownership rules above are
-untouched by this: both profiles boot the same way, one is shorter.
+**Two boots.** `lib/boot.ts` carries `FULL_BOOT` (about 7.3 seconds) and `PHONE_BOOT` (one head
+line, three device lines, no memory test, about 3.8 seconds, inside the 3.2 to 3.9 second window
+Fergus approved on 2026-09-13), and `pickBootProfile` chooses by coarse pointer or width under
+768. `BOOT_FLOOR_MS` is the full profile's floor. The ownership rules below are untouched by
+this: both profiles boot the same way, one is shorter.
 
 **And never disallow `/_next/` in `robots.txt`.** The inline pre-paint script adds `booting` to
 `<html>` on the landing page, `.booting` hides the content, and `BootSequence` is what clears it
@@ -131,8 +132,10 @@ rather than removing it. It is not a licence to block scripts.
 ownership table is in `lib/boot.ts` and it is four rows, not two. Read it before touching the boot
 path. Two rules came out of getting it wrong, both of which shipped:
 
-- **Never tune a delay to outlast the animation.** The sequence is ~430 chained `setTimeout` ticks
-  and a hidden tab clamps each to about a second, so its wall-clock length is unbounded. A 4000ms
+- **Never tune a delay to outlast the animation.** The sequence was ~430 chained `setTimeout` ticks
+  until 2026-09-27 (it is now `bootTimeline`, read off the frame clock, and a tab with no frames
+  is what the watchdog is for), and a hidden tab clamps each to about a second, so its wall-clock
+  length was unbounded. A 4000ms
   failsafe against a 6418ms floor revealed the landing page underneath a still-typing BIOS screen
   on every first visit. The failsafe answers "did the JavaScript arrive", nothing else, and
   `BOOT_FLOOR_MS` is deliberately not an input to it.
@@ -270,6 +273,83 @@ this programme earns, each with the reason on its own PR: `@duckdb/duckdb-wasm` 
 `@vercel/blob` (reports), `@vercel/functions` (WebSocket upgrade, if the spike passes),
 `playwright-core` plus `@sparticuz/chromium` (On the glass), and `playwright` as a devDependency
 for the phone check. Nothing else without an argument.
+
+## The September 2026 redesign: site surfaces (2026-09-26)
+
+Fergus asked for the site to be more novel while staying understated. The rules each change
+brought with it:
+
+- **The status strip's readouts are back, drawn rather than written.** Uptime, scroll as a hex
+  memory address, fps, pointer, clock and phosphor, plus a drive lamp that flickers while the
+  machine is busy. `StatusBar` writes each value into a `--ro` custom property on its own span
+  and `globals.css` draws it with `content`, so none of it reaches the server HTML or a text
+  extractor, and each write restyles one small span rather than repainting type. Values come
+  from the pure `lib/readouts.ts`. Readouts give way as the strip narrows, and below 560px the
+  phone bar is still the four labelled controls. `components/statusbar.test.ts` guards this.
+- **Hover previews choose a side when they open** (`lib/preview-placement.ts`): below unless
+  that runs under the status strip, above unless that runs under the nav, otherwise the side
+  with more room. The strip is the floor, not the viewport edge.
+- **Gravity skips `.vh` text.** A `Range` reports a clipped word's full layout box, so
+  HeroName's hidden copy of the name used to fall as whole words on top of its own letters.
+  `scripts/gravity-check.mjs` drives the real switch and runs in the phone job.
+- **The contact cards are pixel sprites** (`lib/pixel.ts`, `components/pixel/`): character
+  grids merged into integer rectangles, drawn at a whole number of screen pixels per sprite
+  pixel, two-frame boils that rest on frame 0 under reduced motion.
+- **The writing index draws each piece's argument** (`lib/writing-figures.ts`): wordless SVG
+  shapes, because SVG text is document text. Tests require one figure per published article.
+  The row link's stretched layer sits under the text; text must be the top thing where it is
+  drawn or the phone instrument counts it as unread.
+- **`/mcp` leads with the server working.** A console makes real JSON-RPC calls to the
+  relative `/api/mcp` and declares itself in `_meta` clientInfo as `fergusoreilly.dev-console`,
+  which the endpoint's analytics read, so its calls never count as agent traffic. It keeps its
+  own copy of the protocol constants, pinned to the server's by test, rather than importing
+  `lib/mcp.ts` and bundling every article into the browser. Its panes have a fixed height:
+  an answer arriving must not move the page.
+- **A missing page is a no-signal test card** (`app/not-found.tsx`): shapes only, the requested
+  path as a failed `cd`, a real heading. `scripts/not-found-check.mjs` proves the 404 and runs
+  in the phone job; `scripts/phone-check.mjs` reads any 4xx document as a broken asset, so the
+  page stays out of it.
+- **The boot is a timeline on the one frame clock** (2026-09-27). `bootTimeline(profile, ms)` in
+  `lib/boot.ts` is a pure function of elapsed time, so a slow machine lands the same words at the
+  same moments in fewer frames and a returning tab catches up; `BootSequence` writes it through
+  refs and never starts a loop of its own. It mounts `/usr/tighsauna`; `presterly` must never
+  come back (`lib/boot.test.ts`). The POST reads the visitor's own machine (`lib/post.ts`: cores,
+  display, refresh rate from frame gaps, locale and zone), client-only, never stored or sent, and
+  the overlay carries `ph-no-capture` so autocapture cannot lift those readings off a skip click.
+  `scripts/boot-check.mjs` proves that with a forced core count and time zone searched for in
+  every `/ingest` body (a local run: it needs a build with a PostHog key). `finish()` unsubscribes
+  from the frame clock before anything else: left running, the timeline carried on behind the
+  revealed page and a skip mid-trace kept drawing the mark for 600ms.
+- **The beam hook: drawing with the gun, not the page** (`lib/beam.ts`). The frame carries a
+  polyline (`beamPts`, `beamCount`, `beamGain`); the sim pass deposits a capsule of energy around
+  it (never burn-in) and clears it. A writer extends a path the tube has not drawn yet and never
+  overwrites it, and gains come from `beamGainFor` or `beamHoldGain` so the light is the same at
+  30 and 165 frames a second. Measure brightness with `gl.readPixels`, never by eye. To see the
+  beam from a browser check, watch `uBeamGain` uploads, not `uBeamCount`: ogl uploads a uniform
+  only when it changes, and a writer that always sends full strokes leaves the count unchanged.
+  The boot's mark and the screensaver both draw through it.
+- **Eject is a monitor you can operate** (2026-09-27). `lib/eject.ts` is still the one geometry:
+  it lays out the case, chin and hardware, the shader takes it as uniforms and `EjectHardware`
+  places its real DOM controls from the same function, so they agree by construction;
+  `scripts/eject-check.mjs` samples the canvas and holds the DOM screen's corners on the bezel
+  within 2px. The chin carries a channel dial (a detent per route in `content/nav.ts`; you stay
+  ejected), colour and contrast knobs (through `setTheme` and `setScanlines`, so they persist only
+  when non-default), degauss, and power (a collapse to a line inside the glass, then the strike;
+  every way out switches the tube back on). The glass never tilts: leaning shows the case's side
+  and moves a light, so CSS and the shader never need to share a homography.
+  `html.is-ejecting .crt__assembly` uses `overflow: clip`, not `hidden`: `hidden` makes it a
+  scroll container, and a channel change's scroll-to-top then scrolled the assembly out from
+  under the glass. `EjectRig` re-measures the scroll spacer whenever the page changes height. At
+  phone scale the status strip's `enter` is 32.6px tall because the whole screen is scaled; the
+  chin's own controls are 44px.
+- **The screensaver is an oscilloscope** (`lib/lissajous.ts`). After 45 idle seconds the page
+  steps aside (`html.is-saving`, like `.booting`) and the beam retraces a slowly retuning
+  Lissajous figure; with no WebGL or the CRT off, the old plate bounces instead. Its idle
+  listeners are capture-phase, because the arcade stops keydown bubbling, and it never starts
+  while the arcade is open. `scripts/saver-check.mjs` skips the wait with Playwright's fake clock.
+- **The experience log's marker, short hash and `(HEAD -> main)` are drawn by CSS**
+  (`lib/commit-hash.ts` feeds a `--hash` property). The old `● commit` was a text node in front
+  of every entry.
 
 ## The arcade room sits inside the tube (2026-09-05)
 
@@ -468,7 +548,7 @@ components/
                 Screensaver, RouteTransition, EjectRig
   physics/      GravityStage (measures the page, drops it, puts it back)
   motion/       RasterReveal (the house reveal), HeroName, TiltCard, Magnetic, TimelineSpine
-  *.tsx         CrtShell, Nav, BootSequence, Typewriter, Terminal, Window, ImageFrame,
+  *.tsx         CrtShell, Nav, BootSequence, Terminal, Window, ImageFrame,
                 SignalPlate, PromptLine, ProjectCard, ExperienceItem, Scramble
 content/        profile.ts, experience.ts, projects.ts, skills.ts   <-- edit content here
 lib/            commands.ts (pure terminal parser + tab completion), system.ts (bus types,

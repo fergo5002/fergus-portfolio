@@ -1,0 +1,113 @@
+/* ----- the boot's timeline layers (2026-09-27) ------------------------------
+   The shell's boot block (the overlay, the opening band, the skip button and
+   the phone type size) stays in app/globals.css, where app/globals.test.ts
+   pins it. What the elapsed-time boot added lives here, imported by
+   BootSequence and nothing else. Every value that moves is a CSS variable the
+   frame callback writes on the element that reads it. */
+
+.boot__lines {
+  white-space: pre-wrap;
+}
+.boot__lines:empty {
+  display: none;
+}
+.boot__lines + .boot__lines {
+  margin-top: var(--sp-2);
+}
+
+/* From the mode switch on, text mode is over and the tube is in graphics. */
+.boot.is-graphic .boot__inner {
+  visibility: hidden;
+}
+
+/* The tube off, and the mode switch: black glass. The real glass layers sit
+   above this whole overlay (they are siblings of .crt__screen), so the sheen
+   and the vignette stay on it, the way they do on a switched-off set. */
+.boot__cover {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: var(--cover, 1);
+  pointer-events: none;
+}
+
+/* The mark the beam draws. The view box is the icon's own grid and the element
+   keeps its aspect, so lib/mark.ts can put the beam exactly on the stroke. The
+   collapse folds it to a bright line, which is the line the page opens out of. */
+.boot__mark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(24vw, 220px);
+  aspect-ratio: 38 / 28;
+  overflow: visible;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scaleY(calc(1 - var(--collapse, 0) * 0.996));
+  filter: brightness(calc(1 + var(--collapse, 0) * 2.2)) drop-shadow(0 0 2px var(--green-faint))
+    drop-shadow(0 0 7px var(--green-line));
+}
+
+/* pathLength="1" on each stroke, so a dash offset of 1 - drawn shows exactly
+   the drawn fraction. The opacity trick keeps an undrawn stroke from showing
+   its round cap as a dot before the beam reaches it. */
+.boot__stroke {
+  fill: none;
+  stroke-width: 2.4;
+  stroke-dasharray: 1 1;
+}
+.boot__stroke--chevron {
+  stroke: var(--green);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dashoffset: calc(1 - var(--mark-a, 0));
+  opacity: calc(var(--mark-a, 0) * 1000);
+}
+/* The caret is the icon's amber bar, square-ended like the icon's. */
+.boot__stroke--caret {
+  stroke: var(--amber);
+  stroke-dashoffset: calc(1 - var(--mark-b, 0));
+  opacity: calc(var(--mark-b, 0) * 1000);
+}
+
+/* The beam spot: the gun, while it is on. Hot at the core, in the colour of the
+   phosphor it is striking, and gone while the gun is blanked for the move
+   between strokes. The mark's own drop-shadow gives it its bloom. The first
+   `fill` is the fallback for a browser without color-mix. */
+.boot__spot {
+  opacity: 0;
+  fill: var(--green-bright);
+  fill: color-mix(in srgb, var(--green-bright) 45%, #fff);
+}
+.boot__spot[data-lit="chevron"] {
+  opacity: 1;
+}
+.boot__spot[data-lit="caret"] {
+  opacity: 1;
+  fill: var(--amber-bright);
+  fill: color-mix(in srgb, var(--amber-bright) 45%, #fff);
+}
+
+/* The fold: the picture collapsing to one bright line, from the mark's edges
+   out to the page column's. BootSequence publishes the ends in pixels, and the
+   page's power-on then opens out of exactly this line. */
+.boot__fold {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--fold-l, 0) * 1px);
+  width: calc(var(--fold-w, 0) * 1px);
+  height: 2px;
+  margin-top: -1px;
+  pointer-events: none;
+  background: var(--green-bright);
+  background: color-mix(in srgb, var(--green-bright) 55%, #fff);
+  box-shadow:
+    0 0 6px 1px var(--green),
+    0 0 22px 4px var(--green-faint);
+  opacity: calc(var(--collapse, 0) * 2.5);
+}
+
+@media (max-width: 560px) {
+  .boot__mark {
+    width: min(44vw, 200px);
+  }
+}
