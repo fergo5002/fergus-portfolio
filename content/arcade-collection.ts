@@ -30,15 +30,15 @@ export const cabinets: readonly Cabinet[] = [
     title: "DEAD SIGNAL",
     subtitle: "you are the last live pixel.",
     genre: "VECTOR SURVIVAL",
-    description: "the noise is closing in. your beam hunts on its own; you concentrate on staying alive. thread the swarm, build a chain, and when it gets tight discharge the whole screen.",
-    objective: "survive the waves. the beam aims at the nearest threat. kills build the multiplier and recharge the pulse.",
-    controls: "wasd, the arrows, drag, or the direction pad. space discharges a pulse around you for 65 charge. three hull points.",
+    description: "the noise is closing in, and your beam only fires while you move. keep moving, thread the swarm, and when it gets tight discharge the pulse. each wave brings something new: shooters, chargers, splitters, tanks.",
+    objective: "survive the waves. the beam aims at the nearest enemy but fires only while you move, so standing still is how you lose. clear a wave to get a hull point back.",
+    controls: "wasd, the arrows, drag, or the direction pad to move, and moving is what fires. space discharges a pulse around you for 65 charge. touching an enemy or its shot costs one of three hull points.",
     action: "DISCHARGE",
     card: {
-      lines: ["THE BEAM AIMS ITSELF. YOU DODGE.", "KILLS CHARGE THE PULSE.", "THREE HITS AND THE SIGNAL IS LOST."],
+      lines: ["THE BEAM FIRES ONLY WHILE YOU MOVE.", "DODGE THE SWARM AND ITS SHOTS.", "THREE HITS AND THE SIGNAL IS LOST."],
       keys: [
-        { caps: ["↑", "←", "↓", "→"], keys: ["up", "left", "down", "right"], label: "MOVE / WASD", cluster: true, touch: ["D-PAD", "DRAG"], touchLabel: "MOVE" },
-        { caps: ["SPACE"], keys: ["action"], label: "PULSE", touch: ["DISCHARGE"], touchLabel: "THE PULSE" },
+        { caps: ["↑", "←", "↓", "→"], keys: ["up", "left", "down", "right"], label: "MOVE / WASD", cluster: true, touch: ["D-PAD", "DRAG"], touchLabel: "TO MOVE" },
+        { caps: ["SPACE"], keys: ["action"], label: "PULSE CLEARS AROUND YOU", touch: ["DISCHARGE"], touchLabel: "CLEARS AROUND YOU" },
       ],
     },
     overLine: "SIGNAL LOST",
@@ -115,6 +115,11 @@ export const screenCopy = {
   kernel: "KERNEL",
   /** Small print under the two processes that do something when they die. */
   panicTags: { fork: "SPLITS IN TWO", sudo: "CLEARS THE SCREEN" },
+  /** Dead Signal's small print over each enemy of the kind a wave brings in, on that wave. */
+  signalTags: { shooter: "FIRES BACK", charger: "WINDS UP, THEN DASHES", splitter: "SPLITS IN TWO", tank: "SLOW BUT TOUGH" },
+  /** What Dead Signal tells a player who has stood still, and the word for its kill chain. */
+  signalHint: "MOVE TO FIRE",
+  signalChain: "CHAIN",
   /**
    * What Kernel Panic's screen halts on. `{pid}`, `{comm}` and the hex fields
    * are filled from the run by `lib/arcade/draw/panic.ts`; the drawer prefixes
