@@ -236,7 +236,11 @@ async function desktop() {
       assert.equal((await control.locator(".machine__label").innerText()).trim(), "eject");
       await control.click();
       await page.mouse.move(...REST);
-      await settle(page, "first eject");
+      // The first pull-back also mounts the hardware and warms the shader. On
+      // CI's software renderer it took about 40 seconds (2026-09-27: the next
+      // step, four seconds after a 40-second wait timed out, found it settled
+      // with the corners within 0.2px), so it gets more room than the rest.
+      await settle(page, "first eject", 90_000);
       const box = await page.locator(".ejhw").boundingBox();
       assert.ok(box && box.width > 300, "the hardware is laid out");
       assert.equal(await control.getAttribute("aria-pressed"), "true");
