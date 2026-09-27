@@ -1,3 +1,29 @@
+/**
+ * Every word the controls kit (`components/instrument/`) says on its own
+ * behalf. Labels are always passed in by the tool; these are the kit's
+ * refusals, hints and the date range's presets.
+ */
+export const instrumentCopy = {
+  dropHint: "or drop it here",
+  dropHintMany: "or drop them here",
+  /** Drawn by CSS over the stage while a file is held above it. */
+  dropOver: "Drop to open",
+  /** "TXT, JSON or ZIP": no serial comma, per the house style. */
+  list: (items: string[]) =>
+    items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}`,
+  refusedType: (name: string, formats: string) =>
+    formats ? `${name} is not a file this reads. It takes ${formats}.` : `${name} could not be read.`,
+  refusedSize: (name: string, limit: string) => `${name} is over the ${limit} limit.`,
+  refusedCount: (kept: string) => `One file at a time, so this is using ${kept}.`,
+  megabytes: (bytes: number) => `${Math.round(bytes / 1_000_000)} MB`,
+  dates: {
+    label: "Dates",
+    from: "From",
+    to: "To",
+    presets: { all: "Everything", year: "Last year", quarter: "Last 90 days", month: "Last 30 days" },
+  },
+} as const;
+
 /** Product copy shared by the work surfaces, separate from the tool registry. */
 export const workbenchCopy = {
   indexTitle: "tools",
