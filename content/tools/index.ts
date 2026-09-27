@@ -49,5 +49,7 @@ export const toolShellCopy = {
     server: "Runs on the server. Keeps a hashed IP for a day, nothing else.",
   },
   cantSeeHeading: "Can't see",
+  /** The summary of the one disclosure at the foot of every tool page. */
+  disclosure: "How it works, and what it can't see",
   soonLabel: "soon",
 } as const;

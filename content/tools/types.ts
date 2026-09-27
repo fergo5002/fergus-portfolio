@@ -7,8 +7,22 @@ export type ToolEntry = {
   /** Route is `/tools/<slug>`. Lowercase, hyphenated, stable once published. */
   slug: string;
   name: string;
-  /** One or two sentences. The index row, and the lede on the tool's own page. */
+  /**
+   * One or two sentences. The meta description, the JSON-LD description and the
+   * `/llms.txt` line, and the lede wherever no `purpose` is given.
+   */
   blurb: string;
+  /**
+   * ONE short sentence of purpose: the line under the heading on the tool's own
+   * page and on its card on `/tools`, so the two cannot disagree. Added with the
+   * instrument shell (2026-09-27); falls back to `blurb`.
+   */
+  purpose?: string;
+  /**
+   * Secondary explanation (how it works, how to read the result). Rendered in
+   * the shell's single disclosure after the stage, never above it.
+   */
+  method?: string[];
   /**
    * Renders the privacy line. `browser` => "Runs in your browser. Nothing
    * leaves this tab." `server` => "Runs on the server. Keeps a hashed IP for a

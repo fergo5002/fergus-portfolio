@@ -3,6 +3,7 @@ import Link from "next/link";
 import ToolPage from "@/components/tools/ToolPage";
 import { profile } from "@/content/profile";
 import { headlineCheck as tool } from "@/content/tools/headline-check";
+import { headlineWhy } from "@/content/tools/headline-check";
 import { OG_IMAGE, absolute, canonical, toolPath } from "@/lib/seo";
 import HeadlineForm from "./HeadlineForm";
 import HeadlineLab from "./HeadlineLab";
@@ -37,9 +38,10 @@ export const metadata: Metadata = {
  * page, because an argument somebody has to take on trust is worth less than
  * one they can run against their own site in ten seconds.
  *
- * The shell (`ToolPage`) draws the prompt line, the heading, the lede, the
- * privacy line and the "Can't see" list from the registry entry. This file owns
- * the tool itself and the paragraph that says why it is worth ten seconds.
+ * The shell (`ToolPage`) draws the prompt line, the heading, the one sentence,
+ * the privacy line and the disclosure from the registry entry. This file owns
+ * the stage (the two readings on their example, then the URL form) and the
+ * note that says why it is worth ten seconds, which goes in the disclosure.
  * `isBasedOn` is the one edge the registry has no field for: it ties the tool
  * to the article so the two are one piece of work rather than two pages that
  * happen to link.
@@ -50,31 +52,24 @@ export default function HeadlineCheckPage() {
       tool={tool}
       extraSchema={{ isBasedOn: absolute(ARTICLE_PATH) }}
       talk="If this found something on your site, I'd genuinely like to know what it was."
+      notes={
+        <section className="hcheck__why" aria-labelledby="why-this-matters">
+          <h3 id="why-this-matters" className="hcheck__why-title">
+            {headlineWhy.title}
+          </h3>
+          <p className="hcheck__why-body">{headlineWhy.body}</p>
+          <p className="hcheck__why-body">
+            {headlineWhy.before}{" "}
+            <Link className="prose__link" href={ARTICLE_PATH}>
+              {headlineWhy.link}
+            </Link>
+            {headlineWhy.after}
+          </p>
+        </section>
+      }
     >
-      <HeadlineForm />
       <HeadlineLab />
-
-      <section className="hcheck__why" aria-labelledby="why-this-matters">
-        <h2 id="why-this-matters" className="cdirect__title">
-          Why this is worth ten seconds
-        </h2>
-        <p className="hcheck__why-body">
-          Split a headline into one element per letter and a browser still paints the word. Plenty
-          of the machinery that reads the web does not run a browser: link unfurlers, feed readers,
-          archivers, and the fetchers behind AI answer engines. A good number of those strip the
-          tags, normalise the whitespace, and hand the result to something else. That turns your
-          best string into confetti, and nobody sends you a report about it.
-        </p>
-        <p className="hcheck__why-body">
-          I found this on my own site, which is the only reason I trust it enough to write a tool
-          about it. The homepage name animated one character at a time and extracted as loose
-          letters. It came out of building{" "}
-          <Link className="prose__link" href={ARTICLE_PATH}>
-            a CRT that behaves like a CRT
-          </Link>
-          , which is where the same warning sits at the end.
-        </p>
-      </section>
+      <HeadlineForm />
     </ToolPage>
   );
 }

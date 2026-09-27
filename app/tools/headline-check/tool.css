@@ -333,34 +333,6 @@
   text-shadow: none;
 }
 
-/* What the tool cannot see, printed where the answer is rather than in a footer
-   nobody reaches. A check that hides its blind spot is worse than no check. */
-.hcheck__limits {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--green);
-  text-shadow: none;
-  border-top: 1px solid var(--green-line);
-  padding-top: var(--sp-3);
-}
-
-.hcheck__why {
-  margin-top: var(--sp-6);
-  border-top: 1px solid var(--green-line);
-  padding-top: var(--sp-4);
-  max-width: 62ch;
-}
-
-.hcheck__why-body {
-  color: var(--green);
-  text-shadow: none;
-  margin: 0 0 var(--sp-3);
-}
-
-.hcheck__why-body:last-child {
-  margin-bottom: 0;
-}
-
 /* ── motion ─────────────────────────────────────────────────────────────────
    Both gated. Under `reduce` the result is simply there, which is the correct
    behaviour and not a degraded one: nothing here is telling a story. */
@@ -438,11 +410,61 @@
     align-items: flex-end;
   }
 }
-.headline-lab { border-top: 1px solid var(--green-line); margin-top: 32px; padding-top: 24px; }
-.headline-lab h2 { font-family: var(--font-screen); font-size: 1.75rem; color: var(--green-bright); margin: 0 0 12px; }
+/* ── the stage: two readings of one heading ─────────────────────────────
+   The example is running from the first paint, so this is the first thing on
+   the page. The readings are set large in the screen face: the comparison is
+   the tool, and loose letters should look like loose letters from across the
+   room. */
+.headline-lab { display: grid; gap: var(--sp-3); }
+.headline-lab__screen { display: grid; gap: var(--sp-3); }
+.headline-lab__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-3);
+}
+.headline-lab__verdict {
+  margin: 0;
+  font-family: var(--font-screen);
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  line-height: 1;
+  color: var(--amber);
+}
+.headline-lab__screen[data-verdict="fragmented"] .headline-lab__verdict { color: var(--red); }
+.headline-lab__screen[data-verdict="clean"] .headline-lab__verdict { color: var(--green-bright); }
+.headline-lab__samples { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.headline-lab__samples .bench-button { font-size: 0.82rem; padding: 8px 14px; }
+.headline-lab .hcheck__views { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-2); }
+.headline-lab .hcheck__view { background: var(--bg); border-radius: var(--radius); padding: var(--sp-3) var(--sp-4); min-height: 8.5rem; }
+.headline-lab .hcheck__view-title { font-size: 1.05rem; }
+.headline-lab .hcheck__string {
+  font-family: var(--font-screen);
+  font-size: clamp(1.5rem, 3.6vw, 2.3rem);
+  line-height: 1.15;
+}
+.headline-lab .hcheck__view.is-crawler .hcheck__string { font-size: clamp(1.5rem, 3.6vw, 2.3rem); letter-spacing: 0.04em; }
+.headline-lab__input { display: grid; gap: var(--sp-1); }
+.headline-lab__input .bench-label { min-height: 0; font-size: 0.82rem; color: var(--green); }
+.headline-lab__input .bench-note { margin: 0; }
 .headline-lab__source { font-size: 14px; line-height: 1.5; }
-.headline-lab__verdict { font-family: var(--font-screen); font-size: 1.8rem; color: var(--amber); margin: 20px 0 12px; }
-.headline-lab__fix { margin-top: 20px; }
-.headline-lab__fix h3 { margin-bottom: 8px; }
-.headline-lab .hcheck__views { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-@media (max-width: 620px) { .headline-lab .hcheck__views { grid-template-columns: minmax(0, 1fr); } }
+.headline-lab__fix { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-3); }
+.headline-lab__fix .hcheck__code { flex: 1 1 24ch; margin: 0; min-width: 0; }
+
+/* The URL form sits under the stage: the live-page version of the same check. */
+.headline-lab + .hcheck {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--green-line);
+  max-width: none;
+}
+
+/* The note in the disclosure. */
+.hcheck__why { display: grid; gap: var(--sp-2); margin: 0; padding: 0; border: 0; max-width: none; }
+.hcheck__why-title { margin: var(--sp-2) 0 0; font-family: var(--font-screen); font-size: 1.15rem; color: var(--amber); }
+.hcheck__why .hcheck__why-body { margin: 0; }
+
+@media (max-width: 620px) {
+  .headline-lab .hcheck__views { grid-template-columns: minmax(0, 1fr); }
+  .headline-lab .hcheck__view { min-height: 0; }
+}

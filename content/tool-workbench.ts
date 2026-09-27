@@ -6,7 +6,7 @@
 export const instrumentCopy = {
   dropHint: "or drop it here",
   dropHintMany: "or drop them here",
-  /** Drawn by CSS over the stage while a file is held above it. */
+  /** Shown in the slot while a file is held over the stage. */
   dropOver: "Drop to open",
   /** "TXT, JSON or ZIP": no serial comma, per the house style. */
   list: (items: string[]) =>
@@ -81,16 +81,16 @@ export const localOverlapCopy = {
 };
 
 export const headlineLabCopy = {
-  heading: "Try it on your HTML",
-  intro: "Paste a heading or a page's source. Nothing is uploaded and pasted code is never executed.",
+  /** The stage's accessible name. Not drawn: the two readings say what they are. */
+  heading: "Two readings of one heading",
   label: "HTML to inspect",
   broken: "Split-letter example",
   clean: "Readable example",
   sample: "Build something worth reading",
-  limit: "Up to 100,000 characters. This checks source HTML, not a rendered page.",
+  limit: "Up to 100,000 characters. Pasted code is never run.",
   waiting: "Paste HTML to see both readings.",
-  browser: "Visible text model",
-  crawler: "Extracted text model",
+  browser: "What a person sees",
+  crawler: "What a tag stripper gets",
   tooLarge: "That source is too large. Paste just the heading and its surrounding HTML (under 100,000 characters).",
 };
 
