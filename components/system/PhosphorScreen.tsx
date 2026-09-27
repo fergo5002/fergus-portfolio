@@ -4,7 +4,11 @@ import { useEffect, useRef } from "react";
 import { Mesh, Program, RenderTarget, Renderer, Triangle } from "ogl";
 import { MAX_FRAME_IMPACTS, THEME_PHOSPHOR } from "@/lib/system";
 import { ejectGeometry, ejectScaleFor, ejectScreenRect } from "@/lib/eject";
+import { BEAM_RADIUS, MAX_BEAM_POINTS, clearBeam } from "@/lib/beam";
 import { useSystem } from "./SystemProvider";
+
+/** The beam's capsule radius as a GLSL float literal: `toFixed` so a round number cannot arrive as an int. */
+const BEAM_R = BEAM_RADIUS.toFixed(4);
 
 /**
  * The tube itself.
@@ -96,6 +100,9 @@ uniform float uBurnRate;
 uniform vec2  uNavBand;
 uniform vec2  uStatusBand;
 uniform float uLive;
+uniform vec2  uBeamPts[${MAX_BEAM_POINTS}];
+uniform float uBeamCount;
+uniform float uBeamGain;
 
 void main() {
   vec2 uv = vUv;
@@ -190,6 +197,30 @@ void main() {
     float d = length(toI);
     add += exp(-d * 42.0) * im.z * 1.6;
     add += exp(-pow((d - 0.012) * 90.0, 2.0)) * im.z * 0.5;
+  }
+
+  // ── the beam ─────────────────────────────────────────────────────────────
+  // Anything drawing with the gun rather than with the page (lib/beam.ts)
+  // hands over the path the beam swept since the last frame, and it lands
+  // here as a capsule of light around that polyline, measured with x
+  // stretched by the aspect so the glow is round. The gain arrives already
+  // normalised for frame rate from the CPU and is not scaled again here. It
+  // goes into the energy, so a trail decays behind the beam like everything
+  // else on this tube, and never into burn-in.
+  if (uBeamCount > 0.5) {
+    vec2 bq = vec2(uv.x * uAspect, uv.y);
+    vec2 ba = vec2(uBeamPts[0].x * uAspect, uBeamPts[0].y);
+    float bd = length(bq - ba);
+    for (int i = 1; i < ${MAX_BEAM_POINTS}; i++) {
+      if (float(i) >= uBeamCount) break;
+      vec2 bb = vec2(uBeamPts[i].x * uAspect, uBeamPts[i].y);
+      vec2 bv = bb - ba;
+      float bh = clamp(dot(bq - ba, bv) / max(dot(bv, bv), 1e-8), 0.0, 1.0);
+      bd = min(bd, length(bq - ba - bv * bh));
+      ba = bb;
+    }
+    float bk = bd / ${BEAM_R};
+    add += exp(-bk * bk) * uBeamGain;
   }
 
   energy += uPhosphor * add;
@@ -648,6 +679,9 @@ export default function PhosphorScreen() {
         uBurnRate: { value: 0.00035 },
         uNavBand: { value: [0.94, 1.0] },
         uStatusBand: { value: [0.0, 0.04] },
+        uBeamPts: { value: new Array(MAX_BEAM_POINTS * 2).fill(0) },
+        uBeamCount: { value: 0 },
+        uBeamGain: { value: 0 },
       },
     });
 
@@ -817,10 +851,25 @@ export default function PhosphorScreen() {
       }
 
       if (!targets) return;
+
+      // The beam (lib/beam.ts): the path whatever is drawing with the gun has
+      // swept since the last draw, flipped into GL's y-up space. Consumed below
+      // once the sim pass has deposited it, like the impacts above, so a writer
+      // running faster than the tube (a phone draws at 30fps) extends the path
+      // instead of losing every other frame of it.
+      const bp = su.uBeamPts.value as number[];
+      for (let i = 0; i < MAX_BEAM_POINTS; i++) {
+        bp[i * 2] = f.beamPts[i * 2];
+        bp[i * 2 + 1] = 1 - f.beamPts[i * 2 + 1];
+      }
+      su.uBeamCount.value = f.beamCount;
+      su.uBeamGain.value = f.beamGain;
+
       const prev = targets[read];
       const next = targets[read ^ 1];
       su.tPrev.value = prev.texture;
       renderer.render({ scene: simMesh, target: next });
+      clearBeam(f);
       read ^= 1;
 
       pu.tSim.value = next.texture;

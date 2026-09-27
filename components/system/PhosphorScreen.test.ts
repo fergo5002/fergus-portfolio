@@ -211,6 +211,58 @@ describe("the power-on strike was left alone", () => {
   });
 });
 
+/**
+ * The beam hook (2026-09-27). Anything that draws with the gun rather than
+ * with the page hands `lib/beam.ts` a polyline, and the sim pass deposits a
+ * capsule of light along it. Same rule as every emitter above: into the
+ * persistence buffer's energy, where it decays, never straight to the screen
+ * and never into burn-in. Greps again, with the same limit: they prove the
+ * lines are where they were put. `lib/beam.test.ts` carries the arithmetic,
+ * and `scripts/boot-check.mjs` reads the pixels.
+ */
+describe("the beam deposits into the phosphor and nowhere else", () => {
+  const code = SIM.replace(/\/\/[^\n]*/g, "");
+
+  it("declares the path, its length and its gain in the sim pass", () => {
+    expect(SIM).toContain("uniform vec2  uBeamPts[${MAX_BEAM_POINTS}];");
+    expect(SIM).toContain("uniform float uBeamCount;");
+    expect(SIM).toContain("uniform float uBeamGain;");
+  });
+
+  it("lays a capsule along the path into the energy the rest of the pass decays", () => {
+    const deposit = "add += exp(-bk * bk) * uBeamGain;";
+    expect(code).toContain(deposit);
+    expect(code).toContain("float bk = bd / ${BEAM_R};");
+    // Before the line that turns `add` into phosphor energy, or it is dropped.
+    expect(code.indexOf(deposit)).toBeLessThan(code.indexOf("energy += uPhosphor * add;"));
+    expect(block(code, "if (uBeamCount > 0.5)")).toContain("bd = min(bd, length(bq - ba - bv * bh));");
+  });
+
+  it("takes its gain from the CPU and never from uEmit", () => {
+    // The normalisation is baked into beamGain by lib/beam.ts. The uEmit count
+    // above pins the other half of this.
+    expect(block(code, "if (uBeamCount > 0.5)")).not.toContain("uEmit");
+  });
+
+  it("never burns in and never draws in the present pass", () => {
+    expect(code.slice(code.indexOf("float staticMask"))).not.toContain("uBeam");
+    expect(PRESENT).not.toContain("uBeam");
+  });
+
+  it("splices the radius from lib/beam.ts as a float", () => {
+    expect(src).toContain("const BEAM_R = BEAM_RADIUS.toFixed(4);");
+  });
+
+  it("flips y into GL's space, hands over the gain, and consumes the path once drawn", () => {
+    expect(src).toContain("bp[i * 2 + 1] = 1 - f.beamPts[i * 2 + 1];");
+    expect(src).toContain("su.uBeamCount.value = f.beamCount;");
+    expect(src).toContain("su.uBeamGain.value = f.beamGain;");
+    // Cleared only after the sim pass has actually rendered it, so a frame the
+    // phone throttle skips leaves the path for the writer to extend.
+    expect(src).toMatch(/renderer\.render\(\{ scene: simMesh, target: next \}\);\s*\n\s*clearBeam\(f\);/);
+  });
+});
+
 describe("the rain is finer and dimmer on a phone (Fergus, 2026-09-06)", () => {
   // Seen on both mobile engines, every route: at 32 columns across a 0.6 dpr
   // buffer the rain cells were about 12 CSS pixels square and read as blocky
