@@ -48,11 +48,18 @@ describe("reading the reopened pixels", () => {
     const px = page(10, 10, [{ x: 0, y: 0, width: 10, height: 5 }]);
     expect(darkShare(px, { x: 0, y: 0, width: 10, height: 5 })).toEqual({ dark: 50, total: 50 });
     expect(darkShare(px, { x: 0, y: 0, width: 10, height: 10 })).toEqual({ dark: 50, total: 100 });
-    // Dark grey ink is not a burned mask.
-    const grey = page(2, 1);
-    grey.data.set([INK_MAX + 1, 0, 0, 255], 0);
-    grey.data.set([INK_MAX, INK_MAX, INK_MAX, 255], 4);
-    expect(darkShare(grey, { x: 0, y: 0, width: 2, height: 1 })).toEqual({ dark: 1, total: 2 });
+    // Dark ink is not a burned mask. Absolute colours, not ones built from
+    // INK_MAX: a probe made from the constant moves with it and proves nothing
+    // (the mutation run caught exactly that on 2026-09-27).
+    const ink = page(3, 1);
+    ink.data.set([0x17, 0x1b, 0x18, 255], 0); // the example's own ink, #171b18
+    ink.data.set([40, 40, 40, 255], 4); // dark grey
+    ink.data.set([0, 0, 0, 255], 8); // burned
+    expect(darkShare(ink, { x: 0, y: 0, width: 3, height: 1 })).toEqual({ dark: 1, total: 3 });
+    // A channel just over the line is not black either.
+    const edge = page(1, 1);
+    edge.data.set([INK_MAX + 1, 0, 0, 255], 0);
+    expect(darkShare(edge, { x: 0, y: 0, width: 1, height: 1 }).dark).toBe(0);
   });
 });
 
