@@ -211,10 +211,26 @@
 .drift__fields { align-items: start; }
 .drift__readiness { margin: 8px 0; font-size: .8rem; color: var(--amber); }
 .drift__actions > button:first-child { border-color: var(--amber); color: var(--amber); }
-.drift__report { border-top: 1px solid var(--green-line); padding-top: 24px; }
+/* The readout comes first: the distance and where it sits in the writer's own
+   range, on screen from the first paint because the worked example is built
+   on the server. The inputs follow it, and the evidence follows them. */
+.drift__report { display: grid; gap: 16px; padding: 20px; border: 1px solid var(--green-line); border-radius: var(--radius); }
 .drift__report-top { display: flex; justify-content: space-between; gap: 16px; align-items: center; flex-wrap: wrap; }
 .drift__report-top p { color: var(--amber); margin: 0; }
-.drift__range { height: 40px; position: relative; margin: 20px 0; background: var(--bg); border: 1px solid var(--green-line); }
+.drift__readout { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 12px 40px; align-items: center; }
+.drift__figure .drift__heading { margin: 0; font-size: 1rem; color: var(--green); }
+.drift__reading { display: grid; gap: 8px; min-width: 0; }
+.drift__reading .bench-note { margin: 0; }
+.drift__scale { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px; margin: 0; font-size: 0.8rem; color: var(--green); }
+.drift__built { margin: 0; font-size: 0.8rem; color: var(--green); }
+.drift__evidence { display: grid; gap: 12px; min-width: 0; }
+.drift__evidence .drift__heading { margin: 12px 0 0; font-family: var(--font-screen); font-size: 1.6rem; color: var(--green-bright); }
+.drift__evidence .bench-details { margin-top: 8px; }
+@media (max-width: 620px) {
+  .drift__report { padding: 14px; }
+  .drift__readout { grid-template-columns: minmax(0, 1fr); }
+}
+.drift__range { height: 40px; position: relative; margin: 4px 0; background: var(--bg); border: 1px solid var(--green-line); }
 .drift__range span { position: absolute; top: 9px; height: 20px; background: var(--green-line); border: 1px solid var(--green); }
 .drift__range i { position: absolute; top: 3px; bottom: 3px; width: 3px; background: var(--amber); }
 .drift__reading strong { color: var(--green-bright); }

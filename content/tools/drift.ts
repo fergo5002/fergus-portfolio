@@ -14,24 +14,6 @@ import type { ToolEntry } from "./types";
  * reads, and the design says that sentence has to be "this is not an AI
  * detector".
  */
-export const drift: ToolEntry = {
-  slug: "drift",
-  name: "Drift",
-  blurb:
-    "This is not an AI detector. Paste things you have written, then a draft, and see how far the draft has drifted from you.",
-  purpose: "Not an AI detector: measure how far a draft has drifted from the way you write.",
-  privacy: "browser",
-  cantSee: [
-    "Meaning. Every number here counts how often words and marks turn up, and none of them knows what any of it says.",
-    "Register shifts inside one writer. A note to a friend and a note to a bank are two voices from the same person, and this would call the second one drift.",
-    "Anything under 150 words. The tool uses that conservative floor because short drafts make marker counts sparse; it refuses to print a distance and says why.",
-    "Anything from fewer than five pieces. Five is a conservative, uncalibrated floor for estimating variation, so the tool refuses a distance below it and says why.",
-    "Whether the writing is any good. A low distance means your commonest words turn up at similar rates. That is not praise, and it is not a verdict on the draft.",
-    "A substitution that is not on its list. The near-synonyms come from a fixed table written into this page, not from a dictionary and not from a model.",
-  ],
-  status: "live",
-  order: 20,
-};
 
 export const driftCopy = {
   samplesLabel: "Things you wrote",
@@ -131,6 +113,26 @@ export const driftCopy = {
 
   talk: "If it told you something about your own writing you did not know, I would like to hear what.",
 } as const;
+
+export const drift: ToolEntry = {
+  slug: "drift",
+  name: "Drift",
+  blurb:
+    "This is not an AI detector. Paste things you have written, then a draft, and see how far the draft has drifted from you.",
+  purpose: "Not an AI detector: measure how far a draft has drifted from the way you write.",
+  privacy: "browser",
+  cantSee: [
+    "Meaning. Every number here counts how often words and marks turn up, and none of them knows what any of it says.",
+    "Register shifts inside one writer. A note to a friend and a note to a bank are two voices from the same person, and this would call the second one drift.",
+    "Anything under 150 words. The tool uses that conservative floor because short drafts make marker counts sparse; it refuses to print a distance and says why.",
+    "Anything from fewer than five pieces. Five is a conservative, uncalibrated floor for estimating variation, so the tool refuses a distance below it and says why.",
+    "Whether the writing is any good. A low distance means your commonest words turn up at similar rates. That is not praise, and it is not a verdict on the draft.",
+    "A substitution that is not on its list. The near-synonyms come from a fixed table written into this page, not from a dictionary and not from a model.",
+  ],
+  method: [driftCopy.referenceNote, driftCopy.substitutionNote, driftCopy.splitterNote],
+  status: "live",
+  order: 20,
+};
 
 /**
  * The specimen.

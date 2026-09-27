@@ -99,7 +99,6 @@ export const driftWorkbenchCopy = {
   draft: (words: number) => `${words.toLocaleString("en-IE")} words · 150 needed for a distance`,
   addPiece: "Add another piece",
   storage: "Saving and deleting your profile",
-  method: "Reference and measurement details",
   stale: "Your text has changed. Rebuild the profile or measure the draft to update this report.",
   oversized: "That is too much text for this browser workbench. Use up to 50 sample pieces, under 100,000 characters in total, and a draft under 30,000 characters.",
   demo: "Example report",

@@ -26,6 +26,7 @@ import {
   demoSession,
 } from "@/lib/tools/drift/session";
 import { trackToolRun } from "@/lib/tools/events";
+import { ExportBar } from "@/components/instrument";
 
 /**
  * The tool.
@@ -221,9 +222,47 @@ export default function DriftTool({
 
   return (
     <div className="drift">
-      <p className="drift__note">
-        {note}
-      </p>
+      <section className="drift__report" aria-label={driftCopy.deltaHeading}>
+        <div className="drift__report-top">
+          <p>{session.source === "demo" ? workbench.demo : workbench.yours}</p>
+          <ExportBar
+            label={workbench.download}
+            actions={[{ label: workbench.download, kind: "md", disabled: stale, onClick: onDownload }]}
+          />
+        </div>
+        {stale ? <p className="bench-warning" role="status">{workbench.stale}</p> : null}
+        <div className="drift__readout">
+          <div className="drift__figure">
+            <h2 className="drift__heading">{driftCopy.deltaHeading}</h2>
+            {report.status === "ok" ? (
+              <p className="drift__delta">{number(report.delta ?? 0)}</p>
+            ) : (
+              <p className="drift__refusal">
+                {report.status === "too-short" ? driftCopy.tooShort : driftCopy.tooFewPieces}
+              </p>
+            )}
+          </div>
+          {report.status === "ok" && report.selfSpread && report.delta !== null ? (
+            <div className="drift__reading">
+              <strong>{report.delta > report.selfSpread.max ? workbench.above : report.delta < report.selfSpread.min ? workbench.below : workbench.within}</strong>
+              <div className="drift__range" role="img" aria-label={`${driftCopy.spreadHeading}: ${number(report.selfSpread.min)} to ${number(report.selfSpread.max)}. ${driftCopy.deltaHeading}: ${number(report.delta)}`}>
+                <span style={{ left: `${Math.min(95, 100 * report.selfSpread.min / Math.max(report.selfSpread.max, report.delta, .01) / 1.1)}%`, width: `${Math.min(95, 100 * (report.selfSpread.max - report.selfSpread.min) / Math.max(report.selfSpread.max, report.delta, .01) / 1.1)}%` }} />
+                <i style={{ left: `${Math.min(98, 100 * report.delta / Math.max(report.selfSpread.max, report.delta, .01) / 1.1)}%` }} />
+              </div>
+              <p className="drift__scale">
+                <span>{driftCopy.spreadHeading}: {number(report.selfSpread.min)} to {number(report.selfSpread.max)}</span>
+                <span>{driftCopy.draftColumn}: {number(report.delta)}</span>
+              </p>
+              <p className="bench-note">{workbench.rangeNote}</p>
+            </div>
+          ) : null}
+        </div>
+        <p className="drift__built">
+          {driftCopy.builtFrom}: {report.reference.documents} pieces, {report.reference.totalWords} words, {report.reference.markers} marker words.
+        </p>
+      </section>
+
+      <p className="drift__note">{note}</p>
       <p className="drift__announcement" role="status" aria-live="polite">
         {announcement}
       </p>
@@ -308,42 +347,26 @@ export default function DriftTool({
         </div>
       </div>
 
-      <section className="drift__report">
-        <div className="drift__report-top"><p>{session.source === "demo" ? workbench.demo : workbench.yours}</p><button type="button" className="bench-button" onClick={onDownload} disabled={stale}>{workbench.download}</button></div>
-        {stale ? <p className="bench-warning" role="status">{workbench.stale}</p> : null}
-        <h2 className="drift__heading">{driftCopy.deltaHeading}</h2>
+      <section className="drift__evidence">
         {report.status === "ok" ? (
-          <p className="drift__delta">{number(report.delta ?? 0)}</p>
-        ) : (
-          <p className="drift__refusal">
-            {report.status === "too-short" ? driftCopy.tooShort : driftCopy.tooFewPieces}
-          </p>
-        )}
-        {report.status === "ok" && report.selfSpread && report.delta !== null ? <div className="drift__reading">
-          <strong>{report.delta > report.selfSpread.max ? workbench.above : report.delta < report.selfSpread.min ? workbench.below : workbench.within}</strong>
-          <p className="bench-note">{workbench.rangeNote}</p>
-          <div className="drift__range" role="img" aria-label={`${driftCopy.spreadHeading}: ${number(report.selfSpread.min)} to ${number(report.selfSpread.max)}. ${driftCopy.deltaHeading}: ${number(report.delta)}`}>
-            <span style={{ left: `${Math.min(95, 100 * report.selfSpread.min / Math.max(report.selfSpread.max, report.delta, .01) / 1.1)}%`, width: `${Math.min(95, 100 * (report.selfSpread.max - report.selfSpread.min) / Math.max(report.selfSpread.max, report.delta, .01) / 1.1)}%` }} />
-            <i style={{ left: `${Math.min(98, 100 * report.delta / Math.max(report.selfSpread.max, report.delta, .01) / 1.1)}%` }} />
-          </div>
-        </div> : null}
-        <details className="bench-details">
-        <summary>{workbench.method}</summary>
-        <p className="drift__hint">{driftCopy.referenceNote}</p>
-        <p className="drift__hint">
-          {driftCopy.builtFrom}: {report.reference.documents} pieces, {report.reference.totalWords}{" "}
-          words, {report.reference.markers} marker words.
-        </p>
-
-        {report.selfSpread ? (
-          <p className="drift__spread">
-            {driftCopy.spreadHeading}: {number(report.selfSpread.min)} to{" "}
-            {number(report.selfSpread.max)}, median {number(report.selfSpread.median)}, across{" "}
-            {report.selfSpread.pieces} of your own pieces. This draft is at{" "}
-            {number(report.delta ?? 0)}.
-          </p>
+          <>
+            <h2 className="drift__heading">{driftCopy.pullsHeading}</h2>
+            {report.pulls.length === 0 ? (
+              <p className="drift__hint">{driftCopy.noPulls}</p>
+            ) : (
+              <ol className="drift__list">
+                {report.pulls.map((pull) => (
+                  <li key={pull.index} className="drift__item">
+                    <span className="drift__sentence">{pull.text}</span>
+                    <span className="drift__reasons">
+                      {pull.reasons.map((reason) => driftCopy.reasonLabels[reason]).join(", ")}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </>
         ) : null}
-        </details>
 
         <h2 className="drift__heading">{driftCopy.substitutionsHeading}</h2>
         {report.substitutions.length === 0 ? (
@@ -357,12 +380,10 @@ export default function DriftTool({
             ))}
           </ul>
         )}
-        <p className="drift__hint">{driftCopy.substitutionNote}</p>
 
         {report.metrics.length > 0 ? (
           <details className="bench-details">
             <summary>{driftCopy.metricsHeading}</summary>
-            <h2 className="drift__heading">{driftCopy.metricsHeading}</h2>
             <div className="drift__scroll">
               <table className="drift__table">
                 <thead>
@@ -384,7 +405,7 @@ export default function DriftTool({
               </table>
             </div>
 
-            <h2 className="drift__heading">{driftCopy.shapeHeading}</h2>
+            <h3 className="drift__heading">{driftCopy.shapeHeading}</h3>
             <div className="drift__scroll">
               <table className="drift__table">
                 <thead>
@@ -405,28 +426,7 @@ export default function DriftTool({
                 </tbody>
               </table>
             </div>
-            <p className="drift__hint">{driftCopy.splitterNote}</p>
           </details>
-        ) : null}
-
-        {report.status === "ok" ? (
-          <>
-            <h2 className="drift__heading">{driftCopy.pullsHeading}</h2>
-            {report.pulls.length === 0 ? (
-              <p className="drift__hint">{driftCopy.noPulls}</p>
-            ) : (
-              <ol className="drift__list">
-                {report.pulls.map((pull) => (
-                  <li key={pull.index} className="drift__item">
-                    <span className="drift__sentence">{pull.text}</span>
-                    <span className="drift__reasons">
-                      {pull.reasons.map((reason) => driftCopy.reasonLabels[reason]).join(", ")}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </>
         ) : null}
       </section>
     </div>
