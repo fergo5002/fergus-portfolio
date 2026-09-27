@@ -137,6 +137,19 @@ describe("refreshFromGaps", () => {
     expect(refreshFromGaps(steady(59.94, 60))).toBe(60);
   });
 
+  it("reads through frame times rounded to the millisecond, as some browsers report them", () => {
+    // A 60Hz panel with whole-millisecond timestamps gives gaps of 16 and 17ms,
+    // one to two. Their median is 17ms, or 16 when the pattern falls the other
+    // way, and 16ms is 62.5Hz: a median would print "63 Hz" on a 60Hz screen.
+    const rounded = (hz: number, n: number) =>
+      Array.from({ length: n }, (_, i) => Math.floor(((i + 1) * 1000) / hz) - Math.floor((i * 1000) / hz));
+    // At high rates a whole millisecond is a third of a gap: 360Hz reports 2
+    // and 3ms gaps, whose median is 333Hz, which no rounding can rescue.
+    for (const hz of [60, 75, 120, 144, 165, 180, 240, 360]) expect(refreshFromGaps(rounded(hz, 90)), `${hz}Hz`).toBe(hz);
+    // The worst case, every gap rounded the same way.
+    expect(refreshFromGaps(steady(62.5, 60))).toBe(60);
+  });
+
   it("refuses to guess from fewer than about twenty frames", () => {
     expect(MIN_REFRESH_GAPS).toBe(20);
     expect(refreshFromGaps(steady(60, MIN_REFRESH_GAPS - 1))).toBeNull();
@@ -161,6 +174,14 @@ describe("refreshFromGaps", () => {
     // a 60Hz screen would be a wrong number.
     expect(refreshFromGaps(steady(30, 60))).toBeNull();
     expect(refreshFromGaps(steady(12, 60))).toBeNull();
+  });
+
+  it("refuses a ragged cadence whose middle happens to land near a panel's rate", () => {
+    // Gaps spread evenly from 12 to 30ms: the median is 21ms, 47.6Hz, which
+    // would snap to "48 Hz". Nothing about that is a refresh rate. Only the
+    // steadiness test can tell, because the speed test passes it.
+    const ragged = Array.from({ length: 57 }, (_, i) => 12 + ((i * 7) % 19));
+    expect(refreshFromGaps(ragged)).toBeNull();
   });
 });
 

@@ -131,7 +131,7 @@ export function postLines(
 /** Fewer frames than this and the refresh rate is not printed at all. */
 export const MIN_REFRESH_GAPS = 20;
 
-/** The rates panels actually run at. A reading within 4% of one is that one. */
+/** The rates panels actually run at. A reading within 5% of one is that one. */
 const PANEL_RATES = [48, 50, 60, 72, 75, 85, 90, 100, 120, 144, 165, 180, 240, 360];
 
 /**
@@ -144,6 +144,12 @@ const PANEL_RATES = [48, 50, 60, 72, 75, 85, 90, 100, 120, 144, 165, 180, 240, 3
  * the median, and a rate a panel could plausibly run at. A starved main thread
  * or software WebGL fails the second test, and a phone throttled to 30 fails
  * the third, and both get no number rather than a wrong one.
+ *
+ * The rate itself is read from the mean of the steady gaps, not the median,
+ * because some browsers round frame times to the millisecond: a 60Hz panel
+ * then reports gaps of 16 and 17ms, whose median is 62.5Hz or 58.8Hz and whose
+ * mean is 60. The median alone printed "63 Hz" for a 60Hz screen and "125 Hz"
+ * for a 120Hz one in `lib/post.test.ts`.
  */
 export function refreshFromGaps(gaps: readonly number[]): number | null {
   const usable = gaps.filter((g) => Number.isFinite(g) && g > 0);
@@ -151,11 +157,17 @@ export function refreshFromGaps(gaps: readonly number[]): number | null {
   const sorted = [...usable].sort((a, b) => a - b);
   const mid = sorted.length >> 1;
   const median = sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-  const steady = usable.filter((g) => Math.abs(g - median) <= median * 0.2).length;
-  if (steady < usable.length * 0.75) return null;
-  const hz = 1000 / median;
+  // A fifth of the median, but never less than the millisecond and a half that
+  // whole-millisecond timestamps can put between two gaps of the same panel.
+  const steady = usable.filter((g) => Math.abs(g - median) <= Math.max(median * 0.2, 1.5));
+  if (steady.length < usable.length * 0.75) return null;
+  const hz = 1000 / (steady.reduce((sum, g) => sum + g, 0) / steady.length);
   if (hz < 45 || hz > 500) return null;
-  const panel = PANEL_RATES.find((rate) => Math.abs(hz - rate) <= rate * 0.04);
+  let panel: number | null = null;
+  for (const rate of PANEL_RATES) {
+    const off = Math.abs(hz - rate);
+    if (off <= rate * 0.05 && (panel === null || off < Math.abs(hz - panel))) panel = rate;
+  }
   return panel ?? Math.round(hz);
 }
 
