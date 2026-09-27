@@ -74,8 +74,6 @@ export type PanicState = BaseState & {
   /** Seconds of wrong-letter feedback left, for the prompt. */
   miss: number;
   sudoOwed: boolean;
-  seenFork: boolean;
-  seenSudo: boolean;
   shots: Shot[];
   pops: Pop[];
   /** Where processes have hit the kernel, for the cracks in its line. */
@@ -247,7 +245,6 @@ function spawnWaveProcess(s: PanicState): boolean {
   const taken = new Set(s.processes.map((p) => p.name[0]));
   if (s.wave >= 2 && rand(s) < 0.14 && !taken.has(words.fork[0])) {
     spawnProcess(s, words.fork, "fork", spawnX(s, words.fork), SPAWN_Y, speedFor(s, words.fork) * 0.9);
-    if (!s.seenFork) { s.seenFork = true; banner(s, "FORK()", "KILL IT AND IT SPLITS IN TWO", 1.6, "small"); }
     return true;
   }
   const [a, b] = tierWeights(s.wave);
@@ -265,7 +262,6 @@ function spawnSudo(s: PanicState) {
   const name = wordsOf(s).sudo;
   spawnProcess(s, name, "sudo", spawnX(s, name), SPAWN_Y, fallSpeed(s.wave, s.touch) * 0.8);
   s.sudoOwed = false;
-  if (!s.seenSudo) { s.seenSudo = true; banner(s, "SUDO", "TYPE IT TO CLEAR THE SCREEN", 1.6, "small"); }
 }
 
 function split(s: PanicState, parent: Proc) {
@@ -283,7 +279,7 @@ function split(s: PanicState, parent: Proc) {
 function score(s: PanicState, p: Proc, mult: number) {
   const value = 10 * p.name.length * mult;
   s.score += value;
-  s.pops.push({ x: p.x, y: p.y - 24, value, mult, life: 0.9 });
+  s.pops.push({ x: p.x, y: Math.max(SPAWN_Y + 4, p.y - 24), value, mult, life: 0.9 });
   if (s.pops.length > 12) s.pops.splice(0, s.pops.length - 12);
 }
 
@@ -338,7 +334,7 @@ export const panic: GameModule<PanicState> = {
       ...baseState("panic", seed),
       touch, wave: 1, integrity: KERNEL_INTEGRITY, processes: [], nextId: 1, lock: null, buffer: "",
       toSpawn: waveSize(1, touch), spawnClock: 0.8, chain: 0, kills: 0, misses: 0, miss: 0,
-      sudoOwed: false, seenFork: false, seenSudo: false, shots: [], pops: [], scars: [], wipe: 0, dump: null,
+      sudoOwed: false, shots: [], pops: [], scars: [], wipe: 0, dump: null,
     };
     banner(s, waveLabel(1), "TYPE A NAME TO KILL IT");
     return s;
@@ -349,7 +345,7 @@ export const panic: GameModule<PanicState> = {
     s.wipe = Math.max(0, s.wipe - dt);
     for (const shot of s.shots) shot.life -= dt;
     s.shots = s.shots.filter((shot) => shot.life > 0);
-    for (const pop of s.pops) { pop.life -= dt; pop.y -= 40 * dt; }
+    for (const pop of s.pops) { pop.life -= dt; pop.y -= 24 * dt; }
     s.pops = s.pops.filter((pop) => pop.life > 0);
     for (const p of s.processes) p.hit = Math.max(0, p.hit - dt);
 
@@ -460,7 +456,7 @@ export const panic: GameModule<PanicState> = {
       const sudo = s.processes.find((p) => p.kind === "sudo");
       const low = lowest(s.processes);
       if (sudo && s.processes.length >= 3) target = sudo;
-      else if (low && (low.y > SPAWN_Y + 70 || s.processes.length >= 3)) target = low;
+      else if (low && (low.y > KERNEL_Y * 0.4 || s.processes.length >= 3)) target = low;
       if (!target) return plan;
     }
     m.lastAct = s.time;

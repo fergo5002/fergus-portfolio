@@ -159,7 +159,11 @@ function drawProcess(pen: Pen, s: PanicState, p: Proc, locked: boolean, sz: Size
   if (typed === 0 && !danger && !sudo && p.kind !== "child") glowText(pen, rest, restX, chip.baseline, chip.size, ink, pal.inkGlow, "left");
   else text(pen, rest, restX, chip.baseline, chip.size, ink, "left", true);
 
-  if (hud) text(pen, `${sudo ? "uid 0 " : ""}pid ${pidOf(p)}`, chip.left, chip.top - 4, sz.pid, sudo ? pal.accent : pal.dim);
+  if (hud) {
+    text(pen, `${sudo ? "uid 0 " : ""}pid ${pidOf(p)}`, chip.left, chip.top - 4, sz.pid, sudo ? pal.accent : pal.dim);
+    const tag = sudo ? screenCopy.panicTags.sudo : p.kind === "fork" ? screenCopy.panicTags.fork : "";
+    if (tag) text(pen, tag, chip.left, chip.top + chip.h + sz.pid + 5, sz.pid, sudo ? pal.accentBright : pal.ink);
+  }
   if (p.kind === "fork") forkMark(pen, chip.left + chip.w + sz.pad + 6, chip.top + chip.h * 0.35, chip.h * 0.7, danger ? pal.accent : pal.ink);
   if (locked) brackets(pen, chip, sudo ? pal.accentBright : pal.bright, sudo ? pal.accentGlow : pal.brightGlow);
   return chip;
@@ -188,8 +192,9 @@ function drawKernel(pen: Pen, s: PanicState, sz: Sizes) {
   }
   const label = screenCopy.kernel;
   const w = measure(pen, label, sz.kernel) + sz.pad * 3;
-  box(c, 450 - w / 2, KERNEL_Y - sz.kernel * 0.62, w, sz.kernel * 1.3, p.bg, colour, undefined, 1);
-  text(pen, label, 450, KERNEL_Y + sz.kernel * 0.36, sz.kernel, colour, "center", true);
+  const top = KERNEL_Y + 11;
+  box(c, 450 - w / 2, top, w, sz.kernel * 1.15, p.bg, colour, undefined, 1);
+  text(pen, label, 450, top + sz.kernel * 0.88, sz.kernel, colour, "center", true);
 }
 
 function drawTurret(pen: Pen, s: PanicState, aim: Point | null) {

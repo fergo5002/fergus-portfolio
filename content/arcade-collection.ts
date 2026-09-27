@@ -114,6 +114,8 @@ export const screenCopy = {
   table: { banked: "BANKED", target: "TARGET", worth: "WORTH", draws: "DRAWS", hand: "HAND" },
   /** Kernel Panic's floor. */
   kernel: "KERNEL",
+  /** Small print under the two processes that do something when they die. */
+  panicTags: { fork: "KILL IT AND IT SPLITS IN TWO", sudo: "TYPE IT TO CLEAR THE SCREEN" },
   /**
    * What Kernel Panic's screen halts on. `{pid}`, `{comm}` and the hex fields
    * are filled from the run by `lib/arcade/draw/panic.ts`; the drawer prefixes

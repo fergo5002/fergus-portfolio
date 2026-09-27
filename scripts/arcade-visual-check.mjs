@@ -1,6 +1,7 @@
 import { chromium } from "playwright";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { killOneProcess } from "./arcade-panic-smoke.mjs";
 const base = process.env.ARCADE_BASE || "http://localhost:3210";
 const out = resolve(".phone-check/arcade-rebuild"); await mkdir(out, { recursive: true });
 const browser = await chromium.launch();
@@ -42,7 +43,10 @@ try {
     if (id === "signal") { await page.keyboard.down("ArrowRight"); await page.waitForTimeout(250); await page.keyboard.up("ArrowRight"); }
     if (id === "panic") {
       if (!await page.locator(".arcade-type__input").evaluate(e => e === document.activeElement)) throw new Error("panic: starting the run did not hand focus to its text input");
-      await page.keyboard.type("zq");
+      // Type one falling process to death through the real input, then require the status line to have scored it.
+      const killed = await killOneProcess(page);
+      await page.waitForFunction(() => /[1-9]\d* points/.test(document.querySelector(".arcade-status")?.textContent ?? ""), null, { timeout: 15000 })
+        .catch(() => { throw new Error(`panic: typing "${killed}" to death scored nothing`); });
     }
     await page.waitForTimeout(1500);
     const status = await page.locator(".arcade-status").textContent();

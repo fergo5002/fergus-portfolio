@@ -1,6 +1,7 @@
 import { webkit, chromium, devices } from "playwright";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { killOneProcess, statusPoints } from "./arcade-panic-smoke.mjs";
 const args = process.argv.slice(2);
 const option = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
 const base = option("--base", "http://localhost:3000"), out = resolve(option("--out", ".phone-check/arcade"));
@@ -59,7 +60,27 @@ for (const profile of [{ name: "webkit-390", engine: webkit, device: "iPhone 12"
       else if (id === "signal") { await page.locator(".arcade-action-button").tap(); for (const key of ["→", "↓", "←", "↑"]) await page.locator(".arcade-dpad").getByRole("button", { name: key, exact: true }).tap(); }
       else {
         check(await page.locator(".arcade-type__input").evaluate(el => el === document.activeElement), `${profile.name}: the tap that started Kernel Panic did not focus its text input`);
-        await page.keyboard.type("zq");
+        // A coarse pointer is the touch profile: a phone is only ever asked for letters and spaces.
+        const killed = await killOneProcess(page);
+        check(/^[a-z]+( [a-z]+)*$/.test(killed), `${profile.name}: a touch run asked for "${killed}"`);
+        await page.waitForFunction(() => /[1-9]\d* points/.test(document.querySelector(".arcade-status")?.textContent ?? ""), null, { timeout: 15000 })
+          .catch(async () => { throw new Error(`${profile.name}: typing "${killed}" to death scored nothing (status: ${await statusPoints(page)})`); });
+        if (profile.width === 390) {
+          // A phone keyboard takes the bottom half of the screen. Stand in for it by cutting the
+          // viewport, let the room's throttled --vv-h catch up, bring the input into view as iOS
+          // does on focus, and require the whole play area and the input to be on the glass.
+          await page.setViewportSize({ width: 390, height: 400 });
+          await page.waitForTimeout(400);
+          await page.locator(".arcade-type__input").scrollIntoViewIfNeeded();
+          const fit = await page.evaluate(() => {
+            const c = document.querySelector(".arcade-canvas").getBoundingClientRect(), i = document.querySelector(".arcade-type__input").getBoundingClientRect();
+            return { canvasTop: c.top, canvasBottom: c.bottom, inputTop: i.top, inputBottom: i.bottom, height: innerHeight, vv: getComputedStyle(document.querySelector(".arcade-play")).getPropertyValue("--vv-h") };
+          });
+          check(fit.canvasTop >= -1 && fit.inputBottom <= fit.height + 1 && fit.canvasBottom <= fit.inputTop + 1, `${profile.name}: with a keyboard's worth of screen gone, the play area and input do not both fit: ${JSON.stringify(fit)}`);
+          evidence.push({ profile: profile.name, game: "panic", keyboardStandIn: fit, killed });
+          await page.screenshot({ path: resolve(out, `${profile.name}-panic-keyboard.png`) });
+          await page.setViewportSize({ width: 390, height: 844 });
+        }
       }
       await page.getByRole("button", { name: /^pause$/i }).tap();
       check(await page.getByRole("heading", { name: "SYSTEM PAUSED" }).isVisible(), "Pause did not cover the game");

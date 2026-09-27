@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { seededRng, createAttractMemory } from "../attract";
 import { createGame, gameHud, MODULES, pressGame, stepGame, typedOf } from "../engine";
@@ -372,6 +374,12 @@ describe("Kernel Panic: the touch profile", () => {
     const desk = peak(false), phone = peak(true);
     expect(phone.most).toBeLessThan(desk.most);
     expect(phone.speed).toBeLessThan(desk.speed * 0.85);
+  });
+
+  it("is what the room asks for on a coarse pointer", () => {
+    // A coupling check: vitest runs in node here and cannot mount the room.
+    const room = readFileSync(join(process.cwd(), "components", "arcade", "CanvasGame.tsx"), "utf8");
+    expect(room).toMatch(/createRun\(cabinet\.id, seed, \{[^}]*touch: window\.matchMedia\("\(pointer: coarse\)"\)\.matches/);
   });
 
   it("types every desktop name with keys a keyboard has, and kills it", () => {

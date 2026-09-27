@@ -1549,6 +1549,44 @@ const MUTATIONS = [
     replace: '  c.strokeStyle = cap.lit ? "#ffffff" : p.dim;',
     tests: "lib/arcade/renderer.test.ts",
   },
+  // ── Kernel Panic (2026-09-27): the typing game's own rules ──
+  ...[
+    ["forks stop splitting", /  if \(p\.kind === "fork"\) split\(s, p\);/, ""],
+    ["sudo stops clearing the screen", /    const cleared = s\.processes;\r?\n    s\.processes = \[\];/, "    const cleared: Proc[] = [];"],
+    ["an idle player can no longer lose", /      s\.integrity--;/, ""],
+    ["a wrong letter no longer breaks the combo", /function wrong\(s: PanicState, target: Proc \| null\) \{\r?\n  s\.chain = 0;/, "function wrong(s: PanicState, target: Proc | null) {"],
+    ["a wrong letter loses the lock", /    wrong\(s, target\);\r?\n    return;/, "    wrong(s, target);\n    release(s);\n    return;"],
+    ["the lock goes to the highest match", /      target = lowest\(s\.processes\.filter\(\(p\) => p\.name\[0\] === c\)\);/, "      target = s.processes.filter((p) => p.name[0] === c).sort((a, b) => a.y - b.y)[0] ?? null;"],
+    ["a touch run asks a phone for symbols", /"git push force", "shutdown now"/, '"git push --force", "shutdown now"'],
+    ["the panic dump never ends the run", /      if \(s\.time - s\.dump\.at >= DUMP_TIME\) s\.over = true;/, ""],
+    ["the waves never advance", /      s\.wave\+\+;/, ""],
+    ["a spawn rolls Math.random instead of the seed", /  let best = lo \+ rand\(s\) \* \(hi - lo\), bestGap = -1;/, "  let best = lo + Math.random() * (hi - lo), bestGap = -1;"],
+    ["the attract typist never fumbles", /    if \(lock && rng\(\) < 0\.025\) \{/, "    if (false) {"],
+  ].map(([name, pattern, replace]) => ({
+    name: `kernel panic: ${name}`, file: "lib/arcade/games/panic.ts", pattern, replace,
+    tests: "lib/arcade/games/panic.test.ts",
+  })),
+  {
+    name: "kernel panic: the room stops passing a coarse pointer as the touch profile",
+    file: "components/arcade/CanvasGame.tsx",
+    pattern: /touch: window\.matchMedia\("\(pointer: coarse\)"\)\.matches/,
+    replace: "touch: false",
+    tests: "lib/arcade/games/panic.test.ts",
+  },
+  {
+    name: "kernel panic: the card's demo ignores the touch profile",
+    file: "lib/arcade/run.ts",
+    pattern: /    demo: createAttract\(id, \(seed \^ 0x5bd1e995\) >>> 0, profile\),/,
+    replace: "    demo: createAttract(id, (seed ^ 0x5bd1e995) >>> 0),",
+    tests: "lib/arcade/games/panic.test.ts",
+  },
+  {
+    name: "kernel panic: the dump forgets which process broke the kernel",
+    file: "lib/arcade/draw/panic.ts",
+    pattern: /    comm: dump\.comm,/,
+    replace: '    comm: "init",',
+    tests: "lib/arcade/draw/panic.test.ts",
+  },
 ];
 
 
