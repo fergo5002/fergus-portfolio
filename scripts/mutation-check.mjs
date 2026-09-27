@@ -1410,8 +1410,22 @@ const MUTATIONS = [
   {
     name: "relief draws every ridge whole, so hidden lines show through the hills in front",
     file: "lib/tools/relief/ridgeline.ts",
-    pattern: /const shown = points\[i\]\.y < sky\[i\];/,
+    pattern: /const shown = m\.r < m\.h;/,
     replace: "const shown = true;",
+    tests: "lib/tools/relief/ridgeline.test.ts",
+  },
+  {
+    name: "relief runs each visible stretch on to the next hidden sample, so ridges poke through the hills in front",
+    file: "lib/tools/relief/ridgeline.ts",
+    pattern: /          run\.push\(cross\);/,
+    replace: "          run.push({ x: m.x, y: m.r });",
+    tests: "lib/tools/relief/ridgeline.test.ts",
+  },
+  {
+    name: "relief clips against the chord between samples instead of the true horizon, and hides what it should draw",
+    file: "lib/tools/relief/ridgeline.ts",
+    pattern: /    next\.push\(\{ x: m\.x, y: Math\.min\(m\.r, m\.h\) \}\);/,
+    replace: "    if (m.sample) next.push({ x: m.x, y: Math.min(m.r, m.h) });",
     tests: "lib/tools/relief/ridgeline.test.ts",
   },
   {

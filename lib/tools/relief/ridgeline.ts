@@ -139,22 +139,92 @@ function heightAt(field: Field, week: number, hour: number): number {
   return clamp01(v);
 }
 
+/** The y of an x-ordered polyline at `x`, reading forward from index `from`. */
+function yAt(line: readonly Point[], x: number, from: number): { y: number; at: number } {
+  let i = from;
+  while (i < line.length - 2 && line[i + 1].x < x) i++;
+  const a = line[i];
+  const b = line[i + 1];
+  const t = b.x === a.x ? 0 : (x - a.x) / (b.x - a.x);
+  return { y: a.y + t * (b.y - a.y), at: i };
+}
+
+/**
+ * One ridge against the horizon of everything in front of it, segment by
+ * segment. Both are polylines over the same span of x, so between their
+ * merged breakpoints each is a straight line and they cross at most once:
+ * the crossing is interpolated, the ridge is kept where it stands above the
+ * horizon (smaller y), and the horizon comes back raised to include it.
+ */
+function clip(ridge: readonly Point[], horizon: readonly Point[]): { visible: Polyline[]; next: Point[] } {
+  const merged: { x: number; r: number; h: number; sample: boolean }[] = [];
+  let i = 0;
+  let j = 0;
+  let ri = 0;
+  let hi = 0;
+  while (i < ridge.length || j < horizon.length) {
+    const xr = i < ridge.length ? ridge[i].x : Infinity;
+    const xh = j < horizon.length ? horizon[j].x : Infinity;
+    const x = Math.min(xr, xh);
+    const r = yAt(ridge, x, ri);
+    const h = yAt(horizon, x, hi);
+    ri = r.at;
+    hi = h.at;
+    merged.push({ x, r: r.y, h: h.y, sample: xr === x });
+    if (xr === x) i++;
+    if (xh === x) j++;
+  }
+
+  const visible: Polyline[] = [];
+  const next: Point[] = [];
+  let run: Point[] | null = null;
+  for (let k = 0; k < merged.length; k++) {
+    const m = merged[k];
+    const shown = m.r < m.h;
+    if (k > 0) {
+      const p = merged[k - 1];
+      const d0 = p.r - p.h;
+      const d1 = m.r - m.h;
+      if (d0 < 0 !== d1 < 0 && d0 !== d1) {
+        const t = d0 / (d0 - d1);
+        const cross = { x: p.x + t * (m.x - p.x), y: p.r + t * (m.r - p.r) };
+        next.push(cross);
+        if (run) {
+          run.push(cross);
+          if (run.length > 1) visible.push(run);
+          run = null;
+        } else {
+          run = [cross];
+        }
+      }
+    }
+    if (shown) {
+      if (!run) run = [];
+      // A horizon-only breakpoint lies on the ridge's straight segment, so it adds nothing to draw.
+      if (m.sample || k === merged.length - 1) run.push({ x: m.x, y: m.r });
+    }
+    next.push({ x: m.x, y: Math.min(m.r, m.h) });
+  }
+  if (run && run.length > 1) visible.push(run);
+  return { visible, next };
+}
+
 /**
  * Every ridge, ordered back (week 1) to front (week 52), with hidden lines
  * removed.
  *
- * The skyline is the highest line in front so far at each sample x (smallest
- * y, since y grows down the sheet). Walking from the front, a stretch of a
- * ridge is drawn where it stands above that skyline and cut where it crosses
- * it. Between samples the skyline is taken as the chord, which sits at or
- * below the true one, so the error only ever hides a sliver more: never draws
- * a line through a nearer hill.
+ * The horizon is the highest line in front so far (smallest y, since y grows
+ * down the sheet), kept as an exact polyline with every crossing in it.
+ * Walking from the front, each ridge is clipped to where it stands above that
+ * horizon, segment by segment, with the crossing points interpolated, then
+ * the horizon is raised to include it. So two drawn ridges may touch but can
+ * never cross, and nothing above the horizon is left undrawn.
  */
 export function ridgelines(field: Field, g: RidgeLayout, samplesPerHour = SAMPLES_PER_HOUR): Ridge[] {
   const count = (HOURS - 1) * samplesPerHour + 1;
   const xs = Array.from({ length: count }, (_, i) => hourX(g, i / samplesPerHour));
-  const sky = Array.from({ length: count }, () => Infinity);
   const ridges: Ridge[] = new Array(WEEKS);
+  let horizon: Point[] | null = null;
 
   for (let w = WEEKS - 1; w >= 0; w--) {
     const baseline = baselineY(g, w + 1);
@@ -163,38 +233,15 @@ export function ridgelines(field: Field, g: RidgeLayout, samplesPerHour = SAMPLE
       y: baseline - g.amplitude * heightAt(field, w, i / samplesPerHour),
     }));
 
-    const visible: Polyline[] = [];
-    let run: Point[] | null = null;
-    for (let i = 0; i < count; i++) {
-      const shown = points[i].y < sky[i];
-      if (i > 0) {
-        const wasShown = run !== null;
-        if (wasShown !== shown) {
-          // The ridge crosses the skyline chord between i - 1 and i.
-          const d0 = points[i - 1].y - sky[i - 1];
-          const d1 = points[i].y - sky[i];
-          const t = Number.isFinite(d0) && Number.isFinite(d1) && d0 !== d1 ? d0 / (d0 - d1) : 0;
-          const cross = {
-            x: points[i - 1].x + t * (points[i].x - points[i - 1].x),
-            y: points[i - 1].y + t * (points[i].y - points[i - 1].y),
-          };
-          if (run) {
-            run.push(cross);
-            if (run.length > 1) visible.push(run);
-            run = null;
-          } else {
-            run = [cross];
-          }
-        }
-      }
-      if (shown) {
-        if (!run) run = [];
-        run.push(points[i]);
-      }
+    let visible: Polyline[];
+    if (horizon === null) {
+      visible = [points];
+      horizon = points.slice();
+    } else {
+      const cut = clip(points, horizon);
+      visible = cut.visible;
+      horizon = cut.next;
     }
-    if (run && run.length > 1) visible.push(run);
-
-    for (let i = 0; i < count; i++) if (points[i].y < sky[i]) sky[i] = points[i].y;
 
     ridges[w] = {
       week: w + 1,

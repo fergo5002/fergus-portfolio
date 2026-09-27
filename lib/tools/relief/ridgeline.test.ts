@@ -180,6 +180,84 @@ describe("ridgelines: occlusion", () => {
     expect(offenders.slice(0, 5)).toEqual([]);
   });
 
+  /**
+   * The Unknown Pleasures rule, checked between vertices as well as at them:
+   * at every column across the plot, a drawn stretch of a ridge stands at or
+   * above the horizon of every nearer ridge. Two lines may touch; they may
+   * never cross. And the converse, so the rule cannot be met by drawing
+   * nothing: a ridge clearly above that horizon is drawn there.
+   */
+  describe("no two drawn ridges cross, sampled column by column", () => {
+    const COLUMNS = 2400;
+    /** The y of a polyline at `x`, or null outside it. Points are in x order. */
+    const yOn = (line: readonly { x: number; y: number }[], x: number): number | null => {
+      if (line.length < 2 || x < line[0].x || x > line[line.length - 1].x) return null;
+      let lo = 0;
+      let hi = line.length - 1;
+      while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (line[mid].x <= x) lo = mid;
+        else hi = mid;
+      }
+      const a = line[lo];
+      const b = line[hi];
+      return b.x === a.x ? Math.min(a.y, b.y) : a.y + ((x - a.x) / (b.x - a.x)) * (b.y - a.y);
+    };
+    const drawnAt = (ridge: Ridge, x: number): number | null => {
+      let best: number | null = null;
+      for (const run of ridge.visible) {
+        const y = yOn(run, x);
+        if (y !== null && (best === null || y < best)) best = y;
+      }
+      return best;
+    };
+
+    /** A dense year: every cell its own height, the worst case for occlusion. */
+    function dense(seed: number): Field {
+      let a = seed;
+      const rnd = () => {
+        a = (a * 1664525 + 1013904223) >>> 0;
+        return a / 4294967296;
+      };
+      return Array.from({ length: HOURS }, () => Array.from({ length: WEEKS }, () => rnd()));
+    }
+
+    const years: [string, Field][] = [
+      ["demo", buildHeightmap(demoEvents()).profile],
+      ["another demo", buildHeightmap(demoEvents(20260904)).profile],
+      ["dense", dense(7)],
+      ["denser", dense(99)],
+    ];
+
+    it.each(years)("%s", (_name, f) => {
+      for (const width of [320, 760, 988]) {
+        const geo = ridgeGeometry(width);
+        const ridges = ridgelines(f, geo);
+        const crossings: string[] = [];
+        const missing: string[] = [];
+        let drawnSamples = 0;
+        for (let c = 0; c <= COLUMNS; c++) {
+          const x = geo.padLeft + (c / COLUMNS) * geo.plotWidth;
+          let horizon = Infinity;
+          for (let r = ridges.length - 1; r >= 0; r--) {
+            const full = yOn(ridges[r].points, x) as number;
+            const drawn = drawnAt(ridges[r], x);
+            if (drawn !== null) {
+              drawnSamples++;
+              if (drawn > horizon + 1e-6) crossings.push(`${width}px week ${ridges[r].week} at x ${x.toFixed(2)}: ${drawn.toFixed(3)} under ${horizon.toFixed(3)}`);
+            } else if (full < horizon - 1e-6) {
+              missing.push(`${width}px week ${ridges[r].week} at x ${x.toFixed(2)}`);
+            }
+            horizon = Math.min(horizon, full);
+          }
+        }
+        expect(drawnSamples).toBeGreaterThan(COLUMNS * 5);
+        expect(crossings.slice(0, 4), `${crossings.length} crossings`).toEqual([]);
+        expect(missing.slice(0, 4), `${missing.length} missing`).toEqual([]);
+      }
+    });
+  });
+
   it("hides the stretch of a back ridge behind a tall front peak, and keeps the rest", () => {
     const f = field();
     f[12][51] = 1; // one tall peak on the front ridge at noon
