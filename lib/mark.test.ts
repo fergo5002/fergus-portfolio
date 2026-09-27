@@ -1,7 +1,16 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { MARK_VIEWBOX, markPath, markPointIn, markRuns, markStrokePaths, markSweep, markTraceAt } from "./mark";
+import {
+  MARK_VIEWBOX,
+  markPath,
+  markPointIn,
+  markRuns,
+  markStrokePaths,
+  markStrokePoints,
+  markSweep,
+  markTraceAt,
+} from "./mark";
 
 /** The icon's own geometry, read from the file rather than retyped. */
 function iconStrokes(): number[][][] {
@@ -165,6 +174,21 @@ describe("markRuns", () => {
     const [run] = markRuns(0.2, 0.25);
     expect(run.from).toBe(0.2);
     expect(run.to).toBe(0.25);
+  });
+
+  it("says which stroke each run belongs to", () => {
+    expect(markRuns(0, 1).map((r) => r.stroke)).toEqual([0, 1]);
+    expect(markRuns(0.9, 1)[0].stroke).toBe(1);
+  });
+});
+
+describe("markStrokePoints", () => {
+  it("gives each lit stroke's vertices, for a beam that retraces the whole mark", () => {
+    const path = markPath();
+    expect(markStrokePoints()).toEqual([
+      [path[0], path[1], path[2]].map(({ x, y }) => ({ x, y })),
+      [path[3], path[4]].map(({ x, y }) => ({ x, y })),
+    ]);
   });
 });
 

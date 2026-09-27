@@ -523,6 +523,22 @@ describe("BootSequence is wired to the failsafe", () => {
     expect(body).toMatch(/setTimeout\(\(\) => finishRef\.current\(\), 0\)/);
   });
 
+  it("never leaves the tube dark if it unmounts part-way", () => {
+    // The re-arm reveals the page a second later; a tube still switched off
+    // behind it would show the page on a black screen with no rain and no
+    // phosphor. The arcade entrance keeps the same rule for the same reason.
+    expect(src).toMatch(/if \(!finishedRef\.current\) \{[\s\S]{0,400}bootTarget = 1;[\s\S]{0,80}targetLive = 1;/);
+  });
+
+  it("remembers what it published per element, so the mark and the fold line both get --collapse", () => {
+    // A cache keyed by the variable's name alone skipped the fold line's
+    // writes, because the mark had always just written the same value: the
+    // fold stayed invisible on every boot. The paused-clock screenshots in
+    // scripts/boot-check.mjs are what caught it; this pins the shape.
+    expect(src).toMatch(/let seen = published\.get\(el\);/);
+    expect(src).toMatch(/publish\(foldRef\.current, "--collapse", snap\.collapse\)/);
+  });
+
   it("keeps the overlay out of PostHog's autocapture", () => {
     // Autocapture is on. A click that skips the boot lands on text that
     // includes the visitor's own readings, and ph-no-capture on the overlay is

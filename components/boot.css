@@ -69,6 +69,43 @@
   opacity: calc(var(--mark-b, 0) * 1000);
 }
 
+/* The beam spot: the gun, while it is on. Hot at the core, in the colour of the
+   phosphor it is striking, and gone while the gun is blanked for the move
+   between strokes. The mark's own drop-shadow gives it its bloom. The first
+   `fill` is the fallback for a browser without color-mix. */
+.boot__spot {
+  opacity: 0;
+  fill: var(--green-bright);
+  fill: color-mix(in srgb, var(--green-bright) 45%, #fff);
+}
+.boot__spot[data-lit="chevron"] {
+  opacity: 1;
+}
+.boot__spot[data-lit="caret"] {
+  opacity: 1;
+  fill: var(--amber-bright);
+  fill: color-mix(in srgb, var(--amber-bright) 45%, #fff);
+}
+
+/* The fold: the picture collapsing to one bright line, from the mark's edges
+   out to the page column's. BootSequence publishes the ends in pixels, and the
+   page's power-on then opens out of exactly this line. */
+.boot__fold {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--fold-l, 0) * 1px);
+  width: calc(var(--fold-w, 0) * 1px);
+  height: 2px;
+  margin-top: -1px;
+  pointer-events: none;
+  background: var(--green-bright);
+  background: color-mix(in srgb, var(--green-bright) 55%, #fff);
+  box-shadow:
+    0 0 6px 1px var(--green),
+    0 0 22px 4px var(--green-faint);
+  opacity: calc(var(--collapse, 0) * 2.5);
+}
+
 @media (max-width: 560px) {
   .boot__mark {
     width: min(44vw, 200px);

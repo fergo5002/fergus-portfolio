@@ -44,6 +44,11 @@ export function markPath(): readonly MarkVertex[] {
  */
 export const MARK_VIEWBOX = { x: 12, y: 18, w: 38, h: 28 } as const;
 
+/** Each lit stroke's vertices in 0..1, for a beam retracing the whole mark to hold it. */
+export function markStrokePoints(): MarkPoint[][] {
+  return strokes().map((s) => s.map((i) => ({ x: VERTICES[i].x, y: VERTICES[i].y })));
+}
+
 /** Each lit stroke as an SVG path in the icon's grid, for `pathLength="1"` dashes. */
 export function markStrokePaths(): string[] {
   return strokes().map((s) =>
@@ -176,8 +181,8 @@ function strokeOfBlank(step: Step): number {
   return PLAN.steps.slice(i).find((s) => s.stroke >= 0)?.stroke ?? PLAN.strokeLengths.length;
 }
 
-/** One lit run of a sweep, and the stretch of the trace (0..1) the gun spent drawing it. */
-export type MarkRun = { pts: MarkPoint[]; from: number; to: number };
+/** One lit run of a sweep, the stretch of the trace (0..1) the gun spent drawing it, and its stroke. */
+export type MarkRun = { pts: MarkPoint[]; from: number; to: number; stroke: number };
 
 /**
  * `markSweep` with each run's time span, which is what a writer needs to
@@ -204,7 +209,7 @@ export function markRuns(u0: number, u1: number): MarkRun[] {
       continue;
     }
     if (!run) {
-      run = { pts: [], from: start, to: end };
+      run = { pts: [], from: start, to: end, stroke: step.stroke };
       runs.push(run);
       push(position(step, start));
     }

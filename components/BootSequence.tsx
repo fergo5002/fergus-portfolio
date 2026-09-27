@@ -17,13 +17,22 @@ import type { BootPhase } from "@/lib/boot";
 import { typedText } from "@/lib/arcade/bios";
 import { postLines, postReveal, refreshFromGaps } from "@/lib/post";
 import type { HostEnv } from "@/lib/post";
-import { MARK_VIEWBOX, markPointIn, markRuns, markStrokePaths, markTraceAt } from "@/lib/mark";
-import { beamGainFor, beamLength, clearBeam, readBeam, writeBeam } from "@/lib/beam";
+import { MARK_VIEWBOX, markStrokePaths, markTraceAt } from "@/lib/mark";
+import { clearBeam, readBeam, writeBeam } from "@/lib/beam";
+import { BEAM_WRITER, writeBootBeam } from "@/lib/boot-beam";
+import type { BeamWriter, Box } from "@/lib/boot-beam";
 import "./boot.css";
 
 const [CHEVRON, CARET] = markStrokePaths();
 const VIEWBOX = `${MARK_VIEWBOX.x} ${MARK_VIEWBOX.y} ${MARK_VIEWBOX.w} ${MARK_VIEWBOX.h}`;
 const STEP = Object.fromEntries(BOOT_PHASES.map((p, i) => [p, i])) as Record<BootPhase, number>;
+
+/** An element's box in viewport pixels, or null when it is not there to measure. */
+function boxOf(el: Element | null): Box | null {
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return r.width > 0 && r.height > 0 ? { left: r.left, top: r.top, width: r.width, height: r.height } : null;
+}
 
 /**
  * The visitor's machine, as their browser reports it. Read once on mount and
@@ -63,7 +72,9 @@ function readHost(): HostEnv {
  * reads out the visitor's own machine, and works through Fergus's devices down
  * to the caffeine. Then the picture drops out for a mode switch, the tube comes
  * live, and the beam traces the site's mark in one stroke, leaving a real trail
- * in the phosphor. The mark folds to a line, and the page opens out of it.
+ * in the phosphor, and holds it the way a vector display holds anything, by
+ * retracing it. The mark folds to a bright line, the page opens out of that
+ * line, and the phosphor's memory of the mark fades behind it.
  *
  * All of that is `bootTimeline` read once a frame off the one frame clock, and
  * written through refs and CSS variables. The only timers are the strike, the
@@ -88,6 +99,8 @@ export default function BootSequence({ children }: { children: React.ReactNode }
   const postRef = useRef<HTMLDivElement>(null);
   const devRef = useRef<HTMLDivElement>(null);
   const markRef = useRef<SVGSVGElement>(null);
+  const spotRef = useRef<SVGCircleElement>(null);
+  const foldRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -135,11 +148,12 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     // honest test of whether a steady rate is really there.
     const gaps: number[] = [];
     let post: string[] | null = null;
-    // Where the beam had got to, and how long it has been lit along the path
-    // the tube has not read yet.
-    let lastU = 0;
-    let litMs = 0;
-    let markBox: DOMRect | null = null;
+    // The beam's writer (lib/boot-beam.ts) and the boxes it draws against: the
+    // mark, and the page column the fold widens to. Measured when the trace
+    // starts, while the page is hidden but already laid out.
+    let beam: BeamWriter = BEAM_WRITER;
+    let markBox: Box | null = null;
+    let screenBox: Box | null = null;
     const written: Record<string, string> = {};
 
     const text = (el: HTMLElement | null, key: string, value: string) => {
@@ -148,11 +162,20 @@ export default function BootSequence({ children }: { children: React.ReactNode }
         written[key] = value;
       }
     };
+    // Skips a write that would change nothing. Remembered per element: the
+    // mark and the fold both carry `--collapse`, and a cache keyed by the name
+    // alone left the fold line at opacity 0 on every boot, because the mark
+    // had always just written the same value (caught on a paused clock,
+    // 2026-09-27).
+    const published = new WeakMap<Element, Map<string, string>>();
     const publish = (el: Element | null, name: string, value: number) => {
+      if (!el) return;
       const v = value.toFixed(4);
-      if (el && written[name] !== v) {
+      let seen = published.get(el);
+      if (!seen) published.set(el, (seen = new Map()));
+      if (seen.get(name) !== v) {
         (el as HTMLElement | SVGElement).style.setProperty(name, v);
-        written[name] = v;
+        seen.set(name, v);
       }
     };
 
@@ -174,7 +197,13 @@ export default function BootSequence({ children }: { children: React.ReactNode }
           audio.relay();
         }
         if (lastStep < STEP.trace && snap.step >= STEP.trace) {
-          markBox = markRef.current?.getBoundingClientRect() ?? null;
+          markBox = boxOf(markRef.current);
+          screenBox = boxOf(document.querySelector(".screen")) ?? {
+            left: 0,
+            top: 0,
+            width: window.innerWidth,
+            height: window.innerHeight,
+          };
         }
         lastStep = snap.step;
       }
@@ -196,26 +225,49 @@ export default function BootSequence({ children }: { children: React.ReactNode }
       publish(markRef.current, "--mark-b", trace.strokes[1]);
       publish(markRef.current, "--collapse", snap.collapse);
 
-      // The beam: the lit path swept since the last frame, onto the phosphor.
-      // If the tube has not read the last path yet (it draws at 30fps on a
-      // phone) and this one carries straight on from it, the two are joined
-      // rather than the first being overwritten.
-      if (markBox && lastU < 1 && snap.step >= STEP.trace) {
-        const runs = markRuns(lastU, snap.trace);
-        const run = runs[runs.length - 1];
-        if (run) {
-          const box = markBox;
-          const pts = run.pts.map((p) => {
-            const q = markPointIn(p, box);
-            return { x: q.x / window.innerWidth, y: q.y / window.innerHeight };
-          });
-          const joins = runs.length === 1 && run.from === lastU && frame.current.beamCount > 0;
-          const path = joins ? [...readBeam(frame.current), ...pts.slice(1)] : pts;
-          litMs = (joins ? litMs : 0) + (run.to - run.from) * profile.traceMs;
-          const aspect = window.innerWidth / Math.max(1, window.innerHeight);
-          writeBeam(frame.current, path, beamGainFor(litMs, beamLength(path, aspect)));
+      // The beam spot: where the gun is, while it is on and drawing. A vector
+      // display's lines are only ever this spot, moving.
+      const spot = spotRef.current;
+      if (spot) {
+        const on = snap.phase === "trace" && trace.lit && snap.trace > 0 && snap.trace < 1;
+        const lit = on ? (trace.strokes[0] < 1 ? "chevron" : "caret") : "off";
+        if (written.spot !== lit) {
+          spot.setAttribute("data-lit", lit);
+          written.spot = lit;
         }
-        lastU = snap.trace;
+        if (on) {
+          spot.setAttribute("cx", (trace.x * 64).toFixed(2));
+          spot.setAttribute("cy", (trace.y * 64).toFixed(2));
+        }
+      }
+
+      // The fold: a line from the mark's edges out to the page column's, the
+      // same line the beam lays into the phosphor below, and the line the page
+      // then opens out of.
+      if (markBox && screenBox && snap.step >= STEP.collapse) {
+        const l = markBox.left + (screenBox.left - markBox.left) * snap.collapse;
+        const r =
+          markBox.left + markBox.width +
+          (screenBox.left + screenBox.width - markBox.left - markBox.width) * snap.collapse;
+        publish(foldRef.current, "--fold-l", l);
+        publish(foldRef.current, "--fold-w", r - l);
+        publish(foldRef.current, "--collapse", snap.collapse);
+      }
+
+      // The beam in the phosphor (lib/boot-beam.ts): the trace, then the hold,
+      // then the fold, written through lib/beam.ts for the tube to deposit.
+      if (markBox && screenBox) {
+        const out = writeBootBeam(beam, snap, {
+          now: time,
+          traceMs: profile.traceMs,
+          mark: markBox,
+          screen: screenBox,
+          vw: window.innerWidth,
+          vh: window.innerHeight,
+          pending: readBeam(frame.current),
+        });
+        beam = out.writer;
+        if (out.pts) writeBeam(frame.current, out.pts, out.gain);
       }
 
       // The end. Dropping the overlay is a state change, and state never
@@ -340,7 +392,9 @@ export default function BootSequence({ children }: { children: React.ReactNode }
           <svg ref={markRef} className="boot__mark" viewBox={VIEWBOX} aria-hidden="true" focusable="false">
             <path className="boot__stroke boot__stroke--chevron" d={CHEVRON} pathLength={1} />
             <path className="boot__stroke boot__stroke--caret" d={CARET} pathLength={1} />
+            <circle ref={spotRef} className="boot__spot" r="1.5" cx="15" cy="21" data-lit="off" />
           </svg>
+          <div ref={foldRef} className="boot__fold" aria-hidden="true" />
           <div ref={coverRef} className="boot__cover" aria-hidden="true" />
           {/* The skip button deliberately sits outside the squeezed band: an
               escape hatch that is itself a millimetre tall for the first second

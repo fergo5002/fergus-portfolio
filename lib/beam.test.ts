@@ -1,10 +1,16 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { createSystemFrame, MAX_BEAM_POINTS } from "./system";
 import {
+  BEAM_FOLD,
   BEAM_GAIN,
+  BEAM_HOLD,
   BEAM_RADIUS,
+  PHOSPHOR_DECAY,
   beamDeposit,
   beamGainFor,
+  beamHoldGain,
   beamLength,
   clearBeam,
   readBeam,
@@ -182,5 +188,68 @@ describe("the trail is the same brightness at any refresh rate", () => {
     expect(BEAM_RADIUS).toBeGreaterThan(0.002);
     expect(BEAM_RADIUS).toBeLessThan(0.03);
     expect(beamDeposit(0.5 + BEAM_RADIUS / ASPECT, 0.5, [{ x: 0.5, y: 0.5 }], ASPECT)).toBeCloseTo(Math.exp(-1));
+  });
+});
+
+/**
+ * Holding a picture. A vector display's image lasts only as long as the beam
+ * keeps retracing it, so a writer holding a finished drawing revisits each
+ * stroke and tops the phosphor up. `beamHoldGain` sizes each visit from the
+ * time since the last one, so the level a retraced stroke settles at does not
+ * depend on how often the tube gets to draw it.
+ */
+describe("a retraced stroke settles at the hold level at any refresh rate", () => {
+  const decay = (dt: number) => Math.pow(PHOSPHOR_DECAY, dt / 1000);
+
+  /** The energy on the line, visited every `periodMs`, simulated on the tube's own frames. */
+  function hold(periodMs: number, level = BEAM_HOLD) {
+    let e = 0;
+    let min = Infinity;
+    let max = 0;
+    // Measured once settled: from cold, the phosphor takes about a second and a
+    // half to come within a percent of any level.
+    for (let t = 0; t < 4000; t += periodMs) {
+      e = Math.min(1, e * decay(periodMs) + beamHoldGain(periodMs, level));
+      if (t > 3000) {
+        max = Math.max(max, e);
+        min = Math.min(min, e * decay(periodMs));
+      }
+    }
+    return { max, min };
+  }
+
+  it("mirrors the persistence the tube itself uses", () => {
+    // PhosphorScreen resolves uDecay from the same base. If one moves alone, a
+    // held stroke drifts brighter or dimmer than intended, silently.
+    const src = readFileSync(join(process.cwd(), "components", "system", "PhosphorScreen.tsx"), "utf8");
+    expect(src).toContain(`su.uDecay.value = Math.pow(${PHOSPHOR_DECAY}, dt / 1000);`);
+  });
+
+  it("holds within a few percent of the level from 30Hz to 165Hz, and every other frame at 60", () => {
+    for (const period of [1000 / 30, 1000 / 60, 2000 / 60, 1000 / 120, 1000 / 165]) {
+      const { max, min } = hold(period);
+      expect(Math.abs(max / BEAM_HOLD - 1), `${period.toFixed(1)}ms peak`).toBeLessThan(0.01);
+      // Between visits it sags by one period of decay: a tenth at 30Hz, less above.
+      expect(min / BEAM_HOLD, `${period.toFixed(1)}ms trough`).toBeGreaterThan(0.89);
+    }
+  });
+
+  it("holds the finished mark near where the trace left it, under the clamp", () => {
+    expect(BEAM_HOLD).toBeGreaterThan(0.45);
+    expect(BEAM_HOLD).toBeLessThan(0.8);
+  });
+
+  it("lets the collapsing line build towards the clamp inside a sixth of a second", () => {
+    // The fold concentrates the beam's energy into one line, so it aims past the
+    // buffer's ceiling and is caught by the clamp: bright almost at once.
+    let e = 0;
+    for (let t = 0; t < 150; t += 1000 / 60) e = Math.min(1, e * decay(1000 / 60) + beamHoldGain(1000 / 60, BEAM_FOLD));
+    expect(e).toBeGreaterThan(0.8);
+  });
+
+  it("puts nothing down for no time", () => {
+    expect(beamHoldGain(0)).toBe(0);
+    expect(beamHoldGain(-10)).toBe(0);
+    expect(beamHoldGain(Number.NaN)).toBe(0);
   });
 });

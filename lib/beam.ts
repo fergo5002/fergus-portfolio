@@ -48,6 +48,28 @@ export const BEAM_RADIUS = 0.011;
  */
 export const BEAM_GAIN = 0.00035;
 
+/**
+ * The persistence buffer's decay, per second: `PhosphorScreen` resolves
+ * `uDecay` from this base every frame (`lib/beam.test.ts` holds the two
+ * together). Needed here because holding a level means topping up exactly what
+ * decayed since the last visit.
+ */
+export const PHOSPHOR_DECAY = 0.045;
+
+/**
+ * The level a finished drawing is held at while the beam retraces it: about
+ * where the trace left the line at the desktop mark's speed, so the drawing
+ * does not brighten or dim when the beam stops writing and starts refreshing.
+ */
+export const BEAM_HOLD = 0.6;
+
+/**
+ * The level a collapsing raster aims for. Past the buffer's clamp on purpose:
+ * folding the picture concentrates the beam into one line, which is why the
+ * line a tube leaves when it switches off is the brightest thing it ever shows.
+ */
+export const BEAM_FOLD = 2.4;
+
 export type BeamPoint = { x: number; y: number };
 type BeamFrame = Pick<SystemFrame, "beamPts" | "beamCount" | "beamGain">;
 
@@ -103,6 +125,17 @@ export function beamLength(pts: readonly BeamPoint[], aspect: number): number {
 export function beamGainFor(spanMs: number, length: number): number {
   if (!(spanMs > 0)) return 0;
   return (BEAM_GAIN * spanMs) / (Math.max(0, length) + Math.sqrt(Math.PI) * BEAM_RADIUS);
+}
+
+/**
+ * The gain for one visit of a stroke being held, `periodMs` after the last
+ * visit: exactly what the phosphor lost in between, from a line sitting at
+ * `level`. So a retraced stroke settles at `level` whether the tube draws it at
+ * 30Hz or 165Hz, and whether it is visited every frame or every other one.
+ */
+export function beamHoldGain(periodMs: number, level: number = BEAM_HOLD): number {
+  if (!(periodMs > 0)) return 0;
+  return level * (1 - Math.pow(PHOSPHOR_DECAY, periodMs / 1000));
 }
 
 /**

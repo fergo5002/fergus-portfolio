@@ -1259,7 +1259,10 @@ html.crt-off body {
   /* CRT power-on: played when the boot finishes. The classic CRT turn-off
      collapses the picture to a bright line then a dot; we run it in reverse so
      content "switches on": expanding from a thin bright line with a brightness
-     bloom that settles to normal. Added/removed by BootSequence.finish(). */
+     bloom that settles to normal. Added/removed by BootSequence.finish(), which
+     also moves the origin to the middle of the viewport, where the boot's fold
+     line is. The line is visible from the first frame (2026-09-27): it takes
+     over from that fold, and fading it in left a dark gap between the two. */
   .power-on {
     animation: power-on 620ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
     transform-origin: center;
@@ -1268,7 +1271,7 @@ html.crt-off body {
     0% {
       transform: scaleY(0.004);
       filter: brightness(3.2);
-      opacity: 0;
+      opacity: 1;
     }
     9% {
       transform: scaleY(0.004);
