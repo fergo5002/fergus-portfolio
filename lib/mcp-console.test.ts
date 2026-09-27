@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CONSOLE_CLIENT, CONSOLE_META_KEYS, CONSOLE_PROTOCOL_VERSION, consoleHeaders, consoleRequest, consoleSummary } from "./mcp-console";
 import { handleHttpPost as serve, META, MODERN_PROTOCOL_VERSION, TOOL_NAMES, type McpHeaderView } from "./mcp";
+import { mcpCallProperties } from "./analytics";
 import { mcpCopy, type McpPreset } from "@/content/mcp";
 import { profile } from "@/content/profile";
 import { projects } from "@/content/projects";
@@ -46,6 +47,13 @@ describe("the MCP console presets", () => {
   it("declares itself, so its calls can be told apart from real agents in the analytics", () => {
     const request = consoleRequest(mcpCopy.presets[0], 1) as { params: { _meta: Record<string, { name?: string }> } };
     expect(request.params._meta[META.clientInfo]?.name).toBe(CONSOLE_CLIENT);
+  });
+
+  it("is recorded by the endpoint's analytics under the console's own name", () => {
+    for (const preset of mcpCopy.presets) {
+      const row = mcpCallProperties(consoleRequest(preset, 1), 200);
+      expect(row?.properties.client, preset.id).toBe(CONSOLE_CLIENT);
+    }
   });
 });
 
