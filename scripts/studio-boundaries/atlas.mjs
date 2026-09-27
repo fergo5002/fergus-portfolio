@@ -30,19 +30,31 @@ export default [
       // A short window, so the page is long enough to scroll the whole map away.
       const size = page.viewportSize();
       await page.setViewportSize({ width: size.width, height: 420 });
-      await page.evaluate(() => {
-        const r = document.querySelector(".atlas-canvas").getBoundingClientRect();
-        window.scrollTo(0, window.scrollY + r.bottom + 40);
-      });
-      await page.waitForTimeout(500);
-      const off = await page.evaluate(() => document.querySelector(".atlas-canvas").getBoundingClientRect().bottom);
-      assert(off < 0, `the map is off screen (${off})`);
-      const gone = await canvasInk(page, ".atlas-ghost");
-      await page.waitForTimeout(700);
-      const still = await canvasInk(page, ".atlas-ghost");
-      assert.equal(gone.sum, still.sum, "off screen the map costs nothing");
-      await page.setViewportSize(size);
-      await page.evaluate(() => window.scrollTo(0, 0));
+      let still;
+      try {
+        // The page re-lays out for the shorter window and the smooth scroll
+        // settles; ask again until the map is really gone, for up to 3s.
+        await page.waitForTimeout(300);
+        await page.waitForFunction(
+          () => {
+            const r = document.querySelector(".atlas-canvas").getBoundingClientRect();
+            if (r.bottom < 0) return true;
+            window.scrollTo(0, window.scrollY + r.bottom + 40);
+            return false;
+          },
+          {},
+          { timeout: 3000, polling: 250 },
+        );
+        await page.waitForTimeout(400);
+        const gone = await canvasInk(page, ".atlas-ghost");
+        await page.waitForTimeout(700);
+        still = await canvasInk(page, ".atlas-ghost");
+        assert.equal(gone.sum, still.sum, "off screen the map costs nothing");
+      } finally {
+        // Whatever happened, the next check gets the window it expects.
+        await page.setViewportSize(size);
+        await page.evaluate(() => window.scrollTo(0, 0));
+      }
       await page.waitForTimeout(700);
       assert.notEqual((await canvasInk(page, ".atlas-ghost")).sum, still.sum, "back on screen the beam walks again");
       return { ghostPixels: one.lit };
@@ -64,9 +76,13 @@ export default [
       assert(scrolled > top + 100, `an unchosen map lets the wheel scroll the page (${top} to ${scrolled})`);
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.waitForTimeout(600);
-      // A click on empty map gives it focus, and then the wheel zooms it instead.
+      // A click on empty map gives it focus, and then the wheel zooms it
+      // instead. Top left, just under the reading band: inside the margin a
+      // fitted map always leaves, so the click cannot land on a node.
       const again = await canvas.boundingBox();
-      await page.mouse.click(again.x + 30, again.y + again.height - 30);
+      const band = await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector(".atlas-graph")).getPropertyValue("--atlas-osd")));
+      await page.mouse.click(again.x + 12, again.y + band + 8);
+      assert.equal(await page.locator(".atlas-inspector").count(), 0, "the click chose nothing");
       const before = await canvasInk(page);
       const from = await page.evaluate(() => window.scrollY);
       await page.mouse.move(again.x + again.width / 2, again.y + again.height / 2);
@@ -75,18 +91,21 @@ export default [
       assert.equal(await page.evaluate(() => window.scrollY), from, "a chosen map keeps the wheel");
       assert.notEqual((await canvasInk(page)).sum, before.sum, "and zooms");
       await page.keyboard.press("0");
+      await page.keyboard.press("Escape");
       await page.evaluate(() => document.activeElement?.blur());
+      await page.mouse.move(2, 2);
     },
   ],
   [
     "pointing-and-dragging",
-    async ({ page, assert }) => {
+    async ({ page, out, assert }) => {
       await page.evaluate(() => window.scrollTo(0, 0));
       // Off the map, so nothing is pointed at and every dot is at full ink.
       await page.mouse.move(2, 2);
-      await page.waitForTimeout(400);
+      await page.waitForTimeout(700);
       const node = await aNode(page);
-      assert(node, "found a node");
+      if (!node) await page.locator(".atlas-stage").screenshot({ path: resolve(out, "atlas-no-node.png") });
+      assert(node, `found a node (inspector open: ${await page.locator(".atlas-inspector").count()}, reading: ${await page.locator(".atlas-reading").textContent()})`);
       await page.mouse.move(node.x, node.y);
       await page.waitForFunction(() => / · md · \d+ connections?$/.test(document.querySelector(".atlas-reading")?.textContent ?? ""));
       // Drag it: the node follows, the ghost shows where it has been.
@@ -98,9 +117,12 @@ export default [
       const trail = await canvasInk(page, ".atlas-ghost");
       await page.mouse.up();
       assert(trail.lit > 200, "a dragged node leaves a phosphor trail");
-      // A press without a drag chooses: the inspector slides in.
+      // A press without a drag chooses: the inspector slides in. The mouse
+      // leaves first, or the node under it dims every other dot.
+      await page.mouse.move(2, 2);
       await page.waitForTimeout(600);
       const moved = await aNode(page);
+      assert(moved, "found a node after the drag");
       await page.mouse.click(moved.x, moved.y);
       await page.locator(".atlas-inspector").waitFor();
       await page.keyboard.press("Escape");
