@@ -1,3 +1,9 @@
+/**
+ * The machine's version, as the BIOS prints it on a cold boot. Bumped to 6.0
+ * with the 2026-09 redesign. One place, so the next bump is one line.
+ */
+export const SYSTEM_VERSION = "6.0";
+
 /** Labels for the controls built into the tube. */
 export const machineCopy = {
   controls: "Machine controls",

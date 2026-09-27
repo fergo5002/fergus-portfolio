@@ -38,15 +38,17 @@
  * it wraps does the same, as does an `error.tsx` boundary or Fast Refresh.
  */
 
+import { SYSTEM_VERSION } from "@/content/machine";
+
 export const HEAD_LINES = [
-  "FergusOS BIOS v5.0   (c) 2026 Patrick Fergus O'Reilly",
+  `FergusOS BIOS v${SYSTEM_VERSION}   (c) 2026 Patrick Fergus O'Reilly`,
   "CPU: Trinity CS/Business @ 1.1 GHz · 3rd year, 2 cores",
   "VIDEO: 15.625 kHz phosphor tube · aperture grille · 8 MB",
 ] as const;
 
 export const DEVICE_LINES = [
   "detecting  /dev/ambition .............. OK",
-  "mounting   /usr/presterly ............. OK",
+  "mounting   /usr/tighsauna ............. OK",
   "loading    personality.dll ............ OK",
   "calibrating magnetic deflection ....... OK",
   "arming     gravity well ............... OK",
@@ -137,7 +139,7 @@ export const FULL_BOOT: BootProfile = {
  */
 export const PHONE_BOOT: BootProfile = {
   headLines: [HEAD_LINES[0]],
-  deviceLines: [DEVICE_LINES[0], DEVICE_LINES[2], DEVICE_LINES[5]],
+  deviceLines: [DEVICE_LINES[1], DEVICE_LINES[2], DEVICE_LINES[5]],
   strikeMs: 420,
   headSpeedMs: 14,
   deviceSpeedMs: 9,

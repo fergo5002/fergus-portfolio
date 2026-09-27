@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { SYSTEM_VERSION } from "@/content/machine";
 import {
   BOOTING_CLASS,
   BOOT_FAILSAFE_HANDLE,
@@ -479,5 +480,37 @@ describe("the phone boot (Fergus, 2026-09-06, lengthened 2026-09-13)", () => {
     const source = readFileSync(join(process.cwd(), "components", "BootSequence.tsx"), "utf8");
     expect(source).toContain("pickBootProfile(");
     expect(source).not.toMatch(/lines=\{\[\.\.\.HEAD_LINES\]\}/);
+  });
+});
+
+/**
+ * Presterly was wound down in August 2026 and Tigh Sauna is the company now.
+ * Fergus asked for the mount line to say so (2026-09-27). Every line any
+ * profile can type is checked, not just the one that changed, because the
+ * retired name reaching a visitor through a different line is the same bug.
+ */
+describe("the boot mounts Tigh Sauna, not Presterly (Fergus, 2026-09-27)", () => {
+  const everyLine = [...HEAD_LINES, ...DEVICE_LINES, ...PHONE_BOOT.headLines, ...PHONE_BOOT.deviceLines];
+
+  it("mounts /usr/tighsauna", () => {
+    expect(DEVICE_LINES.some((line) => line.includes("/usr/tighsauna"))).toBe(true);
+  });
+
+  it("never types the retired name, in any case", () => {
+    for (const line of everyLine) expect(line.toLowerCase()).not.toContain("presterly");
+  });
+
+  it("says it on a phone too, where the old line was never typed", () => {
+    expect(PHONE_BOOT.deviceLines.some((line) => line.includes("/usr/tighsauna"))).toBe(true);
+  });
+
+  it("keeps the leader column: the new line ends where its neighbours do", () => {
+    const tigh = DEVICE_LINES.find((line) => line.includes("/usr/tighsauna"))!;
+    expect(tigh.indexOf(" OK")).toBe(DEVICE_LINES[0].indexOf(" OK"));
+  });
+
+  it("reads the version from the machine's own copy", () => {
+    expect(SYSTEM_VERSION).toBe("6.0");
+    expect(HEAD_LINES[0].startsWith(`FergusOS BIOS v${SYSTEM_VERSION} `)).toBe(true);
   });
 });
