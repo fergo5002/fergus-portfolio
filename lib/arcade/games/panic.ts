@@ -104,6 +104,16 @@ export const SPAWN_Y = 78;
 export const DUMP_TIME = 2.6;
 /** Every this many clean kills in a row earns a sudo. */
 export const SUDO_EVERY = 12;
+
+/**
+ * The combo meter: progress towards the next sudo, full exactly when one is
+ * owed and starting again after it. It used to sit full from the first sudo
+ * on, so a player could not see the next one coming (code review, 2026-09-27).
+ */
+export function sudoProgress(chain: number): number {
+  if (chain <= 0) return 0;
+  return (((chain - 1) % SUDO_EVERY) + 1) / SUDO_EVERY;
+}
 /** How far a wrong letter jolts the locked process towards the kernel. */
 export const LURCH = 8;
 /** How far each right letter knocks the process back up. */
@@ -559,7 +569,7 @@ export const panic: GameModule<PanicState> = {
     return {
       lives: { current: Math.max(0, s.integrity), max: KERNEL_INTEGRITY, icon: "core" },
       stage: { label: "WAVE", value: s.wave },
-      meter: { label: `COMBO x${multiplier(s)}`, value: Math.min(1, s.chain / SUDO_EVERY), ready: 9 / SUDO_EVERY },
+      meter: { label: `COMBO x${multiplier(s)}`, value: sudoProgress(s.chain), ready: 9 / SUDO_EVERY },
     };
   },
 

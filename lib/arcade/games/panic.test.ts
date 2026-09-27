@@ -163,7 +163,9 @@ describe("Kernel Panic: targeting", () => {
     expect(multiplier(s)).toBe(4);
     const hud = gameHud(s);
     expect(hud.meter?.label).toContain("x4");
-    expect(hud.meter?.value).toBe(1);
+    // 40 clean kills is 4 of 12 towards the next sudo; the meter used to sit
+    // full here from the first sudo on (code review, 2026-09-27).
+    expect(hud.meter?.value).toBeCloseTo(4 / SUDO_EVERY, 10);
     s.chain = 6;
     put(s, "top", 200);
     type(s, "top");
@@ -497,5 +499,18 @@ describe("Kernel Panic: the touch profile", () => {
       type(s, name);
       expect(s.kills, name).toBe(1);
     }
+  });
+});
+
+describe("the combo meter counts towards the next sudo (code review, 2026-09-27)", () => {
+  it("fills to each sudo and starts again after it, rather than sitting full", () => {
+    const s = createGame("panic", 7) as { chain: number };
+    const at = (chain: number) => { s.chain = chain; return gameHud(s as never).meter!.value; };
+    expect(at(0)).toBe(0);
+    expect(at(6)).toBeCloseTo(6 / SUDO_EVERY, 10);
+    expect(at(SUDO_EVERY)).toBe(1);
+    expect(at(SUDO_EVERY + 1)).toBeCloseTo(1 / SUDO_EVERY, 10);
+    expect(at(2 * SUDO_EVERY - 1)).toBeCloseTo((SUDO_EVERY - 1) / SUDO_EVERY, 10);
+    expect(at(2 * SUDO_EVERY)).toBe(1);
   });
 });

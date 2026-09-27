@@ -1,3 +1,4 @@
+import { groupDigits } from "./board";
 import { box, circle, glowText, line, polygon, roundRect, text, type Pen } from "./draw/kit";
 import type { Banner, Hud } from "./games/types";
 import type { Rect, Stage } from "./layout";
@@ -47,11 +48,6 @@ export function capLit(spec: KeySpec, index: number, lit: ReadonlyMap<string, nu
 /** A score as an arcade prints it: six digits, zero-padded. */
 export function scoreDigits(n: number): string {
   return String(Math.max(0, Math.floor(n))).padStart(6, "0");
-}
-
-/** Thousands separators, the same on every platform. */
-function grouped(n: number): string {
-  return String(Math.max(0, Math.floor(n))).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
 /* ── the HUD ─────────────────────────────────────────────────────────────── */
@@ -296,7 +292,7 @@ export function drawCard(pen: Pen, stage: Stage, run: Run, face: CabinetFace, wo
     drawDemo(pen, demo.rect, words, drawDemoWorld);
     if (run.best > 0) {
       text(pen, words.best, 680, 330, 12, p.accent, "center");
-      text(pen, grouped(run.best), 680, 364, 36, p.ink, "center", true);
+      text(pen, groupDigits(run.best), 680, 364, 36, p.ink, "center", true);
     }
     if (blinkOn) glowText(pen, start, 680, 464, 58, p.bright, p.brightGlow);
     if (!touch) text(pen, words.orEnter, 680, 492, 13, p.dim, "center");
@@ -351,7 +347,7 @@ export function drawGameOver(pen: Pen, stage: Stage, run: Run, face: CabinetFace
   const tally = Math.min(1, Math.max(0, (t - 0.3) / 0.9));
   const shown = Math.round(run.game.score * (1 - (1 - tally) ** 3));
   text(pen, words.finalScore, cx, cy + 4 * k, 13 * k, p.accent, "center");
-  glowText(pen, grouped(shown), cx, cy + 86 * k, 96 * k, p.bright, p.brightGlow);
+  glowText(pen, groupDigits(shown), cx, cy + 86 * k, 96 * k, p.bright, p.brightGlow);
   if (hud.stage) text(pen, `${words.reached} ${hud.stage.label} ${String(hud.stage.value).padStart(2, "0")}`, cx, cy + 124 * k, 15 * k, p.ink, "center");
   if (isNewBest(run) && tally >= 1 && (t * 1.25) % 1 < 0.7) {
     glowText(pen, words.newBest, cx, cy + 176 * k, 46 * k, p.accent, p.accentGlow);

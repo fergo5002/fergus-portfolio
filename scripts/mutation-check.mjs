@@ -1567,6 +1567,13 @@ const MUTATIONS = [
     tests: "lib/arcade/games/panic.test.ts",
   })),
   {
+    name: "kernel panic: the combo meter sits full from the first sudo on",
+    file: "lib/arcade/games/panic.ts",
+    pattern: /return \(\(\(chain - 1\) % SUDO_EVERY\) \+ 1\) \/ SUDO_EVERY;/,
+    replace: "return Math.min(1, chain / SUDO_EVERY);",
+    tests: "lib/arcade/games/panic.test.ts",
+  },
+  {
     name: "kernel panic: the room stops passing a coarse pointer as the touch profile",
     file: "components/arcade/CanvasGame.tsx",
     pattern: /touch: window\.matchMedia\("\(pointer: coarse\)"\)\.matches/,

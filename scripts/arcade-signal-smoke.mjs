@@ -46,7 +46,7 @@ export async function moveUntilScored(page, { touch = false, seconds = 45 } = {}
 }
 
 /** Stands still and requires the score not to move: the beam is dark. Returns the score it held at. */
-export async function stillScoresNothing(page, { settle = 3000, watch = 5000, steady = 4, cap = 30_000 } = {}) {
+export async function stillScoresNothing(page, { settle = 3000, watch = 5000, steady = 3, cap = 30_000 } = {}) {
   await page.waitForTimeout(settle);
   // Then wait until the score has held for `steady` readings a second apart.
   // Game time here runs at a quarter of wall time or slower, so a shot fired
@@ -62,10 +62,17 @@ export async function stillScoresNothing(page, { settle = 3000, watch = 5000, st
     held = now === last ? held + 1 : 0;
     last = now;
   }
+  // A run that has ended or paused also scores nothing, and would pass for a
+  // dark beam. The watch counts only while the run is in play (code review,
+  // 2026-09-27).
+  const inPlay = () =>
+    page.evaluate(() => document.querySelector(".arcade-play")?.dataset.phase === "play" && !document.querySelector(".arcade-pause"));
+  if (!(await inPlay())) throw new Error("signal smoke: the run was not in play before the still watch, so it proves nothing");
   const before = await statusPoints(page);
   await page.waitForTimeout(watch);
   const after = await statusPoints(page);
   if (before === null || after === null) throw new Error("signal smoke: the status line has no points to read");
+  if (!(await inPlay())) throw new Error("signal smoke: the run ended or paused during the still watch, so it proves nothing");
   if (after !== before) throw new Error(`signal smoke: standing still scored (${before} to ${after}), so the beam fired without a move`);
   return after;
 }
