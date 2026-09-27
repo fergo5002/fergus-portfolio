@@ -1,0 +1,359 @@
+/* ============================================================================
+   THE MONITOR'S HARDWARE (2026-09-27)
+   The controls set into the chin of the ejected monitor. The plastic, the
+   recess they sit in, the grille and the power LED are drawn by the shader
+   (the room pass in PhosphorScreen); these are the real controls on top of it,
+   placed from the same layout in lib/eject.ts and moved with the monitor by one
+   transform a frame from EjectHardware. Fixed outside the scaled assembly, so
+   nothing here is squashed by the power switch or scaled by the pull-back.
+
+   Every size is written against `--u`, the hardware's scale from the layout:
+   1 on a phone, where each control is exactly the 44px the layout gives it,
+   and more on a large monitor. No colour of its own beyond the plastic, which
+   is the shader's own vec3(0.072, 0.070, 0.066); everything lit is a theme
+   token, so the paint follows the phosphor the way the bezel's edge does.
+   ========================================================================== */
+.ejhw {
+  --u: 1;
+  --plastic: #121211;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  transform-origin: 0 0;
+  will-change: transform;
+  pointer-events: none;
+  font-family: var(--font-body);
+  color: var(--green-faint);
+  text-shadow: none;
+}
+
+html:not(.is-ejecting) .ejhw {
+  display: none;
+}
+
+/* Each control: its target on top, its printed name underneath. */
+.ejhw__ctl {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ejhw__name {
+  display: block;
+  height: calc(13px * var(--u));
+  font-size: calc(10px * var(--u));
+  line-height: calc(13px * var(--u));
+  letter-spacing: 0.04em;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--green-faint);
+}
+
+.ejhw__ctl:has(:focus-visible),
+.ejhw__btn:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+  border-radius: calc(6px * var(--u));
+}
+
+/* ----- knobs ------------------------------------------------------------- */
+.ejhw__knob {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+.ejhw__knob:active {
+  cursor: grabbing;
+}
+
+/* The cap: a knurled plastic knob lit from above. It stays still; only the
+   pointer line on it turns, so the light on it does not turn with it. */
+.ejhw__cap {
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 28%, rgb(255 255 255 / 0.13), rgb(255 255 255 / 0) 58%),
+    repeating-conic-gradient(rgb(255 255 255 / 0.045) 0deg 6deg, rgb(255 255 255 / 0) 6deg 12deg),
+    radial-gradient(circle, color-mix(in srgb, var(--plastic) 80%, #fff 6%) 0 62%, var(--plastic) 100%);
+  box-shadow:
+    0 calc(2px * var(--u)) calc(4px * var(--u)) rgb(0 0 0 / 0.75),
+    0 0 0 1px rgb(0 0 0 / 0.65),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+.ejhw__cap::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: linear-gradient(var(--green), var(--green)) 50% 10% / calc(2px * var(--u)) 34% no-repeat;
+  filter: drop-shadow(0 0 calc(2px * var(--u)) var(--green));
+  transform: rotate(var(--turn));
+}
+
+/* The detents printed round each knob. The one it sits on is lit. */
+.ejhw__tick {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(2px * var(--u));
+  height: calc(3px * var(--u));
+  margin: calc(-1.5px * var(--u)) 0 0 calc(-1px * var(--u));
+  border-radius: 1px;
+  background: var(--tick, var(--green-line));
+  opacity: 0.8;
+  transform: rotate(var(--at)) translateY(calc(-19.5px * var(--u)));
+}
+.ejhw__tick[data-lit="true"] {
+  background: var(--tick, var(--green));
+  opacity: 1;
+  box-shadow: 0 0 calc(4px * var(--u)) var(--tick, var(--green));
+}
+/* The colour knob's detents are the three phosphors themselves, so they are
+   pips rather than lines, and the unlit ones are only dimmed. */
+.ejhw__ctl--colour .ejhw__tick {
+  width: calc(4px * var(--u));
+  height: calc(4px * var(--u));
+  margin: calc(-2px * var(--u)) 0 0 calc(-2px * var(--u));
+  border-radius: 50%;
+  opacity: 0.45;
+}
+.ejhw__ctl--colour .ejhw__tick[data-lit="true"] {
+  opacity: 1;
+}
+
+/* Under the cap, where the keyboard and a screen reader find it. Invisible and
+   untouchable by a pointer, which the cap handles, but focusable and named. */
+.ejhw__range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* ----- switches ---------------------------------------------------------- */
+.ejhw__btn {
+  cursor: pointer;
+}
+.ejhw__switch {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 100%;
+}
+.ejhw__face {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(28px * var(--u));
+  height: calc(16px * var(--u));
+  border-radius: calc(3px * var(--u));
+  background: linear-gradient(color-mix(in srgb, var(--plastic) 80%, #fff 7%), var(--plastic));
+  box-shadow:
+    0 calc(2px * var(--u)) 0 rgb(0 0 0 / 0.85),
+    0 calc(3px * var(--u)) calc(5px * var(--u)) rgb(0 0 0 / 0.6),
+    inset 0 1px 0 rgb(255 255 255 / 0.09);
+  transform: translate(-50%, -50%);
+}
+.ejhw__btn:active .ejhw__face {
+  transform: translate(-50%, calc(-50% + 2px * var(--u)));
+  box-shadow:
+    0 0 0 rgb(0 0 0 / 0.85),
+    0 1px calc(2px * var(--u)) rgb(0 0 0 / 0.6),
+    inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+/* Degauss: a slim bar across its face, like the ones on the side of a set. */
+.ejhw__btn--degauss .ejhw__face::after {
+  content: "";
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  top: 50%;
+  height: 1px;
+  background: var(--green-line);
+}
+
+/* Power: round, latching in while the set is on, with the switch's symbol. */
+.ejhw__btn--power .ejhw__face {
+  width: calc(24px * var(--u));
+  height: calc(24px * var(--u));
+  border-radius: 50%;
+}
+.ejhw__btn--power[aria-pressed="true"] .ejhw__face {
+  transform: translate(-50%, calc(-50% + 1px * var(--u)));
+  box-shadow:
+    0 calc(1px * var(--u)) 0 rgb(0 0 0 / 0.85),
+    0 calc(2px * var(--u)) calc(3px * var(--u)) rgb(0 0 0 / 0.6),
+    inset 0 1px 0 rgb(255 255 255 / 0.07);
+}
+.ejhw__btn--power .ejhw__face::before,
+.ejhw__btn--power .ejhw__face::after {
+  content: "";
+  position: absolute;
+}
+.ejhw__btn--power .ejhw__face::before {
+  inset: 30%;
+  border: calc(1.5px * var(--u)) solid var(--green-faint);
+  border-top-color: transparent;
+  border-radius: 50%;
+}
+.ejhw__btn--power .ejhw__face::after {
+  left: 50%;
+  top: 24%;
+  width: calc(1.5px * var(--u));
+  height: 30%;
+  margin-left: calc(-0.75px * var(--u));
+  background: var(--green-faint);
+}
+
+/* ----- the badge --------------------------------------------------------- */
+.ejhw__badge {
+  position: absolute;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: calc(6px * var(--u));
+  padding-top: calc(3px * var(--u));
+  border-radius: calc(3px * var(--u));
+  background: linear-gradient(color-mix(in srgb, var(--plastic) 85%, #fff 5%), var(--plastic));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.07),
+    inset 0 -1px 0 rgb(0 0 0 / 0.6),
+    0 0 0 1px rgb(0 0 0 / 0.55);
+  font-family: var(--font-screen);
+  font-size: calc(18px * var(--u));
+  line-height: 1;
+  letter-spacing: 0.03em;
+  color: var(--green-faint);
+  pointer-events: none;
+  user-select: none;
+}
+.ejhw__model {
+  font-family: var(--font-body);
+  font-size: calc(9px * var(--u));
+  letter-spacing: 0.06em;
+  opacity: 0.8;
+}
+
+/* ----- the on-screen display ----------------------------------------------
+   What a set printed over the picture when you turned a knob, drawn by the
+   tube itself: inside the assembly, under the glass and the scanlines. */
+.ejosd {
+  position: absolute;
+  top: calc(var(--nav-h) + var(--sp-4));
+  right: var(--sp-5);
+  z-index: 8980;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--sp-2);
+  font-family: var(--font-screen);
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--green);
+  text-shadow: var(--glow);
+  white-space: pre;
+  pointer-events: none;
+  animation: ejosd-hold 1.9s linear forwards;
+}
+.ejosd__bar {
+  position: relative;
+  display: block;
+  width: 10em;
+  height: 0.42em;
+  background: repeating-linear-gradient(90deg, var(--green-line) 0 0.8em, transparent 0.8em 1em);
+}
+.ejosd__bar > span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: repeating-linear-gradient(90deg, var(--green) 0 0.8em, transparent 0.8em 1em);
+}
+@keyframes ejosd-hold {
+  0%,
+  86% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* ----- degauss -------------------------------------------------------------
+   The shader rings the picture out from the centre; this is the rest of what
+   a real degauss does: the colour swims and the picture shudders, briefly.
+   `filter` on the assembly and `translate` on the screen, because both carry
+   a transform written every frame and an animated `transform` would replace
+   it. Gated like every animation on the site, though eject itself is never
+   offered under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .ejhw__cap::after {
+    transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .ejhw__face {
+    transition: transform 70ms ease-out, box-shadow 70ms ease-out;
+  }
+  html.is-ejecting .crt__assembly.is-degaussing {
+    animation: eject-degauss-colour 900ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+  html.is-ejecting .crt__assembly.is-degaussing .crt__screen {
+    animation: eject-degauss-shudder 900ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  }
+}
+@keyframes eject-degauss-colour {
+  0% {
+    filter: none;
+  }
+  12% {
+    filter: hue-rotate(70deg) saturate(1.6);
+  }
+  30% {
+    filter: hue-rotate(-48deg) saturate(1.4);
+  }
+  50% {
+    filter: hue-rotate(26deg) saturate(1.2);
+  }
+  72% {
+    filter: hue-rotate(-10deg);
+  }
+  100% {
+    filter: none;
+  }
+}
+@keyframes eject-degauss-shudder {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  12% {
+    translate: 6px -3px;
+  }
+  30% {
+    translate: -5px 2px;
+  }
+  50% {
+    translate: 3px -1px;
+  }
+  72% {
+    translate: -1px 0;
+  }
+}
