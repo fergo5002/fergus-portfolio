@@ -51,6 +51,13 @@ export function impactFalloff(ageMs: number): number {
 /** How many impacts the shader is willing to light in one frame. */
 export const MAX_FRAME_IMPACTS = 6;
 
+/**
+ * How many points of beam path the sim pass reads in one frame: enough for a
+ * frame's sweep to turn several corners, few enough to loop over per pixel.
+ * `lib/beam.ts` is the only thing that should write the beam fields.
+ */
+export const MAX_BEAM_POINTS = 8;
+
 /** Per-frame values. Mutated in place; never cloned, never set into state. */
 export type SystemFrame = {
   /** Pointer in 0..1 viewport space. */
@@ -103,6 +110,18 @@ export type SystemFrame = {
   /** 0..1 power-on ramp, driving the shader's turn-on line and vertical roll. */
   boot: number;
   bootTarget: number;
+  /**
+   * The electron beam, for anything that draws with it rather than with the
+   * page: the polyline it swept since the phosphor last read it, as flat x,y
+   * pairs in 0..1 viewport space with y down (`MAX_BEAM_POINTS` pairs), how many
+   * of those points are live (0 is off), and how much light to lay down along
+   * them this time, frame-rate normalisation already applied. The sim pass
+   * deposits a capsule of energy along the path and then clears it, so it
+   * decays like every other emitter. Write it through `lib/beam.ts`.
+   */
+  beamPts: number[];
+  beamCount: number;
+  beamGain: number;
 };
 
 export function createSystemFrame(): SystemFrame {
@@ -130,6 +149,9 @@ export function createSystemFrame(): SystemFrame {
     impacts: [],
     boot: 1,
     bootTarget: 1,
+    beamPts: new Array(MAX_BEAM_POINTS * 2).fill(0),
+    beamCount: 0,
+    beamGain: 0,
   };
 }
 

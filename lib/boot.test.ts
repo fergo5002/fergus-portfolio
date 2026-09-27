@@ -1,28 +1,33 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { SYSTEM_VERSION } from "@/content/machine";
+import { typingDuration } from "@/lib/arcade/bios";
 import {
   BOOTING_CLASS,
   BOOT_FAILSAFE_HANDLE,
   BOOT_FAILSAFE_MS,
   BOOT_FLOOR_MS,
+  BOOT_PHASES,
   BOOT_REARM_MS,
   BOOT_WATCHDOG_MS,
   DEVICE_LINES,
-  DEVICE_SPEED_MS,
   HEAD_LINES,
-  HEAD_SPEED_MS,
+  MEMORY_K,
   SESSION_KEY,
   SETTINGS_KEY,
+  STRIKE_FADE_MS,
   armBootFailsafe,
   bootInlineScript,
+  bootPhases,
+  bootTimeline,
   disarmBootFailsafe,
-  typewriterMs,
   FULL_BOOT,
   PHONE_BOOT,
   bootFloorMs,
   pickBootProfile,
 } from "./boot";
+import type { BootProfile, BootSnapshot } from "./boot";
 
 /**
  * Runs the real inline script against a stub DOM.
@@ -128,51 +133,114 @@ function withStubbedGlobals<T>(state: BootState, fn: () => T): T {
 /** The handle currently parked on the stub window, or 0/undefined. */
 const handleOf = (state: BootState) => state.win[BOOT_FAILSAFE_HANDLE] as number | undefined;
 
-describe("typewriterMs", () => {
-  /**
-   * Models the SCHEDULER, not the formula.
-   *
-   * An earlier version of this helper added `speed` before its terminating
-   * check, which made it algebraically identical to `typewriterMs` and therefore
-   * incapable of ever disagreeing with it. Both carried the same off-by-one: the
-   * first tick is scheduled with `startDelay`, not with `speed`
-   * (components/Typewriter.tsx), so a T-tick run finishes at
-   * `startDelay + (T-1) * speed`.
-   *
-   * The variable here is the clock, and it only advances between ticks.
-   */
-  function simulate(lines: readonly string[], speed: number, startDelay = 0): number {
-    let li = 0;
-    let ci = 0;
-    let t = startDelay; // when the first tick fires
-    for (;;) {
-      if (li >= lines.length) return t; // this is the tick that calls onDone
-      if (ci < lines[li].length) ci += 1;
-      else {
-        li += 1;
-        ci = 0;
-      }
-      t += speed; // the next tick is scheduled `speed` later
-    }
+/** The brace-matched body after `opener`, so a grep can be held to one function. */
+function block(source: string, opener: string): string {
+  const at = source.indexOf(opener);
+  if (at < 0) throw new Error(`block not found: ${opener}`);
+  const open = source.indexOf("{", at);
+  let depth = 0;
+  for (let i = open; i < source.length; i++) {
+    if (source[i] === "{") depth++;
+    else if (source[i] === "}" && --depth === 0) return source.slice(open + 1, i);
   }
+  throw new Error(`unterminated block: ${opener}`);
+}
 
-  it("agrees with a simulation of the component's scheduler", () => {
-    expect(typewriterMs(HEAD_LINES, HEAD_SPEED_MS)).toBe(simulate(HEAD_LINES, HEAD_SPEED_MS));
-    expect(typewriterMs(DEVICE_LINES, DEVICE_SPEED_MS)).toBe(
-      simulate(DEVICE_LINES, DEVICE_SPEED_MS),
+/**
+ * The sequence as a pure function of elapsed time.
+ *
+ * It used to be a chain of about 430 `setTimeout` ticks plus two rAF loops of
+ * its own. Measured on 2026-09-27 against production in headless Chromium with
+ * software WebGL: the header had typed 52 characters after nine seconds, one a
+ * second or so, because every tick waited behind a 150ms shader frame. With a
+ * real GPU the same page booted in about eight. A timeline read off the one
+ * frame clock lands the same words at the same moment on both, and a tab that
+ * comes back from the background catches up instead of crawling.
+ */
+describe("bootTimeline", () => {
+  const PROFILES: [string, BootProfile][] = [["full", FULL_BOOT], ["phone", PHONE_BOOT]];
+  /** The fields that must never go backwards. `phase` is covered by `step`. */
+  const FORWARD: (keyof BootSnapshot)[] = [
+    "step", "headChars", "memoryK", "postMs", "deviceChars", "trace", "collapse",
+  ];
+
+  it.each(PROFILES)("only ever moves forward (%s)", (_name, profile) => {
+    const floor = bootFloorMs(profile);
+    let prev = bootTimeline(profile, -50);
+    for (let e = -49; e <= floor + 300; e++) {
+      const next = bootTimeline(profile, e);
+      for (const key of FORWARD) {
+        expect(next[key] as number, `${key} at ${e}ms`).toBeGreaterThanOrEqual(prev[key] as number);
+      }
+      if (prev.done) expect(next.done, `done went false at ${e}ms`).toBe(true);
+      prev = next;
+    }
+  });
+
+  it.each(PROFILES)("finishes exactly at the profile's floor (%s)", (_name, profile) => {
+    const floor = bootFloorMs(profile);
+    expect(bootTimeline(profile, floor - 1).done).toBe(false);
+    expect(bootTimeline(profile, floor - 1).phase).toBe("collapse");
+    expect(bootTimeline(profile, floor).done).toBe(true);
+    expect(bootTimeline(profile, floor).phase).toBe("done");
+    // And stays there, however late the frame that notices.
+    expect(bootTimeline(profile, floor + 60_000).done).toBe(true);
+  });
+
+  it.each(PROFILES)("visits every phase in order and nothing twice (%s)", (_name, profile) => {
+    const seen: string[] = [];
+    for (let e = 0; e <= bootFloorMs(profile); e++) {
+      const { phase } = bootTimeline(profile, e);
+      if (seen[seen.length - 1] !== phase) seen.push(phase);
+    }
+    // A zero-length phase (the phone has no memory test) is simply skipped.
+    const expected = BOOT_PHASES.filter((p) => {
+      const span = bootPhases(profile).find((s) => s.phase === p);
+      return p === "done" || (span && span.end > span.start);
+    });
+    expect(seen).toEqual(expected);
+  });
+
+  it.each(PROFILES)("has typed every line, counted all memory and drawn the whole mark by the end (%s)", (_name, profile) => {
+    const end = bootTimeline(profile, bootFloorMs(profile));
+    expect(end.headChars).toBe(profile.headLines.join("").length);
+    expect(end.deviceChars).toBe(profile.deviceLines.join("").length);
+    expect(end.memoryK).toBe(profile.memoryMs > 0 ? MEMORY_K : 0);
+    expect(end.postMs).toBe(profile.postMs);
+    expect(end.trace).toBe(1);
+    expect(end.collapse).toBe(1);
+  });
+
+  it("types from the arcade BIOS helpers rather than a copy of them", () => {
+    // Elapsed-time typing already exists in lib/arcade/bios.ts. The head phase
+    // lasts exactly as long as that module says its lines take to type.
+    const head = bootPhases(FULL_BOOT).find((s) => s.phase === "head")!;
+    expect(head.end - head.start).toBe(
+      typingDuration(FULL_BOOT.headLines, FULL_BOOT.headSpeedMs, FULL_BOOT.headHoldMs),
     );
+    const src = readFileSync(join(process.cwd(), "lib", "boot.ts"), "utf8");
+    expect(src).toMatch(/from "@\/lib\/arcade\/bios"/);
+    expect(src).not.toMatch(/function typedCount|function typedText/);
   });
 
-  it("does not charge for the first tick", () => {
-    // "ab" at 10ms: 'a' at t=0, 'b' at t=10, line boundary at t=20, onDone at
-    // t=30. Four ticks, three gaps. Counting four gaps is the off-by-one.
-    expect(typewriterMs(["ab"], 10)).toBe(30);
-    expect(simulate(["ab"], 10)).toBe(30);
+  it("keeps the tube dark until the strike, then lets the line through", () => {
+    // Genuinely off: the cover is up for the whole of `off` and gone once the
+    // strike has faded in.
+    expect(bootTimeline(FULL_BOOT, 0).cover).toBe(1);
+    expect(bootTimeline(FULL_BOOT, FULL_BOOT.strikeMs - 1).cover).toBe(1);
+    expect(bootTimeline(FULL_BOOT, FULL_BOOT.strikeMs + STRIKE_FADE_MS).cover).toBe(0);
   });
 
-  it("honours a start delay", () => {
-    expect(typewriterMs(["ab"], 10, 500)).toBe(530);
-    expect(simulate(["ab"], 10, 500)).toBe(530);
+  it("blanks the screen for the mode switch and nowhere else after the strike", () => {
+    const phases = bootPhases(FULL_BOOT);
+    const sw = phases.find((s) => s.phase === "switch")!;
+    expect(bootTimeline(FULL_BOOT, sw.start).cover).toBe(1);
+    expect(bootTimeline(FULL_BOOT, sw.end - 1).cover).toBe(1);
+    for (const span of phases) {
+      if (span.phase === "off" || span.phase === "switch" || span.phase === "head") continue;
+      if (span.end <= span.start) continue;
+      expect(bootTimeline(FULL_BOOT, span.start).cover, span.phase).toBe(0);
+    }
   });
 });
 
@@ -180,14 +248,27 @@ describe("the boot timings", () => {
   it("keeps the floor honest", () => {
     // Not a magic number: recomputed from the parts so a change to any timing
     // constant shows up here too.
+    const p = FULL_BOOT;
     expect(BOOT_FLOOR_MS).toBe(
-      420 +
-        typewriterMs(HEAD_LINES, HEAD_SPEED_MS) +
-        900 +
-        typewriterMs(DEVICE_LINES, DEVICE_SPEED_MS) +
-        780 +
-        420,
+      p.strikeMs +
+        typingDuration(p.headLines, p.headSpeedMs, p.headHoldMs) +
+        p.memoryMs +
+        p.postMs +
+        typingDuration(p.deviceLines, p.deviceSpeedMs, p.deviceHoldMs) +
+        p.punchlineMs +
+        p.switchMs +
+        p.traceMs +
+        p.readyMs +
+        p.collapseMs,
     );
+  });
+
+  it("outlasts both floors with the watchdog, by a margin a slow machine can use", () => {
+    // The watchdog is the one timer that can cut a live sequence short. It must
+    // never be the thing that ends a healthy boot on either profile.
+    for (const profile of [FULL_BOOT, PHONE_BOOT]) {
+      expect(BOOT_WATCHDOG_MS).toBeGreaterThan(bootFloorMs(profile) * 2);
+    }
   });
 
   /**
@@ -422,6 +503,68 @@ describe("BootSequence is wired to the failsafe", () => {
     expect(src).toMatch(/classList\.remove\(BOOTING_CLASS\);\s*\n\s*setBooting\(false\);/);
   });
 
+  it("reads the one frame clock and never starts a loop of its own", () => {
+    // AGENTS.md: SystemProvider owns the only rAF loop. The old sequence ran
+    // two of its own plus about 430 chained timeouts.
+    expect(src).toMatch(/onFrame\(\(time\)/);
+    expect(src).not.toMatch(/requestAnimationFrame/);
+    expect(src).toMatch(/bootTimeline\(profile, /);
+  });
+
+  it("never sets state from inside the frame callback", () => {
+    // Text goes through refs and continuous values through CSS variables on
+    // the elements that use them. The one state change the sequence ends on,
+    // dropping the overlay, is handed to a timeout rather than made here.
+    const at = src.indexOf("onFrame((time)");
+    const body = block(src.slice(at), "=>");
+    expect(body.length).toBeGreaterThan(400);
+    expect(body).not.toMatch(/\bset(?!Property|Timeout|Attribute)[A-Z]\w*\(/);
+    expect(body).not.toMatch(/documentElement\.style/);
+    expect(body).toMatch(/setTimeout\(\(\) => finishRef\.current\(\), 0\)/);
+  });
+
+  it("never leaves the tube dark if it unmounts part-way", () => {
+    // The re-arm reveals the page a second later; a tube still switched off
+    // behind it would show the page on a black screen with no rain and no
+    // phosphor. The arcade entrance keeps the same rule for the same reason.
+    expect(src).toMatch(/if \(!finishedRef\.current\) \{[\s\S]{0,400}bootTarget = 1;[\s\S]{0,80}targetLive = 1;/);
+  });
+
+  it("remembers what it published per element, so the mark and the fold line both get --collapse", () => {
+    // A cache keyed by the variable's name alone skipped the fold line's
+    // writes, because the mark had always just written the same value: the
+    // fold stayed invisible on every boot. The paused-clock screenshots in
+    // scripts/boot-check.mjs are what caught it; this pins the shape.
+    expect(src).toMatch(/let seen = published\.get\(el\);/);
+    expect(src).toMatch(/publish\(foldRef\.current, "--collapse", snap\.collapse\)/);
+  });
+
+  it("keeps the overlay out of PostHog's autocapture", () => {
+    // Autocapture is on. A click that skips the boot lands on text that
+    // includes the visitor's own readings, and ph-no-capture on the overlay is
+    // what stops PostHog lifting that text into an event.
+    expect(src).toMatch(/className="boot ph-no-capture"/);
+  });
+
+  it("draws the mark with the beam through lib/beam.ts, and lets go of it", () => {
+    expect(src).toMatch(/writeBeam\(frame\.current, /);
+    expect(src).toMatch(/clearBeam\(/);
+  });
+
+  it("stores and sends none of the readings it takes", () => {
+    // Client-only, never stored, never sent. The one storage write is the boot
+    // marker, and it carries a constant.
+    const writes = [...src.matchAll(/(?:local|session)Storage\.setItem\(([^)]*)\)/g)].map((m) => m[1]);
+    expect(writes).toEqual(['SESSION_KEY, "1"']);
+    expect(src).not.toMatch(/fetch\(|sendBeacon|posthog/);
+  });
+
+  it("brings its own stylesheet and no longer needs the Typewriter", () => {
+    expect(src).toMatch(/import "\.\/boot\.css";/);
+    expect(src).not.toMatch(/Typewriter/);
+    expect(existsSync(join(process.cwd(), "components", "Typewriter.tsx"))).toBe(false);
+  });
+
   it("keeps the flourish from being able to strand the overlay", () => {
     // The adjacency above is the belt. This is the braces: whatever runs after
     // the reveal is wrapped, so a failure in decoration cannot take the page
@@ -459,7 +602,7 @@ describe("the phone boot (Fergus, 2026-09-06, lengthened 2026-09-13)", () => {
     expect(PHONE_BOOT.deviceLines.length).toBeLessThan(DEVICE_LINES.length);
   });
 
-  it("keeps the full boot's floor exactly where it was", () => {
+  it("defines BOOT_FLOOR_MS as the full profile's floor", () => {
     expect(bootFloorMs(FULL_BOOT)).toBe(BOOT_FLOOR_MS);
   });
 
@@ -479,5 +622,37 @@ describe("the phone boot (Fergus, 2026-09-06, lengthened 2026-09-13)", () => {
     const source = readFileSync(join(process.cwd(), "components", "BootSequence.tsx"), "utf8");
     expect(source).toContain("pickBootProfile(");
     expect(source).not.toMatch(/lines=\{\[\.\.\.HEAD_LINES\]\}/);
+  });
+});
+
+/**
+ * Presterly was wound down in August 2026 and Tigh Sauna is the company now.
+ * Fergus asked for the mount line to say so (2026-09-27). Every line any
+ * profile can type is checked, not just the one that changed, because the
+ * retired name reaching a visitor through a different line is the same bug.
+ */
+describe("the boot mounts Tigh Sauna, not Presterly (Fergus, 2026-09-27)", () => {
+  const everyLine = [...HEAD_LINES, ...DEVICE_LINES, ...PHONE_BOOT.headLines, ...PHONE_BOOT.deviceLines];
+
+  it("mounts /usr/tighsauna", () => {
+    expect(DEVICE_LINES.some((line) => line.includes("/usr/tighsauna"))).toBe(true);
+  });
+
+  it("never types the retired name, in any case", () => {
+    for (const line of everyLine) expect(line.toLowerCase()).not.toContain("presterly");
+  });
+
+  it("says it on a phone too, where the old line was never typed", () => {
+    expect(PHONE_BOOT.deviceLines.some((line) => line.includes("/usr/tighsauna"))).toBe(true);
+  });
+
+  it("keeps the leader column: the new line ends where its neighbours do", () => {
+    const tigh = DEVICE_LINES.find((line) => line.includes("/usr/tighsauna"))!;
+    expect(tigh.indexOf(" OK")).toBe(DEVICE_LINES[0].indexOf(" OK"));
+  });
+
+  it("reads the version from the machine's own copy", () => {
+    expect(SYSTEM_VERSION).toBe("6.0");
+    expect(HEAD_LINES[0].startsWith(`FergusOS BIOS v${SYSTEM_VERSION} `)).toBe(true);
   });
 });
