@@ -4,7 +4,9 @@ import PromptLine from "@/components/PromptLine";
 import Scramble from "@/components/Scramble";
 import JsonLd from "@/components/JsonLd";
 import Talk from "@/components/Talk";
+import ArticleFigure from "@/components/writing/ArticleFigure";
 import { articles, readingMinutes } from "@/content/articles";
+import "./writing.css";
 import { profile } from "@/content/profile";
 import { canonical, blogSchema, breadcrumbSchema, articlePath, OG_IMAGE } from "@/lib/seo";
 
@@ -56,17 +58,24 @@ export default function WritingPage() {
         <Scramble text="writing" speed={34} />
       </h1>
 
-      <ol className="writing__list">
+      {/* Each row: the piece's figure, its title, one line on what it argues,
+          and the date. The title link is stretched over the row by CSS so the
+          whole entry is the target, while its accessible name stays the title. */}
+      <ol className="writing__list writing__list--figured">
         {articles.map((article) => (
           <li key={article.slug} className="writing__item">
-            <Link href={articlePath(article.slug)} className="writing__link">
-              <h2 className="writing__title">{article.title}</h2>
-            </Link>
-            <p className="writing__meta">
-              <time dateTime={article.date}>{formatDate(article.date)}</time>
-              <span className="writing__dot" aria-hidden="true" />
-              {readingMinutes(article.body)} min read
-            </p>
+            <ArticleFigure slug={article.slug} />
+            <div className="writing__text">
+              <Link href={articlePath(article.slug)} className="writing__link">
+                <h2 className="writing__title">{article.title}</h2>
+              </Link>
+              <p className="writing__desc">{article.description}</p>
+              <p className="writing__meta">
+                <time dateTime={article.date}>{formatDate(article.date)}</time>
+                <span className="writing__dot" aria-hidden="true" />
+                {readingMinutes(article.body)} min read
+              </p>
+            </div>
           </li>
         ))}
       </ol>

@@ -1,0 +1,69 @@
+/* The writing index with a drawn figure per piece. The figure is complete at
+   rest and redraws itself when its row is hovered or focused. */
+
+.writing__list--figured .writing__item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+  border-left: 0;
+  padding: var(--sp-3);
+  margin: 0 calc(var(--sp-3) * -1);
+  border-radius: var(--radius);
+}
+.writing__list--figured .writing__item:hover,
+.writing__list--figured .writing__item:focus-within {
+  background: color-mix(in srgb, var(--green) 5%, transparent);
+}
+/* The whole row is the target; the link's name is still only the title. */
+.writing__list--figured .writing__link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+.writing__list--figured .writing__link:focus-visible { outline: none; }
+.writing__list--figured .writing__link:focus-visible::after { outline: 2px solid var(--amber); outline-offset: 2px; }
+.writing__list--figured .writing__desc { margin: 0 0 var(--sp-2); font-size: 0.92rem; line-height: 1.55; }
+
+.writing__figure {
+  display: block;
+  width: 176px;
+  height: 110px;
+  border: 1px solid var(--green-line);
+  border-radius: 2px;
+  background: var(--bg);
+  overflow: visible;
+}
+
+.fig { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: square; vector-effect: non-scaling-stroke; }
+.fig--ink { color: var(--green-bright); }
+.fig--dim { color: var(--green); opacity: 0.55; }
+.fig--faint { color: var(--green); opacity: 0.22; }
+.fig--accent { color: var(--amber); }
+.fig--solid { fill: currentColor; }
+.fig--wash { fill: currentColor; fill-opacity: 0.2; }
+.fig--dashed { stroke-dasharray: 3 4; }
+.fig--draw { stroke-dasharray: 1; stroke-dashoffset: 0; }
+.fig--pop { transform-box: fill-box; transform-origin: center; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .writing__list--figured .writing__item { transition: background-color 0.18s; }
+  .writing__item:is(:hover, :focus-within) .fig--draw { animation: fig-draw 0.9s cubic-bezier(0.2, 0.75, 0.2, 1) both; animation-delay: var(--d, 0ms); }
+  .writing__item:is(:hover, :focus-within) .fig--pop { animation: fig-pop 0.32s steps(3, end) both; animation-delay: var(--d, 0ms); }
+  .writing__item:is(:hover, :focus-within) .fig-group--beam { animation: fig-sweep 1.1s cubic-bezier(0.2, 0.75, 0.2, 1) both; }
+  @keyframes fig-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  @keyframes fig-pop { from { transform: scale(0); } to { transform: scale(1); } }
+  @keyframes fig-sweep { from { transform: translateX(-72px); } to { transform: none; } }
+}
+
+@media (max-width: 640px) {
+  .writing__list--figured .writing__item { grid-template-columns: 112px minmax(0, 1fr); gap: var(--sp-3); margin: 0; padding: var(--sp-2) 0; }
+  .writing__figure { width: 112px; height: 70px; }
+  .writing__list--figured .writing__desc { font-size: 0.85rem; }
+}
+@media (max-width: 380px) {
+  .writing__list--figured .writing__item { grid-template-columns: minmax(0, 1fr); }
+  .writing__figure { width: 100%; height: auto; aspect-ratio: 16 / 10; }
+}
