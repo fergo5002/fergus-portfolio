@@ -1587,6 +1587,16 @@ const MUTATIONS = [
     replace: '    comm: "init",',
     tests: "lib/arcade/draw/panic.test.ts",
   },
+  // ── the card: no eyebrow, and a demo that stays clear of the call to action ──
+  ...[
+    ["an eyebrow label comes back above the wide title", /    glowText\(pen, face\.title, 38, 118, 78, p\.bright, p\.brightGlow, "left"\);/, '    text(pen, face.genre, 40, 52, 13, p.accent);\n    glowText(pen, face.title, 38, 118, 78, p.bright, p.brightGlow, "left");'],
+    ["an eyebrow label comes back above the tall title", /  glowText\(pen, face\.title, 36, 170, 112, p\.bright, p\.brightGlow, "left"\);/, '  text(pen, face.genre, 40, 70, 24, p.accent);\n  glowText(pen, face.title, 36, 170, 112, p.bright, p.brightGlow, "left");'],
+    ["the phone card's demo runs through TAP TO START again", /    c\.rect\(demo\.rect\.x, demo\.rect\.y, demo\.rect\.w, demo\.rect\.h\);\r?\n    c\.clip\(\);/, ""],
+    ["the phone card's demo is allowed down to the foot of the stage", /h: cardCta\(stage\)\.y - CTA_GAP - top/, "h: stage.h - top"],
+  ].map(([name, pattern, replace]) => ({
+    name: `arcade card: ${name}`, file: "lib/arcade/chrome.ts", pattern, replace,
+    tests: "lib/arcade/chrome.test.ts",
+  })),
 ];
 
 

@@ -31,7 +31,7 @@ export type KeySpec = {
 };
 
 export type ScreenWords = {
-  pressSpace: string; tapToStart: string; orEnter: string; howToPlay: string; demo: string;
+  pressSpace: string; tapToStart: string; orEnter: string; demo: string;
   score: string; best: string; gameOver: string; finalScore: string; newBest: string; reached: string;
   lives: Record<"hull" | "hand" | "core", string>;
 };
@@ -244,25 +244,56 @@ function drawDemo(pen: Pen, frame: Rect, words: ScreenWords, drawDemoWorld: (sca
   text(pen, words.demo, frame.x + 37 * k, frame.y + 23 * k, 12 * k, p.accent, "center");
 }
 
+/** Where the card's PRESS SPACE or TAP TO START sits, in stage units, with its blink's full extent. */
+export function cardCta(stage: Stage): Rect {
+  if (!stage.big) return { x: 500, y: 464 - 58 * 0.8, w: 360, h: 58 * 0.8 + 34 };
+  return { x: 0, y: stage.h - 50 - 84 * 0.8, w: stage.w, h: 84 * 0.8 + 50 };
+}
+
+/** The gap kept between the card's live demo and its call to action. */
+const CTA_GAP = 16;
+
+const TALL_TEXT_TOP = 250;
+const tallLinesH = (face: CabinetFace) => face.card.lines.length * 42;
+const tallKeysH = (face: CabinetFace) => face.card.keys.length * 88;
+
 /**
- * The card: the cabinet's name, two or three lines on how it plays, the real
- * keys drawn as keycaps that light the moment the demo presses them, and PRESS
- * SPACE. `drawDemoWorld(scale)` paints the demo at `scale` into the current
- * transform's origin, and the card decides where that is.
+ * Where the card's live demo plays. Wide, and tall when there is room, it is
+ * a screen within the screen (`framed`). On a tall stage without that room it
+ * plays faintly behind the card (`behind`), clipped to stop short of the call
+ * to action, so TAP TO START never has a demo's line running through it.
+ */
+export function cardDemo(stage: Stage, face: CabinetFace): { kind: "framed" | "behind"; rect: Rect } {
+  if (!stage.big) return { kind: "framed", rect: { x: 500, y: 70, w: 360, h: 224 } };
+  const room = stage.h - TALL_TEXT_TOP - tallLinesH(face) - tallKeysH(face) - 150;
+  if (room >= 320) {
+    const w = 820, h = Math.round(Math.min(room - 30, w * (560 / 900)));
+    return { kind: "framed", rect: { x: 40, y: TALL_TEXT_TOP, w, h } };
+  }
+  const top = stage.world.y;
+  return { kind: "behind", rect: { x: 0, y: top, w: stage.w, h: cardCta(stage).y - CTA_GAP - top } };
+}
+
+/**
+ * The card: the cabinet's name with its genre under it, two or three lines on
+ * how it plays, the real keys drawn as keycaps that light the moment the demo
+ * presses them, and PRESS SPACE. Nothing sits above the name: no eyebrow
+ * label, anywhere. `drawDemoWorld(scale)` paints the demo at `scale` into the
+ * current transform's origin, and the card decides where that is.
  */
 export function drawCard(pen: Pen, stage: Stage, run: Run, face: CabinetFace, words: ScreenWords, touch: boolean, drawDemoWorld: (scale: number) => void) {
   const { c, p } = pen;
   const lit = run.demo.lit;
   const blinkOn = (run.clock * 1.25) % 1 < 0.7;
   const start = touch ? words.tapToStart : words.pressSpace;
+  const demo = cardDemo(stage, face);
   if (!stage.big) {
-    text(pen, words.howToPlay, 40, 52, 13, p.accent);
     glowText(pen, face.title, 38, 118, 78, p.bright, p.brightGlow, "left");
     text(pen, face.genre, 42, 144, 13, p.ink);
     face.card.lines.forEach((l, i) => text(pen, l, 42, 190 + i * 28, 17, p.ink));
     let y = 190 + face.card.lines.length * 28 + 18;
     for (const spec of face.card.keys) y += capRow(pen, spec, 42, y, touch, lit, 15, 40, 30) + 18;
-    drawDemo(pen, { x: 500, y: 70, w: 360, h: 224 }, words, drawDemoWorld);
+    drawDemo(pen, demo.rect, words, drawDemoWorld);
     if (run.best > 0) {
       text(pen, words.best, 680, 330, 12, p.accent, "center");
       text(pen, grouped(run.best), 680, 364, 36, p.ink, "center", true);
@@ -272,20 +303,21 @@ export function drawCard(pen: Pen, stage: Stage, run: Run, face: CabinetFace, wo
     return;
   }
   // Tall: the same card stood up, in phone-sized type.
-  text(pen, words.howToPlay, 40, 70, 24, p.accent);
   glowText(pen, face.title, 36, 170, 112, p.bright, p.brightGlow, "left");
   text(pen, face.genre, 42, 208, 22, p.ink);
-  const linesH = face.card.lines.length * 42;
-  const keysH = face.card.keys.length * 88;
-  const room = stage.h - 250 - linesH - keysH - 150;
-  let y = 250;
-  if (room >= 320) {
-    const w = 820, h = Math.min(room - 30, w * (560 / 900));
-    drawDemo(pen, { x: 40, y, w, h: Math.round(h) }, words, drawDemoWorld, true);
-    y += Math.round(h) + 50;
+  const linesH = tallLinesH(face);
+  const keysH = tallKeysH(face);
+  let y = TALL_TEXT_TOP;
+  if (demo.kind === "framed") {
+    drawDemo(pen, demo.rect, words, drawDemoWorld, true);
+    y += demo.rect.h + 50;
   } else {
-    // No room for a screen within the screen: the demo plays behind the card instead.
+    // No room for a screen within the screen: the demo plays behind the card instead,
+    // and stops short of the call to action.
     c.save();
+    c.beginPath();
+    c.rect(demo.rect.x, demo.rect.y, demo.rect.w, demo.rect.h);
+    c.clip();
     c.globalAlpha = 0.35;
     c.translate(stage.world.x, stage.world.y);
     drawDemoWorld(stage.world.s);

@@ -132,7 +132,7 @@ describe("a run on its stage", () => {
     const card = createRun("poker", 3);
     renderRun(spy, card, 900, 560, GREEN_PHOSPHOR, view("poker", "wide", null));
     expect(texts).toContain("CIRCUIT POKER");
-    expect(texts).toContain(screenCopy.howToPlay);
+    expect(texts).not.toContain("HOW TO PLAY");
     expect(texts).toContain("SPACE");
     expect(texts).toContain("ENTER");
     texts.length = 0;

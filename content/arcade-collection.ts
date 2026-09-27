@@ -99,7 +99,6 @@ export const screenCopy = {
   pressSpace: "PRESS SPACE",
   tapToStart: "TAP TO START",
   orEnter: "OR ENTER",
-  howToPlay: "HOW TO PLAY",
   demo: "DEMO",
   score: "SCORE",
   best: "BEST",
