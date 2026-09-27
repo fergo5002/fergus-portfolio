@@ -1492,11 +1492,25 @@ const MUTATIONS = [
     tests: "app/tools/relief/ReliefTool.test.ts",
   },
   {
-    name: "relief smooths the ridgeline across weeks, so fifty-two weeks blur into one line",
+    name: "relief smooths the ridgeline like the contour ground, so fifty-two weeks blur into one line",
     file: "lib/tools/relief/heightmap.ts",
-    pattern: /profile: smoothDays\(normalised\),/,
+    pattern: /profile: ridgeProfile\(normalised\),/,
     replace: "profile: field,",
     tests: "lib/tools/relief/heightmap.test.ts",
+  },
+  {
+    name: "relief stops smoothing the ridgeline across weeks, so every week's noise tangles with the next",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /export const WEEK_PASSES = 1;/,
+    replace: "export const WEEK_PASSES = 0;",
+    tests: "lib/tools/relief/heightmap.test.ts lib/tools/relief/ridgeline.test.ts",
+  },
+  {
+    name: "relief smooths the ridgeline's day only once, so each ridge is a comb of noise",
+    file: "lib/tools/relief/heightmap.ts",
+    pattern: /export const DAY_PASSES = 2;/,
+    replace: "export const DAY_PASSES = 1;",
+    tests: "lib/tools/relief/heightmap.test.ts lib/tools/relief/ridgeline.test.ts",
   },
   {
     name: "relief stands its ridges on the week-smoothed contour ground instead of each week's own day",

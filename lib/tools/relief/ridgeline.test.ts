@@ -258,6 +258,21 @@ describe("ridgelines: occlusion", () => {
     });
   });
 
+  /**
+   * A design guard, not arithmetic: how often nearer weeks cut the demo's
+   * ridges. Measured 2026-09-27 at 908px: about 126 breaks with the day-only
+   * profile, which read as a tangle, and about 45 with the profile now in
+   * `heightmap.ts`, which reads as ground. Pinned loosely either side.
+   */
+  it("cuts the demo's ridges often enough to be terrain and seldom enough not to tangle", () => {
+    for (const width of [390, 760, 988]) {
+      const ridges = ridgelines(buildHeightmap(demoEvents()).profile, ridgeGeometry(width));
+      const breaks = ridges.reduce((a, r) => a + r.visible.length, 0) - ridges.length;
+      expect(breaks, `${width}px`).toBeLessThan(75);
+      expect(breaks, `${width}px`).toBeGreaterThan(10);
+    }
+  });
+
   it("hides the stretch of a back ridge behind a tall front peak, and keeps the rest", () => {
     const f = field();
     f[12][51] = 1; // one tall peak on the front ridge at noon

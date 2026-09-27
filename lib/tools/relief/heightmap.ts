@@ -99,16 +99,28 @@ export function smooth(grid: readonly (readonly number[])[], passes = SMOOTH_PAS
   return out;
 }
 
+/** The ridgeline's passes of [1,2,1]/4 along each week's day, wrapped at midnight. */
+export const DAY_PASSES = 2;
 /**
- * One pass of [1,2,1]/4 along each week's day and never across weeks, wrapped
- * at midnight. The ridgeline's heights: a ridge is one week, so blurring it
- * into its neighbours would draw fifty-two near-copies of one line.
+ * And across neighbouring weeks, clamped at the ends of the year. One, so a
+ * week agrees with the weeks beside it; the contour ground's two turn the
+ * ridges into copies of each other. See `heightmap.test.ts` for the numbers.
  */
-export function smoothDays(grid: readonly (readonly number[])[]): Field {
+export const WEEK_PASSES = 1;
+
+/** The ridgeline's heights: the same compressed counts, smoothed lightly and mostly along the day. */
+export function ridgeProfile(grid: readonly (readonly number[])[]): Field {
   const rows = grid.length;
-  return grid.map((row, r) =>
-    row.map((v, c) => (grid[(r - 1 + rows) % rows][c] + 2 * v + grid[(r + 1) % rows][c]) / 4),
-  );
+  const cols = rows > 0 ? grid[0].length : 0;
+  let out: Field = grid.map((row) => [...row]);
+  for (let p = 0; p < DAY_PASSES; p++) {
+    const g = out;
+    out = g.map((row, r) => row.map((v, c) => (g[(r - 1 + rows) % rows][c] + 2 * v + g[(r + 1) % rows][c]) / 4));
+  }
+  for (let p = 0; p < WEEK_PASSES; p++) {
+    out = out.map((row) => row.map((v, c) => (row[Math.max(0, c - 1)] + 2 * v + row[Math.min(cols - 1, c + 1)]) / 4));
+  }
+  return out;
 }
 
 export type Density = { ok: true } | { ok: false; reason: "few-events" | "few-cells" };
@@ -147,7 +159,7 @@ export function buildHeightmap(events: readonly ReliefEvent[]): Heightmap {
 
   return {
     field,
-    profile: smoothDays(normalised),
+    profile: ridgeProfile(normalised),
     counts,
     ceiling,
     events: flat.reduce((a, b) => a + b, 0),

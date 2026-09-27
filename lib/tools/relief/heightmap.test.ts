@@ -194,27 +194,41 @@ describe("buildHeightmap", () => {
 });
 
 /**
- * The ridgeline's heights. Smoothing across weeks is what lets contours
- * close into clean rings, and it is exactly what turns a ridgeline into
- * fifty-two near-copies of one line. So the ridges get the same counts under
- * the same compression, smoothed along the day only, once.
+ * The ridgeline's heights, between two failures measured on 2026-09-27.
+ * The contour ground (two passes across both axes) draws fifty-two
+ * near-copies of one line. One pass along the day and none across weeks
+ * leaves every week its own Poisson noise, so nearer weeks cut each ridge
+ * about 126 times on the demo and it reads as a tangle. Two passes along the
+ * day and one across neighbouring weeks cut it about 45 times and reads as
+ * ground. Same counts, same compression as the field.
  */
-describe("buildHeightmap's day profile, for the ridgeline", () => {
+describe("buildHeightmap's ridge profile, for the ridgeline", () => {
   const spike: ReliefEvent[] = Array.from({ length: 5 }, () => ({ week: 10, hour: 5 }));
 
-  it("smooths along the day, so a spike keeps a shoulder either side of its hour", () => {
+  it("smooths twice along the day, so a spike has shoulders two hours either side and no further", () => {
     const { profile } = buildHeightmap(spike);
     expect(profile[5][10]).toBeGreaterThan(profile[4][10]);
-    expect(profile[4][10]).toBeGreaterThan(0);
+    expect(profile[4][10]).toBeGreaterThan(profile[3][10]);
+    expect(profile[3][10]).toBeGreaterThan(0);
     expect(profile[6][10]).toBeCloseTo(profile[4][10], 12);
-    expect(profile[3][10]).toBe(0);
+    expect(profile[7][10]).toBeCloseTo(profile[3][10], 12);
+    expect(profile[2][10]).toBe(0);
+    expect(profile[8][10]).toBe(0);
   });
 
-  it("never smooths across weeks, so each week keeps its own shape", () => {
+  it("smooths once across weeks, so a week agrees with its neighbours and no further", () => {
+    const { profile } = buildHeightmap(spike);
+    expect(profile[5][10]).toBeGreaterThan(profile[5][11]);
+    expect(profile[5][11]).toBeGreaterThan(0);
+    expect(profile[5][9]).toBeCloseTo(profile[5][11], 12);
+    expect(profile[5][12]).toBe(0);
+    expect(profile[5][8]).toBe(0);
+  });
+
+  it("smooths across weeks less than the contour ground does, so the ridges are not copies", () => {
     const { profile, field } = buildHeightmap(spike);
-    expect(field[5][11]).toBeGreaterThan(0);
-    expect(profile[5][11]).toBe(0);
-    expect(profile[5][9]).toBe(0);
+    expect(field[5][12]).toBeGreaterThan(0);
+    expect(profile[5][12]).toBe(0);
   });
 
   it("wraps the day at midnight, like the field", () => {

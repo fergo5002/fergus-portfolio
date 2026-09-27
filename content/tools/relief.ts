@@ -37,7 +37,7 @@ export const reliefCopy = {
     flat: "That is flat. Every hour of the year carries much the same load, so there is nothing for a contour to follow.",
   },
   method:
-    "Counts per hour per week, compressed with a logarithm against the 98th percentile so one enormous hour cannot flatten the rest, then drawn two ways. The ridgeline is a ridge a week across the hours, smoothed once along the day so each week keeps its own shape. The contours are smoothed twice across both and drawn at six levels, and the STL is cut from that same ground. Hours wrap at midnight; weeks do not. The crosshair reads the raw count, never the smoothed height.",
+    "Counts per hour per week, compressed with a logarithm against the 98th percentile so one enormous hour cannot flatten the rest, then drawn two ways. The ridgeline is a ridge a week across the hours, smoothed twice along the day and once across neighbouring weeks, so each week keeps its own shape and agrees with the weeks beside it; a nearer week hides whatever stands behind it. The contours are smoothed twice across both and drawn at six levels, and the STL is cut from that same ground. Hours wrap at midnight; weeks do not. The crosshair reads the raw count, never the smoothed height.",
   downloads: {
     png: "PNG",
     svg: "SVG in millimetres",

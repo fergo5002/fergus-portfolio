@@ -6,9 +6,9 @@ import { HOURS, WEEKS, type Field, type Point, type Polyline } from "./types";
  * week's ground across the twenty-four hours, seen from low over the horizon.
  *
  * The height is the heightmap's `profile`: the same counts under the same
- * compression as the contours and the STL, smoothed along each day and never
- * across weeks, because a ridge is one week and blurring it into its
- * neighbours draws fifty-two copies of one line. Orthographic on purpose. A
+ * compression as the contours and the STL, smoothed mostly along the day and
+ * only lightly across weeks, because a ridge is one week and the contour
+ * ground's blur draws fifty-two copies of one line. Orthographic on purpose. A
  * perspective that shrank the back weeks would make the start of the year
  * look quieter than it was.
  *
