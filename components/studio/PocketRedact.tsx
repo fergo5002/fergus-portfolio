@@ -216,9 +216,19 @@ export default function PocketRedact() {
       }),
   });
   // The instrument opens on its example, so the page is never an empty form.
+  // Drawn without the busy state, so the intake stays open while it draws; a
+  // file chosen in the meantime aborts it through the shared controller.
   useEffect(() => {
-    void run(example);
-    // Once, on mount: run and example read refs, not render state.
+    const controller = new AbortController();
+    abort.current = controller;
+    example(controller.signal)
+      .catch((e) => {
+        if (mounted.current && !controller.signal.aborted) setError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        if (abort.current === controller) abort.current = null;
+      });
+    return () => controller.abort();
   }, []);
   return (
     <div className="lab-work studio studio-redact" {...intake.stageProps}>

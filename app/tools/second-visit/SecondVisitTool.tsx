@@ -237,7 +237,8 @@ export default function SecondVisitTool() {
     catch { setMessage(workbench.downloadFailed); }
   }
 
-  const intake = useIntake({ accept: ".csv,text/csv", disabled: busy, onFiles: ([file]) => void onFile(file) });
+  // Never disabled: a new file bumps the generation, so it wins over a read in flight.
+  const intake = useIntake({ accept: ".csv,text/csv", onFiles: ([file]) => void onFile(file) });
   const horizon = analysis?.secondVisit.horizons.find((h) => h.day === horizonDay && !h.beyondFile && h.defined)
     ?? analysis?.secondVisit.horizons.find((h) => !h.beyondFile && h.defined)
     ?? analysis?.secondVisit.horizons[0];
