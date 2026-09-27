@@ -123,6 +123,17 @@ jobs:
         run: node scripts/not-found-check.mjs
         env:
           REVISION_BASE: http://localhost:3000
+      # The build has no PostHog key, so the ingest privacy run (which needs
+      # one) stays a local check, as do the paused-clock photographs and the
+      # beam's pixel measurement (software WebGL on a runner under-samples it).
+      - name: the cold boot, its reveal, its skip and its mount line
+        run: node scripts/boot-check.mjs --no-ingest --no-beam --no-shots
+        env:
+          REVISION_BASE: http://localhost:3000
+      - name: the screensaver draws with the beam and wakes clean
+        run: node scripts/saver-check.mjs
+        env:
+          REVISION_BASE: http://localhost:3000
       - name: phone check through the hidden arcade door
         run: node scripts/arcade-phone-check.mjs --base http://localhost:3000 --out .phone-check/arcade
       - name: tools workflows on desktop and phones
