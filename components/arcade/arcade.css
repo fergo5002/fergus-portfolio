@@ -1181,3 +1181,11 @@ html.arcade-open .saver {
     width: min(100%, max(320px, calc((100dvh - 220px) * 1.607)));
   }
 }
+
+/* A mouse has a keyboard beside it: the arrows and WASD do the pad's job
+   there, and the pad under every game was clutter. Touch screens keep it. */
+@media (hover: hover) and (pointer: fine) {
+  .arcade-dpad {
+    display: none;
+  }
+}

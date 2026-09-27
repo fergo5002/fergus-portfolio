@@ -505,3 +505,11 @@ describe("what the arcade keeps on the visitor's machine", () => {
     expect(writes).toEqual(["lib/arcade/session.ts: INITIALS_KEY"]);
   });
 });
+
+describe("the direction pad is for thumbs", () => {
+  it("hides on a machine with a mouse and a keyboard", () => {
+    // On a 1440 desktop the pad sat under every game as clutter; the arrows
+    // and WASD do its job there (2026-09-27). Touch screens keep it.
+    expect(css).toMatch(/@media \(hover: hover\) and \(pointer: fine\) \{\s*\.arcade-dpad \{\s*display: none;\s*\}\s*\}/);
+  });
+});

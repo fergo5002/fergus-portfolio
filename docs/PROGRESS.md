@@ -1,3 +1,15 @@
+## 2026-09-27: the redesign, part two (the arcade)
+
+Three cabinets: Dead Signal, rebalanced so it can be lost (the beam fires only
+while you move, contact costs hull, a new enemy kind each wave); Circuit Poker,
+legible (big cards, a lit paytable, held cards, a target meter); and Kernel
+Panic, a new typing defence game that works with a phone keyboard. Shared
+chrome for all three, the header bar replaced by a Hall of Fame under the
+cabinets, and multiplayer retired with the four other games.
+
+Balance is proven by pure simulation over 20 seeds per player type, not by
+hand: nobody has played the new versions on a real phone keyboard yet.
+
 ## 2026-09-24: inline shell and quieter contact links
 
 Fergus asked to restore the interactive shell directly below About and keep only
