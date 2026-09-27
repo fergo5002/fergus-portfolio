@@ -46,8 +46,22 @@ export async function moveUntilScored(page, { touch = false, seconds = 45 } = {}
 }
 
 /** Stands still and requires the score not to move: the beam is dark. Returns the score it held at. */
-export async function stillScoresNothing(page, { settle = 3000, watch = 5000 } = {}) {
+export async function stillScoresNothing(page, { settle = 3000, watch = 5000, steady = 4, cap = 30_000 } = {}) {
   await page.waitForTimeout(settle);
+  // Then wait until the score has held for `steady` readings a second apart.
+  // Game time here runs at a quarter of wall time or slower, so a shot fired
+  // just before letting go can land after a wall-clock settle (a run on
+  // 2026-09-27 scored one kill, 25 to 50, then held). A beam that really
+  // fires while standing still keeps scoring and never gets steady.
+  const until = Date.now() + cap;
+  let last = await statusPoints(page), held = 0;
+  while (held < steady) {
+    if (Date.now() > until) throw new Error(`signal smoke: still scoring after ${cap / 1000}s of standing still (at ${last}), so the beam fires without a move`);
+    await page.waitForTimeout(1000);
+    const now = await statusPoints(page);
+    held = now === last ? held + 1 : 0;
+    last = now;
+  }
   const before = await statusPoints(page);
   await page.waitForTimeout(watch);
   const after = await statusPoints(page);
