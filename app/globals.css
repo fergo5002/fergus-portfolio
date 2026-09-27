@@ -2233,13 +2233,18 @@ html.js .exp__spine {
 html.is-ejecting .crt__assembly {
   position: fixed;
   inset: 0;
-  overflow: hidden;
+  /* `clip`, not `hidden`. Both clip the rounded corners, but `hidden` makes
+     this a scroll container, and a channel change's scroll-to-top reaches for
+     the nearest one: it scrolled the assembly's own contents out from under
+     the glass instead of the document. `clip` scrolls nothing. */
+  overflow: clip;
   transform-origin: 50% 50%;
   will-change: transform;
-  /* Rounded to match the shader's screen SDF corner radius, so the DOM content
-     is clipped by the same curve the bezel is drawn against. */
+  /* Rounded to match the shader's glass corner radius, so the DOM content is
+     clipped by the same curve the bezel is drawn against. EjectRig writes the
+     exact radius from lib/eject.ts on engage; this is only the first frame's. */
   border-radius: 10px;
-  /* Above the tube canvas, below nothing else. */
+  /* Above the tube canvas, below the monitor's hardware (eject.css). */
   z-index: 2;
 }
 
@@ -2275,6 +2280,21 @@ html.is-ejecting .statusbar {
   bottom: 0;
   left: 0;
   right: 0;
+}
+/* The sheen on the glass slides with the pointer while ejected (EjectRig), so
+   it is cut larger than the glass and never shows its own edge. Seen from
+   across the room the glass catches more of the light than it does up close. */
+html.is-ejecting .crt__glass {
+  inset: -12%;
+  width: 124%;
+  height: 124%;
+  will-change: transform;
+  background: linear-gradient(
+    104deg,
+    rgba(255, 255, 255, 0) 36%,
+    rgba(255, 255, 255, 0.028) 46%,
+    rgba(255, 255, 255, 0) 58%
+  );
 }
 
 /* ----- scroll lock -------------------------------------------------------
