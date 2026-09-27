@@ -1486,6 +1486,47 @@ html.js .exp__spine {
 .statusbar__pwd-short {
   display: none;
 }
+/* The readouts. Every value is written by StatusBar into its own `--ro` and
+   drawn here, so none of it is text in the document (components/statusbar.test.ts
+   guards that). Minimum widths are set in `ch` so the strip does not shuffle
+   when the values first arrive after hydration. */
+.statusbar__ro::after {
+  content: var(--ro, "");
+}
+.statusbar__ro--up { min-width: 11ch; }
+.statusbar__ro--up::before { content: "up "; opacity: 0.7; }
+.statusbar__ro--mem { min-width: 10ch; letter-spacing: 0.02em; }
+.statusbar__ro--fps { min-width: 6ch; }
+.statusbar__ro--fps::after { content: var(--ro, "") " fps"; }
+.statusbar__ro--pos { min-width: 7ch; opacity: 0.8; }
+.statusbar__ro--clock { min-width: 8ch; color: var(--green-bright); }
+.statusbar__ro--theme { opacity: 0.8; }
+/* The drive light: dark at rest, flickering amber while the machine works. */
+.statusbar__lamp {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--green-line);
+}
+.statusbar__lamp[data-on="1"] {
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+}
+/* They give way in order as the strip narrows: pointer and phosphor first,
+   then memory and frame rate. The location and the clock stay longest. */
+@media (max-width: 1199px) {
+  .statusbar__ro--pos,
+  .statusbar__ro--theme { display: none; }
+}
+@media (max-width: 999px) {
+  .statusbar__ro--mem,
+  .statusbar__ro--fps { display: none; }
+}
+@media (max-width: 768px) {
+  .statusbar__ro--up,
+  .statusbar__ro--clock,
+  .statusbar__lamp { display: none; }
+}
 
 /* ----- screensaver -------------------------------------------------------- */
 .saver {
