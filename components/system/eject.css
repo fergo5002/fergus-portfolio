@@ -270,6 +270,12 @@ html:not(.is-ejecting) .ejhw {
   flex-direction: column;
   align-items: flex-end;
   gap: var(--sp-2);
+  /* A dark plate under the readout, as many sets drew it: on a phone the
+     corner it lands in is a window's title bar, and bare text over it read as
+     one jumble. */
+  padding: var(--sp-1) var(--sp-2);
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--bg) 84%, transparent);
   font-family: var(--font-screen);
   /* The assembly is the viewport before it is scaled, so vw is the screen's
      own width: a readout sized to the picture, not to the phone. */
