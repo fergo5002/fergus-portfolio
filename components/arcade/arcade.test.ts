@@ -448,6 +448,15 @@ describe("a typing game's text input", () => {
     expect(game).toMatch(/root\.style\.setProperty\("--vv-h"/);
     expect(frameCallback(game)).not.toMatch(/--vv-h|visualViewport/);
   });
+
+  it("sizes its screen to what is left under the nav, so the HUD shows with the room scrolled to its end", () => {
+    // What has to fit in the visual viewport below the fixed nav: the canvas, the typing line (61px),
+    // the room's bottom padding (56px) and a gap. The browser proof is arcade-collection-check at 390 by 400.
+    const rule = /\.arcade-play--text \.arcade-frame \{\s*width: min\(100%, calc\(\(var\(--vv-h, 100dvh\) - var\(--nav-h\) - (\d+)px\) \* var\(--stage-ratio, 1\.25\)\)\);/.exec(css);
+    expect(rule, "the typing game's frame is sized from --vv-h less the nav").not.toBeNull();
+    expect(Number(rule![1])).toBeGreaterThanOrEqual(61 + 56 + 8);
+    expect(css).toMatch(/\.arcade-room__inner \{[^}]*padding: var\(--sp-3\) var\(--arcade-gutter\) 56px;/);
+  });
 });
 
 describe("the Hall of Fame is a section of the front, not a screen", () => {

@@ -1634,6 +1634,13 @@ const MUTATIONS = [
     replace: "  c.fillText(value, x, y);",
     tests: "lib/arcade/draw/panic.test.ts",
   },
+  {
+    name: "kernel panic: the phone frame forgets the nav again (the flat 150px)",
+    file: "components/arcade/arcade.css",
+    pattern: /calc\(\(var\(--vv-h, 100dvh\) - var\(--nav-h\) - 133px\)/,
+    replace: "calc((var(--vv-h, 100dvh) - 150px)",
+    tests: "components/arcade/arcade.test.ts",
+  },
 ];
 
 

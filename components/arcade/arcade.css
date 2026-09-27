@@ -1105,9 +1105,13 @@ html.arcade-open .saver {
     width: 100%;
   }
   /* A phone keyboard takes the bottom of the screen; a typing game's stage
-     fits what the visual viewport has left (--vv-h, written on resize). */
+     fits what the visual viewport has left (--vv-h, written on resize) under
+     the fixed nav, less the typing line (61px), the room's bottom padding
+     (56px) and a 16px gap, so the HUD band is still on the glass with the
+     room scrolled to its end. The old flat 150px left the top 18px of the
+     HUD under the nav at 390 by 400. */
   .arcade-play--text .arcade-frame {
-    width: min(100%, calc((var(--vv-h, 100dvh) - 150px) * var(--stage-ratio, 1.25)));
+    width: min(100%, calc((var(--vv-h, 100dvh) - var(--nav-h) - 133px) * var(--stage-ratio, 1.25)));
   }
   .arcade-play__tools {
     margin-left: auto;

@@ -67,21 +67,26 @@ for (const profile of [{ name: "webkit-390", engine: webkit, device: "iPhone 12"
           .catch(async () => { throw new Error(`${profile.name}: typing "${killed}" to death scored nothing (status: ${await statusPoints(page)})`); });
         if (profile.width === 390) {
           // A phone keyboard takes the bottom half of the screen. Stand in for it by cutting the
-          // viewport and let the room's throttled --vv-h catch up. Two readings: the canvas and
-          // the input together fit under the site's fixed nav; and once the input is brought into
-          // view, as iOS does on focus, the input and the kernel line are both on the glass.
-          // Playwright shows no keyboard, so where a real phone scrolls to is not proven here.
+          // viewport and let the room's throttled --vv-h catch up. The whole canvas, HUD band
+          // included, must sit below the fixed nav with the input on screen, in two positions:
+          // the room scrolled to its end (the highest the frame can go) and the input brought
+          // into view as iOS does on focus. Setting scrollTop here measures layout; it is not a
+          // test of scrolling. Playwright shows no keyboard, so a real phone is not proven here.
           await page.setViewportSize({ width: 390, height: 400 });
           await page.waitForTimeout(400);
-          await page.locator(".arcade-type__input").scrollIntoViewIfNeeded();
-          const fit = await page.evaluate(() => {
+          const measure = () => page.evaluate(() => {
             const c = document.querySelector(".arcade-canvas").getBoundingClientRect(), i = document.querySelector(".arcade-type__input").getBoundingClientRect();
             const nav = document.querySelector(".nav")?.getBoundingClientRect().bottom ?? 0;
             return { navBottom: nav, canvasTop: c.top, canvasBottom: c.bottom, inputTop: i.top, inputBottom: i.bottom, height: innerHeight, vv: getComputedStyle(document.querySelector(".arcade-play")).getPropertyValue("--vv-h") };
           });
-          check(fit.inputBottom - fit.canvasTop <= fit.height - fit.navBottom + 1, `${profile.name}: with a keyboard's worth of screen gone, the play area and input do not fit under the nav: ${JSON.stringify(fit)}`);
-          check(fit.inputBottom <= fit.height + 1 && fit.canvasBottom <= fit.inputTop + 1 && fit.canvasBottom - (fit.canvasBottom - fit.canvasTop) * 0.2 > fit.navBottom, `${profile.name}: with the input in view, the kernel is hidden: ${JSON.stringify(fit)}`);
-          evidence.push({ profile: profile.name, game: "panic", keyboardStandIn: fit, killed });
+          const onGlass = (fit) => fit.canvasTop >= fit.navBottom - 0.5 && fit.canvasBottom <= fit.inputTop + 1 && fit.inputBottom <= fit.height + 1;
+          await page.locator(".arcade-room").evaluate((room) => { room.scrollTop = room.scrollHeight; });
+          const atEnd = await measure();
+          check(onGlass(atEnd), `${profile.name}: with a keyboard's worth of screen gone and the room at its end, the HUD or the input is off the glass: ${JSON.stringify(atEnd)}`);
+          await page.locator(".arcade-type__input").scrollIntoViewIfNeeded();
+          const fit = await measure();
+          check(onGlass(fit), `${profile.name}: with the input brought into view, the HUD or the input is off the glass: ${JSON.stringify(fit)}`);
+          evidence.push({ profile: profile.name, game: "panic", keyboardStandIn: { atEnd, inputInView: fit }, killed });
           await page.screenshot({ path: resolve(out, `${profile.name}-panic-keyboard.png`) });
           await page.setViewportSize({ width: 390, height: 844 });
         }
