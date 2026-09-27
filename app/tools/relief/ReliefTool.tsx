@@ -174,7 +174,7 @@ export default function ReliefTool() {
   const layers = useMemo(() => contourLayers(heightmap.field), [heightmap]);
   const geometry = useMemo(() => plateGeometry(width), [width]);
   const ridgeBox = useMemo(() => ridgeGeometry(width), [width]);
-  const ridges = useMemo(() => ridgelines(heightmap.field, ridgeBox), [heightmap, ridgeBox]);
+  const ridges = useMemo(() => ridgelines(heightmap.profile, ridgeBox), [heightmap, ridgeBox]);
   /** Task 2 exports the constant; this is the one place it is spent. */
   const flat = heightmap.hi - heightmap.lo < FLAT_RANGE;
   const box = view === "ridgeline" ? ridgeBox : geometry;
@@ -207,9 +207,11 @@ export default function ReliefTool() {
     const context = canvas.getContext("2d");
     if (!context) { setNote(reliefCopy.errors.paint); setExportReady(false); return; }
 
-    // One computed-style read for both the colours and the face. Two would be
-    // two layout reads in one paint for no gain.
+    // The colours are the theme's tokens on the root. The face is the canvas's
+    // own, inherited from the body: the root carries no family, and reading it
+    // there drew every label in the browser's default serif.
     const style = window.getComputedStyle(document.documentElement);
+    const face = window.getComputedStyle(canvas).fontFamily;
     const palette = safePalette(style);
     if (!palette) {
       setNote(reliefCopy.errors.paint);
@@ -227,7 +229,7 @@ export default function ReliefTool() {
     canvas.height = Math.round(size.height * dpr);
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     // The face is whatever the page is set in, so no font name lives here.
-    context.font = `${LABEL_PX}px ${style.fontFamily}`;
+    context.font = `${LABEL_PX}px ${face}`;
     context.lineJoin = "round";
     context.lineCap = "round";
 
@@ -254,7 +256,10 @@ export default function ReliefTool() {
     // The draw-in. Nothing is subscribed until the canvas is on screen, and
     // the subscription ends with the last ridge.
     settle.current = all;
-    let elapsed = 0;
+    // The frame's own timestamp, not a sum of `dt`: the clock clamps `dt` at
+    // 64ms, and a starved tab (measured: 250 to 450ms a frame in headless
+    // Chromium's software WebGL) would otherwise stretch one second into five.
+    let start = -1;
     let stop: (() => void) | null = null;
     let failsafe = 0;
     const done = () => {
@@ -269,9 +274,9 @@ export default function ReliefTool() {
         if (stop || !entries.some((entry) => entry.isIntersecting)) return;
         seen.disconnect();
         failsafe = window.setTimeout(done, SWEEP_FAILSAFE_MS);
-        stop = onFrame((_time, dt) => {
-          elapsed += dt;
-          drawTo(Math.ceil(plan.ridges.length * Math.min(1, elapsed / SWEEP_MS)));
+        stop = onFrame((time) => {
+          if (start < 0) start = time;
+          drawTo(Math.ceil(plan.ridges.length * Math.min(1, (time - start) / SWEEP_MS)));
           if (drawn >= plan.ridges.length) done();
         });
       },
@@ -448,7 +453,7 @@ export default function ReliefTool() {
       const name = plateFilename(plateSource, kind, new Date().toISOString(), kind === "stl" ? "contour" : view);
       audio.key();
       if (kind === "svg") {
-        saveBlob(svgBlob(view === "ridgeline" ? ridgelineSvg(heightmap.field) : plotterSvg(layers)), name, saveEnv);
+        saveBlob(svgBlob(view === "ridgeline" ? ridgelineSvg(heightmap.profile) : plotterSvg(layers)), name, saveEnv);
         return;
       }
       if (kind === "stl") {
@@ -517,58 +522,60 @@ export default function ReliefTool() {
     <div className="relief" {...intake.stageProps}>
       <div className="relief__screen">
         <div className="relief__frame" ref={frameRef} data-view={view}>
-          <canvas
-            ref={canvasRef}
-            className="relief__plate"
-            role="img"
-            aria-label={view === "ridgeline" ? reliefCopy.ridgeAlt : reliefCopy.plateAlt}
-            width={box.width}
-            height={Math.round(box.height)}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerEnd}
-            onPointerCancel={onPointerEnd}
-          />
-          <svg
-            className="relief__sight"
-            viewBox={`0 0 ${box.width} ${box.height}`}
-            preserveAspectRatio="none"
-            aria-hidden="true"
-            focusable="false"
-          >
-            {view === "ridgeline" ? (
-              <>
-                <polyline className="relief__sight-behind" points={toPoints(ridge.points)} />
-                {ridge.visible.map((line, i) => (
-                  <polyline key={i} className="relief__sight-ridge" points={toPoints(line)} />
-                ))}
-                <line className="relief__sight-drop" x1={sight.x} y1={sight.y} x2={sight.x} y2={ridgeBox.height - ridgeBox.padBottom} />
-              </>
-            ) : (
-              <>
-                <line className="relief__sight-drop" x1={sight.x} y1={geometry.padTop} x2={sight.x} y2={geometry.padTop + geometry.plotHeight} />
-                <line className="relief__sight-drop" x1={geometry.padLeft} y1={sight.y} x2={geometry.padLeft + geometry.plotWidth} y2={sight.y} />
-              </>
-            )}
-          </svg>
-          <span
-            className="relief__dot"
-            aria-hidden="true"
-            style={{ left: `${(100 * sight.x) / box.width}%`, top: `${(100 * sight.y) / box.height}%` }}
-          />
+          <div className="relief__glass">
+            <canvas
+              ref={canvasRef}
+              className="relief__plate"
+              role="img"
+              aria-label={view === "ridgeline" ? reliefCopy.ridgeAlt : reliefCopy.plateAlt}
+              width={box.width}
+              height={Math.round(box.height)}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerEnd}
+              onPointerCancel={onPointerEnd}
+            />
+            <svg
+              className="relief__sight"
+              viewBox={`0 0 ${box.width} ${box.height}`}
+              preserveAspectRatio="none"
+              aria-hidden="true"
+              focusable="false"
+            >
+              {view === "ridgeline" ? (
+                <>
+                  <polyline className="relief__sight-behind" points={toPoints(ridge.points)} />
+                  {ridge.visible.map((line, i) => (
+                    <polyline key={i} className="relief__sight-ridge" points={toPoints(line)} />
+                  ))}
+                  <line className="relief__sight-drop" x1={sight.x} y1={sight.y} x2={sight.x} y2={ridgeBox.height - ridgeBox.padBottom} />
+                </>
+              ) : (
+                <>
+                  <line className="relief__sight-drop" x1={sight.x} y1={geometry.padTop} x2={sight.x} y2={geometry.padTop + geometry.plotHeight} />
+                  <line className="relief__sight-drop" x1={geometry.padLeft} y1={sight.y} x2={geometry.padLeft + geometry.plotWidth} y2={sight.y} />
+                </>
+              )}
+            </svg>
+            <span
+              className="relief__dot"
+              aria-hidden="true"
+              style={{ left: `${(100 * sight.x) / box.width}%`, top: `${(100 * sight.y) / box.height}%` }}
+            />
+          </div>
         </div>
-        <div className="relief__hud">
-          <output className="relief__cell">{reliefCopy.cell(at.week, at.hour, count)}</output>
-          <Segmented
-            className="relief__views"
-            label={reliefCopy.viewLabel}
-            hideLabel
-            size="sm"
-            value={view}
-            onChange={setView}
-            options={VIEWS.map((key) => ({ value: key, label: reliefCopy.views[key] }))}
-          />
-        </div>
+        {/* The screen's own display: the reading in the sky over the terrain,
+            and the view switch beside it where there is room for both. */}
+        <output className="relief__cell">{reliefCopy.cell(at.week, at.hour, count)}</output>
+        <Segmented
+          className="relief__views"
+          label={reliefCopy.viewLabel}
+          hideLabel
+          size="sm"
+          value={view}
+          onChange={setView}
+          options={VIEWS.map((key) => ({ value: key, label: reliefCopy.views[key] }))}
+        />
       </div>
 
       <p className="relief__figures">

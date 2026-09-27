@@ -28,6 +28,11 @@ export type Polyline = Point[];
 export type Heightmap = {
   /** Normalised and smoothed, every value in [0, 1]. What gets contoured. */
   field: Field;
+  /**
+   * The same compression smoothed along each day only, every value in
+   * [0, 1]. What the ridgeline stands on, so each week keeps its own shape.
+   */
+  profile: Field;
   /** The raw counts, kept for the readout so the page can say a real number. */
   counts: Field;
   ceiling: number;

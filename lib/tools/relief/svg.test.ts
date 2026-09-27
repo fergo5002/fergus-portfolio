@@ -139,7 +139,7 @@ describe("plotterSvg", () => {
  * which `ridgelines` has already worked out, in millimetres, one group a week.
  */
 describe("ridgelineSvg", () => {
-  const field = buildHeightmap(demoEvents()).field;
+  const field = buildHeightmap(demoEvents()).profile;
   const out = ridgelineSvg(field);
   const layout = sheetRidgeLayout(A4_LANDSCAPE);
   const ridges = ridgelines(field, layout);

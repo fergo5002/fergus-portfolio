@@ -281,6 +281,47 @@ describe("planRidgeline", () => {
   });
 });
 
+/**
+ * The far weeks are drawn weaker, and a line is a graphical object: WCAG
+ * 1.4.11 asks 3:1 of it. Measured on the composited colour, the back ridge's
+ * core pass flattened onto --bg, on every theme, from the tokens the theme
+ * blocks actually declare. The bloom under it only adds light, so this is the
+ * worst case.
+ */
+describe("the far weeks still clear 3:1 on every theme", () => {
+  const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+  const block = (selector: string) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const body = new RegExp(`${escaped}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+    return Object.fromEntries([...body.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
+  };
+  const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.replace("#", "").slice(i - 1, i + 1), 16));
+  const lum = (c: number[]) =>
+    [0.2126, 0.7152, 0.0722].reduce((sum, k, i) => {
+      const s = c[i] / 255;
+      return sum + k * (s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4);
+    }, 0);
+  const contrast = (a: number[], b: number[]) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  const geometry = ridgeGeometry(760);
+  const ridges = ridgelines(buildHeightmap(demoEvents()).profile, geometry);
+  const back = planRidgeline({ ridges, geometry, palette, labels: false }).ridges[0][1] as Extract<DrawOp, { op: "polyline" }>;
+
+  it.each([":root", 'html[data-theme="amber"]', 'html[data-theme="ice"]'])("%s", (selector) => {
+    const vars = block(selector);
+    expect(vars["--green"], "the theme declares its phosphor").toMatch(/^#[0-9a-f]{6}$/i);
+    expect(vars["--bg"], "the theme declares its ground").toMatch(/^#[0-9a-f]{6}$/i);
+    const fg = rgb(vars["--green"]);
+    const bg = rgb(vars["--bg"]);
+    const alpha = back.alpha ?? 1;
+    expect(alpha).toBeLessThan(1);
+    const flat = fg.map((c, i) => Math.round(c * alpha + bg[i] * (1 - alpha)));
+    expect(contrast(flat, bg)).toBeGreaterThanOrEqual(3);
+  });
+});
+
 describe("paint with a fading pen", () => {
   it("sets the pen's strength for a faded stroke and restores it for everything else", () => {
     const { ctx } = recorder();

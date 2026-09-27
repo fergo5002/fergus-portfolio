@@ -60,6 +60,11 @@ describe("ridgeGeometry", () => {
   it("keeps the ridges far enough apart to read on a phone", () => {
     expect(ridgeGeometry(300).spacing).toBeGreaterThanOrEqual(3);
   });
+
+  it("leaves room either side for an hour label centred on the plot's edge", () => {
+    // Two digits at 12px are about 15px wide; half of that must fit in the pad.
+    for (const w of [280, 330, 760]) expect(ridgeGeometry(w).padLeft).toBeGreaterThanOrEqual(8);
+  });
 });
 
 describe("ridgelines: one ridge per week, back to front", () => {

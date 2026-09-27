@@ -192,3 +192,50 @@ describe("buildHeightmap", () => {
     expect(buildHeightmap(spread(600))).toEqual(buildHeightmap(spread(600)));
   });
 });
+
+/**
+ * The ridgeline's heights. Smoothing across weeks is what lets contours
+ * close into clean rings, and it is exactly what turns a ridgeline into
+ * fifty-two near-copies of one line. So the ridges get the same counts under
+ * the same compression, smoothed along the day only, once.
+ */
+describe("buildHeightmap's day profile, for the ridgeline", () => {
+  const spike: ReliefEvent[] = Array.from({ length: 5 }, () => ({ week: 10, hour: 5 }));
+
+  it("smooths along the day, so a spike keeps a shoulder either side of its hour", () => {
+    const { profile } = buildHeightmap(spike);
+    expect(profile[5][10]).toBeGreaterThan(profile[4][10]);
+    expect(profile[4][10]).toBeGreaterThan(0);
+    expect(profile[6][10]).toBeCloseTo(profile[4][10], 12);
+    expect(profile[3][10]).toBe(0);
+  });
+
+  it("never smooths across weeks, so each week keeps its own shape", () => {
+    const { profile, field } = buildHeightmap(spike);
+    expect(field[5][11]).toBeGreaterThan(0);
+    expect(profile[5][11]).toBe(0);
+    expect(profile[5][9]).toBe(0);
+  });
+
+  it("wraps the day at midnight, like the field", () => {
+    const { profile } = buildHeightmap([{ week: 3, hour: 0 }]);
+    expect(profile[HOURS - 1][3]).toBeGreaterThan(0);
+    expect(profile[1][3]).toBeCloseTo(profile[HOURS - 1][3], 12);
+  });
+
+  it("uses the field's compression, so a flat year is the same height both ways", () => {
+    const flat: ReliefEvent[] = [];
+    for (let w = 0; w < WEEKS; w++) for (let h = 0; h < HOURS; h++) for (let k = 0; k < 3; k++) flat.push({ week: w, hour: h });
+    const map = buildHeightmap(flat);
+    for (const row of map.profile) for (const v of row) expect(v).toBeCloseTo(normalise(3, map.ceiling), 12);
+    for (const row of map.field) for (const v of row) expect(v).toBeCloseTo(normalise(3, map.ceiling), 12);
+  });
+
+  it("stays in [0, 1]", () => {
+    const { profile } = buildHeightmap(spread(2000));
+    for (const row of profile) for (const v of row) {
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
+    }
+  });
+});

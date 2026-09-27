@@ -99,6 +99,18 @@ export function smooth(grid: readonly (readonly number[])[], passes = SMOOTH_PAS
   return out;
 }
 
+/**
+ * One pass of [1,2,1]/4 along each week's day and never across weeks, wrapped
+ * at midnight. The ridgeline's heights: a ridge is one week, so blurring it
+ * into its neighbours would draw fifty-two near-copies of one line.
+ */
+export function smoothDays(grid: readonly (readonly number[])[]): Field {
+  const rows = grid.length;
+  return grid.map((row, r) =>
+    row.map((v, c) => (grid[(r - 1 + rows) % rows][c] + 2 * v + grid[(r + 1) % rows][c]) / 4),
+  );
+}
+
 export type Density = { ok: true } | { ok: false; reason: "few-events" | "few-cells" };
 
 /**
@@ -135,6 +147,7 @@ export function buildHeightmap(events: readonly ReliefEvent[]): Heightmap {
 
   return {
     field,
+    profile: smoothDays(normalised),
     counts,
     ceiling,
     events: flat.reduce((a, b) => a + b, 0),

@@ -187,7 +187,11 @@ export function planPlate(input: {
  */
 export type RidgePlan = { ground: DrawOp[]; ridges: DrawOp[][] };
 
-/** The back ridge's strength. `app/globals.test.ts` holds --green far enough above 3:1 that this still clears it. */
+/**
+ * The back ridge's strength. Flattened onto --bg it measures 4.91:1 on green,
+ * 3.95 on amber and 4.47 on ice (2026-09-27), against WCAG 1.4.11's 3:1 for
+ * a graphical object; `draw.test.ts` recomputes it from the theme blocks.
+ */
 const FAR_ALPHA = 0.55;
 const BLOOM_ALPHA = 0.16;
 const BLOOM_WIDTH = 3.4;

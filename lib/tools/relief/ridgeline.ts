@@ -5,11 +5,12 @@ import { HOURS, WEEKS, type Field, type Point, type Polyline } from "./types";
  * back (top of the sheet) to week 52 at the front (bottom), each ridge that
  * week's ground across the twenty-four hours, seen from low over the horizon.
  *
- * The height is the heightmap's own field, so this is the same ground the
- * contours are drawn from and the STL is cut from: a third view of one
- * surface, never a second dataset. Orthographic on purpose. A perspective
- * that shrank the back weeks would make the start of the year look quieter
- * than it was.
+ * The height is the heightmap's `profile`: the same counts under the same
+ * compression as the contours and the STL, smoothed along each day and never
+ * across weeks, because a ridge is one week and blurring it into its
+ * neighbours draws fifty-two copies of one line. Orthographic on purpose. A
+ * perspective that shrank the back weeks would make the start of the year
+ * look quieter than it was.
  *
  * Occlusion is geometry, not paint. `ridgelines` removes hidden lines itself,
  * front to back against a running skyline, so what comes out is only the
@@ -36,10 +37,19 @@ export type RidgeLayout = {
 /** Six points an hour: under two pixels a step at desktop width, so the line reads as a curve. */
 export const SAMPLES_PER_HOUR = 6;
 
-/** A full-height peak stands this many ridges tall. Tall enough to be terrain, short enough to read. */
-const PEAK_RIDGES = 10;
+/**
+ * A full-height hour stands this many ridges tall, so a busy afternoon hides
+ * the weeks behind it: tall enough to be terrain, short enough that the back
+ * of the year still shows over the front. Judged on screenshots in all three
+ * themes on 2026-09-27; ten read as silk rather than ground.
+ */
+export const PEAK_RIDGES = 14;
+/** The gap between weeks as a share of the plot's width, so the terrain keeps its shape at any size. */
+export const SPACING_SHARE = 0.0055;
 /** Room under the front ridge for the hour labels. */
 const AXIS_PX = 22;
+/** The sky over the back ridge. The page's own display band sits above the canvas, so this is a hairline. */
+const SKY_PX = 4;
 /** The floor on a phone: below about three pixels neighbouring weeks merge into a band. */
 const MIN_SPACING = 3.2;
 
@@ -67,15 +77,16 @@ export function ridgeLayout(input: {
 
 /** The screen's layout for a box `width` pixels wide. Everything scales with the width. */
 export function ridgeGeometry(width: number): RidgeLayout {
-  const padX = Math.min(16, Math.max(6, Math.round(width * 0.02)));
+  // Ten at least, so the "00" centred on midnight is not cut by the frame on a phone.
+  const padX = Math.min(16, Math.max(10, Math.round(width * 0.02)));
   const plotWidth = Math.max(1, width - 2 * padX);
-  const spacing = Math.max(MIN_SPACING, plotWidth * 0.0068);
+  const spacing = Math.max(MIN_SPACING, plotWidth * SPACING_SHARE);
   return ridgeLayout({
     width,
     spacing,
     amplitude: spacing * PEAK_RIDGES,
     padX,
-    padTop: padX,
+    padTop: SKY_PX,
     padBottom: AXIS_PX,
   });
 }

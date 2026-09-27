@@ -1,5 +1,5 @@
 import type { ContourLayer } from "./contour";
-import { ridgeLayout, ridgelines, type RidgeLayout } from "./ridgeline";
+import { PEAK_RIDGES, SPACING_SHARE, ridgeLayout, ridgelines, type RidgeLayout } from "./ridgeline";
 import { HOURS, WEEKS, type Field, type Polyline } from "./types";
 
 /**
@@ -96,14 +96,15 @@ export function plotterSvg(layers: readonly ContourLayer[], sheet: Sheet = A4_LA
 
 /**
  * The ridgeline's layout on a sheet, in millimetres, in the sheet's own
- * coordinates. The same proportions as the screen (a peak ten ridges tall,
- * the spacing a fixed share of the width) so the paper looks like the page,
+ * coordinates. The same proportions as the screen (a full-height peak
+ * `PEAK_RIDGES` ridges tall, the spacing a fixed share of the width) so the
+ * paper looks like the page,
  * centred between the top and bottom margins.
  */
 export function sheetRidgeLayout(sheet: Sheet): RidgeLayout {
   const inner = sheet.widthMm - 2 * sheet.marginMm;
-  const spacing = inner * 0.0068;
-  const amplitude = spacing * 10;
+  const spacing = inner * SPACING_SHARE;
+  const amplitude = spacing * PEAK_RIDGES;
   const drawn = amplitude + (WEEKS - 1) * spacing;
   const padTop = (sheet.heightMm - drawn) / 2;
   return ridgeLayout({

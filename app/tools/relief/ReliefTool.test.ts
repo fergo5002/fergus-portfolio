@@ -56,6 +56,13 @@ describe("the client island", () => {
     expect(tool).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 
+  it("labels the plate in the page's own face, read off the canvas rather than the root", () => {
+    // The root has no font-family of its own; reading it there drew the hour
+    // labels in the browser's default serif, on both views, until 2026-09-27.
+    expect(tool).toContain("window.getComputedStyle(canvas).fontFamily");
+    expect(tool).not.toContain("style.fontFamily");
+  });
+
   it("redraws when the theme changes, because the plate is painted in tokens", () => {
     // The paint effect now draws two views, so its dependency list is longer
     // than the three it had; the theme must still be one of them.
@@ -114,6 +121,8 @@ describe("the instrument", () => {
     for (const call of ["ridgeGeometry(", "ridgelines(", "planRidgeline(", "pickRidge(", "pickPlate(", "readCount("]) {
       expect(tool, call).toContain(call);
     }
+    // Each week on its own day profile: the week-smoothed field would draw fifty-two near-copies.
+    expect(tool).toContain("ridgelines(heightmap.profile, ridgeBox)");
     expect(tool).not.toMatch(/Math\.(round|floor)\([^)]*WEEKS/);
   });
 
@@ -138,14 +147,18 @@ describe("the instrument", () => {
     expect(tool).not.toContain("setInterval");
     expect(tool).toContain("onFrame(");
     expect(tool).toContain("new IntersectionObserver(");
+    // Subscribed to the clock only once the canvas is seen, so off screen it costs nothing.
+    expect(tool).toMatch(/if \(stop \|\| !entries\.some\(\(entry\) => entry\.isIntersecting\)\) return;/);
     expect(tool).toMatch(/if \(!fresh \|\| reducedMotion \|\| document\.visibilityState !== "visible"\)/);
-    // Elapsed time, not a frame count: a starved clock slows the sweep, never stretches it.
-    expect(tool).toMatch(/elapsed \+= dt/);
+    // Elapsed time off the frame's own timestamp, never a sum of the clamped
+    // `dt`: a starved tab draws the sweep in bigger steps, never slower.
+    expect(tool).toMatch(/\(time - start\) \/ SWEEP_MS/);
+    expect(tool).not.toMatch(/\+= dt/);
   });
 
   it("takes away the view on screen: the ridgeline or the contours as the SVG", () => {
     const body = tool.match(/async function onExport\([\s\S]*?\n {2}\}/)?.[0] ?? "";
-    expect(body).toContain("ridgelineSvg(heightmap.field)");
+    expect(body).toContain("ridgelineSvg(heightmap.profile)");
     expect(body).toContain("plotterSvg(layers)");
     expect(body).toContain("settle.current?.()");
   });
