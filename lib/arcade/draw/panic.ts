@@ -6,7 +6,7 @@ import { box, line, text, type Pen } from "./kit";
  * and the letters typed so far lit inside the name they are aimed at. The
  * next agent replaces this with the real game's drawing.
  */
-export function drawPanic(pen: Pen, s: PanicState, hud: boolean) {
+export function drawPanic(pen: Pen, s: PanicState, _hud: boolean) {
   const { c, p } = pen;
   line(c, { x: 20, y: KERNEL_Y }, { x: 880, y: KERNEL_Y }, s.flash > 0 ? p.accent : p.bright, 2, s.flash > 0 ? p.accentGlow : p.brightGlow);
   box(c, 20, KERNEL_Y + 6, 860, 22, p.inkSoft, null);
@@ -25,5 +25,4 @@ export function drawPanic(pen: Pen, s: PanicState, hud: boolean) {
     const offset = c.measureText(typedPart).width || typedPart.length * 12;
     text(pen, rest, left + offset, proc.y + 2, size, danger ? p.accent : p.ink, "left", true);
   }
-  if (hud) text(pen, `> ${s.buffer}_`, 40, 470, 24, p.bright, "left", true);
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
@@ -329,19 +329,134 @@ describe("arcade multiplayer is retired (2026-09-27)", () => {
 });
 
 describe("a running game lights the tube where things happen", () => {
-  it("pushes an impact at the engine's event position, projected through the canvas rect", () => {
+  it("pushes an impact at the engine's event position, projected through the stage and the canvas rect", () => {
     expect(game).toMatch(/pushImpact\(frame\.current,/);
-    expect(game).toMatch(/event\.at\.x \/ WORLD\.w/);
-    expect(game).toMatch(/event\.at\.y \/ WORLD\.h/);
+    expect(game).toMatch(/const at = eventPoint\(state\.id, event\.at, v\.stage\);/);
+    expect(game).toMatch(/at\.x \/ v\.stage\.w/);
+    expect(game).toMatch(/at\.y \/ v\.stage\.h/);
+  });
+
+  it("caps the light to one a frame, so physics keeps its slots", () => {
+    expect(frameCallback(game).match(/pushImpact\(/g) ?? []).toHaveLength(1);
   });
 
   it("draws through a ghost layer so motion has phosphor memory", () => {
     expect(game).toMatch(/document\.createElement\("canvas"\)/);
-    expect(game).toMatch(/\{ compact, ghost \}/);
+    expect(game).toMatch(/const view = \(\) => \(\{ stage: stageFor\(cabinet\.id, kindRef\.current\), ghost,/);
   });
 
   it("takes its colours from the theme the room read, never a literal", () => {
     expect(game).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
     expect(game).toMatch(/themeRef\.current/);
+  });
+});
+
+/** The body of the one onFrame callback in a component, which may schedule no render. */
+function frameCallback(src: string): string {
+  const match = /onFrame\(\([^)]*\) => \{([\s\S]*?)\n {4}\}\);/.exec(src);
+  if (!match) throw new Error("frame callback not found");
+  return match[1];
+}
+
+/* ── the shared chrome and the header's replacement (2026-09-27) ─────────── */
+
+describe("a game view without the header bar", () => {
+  it("has no header bar left: no prompt path, no hall of fame button, no bar-level sound or esc", () => {
+    expect(room).not.toMatch(/arcade-bar/);
+    expect(css).not.toMatch(/arcade-bar/);
+    expect(room).not.toMatch(/kind: "fame"/);
+  });
+
+  it("carries pause and sound as visible controls, with P and M as their keys", () => {
+    expect(game).toMatch(/className="arcade-btn arcade-tool arcade-tool--pause"[^\n]*aria-keyshortcuts="P"/);
+    expect(game).toMatch(/className=\{`arcade-btn arcade-tool arcade-tool--sound[^\n]*aria-keyshortcuts="M"/);
+    expect(game).toMatch(/if \(k === "p"\) \{ e\.preventDefault\(\); if \(!e\.repeat\) pause\(!runRef\.current!\.paused\); return; \}/);
+    expect(game).toMatch(/if \(k === "m"\) \{ e\.preventDefault\(\); if \(!e\.repeat\) setAudioEnabled\(!audioLive\); return; \}/);
+  });
+
+  it("keeps a way back to the cabinets in the game view", () => {
+    expect(game).toMatch(/className="arcade-btn arcade-back" onClick=\{onBack\}/);
+  });
+
+  it("pauses and lets go of every held key when the window blurs or the tab hides", () => {
+    expect(game).toMatch(/const blur = \(\) => pause\(true\);/);
+    expect(game).toMatch(/window\.addEventListener\("blur", blur\)/);
+    expect(game).toMatch(/if \(document\.hidden\) blur\(\);/);
+    expect(game).toMatch(/const done = pauseRun\(runRef\.current!, value\);\s*setPaused\(done && value\);\s*release\(\);/);
+  });
+
+  it("steps the run, not the bare game, from the one frame clock, and never renders React from it", () => {
+    const body = frameCallback(game);
+    expect(body).toMatch(/stepRun\(state, 1 \/ 60, keys\.current\)/);
+    expect(body).toMatch(/renderRun\(ctx, state,/);
+    expect(body).not.toMatch(/set[A-Z]\w*\(/);
+    expect(game).not.toMatch(/requestAnimationFrame|setInterval/);
+  });
+
+  it("routes every key through the run, so the first Space on the card starts it", () => {
+    expect(game).toMatch(/const out = pressRun\(runRef\.current!, key\);/);
+    expect(game).toMatch(/physical\.current\.set\(e\.code, key\); keys\.current\.add\(key\); press\(key\);/);
+  });
+
+  it("gives a screen reader the HUD through a hidden status line, written through a ref about once a second", () => {
+    expect(game).toMatch(/<p className="arcade-status vh" role="status" aria-live="polite" aria-atomic="true" ref=\{statusRef\} \/>/);
+    expect(frameCallback(game)).toMatch(/if \(statusClock >= 1000 && statusRef\.current\) \{/);
+    expect(frameCallback(game)).toMatch(/statusRef\.current\.textContent = statusLine\(/);
+    expect(game).not.toMatch(/arcade-live-hud/);
+  });
+
+  it("chooses the stage's shape from the room's width on resize, never in a frame", () => {
+    expect(game).toMatch(/const fit = \(\) => setKind\(stageKind\(root\.clientWidth\)\);/);
+    expect(frameCallback(game)).not.toMatch(/stageKind\(|clientWidth/);
+  });
+
+  it("shows the HUD's best from this tab or the board, and stores nothing for it", () => {
+    expect(game).toMatch(/best: bestFor\(cabinet\.id, boards\)/);
+    expect(game).toMatch(/rememberBest\(cabinet\.id, s\.score\)/);
+    expect(game).not.toMatch(/localStorage|sessionStorage/);
+  });
+});
+
+describe("a typing game's text input", () => {
+  it("is a real input a phone keyboard will type into without correcting or zooming", () => {
+    for (const attr of ['autoCapitalize="none"', 'autoCorrect="off"', 'autoComplete="off"', "spellCheck={false}", 'type="text"']) expect(game).toContain(attr);
+    expect(css).toMatch(/\.arcade-type__input \{[^}]*font-size: 16px;/);
+  });
+
+  it("reads the value through the diff, never keydown, because Android sends keydown 229", () => {
+    expect(game).toMatch(/for \(const key of pressesFor\(diffInput\(typedRef\.current, value\)\)\) pressRun\(run, key\);/);
+    expect(game).toMatch(/onInput=\{typed\}/);
+  });
+
+  it("takes focus inside the gesture that starts the run, the one moment iOS raises a keyboard", () => {
+    expect(game).toMatch(/if \(out === "start"\) \{\s*audio\.relay\(\);\s*if \(typing\) focusType\(\);/);
+    expect(game).toMatch(/const canvasClick = \(\) => \{ if \(runRef\.current!\.phase === "card"\) press\("action"\); \};/);
+  });
+
+  it("lets Escape through to the room, which leaves", () => {
+    const typeKey = /const typeKey = [\s\S]*?\n  \};/.exec(game)?.[0] ?? "";
+    expect(typeKey).toMatch(/if \(e\.key === "Escape"\) return;/);
+    expect(typeKey).not.toMatch(/stopPropagation/);
+  });
+
+  it("follows the visual viewport on resize, throttled, outside the frame clock", () => {
+    expect(game).toMatch(/vv\.addEventListener\("resize", onResize\)/);
+    expect(game).toMatch(/root\.style\.setProperty\("--vv-h"/);
+    expect(frameCallback(game)).not.toMatch(/--vv-h|visualViewport/);
+  });
+});
+
+describe("what the arcade keeps on the visitor's machine", () => {
+  it("writes exactly one key, the posted initials, from exactly one place", () => {
+    const dirs = [["components", "arcade"], ["lib", "arcade"]];
+    const writes: string[] = [];
+    for (const dir of dirs) {
+      for (const file of readdirSync(join(process.cwd(), ...dir))) {
+        if (!/\.tsx?$/.test(file) || /\.test\.tsx?$/.test(file)) continue;
+        const src = code(read(...dir, file));
+        for (const m of src.matchAll(/\.setItem\(\s*([^,]+?)\s*,/g)) writes.push(`${dir.join("/")}/${file}: ${m[1]}`);
+      }
+    }
+    expect(writes).toEqual(["lib/arcade/session.ts: INITIALS_KEY"]);
   });
 });

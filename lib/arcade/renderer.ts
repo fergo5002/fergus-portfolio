@@ -1,8 +1,11 @@
-import { gameHud, WORLD, type GameId, type GameState, type StateOf } from "./engine";
-import { box, grid, line, palette, paletteFor, text, type Palette, type Pen } from "./draw/kit";
+import { drawBanner, drawCard, drawCountdown, drawGameOver, drawHud, type CabinetFace, type ScreenWords } from "./chrome";
+import { gameHud, WORLD, type GameId, type GameState, type Point, type StateOf } from "./engine";
+import { box, grid, palette, paletteFor, text, type Palette, type Pen } from "./draw/kit";
 import { drawPanic } from "./draw/panic";
-import { drawPoker } from "./draw/poker";
+import { drawPoker, pokerPoint } from "./draw/poker";
 import { drawSignal } from "./draw/signal";
+import { stageFor, toStage, type Rect, type Stage, type StageKind } from "./layout";
+import type { Run } from "./run";
 import type { ArcadeTheme } from "./theme";
 
 /**
@@ -13,40 +16,44 @@ import type { ArcadeTheme } from "./theme";
  *
  *  - **Persistence.** The world is drawn into a ghost layer that is faded, not
  *    cleared, every frame, so anything that moves leaves a decaying trail.
- *    The HUD is drawn sharp on the main canvas over the composite.
+ *    The HUD and the chrome are drawn sharp on the main canvas over it.
  *  - **Glow.** Bright strokes are laid twice with additive compositing: a wide
  *    translucent pass under a thin bright one. Never `shadowBlur`, which costs
  *    a full-canvas blur per shape.
  *  - **The theme.** Every colour comes from `paletteFor(theme)`, which is
- *    derived from the site's tokens. There is no colour literal in this file
- *    or under `draw/`, and `renderer.test.ts` proves it, so the games follow
- *    the amber and ice phosphors like everything else on the machine.
+ *    derived from the site's tokens. There is no colour literal in this file,
+ *    in `chrome.ts` or under `draw/`, and `renderer.test.ts` proves it, so the
+ *    games follow the amber and ice phosphors like everything else on the
+ *    machine.
  *
+ * Two entry points. `renderGame` draws a bare world, for the gallery's attract
+ * screens. `renderRun` draws a run in the room: the world on its stage, the
+ * HUD, and whichever part of the shared chrome the run's phase calls for.
  * Each cabinet's world is drawn by its own drawer in `lib/arcade/draw/`,
- * registered in `DRAWERS` beside its simulation module's id.
+ * registered in `DRAWERS` under its module's id.
  */
 
 export { paletteFor };
 export type { Palette };
 
 export type RenderOptions = {
-  /** A narrow screen: the HUD's type goes up so it stays readable. */
+  /** Kept for callers of the bare renderer; a narrow attract screen needs nothing different. */
   compact?: boolean;
   /** A second context, the same pixel size, that keeps the phosphor's memory. */
   ghost?: CanvasRenderingContext2D | null;
-  /** Draw the score strip and captions. Off for the small attract screens. */
+  /** Draw the drawer's own captions. Off for the small attract screens. */
   hud?: boolean;
 };
 
-type Drawer<Id extends GameId> = (pen: Pen, s: StateOf<Id>, hud: boolean) => void;
+type Drawer<Id extends GameId> = (pen: Pen, s: StateOf<Id>, hud: boolean, layout: StageKind) => void;
 export const DRAWERS: { readonly [K in GameId]: Drawer<K> } = { signal: drawSignal, poker: drawPoker, panic: drawPanic };
 
-function drawWorld(pen: Pen, s: GameState, hud: boolean) {
+function drawWorld(pen: Pen, s: GameState, hud: boolean, layout: StageKind) {
   const { c, p } = pen;
   c.lineWidth = 2;
   c.lineJoin = "round";
   c.lineCap = "round";
-  (DRAWERS[s.id] as Drawer<GameId>)(pen, s as never, hud);
+  (DRAWERS[s.id] as Drawer<GameId>)(pen, s as never, hud, layout);
   c.globalCompositeOperation = "lighter";
   for (const q of s.particles) {
     c.globalAlpha = Math.min(1, q.life * 2);
@@ -57,39 +64,24 @@ function drawWorld(pen: Pen, s: GameState, hud: boolean) {
   c.globalCompositeOperation = "source-over";
 }
 
-function drawHud(pen: Pen, s: GameState, compact: boolean) {
-  const { c, p } = pen;
-  // On a phone the canvas is a third of its desktop width, so the strip's type goes up to stay readable.
-  const size = compact ? 21 : 14, y = compact ? 24 : 22;
-  const hud = gameHud(s);
-  line(c, { x: 12, y: 32 }, { x: 888, y: 32 }, p.dim, 1);
-  text(pen, `SCORE ${String(s.score).padStart(6, "0")}`, 18, y, size, p.ink);
-  if (hud.stage) text(pen, `${hud.stage.label} ${String(hud.stage.value).padStart(2, "0")}`, 450, y, size, p.accent, "center");
-  if (hud.lives) text(pen, "◆".repeat(Math.max(0, hud.lives.current)), 882, y, size, p.ink, "right");
-  if (s.banner) {
-    box(c, 170, 277, 560, 42, p.scrim, null);
-    text(pen, s.banner.sub ? `${s.banner.text} // ${s.banner.sub}` : s.banner.text, 450, 304, 16, p.accent, "center");
-  }
-  if (s.flash > 0) {
-    c.globalAlpha = s.flash;
-    box(c, 3, 35, 894, 522, null, p.accent);
-    c.globalAlpha = 1;
-  }
+/** Where the world is played on a stage: the 900 by 560 world, or all of a poker table below the HUD. */
+export function playRect(id: GameId, stage: Stage): Rect {
+  if (id === "poker" && stage.kind === "tall") return { x: 0, y: stage.hud.h, w: stage.w, h: stage.h - stage.hud.h };
+  return { x: stage.world.x, y: stage.world.y, w: WORLD.w * stage.world.s, h: WORLD.h * stage.world.s };
 }
 
-/** The finished screen, so an attract loop and a paused result both read as the tube's own. */
-function drawOver(pen: Pen, s: GameState) {
-  const { c, p } = pen;
-  box(c, 0, 0, WORLD.w, WORLD.h, p.scrim, null);
-  text(pen, s.won ? "CIRCUIT COMPLETE" : "SIGNAL LOST", 450, 268, 64, s.won ? p.bright : p.accent, "center", true);
-  text(pen, `${s.score.toLocaleString("en-IE")} PTS`, 450, 318, 30, p.ink, "center", true);
+/** Where a world point is on the stage, so an event lights the tube where it was drawn. */
+export function eventPoint(id: GameId, at: Point, stage: Stage): Point {
+  if (id === "poker") return pokerPoint(at, stage.kind);
+  return toStage(stage, at);
 }
 
 /**
- * Draw one frame. `width` and `height` are the canvas's pixel size; the world
- * is 900 by 560 and scales to fit. With a ghost context the world is drawn
- * there over its own faded past and composited onto the main canvas; without
- * one it is drawn straight onto a cleared main canvas.
+ * Draw a bare world, for an attract screen. `width` and `height` are the
+ * canvas's pixel size; the world is 900 by 560 and scales to fit. With a
+ * ghost context the world is drawn there over its own faded past and
+ * composited onto the main canvas; without one it is drawn straight onto a
+ * cleared main canvas.
  */
 export function renderGame(c: CanvasRenderingContext2D, s: GameState, width: number, height: number, theme: ArcadeTheme, options: RenderOptions = {}) {
   const p = palette(theme);
@@ -104,7 +96,7 @@ export function renderGame(c: CanvasRenderingContext2D, s: GameState, width: num
     ghost.globalAlpha = 1;
     ghost.fillStyle = p.fade;
     ghost.fillRect(0, 0, WORLD.w, WORLD.h);
-    drawWorld({ c: ghost, p, theme }, s, hud);
+    drawWorld({ c: ghost, p, theme }, s, hud, "wide");
     ghost.restore();
   }
 
@@ -124,9 +116,90 @@ export function renderGame(c: CanvasRenderingContext2D, s: GameState, width: num
     grid(c, p, WORLD.w, WORLD.h);
   } else {
     grid(c, p, WORLD.w, WORLD.h);
-    drawWorld(pen, s, hud);
+    drawWorld(pen, s, hud, "wide");
   }
-  if (hud) drawHud(pen, s, options.compact === true);
-  if (s.over) drawOver(pen, s);
+  if (s.over) {
+    box(c, 0, 0, WORLD.w, WORLD.h, p.scrim, null);
+    text(pen, `${s.score} PTS`, 450, 300, 40, p.ink, "center", true);
+  }
+  c.restore();
+}
+
+export type RunView = {
+  stage: Stage;
+  ghost: CanvasRenderingContext2D | null;
+  /** A touch screen: the card says TAP TO START and shows the on-screen controls' names. */
+  touch: boolean;
+  face: CabinetFace;
+  words: ScreenWords;
+};
+
+/** Draw a run in the room, on its stage, with the chrome its phase calls for. */
+export function renderRun(c: CanvasRenderingContext2D, run: Run, width: number, height: number, theme: ArcadeTheme, view: RunView) {
+  const p = palette(theme);
+  const { stage, ghost } = view;
+  const sx = width / stage.w, sy = height / stage.h;
+  const pen: Pen = { c, p, theme };
+  const play = playRect(run.id, stage);
+  const card = run.phase === "card";
+
+  if (ghost && !card) {
+    ghost.save();
+    ghost.setTransform(sx, 0, 0, sy, 0, 0);
+    ghost.globalCompositeOperation = "source-over";
+    ghost.globalAlpha = 1;
+    ghost.fillStyle = p.fade;
+    ghost.fillRect(0, 0, stage.w, stage.h);
+    ghost.translate(stage.world.x, stage.world.y);
+    ghost.scale(stage.world.s, stage.world.s);
+    drawWorld({ c: ghost, p, theme }, run.game, true, stage.kind);
+    ghost.restore();
+  }
+
+  c.save();
+  c.setTransform(sx, 0, 0, sy, 0, 0);
+  c.globalCompositeOperation = "source-over";
+  c.globalAlpha = 1;
+  c.fillStyle = p.bg;
+  c.fillRect(0, 0, stage.w, stage.h);
+
+  if (card) {
+    grid(c, p, stage.w, stage.h, 0);
+    const demoStage = stageFor(run.id, "wide");
+    drawCard(pen, stage, run, view.face, view.words, view.touch, (scale) => {
+      c.save();
+      c.scale(scale, scale);
+      grid(c, p, demoStage.w, demoStage.h, 0);
+      drawWorld(pen, run.demo.state, false, "wide");
+      c.restore();
+    });
+    c.restore();
+    return;
+  }
+
+  if (ghost) {
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.drawImage(ghost.canvas, 0, 0, width, height);
+    c.setTransform(sx, 0, 0, sy, 0, 0);
+  } else {
+    c.save();
+    c.translate(stage.world.x, stage.world.y);
+    c.scale(stage.world.s, stage.world.s);
+    drawWorld(pen, run.game, true, stage.kind);
+    c.restore();
+  }
+  grid(c, p, stage.w, play.y + play.h, play.y);
+
+  // Under the HUD, so a countdown's veil or a banner never dims the score.
+  if (run.phase === "play" && run.game.banner) drawBanner(pen, stage, play, run.game.banner);
+  if (run.phase === "countdown") drawCountdown(pen, stage, play, run);
+  const hud = gameHud(run.game);
+  drawHud(pen, stage, hud, run.game.score, run.best, view.words);
+  if (run.game.flash > 0) {
+    c.globalAlpha = Math.min(1, run.game.flash * 2.4);
+    box(c, play.x + 3, play.y + 3, play.w - 6, play.h - 6, null, p.accent, undefined, stage.big ? 5 : 3);
+    c.globalAlpha = 1;
+  }
+  if (run.phase === "over") drawGameOver(pen, stage, run, view.face, hud, view.words);
   c.restore();
 }

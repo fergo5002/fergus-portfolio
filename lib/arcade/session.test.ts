@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import {
-  arcadeSession, INITIALS_KEY, loadInitials, markArcadeEntered, markArcadeSeen, rememberPosted, resetArcadeSession,
-  saveInitials, setArcadeBoards,
+  arcadeSession, bestFor, INITIALS_KEY, loadInitials, markArcadeEntered, markArcadeSeen, rememberBest, rememberPosted,
+  resetArcadeSession, saveInitials, sessionBest, setArcadeBoards,
 } from "@/lib/arcade/session";
 import { OWNED_PREFIX, isOwnedKey } from "@/lib/forget";
 
@@ -74,5 +74,36 @@ describe("the power-cycle", () => {
     markArcadeEntered();
     markArcadeEntered();
     expect(arcadeSession().entered).toBe(true);
+  });
+});
+
+/**
+ * The HUD's BEST. Module state like everything else here: it dies with the
+ * tab, and it is never written to storage, because the constitution allows the
+ * arcade exactly one key and that key is the initials somebody posted.
+ */
+describe("the best a run is shown", () => {
+  const snapshot = (score: number) => ({ available: true, boards: [{ game: "poker", rows: [{ initials: "TOP", score }] }] });
+
+  it("is the board's top row until this tab beats it, and lives only in this tab", () => {
+    expect(bestFor("poker", null)).toBe(0);
+    expect(bestFor("poker", snapshot(900))).toBe(900);
+    rememberBest("poker", 1200);
+    expect(sessionBest("poker")).toBe(1200);
+    expect(bestFor("poker", snapshot(900))).toBe(1200);
+    expect(bestFor("signal", snapshot(900))).toBe(0);
+    resetArcadeSession();
+    expect(sessionBest("poker")).toBe(0);
+  });
+
+  it("never lowers a best and ignores a score that is not one", () => {
+    rememberBest("signal", 500);
+    rememberBest("signal", 300);
+    for (const bad of [Number.NaN, -1, 1.5, Number.POSITIVE_INFINITY]) rememberBest("signal", bad);
+    expect(sessionBest("signal")).toBe(500);
+  });
+
+  it("ignores a board that says it is unavailable", () => {
+    expect(bestFor("poker", { available: false, boards: [{ game: "poker", rows: [{ initials: "OLD", score: 99 }] }] })).toBe(0);
   });
 });

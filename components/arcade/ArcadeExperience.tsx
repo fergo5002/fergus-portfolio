@@ -16,7 +16,6 @@ import ArcadeScreen from "./ArcadeScreen";
 import CabinetDetail from "./CabinetDetail";
 import CanvasGame from "./CanvasGame";
 import Gallery from "./Gallery";
-import HallOfFame from "./HallOfFame";
 import { useArcadeTheme } from "./useArcadeTheme";
 import "./arcade.css";
 
@@ -28,6 +27,8 @@ import "./arcade.css";
  * page read as a CRT reaches the arcade too. The page, drawer and status
  * strip are hidden while it is up. The regular navigation returns after the
  * entrance, and a normal link closes this room's host before changing route.
+ * There is no bar of its own: Escape leaves, the nav's `cd arcade` leaves on a
+ * screen with no Escape key, and each view carries its own way back.
  *
  * `data-lenis-prevent` is the scroll fix. Lenis is stopped for the document
  * behind the room, and a stopped Lenis cancels every wheel event it sees
@@ -38,16 +39,15 @@ import "./arcade.css";
 
 type Screen =
   | { kind: "gallery" }
-  | { kind: "fame" }
   | { kind: "detail"; game: GameId }
-  | { kind: "play"; game: GameId; seed: number; count: number };
+  | { kind: "play"; game: GameId; seed: number; count: number; replay: boolean };
 
 type Props = { program: ProgramSpec; onExit(lines: string[]): void };
 
 function Room({ program, onExit }: Props) {
   const path = usePathname();
   const enteredPath = useRef(path);
-  const { reducedMotion, audioLive, setAudioEnabled, setScrollLocked, setEjected, setGravity, degauss, frame, audio } = useSystem();
+  const { reducedMotion, setScrollLocked, setEjected, setGravity, degauss, frame, audio } = useSystem();
   const theme = useArcadeTheme();
   const roomRef = useRef<HTMLElement>(null);
   const exitRef = useRef(onExit);
@@ -122,7 +122,7 @@ function Room({ program, onExit }: Props) {
     // focused its own stage, and a back button under focus turns the first Space, the
     // launch key, into "all cabinets". Found by hand on the live site, 2026-09-05. The game
     // focuses the same node itself; two calls on one node are deliberate, not two owners.
-    const target = screen.kind === "gallery" ? ".arcade-cabinet" : screen.kind === "detail" ? ".arcade-start" : screen.kind === "play" ? ".arcade-stage" : ".arcade-back";
+    const target = screen.kind === "play" ? ".arcade-stage" : screen.kind === "detail" ? ".arcade-start" : ".arcade-cabinet";
     room.querySelector<HTMLElement>(target)?.focus({ preventScroll: true });
   }, [entering, screen]);
 
@@ -131,11 +131,11 @@ function Room({ program, onExit }: Props) {
     exitRef.current([arcadeCopy.left]);
   }, [degauss]);
 
-  const start = (game: GameId) => {
+  const start = (game: GameId, replay = false) => {
     const seed = (crypto.getRandomValues(new Uint32Array(1))[0] ?? 1) >>> 0;
     const next = count + 1;
     setCount(next);
-    setScreen({ kind: "play", game, seed, count: next });
+    setScreen({ kind: "play", game, seed, count: next, replay });
   };
   const back = () => {
     setScreen({ kind: "gallery" });
@@ -146,7 +146,7 @@ function Room({ program, onExit }: Props) {
 
   // The door already declines under reduced motion (lib/commands/hidden.ts), and the effect
   // above leaves if the preference arrives mid-session. This makes the same commit render
-  // nothing, so six attract screens never mount for a frame on the way out.
+  // nothing, so the attract screens never mount for a frame on the way out.
   if (reducedMotion) return null;
 
   return createPortal(
@@ -182,35 +182,16 @@ function Room({ program, onExit }: Props) {
         />
       )}
       <div className={`arcade-room__inner${entering ? " is-entering" : ""}`} inert={entering || undefined}>
-        <header className="arcade-bar">
-          <button type="button" className="arcade-bar__home" onClick={back} aria-label={copy.back}>
-            <span className="arcade-bar__prompt">fergus@portfolio</span>
-            <span className="arcade-bar__path">~/arcade{cabinet ? `/${cabinet.id}` : screen.kind === "fame" ? "/fame" : ""}</span>
-          </button>
-          <div className="arcade-bar__actions">
-            {screen.kind !== "play" && (
-              <button type="button" className="arcade-btn arcade-bar__fame" onClick={() => setScreen(screen.kind === "fame" ? { kind: "gallery" } : { kind: "fame" })} aria-pressed={screen.kind === "fame"}>
-                <span className="arcade-bar__long">{copy.fame}</span>
-                <span className="arcade-bar__short">{copy.fameShort}</span>
-              </button>
-            )}
-            <button type="button" className={`arcade-btn arcade-bar__sound${audioLive ? " is-on" : ""}`} onClick={() => setAudioEnabled(!audioLive)} aria-pressed={audioLive}>
-              {audioLive ? copy.soundOn : copy.soundOff}
-            </button>
-            <button type="button" className="arcade-btn arcade-bar__exit" onClick={leave} aria-label={copy.exit}>
-              {copy.exitShort}
-            </button>
-          </div>
-        </header>
         {screen.kind === "play" && cabinet ? (
           <CanvasGame
             key={`${cabinet.id}-${screen.count}`}
             cabinet={cabinet}
             seed={screen.seed}
+            replay={screen.replay}
             theme={theme}
             boards={boards}
             onBack={back}
-            onReplay={() => start(cabinet.id)}
+            onReplay={() => start(cabinet.id, true)}
             onBoards={refreshBoards}
           />
         ) : screen.kind === "detail" && cabinet ? (
@@ -222,8 +203,6 @@ function Room({ program, onExit }: Props) {
             onStart={() => start(cabinet.id)}
             onBoards={refreshBoards}
           />
-        ) : screen.kind === "fame" ? (
-          <HallOfFame boards={boards} onBack={back} onSelect={(game) => setScreen({ kind: "detail", game })} />
         ) : (
           <Gallery boards={boards} theme={theme} live={!entering} onSelect={(game) => setScreen({ kind: "detail", game })} />
         )}

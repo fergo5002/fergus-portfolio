@@ -55,9 +55,32 @@ export function rememberPosted(run: PostedRun): void {
   session = { ...session, lastPosted: { ...run } };
 }
 
+/**
+ * The best score this tab has seen for each cabinet, for the HUD's BEST.
+ * Module state: it dies with the tab and touches no storage. Kept beside
+ * `session` rather than in it, so the shape `neofetch` is handed stays put.
+ */
+let bests = new Map<string, number>();
+
+export function sessionBest(game: string): number {
+  return bests.get(game) ?? 0;
+}
+
+export function rememberBest(game: string, score: number): void {
+  if (!Number.isSafeInteger(score) || score <= sessionBest(game)) return;
+  bests.set(game, score);
+}
+
+/** The score a run is asked to beat: this tab's best, or the board's top row if that is higher. */
+export function bestFor(game: string, boards: BoardSnapshot | null): number {
+  const top = boards?.available ? boards.boards.find((b) => b.game === game)?.rows[0]?.score ?? 0 : 0;
+  return Math.max(sessionBest(game), Number.isFinite(top) ? top : 0);
+}
+
 /** Tests only. Module state that cannot be reset makes every test order-dependent. */
 export function resetArcadeSession(): void {
   session = { seen: false, entered: false, boards: null, lastPosted: null };
+  bests = new Map();
 }
 
 export function loadInitials(storage: Pick<Storage, "getItem">): string | null {

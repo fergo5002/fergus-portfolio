@@ -57,7 +57,7 @@ html.arcade-entering .nav {
 .arcade-room__inner {
   width: min(1180px, 100%);
   margin: 0 auto;
-  padding: 0 var(--arcade-gutter) 56px;
+  padding: var(--sp-3) var(--arcade-gutter) 56px;
 }
 .arcade-room__inner.is-entering {
   visibility: hidden;
@@ -146,80 +146,6 @@ html.arcade-entering .nav {
   display: block;
   font-size: 0.82rem;
   margin-bottom: var(--sp-2);
-}
-
-/* ----- the bar: the room's own nav -------------------------------------- */
-.arcade-bar {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  min-height: 52px;
-  margin: 0 calc(-1 * var(--arcade-gutter));
-  padding: 4px var(--arcade-gutter);
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  border-bottom: 1px solid var(--green-line);
-  backdrop-filter: blur(2px);
-  font-size: 0.86rem;
-}
-.arcade-bar__home {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  min-height: 44px;
-  padding: 0 8px 0 0;
-  font: inherit;
-  font-size: 0.86rem;
-  color: var(--green);
-  background: transparent;
-  border: 0;
-  text-shadow: var(--glow);
-  cursor: pointer;
-  white-space: nowrap;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.arcade-bar__home:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-.arcade-bar__prompt::after {
-  content: ":";
-}
-.arcade-bar__path {
-  color: var(--amber);
-}
-.arcade-bar__path::after {
-  content: " $";
-  color: var(--green);
-}
-.arcade-bar__actions {
-  display: flex;
-  gap: var(--sp-2);
-  margin-left: auto;
-}
-.arcade-bar__actions .arcade-btn {
-  font-size: 0.78rem;
-  padding: 0 12px;
-}
-.arcade-bar__short {
-  display: none;
-}
-.arcade-bar__sound.is-on {
-  color: var(--amber);
-  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
-  background: var(--arcade-amber-wash);
-}
-.arcade-bar__exit {
-  color: var(--amber);
-}
-.arcade-bar__fame[aria-pressed="true"] {
-  color: var(--green-bright);
-  border-color: var(--green);
 }
 
 /* ----- the entrance ----------------------------------------------------- */
@@ -732,6 +658,25 @@ html.arcade-entering .nav {
   gap: var(--sp-3);
   margin-bottom: var(--sp-3);
 }
+.arcade-play__tools {
+  display: flex;
+  gap: var(--sp-2);
+}
+.arcade-tool {
+  font-size: 0.78rem;
+  padding: 0 12px;
+}
+.arcade-tool.is-on {
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
+  background: var(--arcade-amber-wash);
+}
+/* Nothing to pause on the how-to-play card or the finished screen. The room
+   writes the run's phase onto the play view as it changes, once, not a frame. */
+.arcade-play[data-phase="card"] .arcade-tool--pause,
+.arcade-play[data-phase="over"] .arcade-tool--pause {
+  visibility: hidden;
+}
 .arcade-play__title {
   flex: 1;
   min-width: 0;
@@ -745,22 +690,11 @@ html.arcade-entering .nav {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* The stage's own shape comes from lib/arcade/layout.ts as --stage-ratio:
+   lying down on a wide screen, standing up on a phone. */
 .arcade-frame {
-  width: min(100%, max(320px, calc((100dvh - 300px) * 1.607)));
+  width: min(100%, max(320px, calc((100dvh - 300px) * var(--stage-ratio, 1.607))));
   margin: 0 auto;
-}
-.arcade-frame .window__bar {
-  gap: var(--sp-2);
-}
-.arcade-live-hud {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.74rem;
-  letter-spacing: 0.04em;
-  color: var(--amber);
-  font-variant-numeric: tabular-nums;
 }
 .arcade-stage {
   position: relative;
@@ -775,6 +709,41 @@ html.arcade-entering .nav {
   width: 100%;
   aspect-ratio: 900 / 560;
   touch-action: none;
+  cursor: pointer;
+}
+
+/* ----- a typing game's line ---------------------------------------------- */
+.arcade-type {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-top: 1px solid var(--green-line);
+  background: var(--bg-panel-2);
+}
+.arcade-type__prompt::before {
+  content: "kill $";
+  color: var(--amber);
+}
+.arcade-type__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--sp-2);
+  font: inherit;
+  /* 16px or iOS zooms the page when the field takes focus. */
+  font-size: 16px;
+  color: var(--green-bright);
+  caret-color: var(--amber);
+  background: var(--bg);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  text-shadow: var(--glow);
+}
+.arcade-type__input:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
 }
 .arcade-pause {
   position: absolute;
@@ -855,12 +824,37 @@ html.arcade-entering .nav {
   gap: 6px;
 }
 .arcade-hold .arcade-btn {
-  padding: 0 12px;
+  min-width: 56px;
+  padding: 0 10px;
+  font-weight: 700;
 }
 .arcade-hold .arcade-btn[aria-pressed="true"] {
-  color: var(--green-bright);
-  border-color: var(--green);
-  background: var(--arcade-wash-strong);
+  color: var(--bg);
+  border-color: var(--green-bright);
+  background: var(--green-bright);
+  text-shadow: none;
+}
+.arcade-deal {
+  display: flex;
+  gap: var(--sp-2);
+}
+.arcade-bank {
+  min-height: 56px;
+  min-width: 140px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 55%, transparent);
+  background: var(--arcade-amber-wash);
+}
+.arcade-result__best {
+  margin-top: calc(-1 * var(--sp-2));
+  margin-bottom: var(--sp-3);
+  font-family: var(--font-screen);
+  font-size: 1.6rem;
+  letter-spacing: 0.08em;
+  color: var(--amber-bright);
 }
 .arcade-help {
   max-width: 80ch;
@@ -1018,21 +1012,6 @@ html.arcade-entering .nav {
     grid-template-columns: 1fr;
     gap: var(--sp-3);
   }
-  .arcade-bar {
-    gap: var(--sp-2);
-  }
-  .arcade-bar__prompt {
-    display: none;
-  }
-  .arcade-bar__long {
-    display: none;
-  }
-  .arcade-bar__short {
-    display: inline;
-  }
-  .arcade-bar__actions .arcade-btn {
-    padding: 0 10px;
-  }
   .arcade-marquee {
     padding-top: var(--sp-4);
   }
@@ -1050,13 +1029,24 @@ html.arcade-entering .nav {
   .arcade-frame {
     width: 100%;
   }
-  /* The HUD gets the whole bar on a phone; the path is in the room's own bar already. */
-  .arcade-frame .window__title {
-    display: none;
+  /* A phone keyboard takes the bottom of the screen; a typing game's stage
+     fits what the visual viewport has left (--vv-h, written on resize). */
+  .arcade-play--text .arcade-frame {
+    width: min(100%, calc((var(--vv-h, 100dvh) - 150px) * var(--stage-ratio, 1.25)));
   }
-  .arcade-live-hud {
-    white-space: normal;
-    line-height: 1.4;
+  .arcade-play__tools {
+    margin-left: auto;
+  }
+  .arcade-hold .arcade-btn {
+    min-width: 48px;
+    flex: 1;
+  }
+  .arcade-hold,
+  .arcade-deal {
+    width: 100%;
+  }
+  .arcade-deal .arcade-btn {
+    flex: 1;
   }
   .arcade-controls {
     gap: var(--sp-3);
