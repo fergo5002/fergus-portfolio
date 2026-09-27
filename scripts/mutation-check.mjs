@@ -1453,6 +1453,27 @@ const MUTATIONS = [
     tests: "lib/boot.test.ts",
   },
   {
+    name: "saver: idle listeners go back to bubbling, so a keyboard player in the arcade counts as idle",
+    file: "components/system/Screensaver.tsx",
+    pattern: /const options = \{ passive: true, capture: true \} as const;/,
+    replace: "const options = { passive: true } as const;",
+    tests: "lib/lissajous.test.ts",
+  },
+  {
+    name: "saver: waking leaves the beam's last stroke on the tube",
+    file: "components/system/Screensaver.tsx",
+    pattern: /unsubscribe\(\);\r?\n(\s*)clearBeam\(frame\.current\);/,
+    replace: "unsubscribe();",
+    tests: "lib/lissajous.test.ts",
+  },
+  {
+    name: "saver: strokes meet end to end again and bead at every frame",
+    file: "lib/lissajous.ts",
+    pattern: /export const SAVER_JOIN = 1\.67 \* BEAM_RADIUS;/,
+    replace: "export const SAVER_JOIN = 0;",
+    tests: "lib/lissajous.test.ts",
+  },
+  {
     name: "boot: finish() leaves the frame callback running, so a skip mid-trace keeps drawing the mark",
     file: "components/BootSequence.tsx",
     pattern: /finishedRef\.current = true;\r?\n(\s*)stopFrames\.current\(\);/,

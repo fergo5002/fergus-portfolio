@@ -1565,6 +1565,25 @@ html.js .exp__spine {
   font-size: 0.68rem;
   color: var(--green-dim);
 }
+/* The beam draws the saver on the tube itself (lib/lissajous.ts), so the page
+   steps aside the way it does for the boot and the phosphor shows through. */
+.is-saving .screen,
+.is-saving .nav,
+.is-saving .statusbar {
+  visibility: hidden;
+}
+.saver--beam {
+  background: transparent;
+  pointer-events: none;
+}
+.saver__wake {
+  position: absolute;
+  left: 50%;
+  bottom: var(--sp-5);
+  transform: translateX(-50%);
+  font-size: 0.68rem;
+  color: var(--green-dim);
+}
 
 /* ----- channel change ----------------------------------------------------- */
 .channel {
