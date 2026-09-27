@@ -1,178 +1,696 @@
 @import "../../../components/studio/base.css";
 @import "../../../components/studio/studio.css";
 
-:is(.lab, .tool-studio) .lore-overview {
+/* app/tools/group-lore/tool.css
+   Group Lore's own rules. Every colour is a token, so the amber and ice
+   phosphors repaint the whole instrument. Every selector starts with the
+   four-class scope below: the studio sheets style bare buttons and inputs at
+   (0,3,1) and the workbench floors a tool's buttons at (0,2,1), and these
+   rules must win on purpose rather than by source order. */
+
+:is(.lab, .tool-studio) .studio-lore.lore {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(220px, 1fr);
-  gap: 20px;
-}
-:is(.lab, .tool-studio) .lore-heat-scroll {
-  overflow-x: auto;
-  padding: 16px 0;
-}
-:is(.lab, .tool-studio) .lore-heat-row,
-:is(.lab, .tool-studio) .lore-heat-axis {
-  display: grid;
-  grid-template-columns: 30px repeat(24, minmax(12px, 1fr));
-  gap: 4px;
-  min-width: 460px;
-  align-items: center;
-  margin-bottom: 5px;
-}
-:is(.lab, .tool-studio) .lore-heat-axis,
-:is(.lab, .tool-studio) .lore-heat-row > span {
-  font-size: 0.55rem;
-}
-:is(.lab, .tool-studio) .lore-heat-row button {
-  width: 100%;
-  aspect-ratio: 1;
-  min-height: 15px;
+  gap: 16px;
   min-width: 0;
-  border: 1px solid transparent;
+}
+
+/* ── the screen: the week, its reading and the voices ─────────────────── */
+
+/* A tube face, like Relief's: the page's own ground, a hairline edge and a
+   faint inner bloom. The reading prints in the band across the top. */
+:is(.lab, .tool-studio) .studio-lore.lore .lore__screen {
+  --osd: 54px;
+  --gap: 3px;
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 240px);
+  grid-template-areas:
+    "reading reading"
+    "week voices";
+  align-items: start;
+  gap: 0 28px;
+  padding: 0 18px 18px;
+  overflow: hidden;
+  border: 1px solid var(--green-line);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--bg);
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 56px color-mix(in srgb, var(--green) 6%, transparent);
+  pointer-events: none;
+}
+
+/* The reading: the scope's cursor print, top left, in the display face. */
+:is(.lab, .tool-studio) .studio-lore.lore .lore__reading {
+  grid-area: reading;
+  display: flex;
+  align-items: center;
+  min-height: var(--osd);
+  min-width: 0;
+  font-family: var(--font-screen);
+  font-size: clamp(1.35rem, 2.4vw, 1.75rem);
+  line-height: 1;
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 7px color-mix(in srgb, var(--amber) 45%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The week. The days label the rows and the hours the columns; on a phone
+   the same three children are laid out the other way round (below). */
+:is(.lab, .tool-studio) .studio-lore.lore .lore__week {
+  grid-area: week;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas:
+    "days cells"
+    ". hours";
+  gap: 6px 10px;
+  min-width: 0;
+  cursor: crosshair;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__days,
+:is(.lab, .tool-studio) .studio-lore.lore .lore__hours {
+  display: grid;
+  gap: var(--gap);
+  color: var(--green);
+  font-size: 0.7rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__days {
+  grid-area: days;
+  grid-template-rows: repeat(7, minmax(0, 1fr));
+  align-items: center;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__hours {
+  grid-area: hours;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__cells {
+  grid-area: cells;
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: var(--gap);
+}
+
+/* A cell is phosphor: the theme's green mixed into the ground by `--heat`
+   (0 to 1, from `heatLevel`), glowing more than linearly as it rises, and
+   leaning to the bright phosphor at the very top. An empty hour is a
+   hairline square, so "none" never reads as "a few". */
+:is(.lab, .tool-studio) .studio-lore.lore .lore__cell {
+  display: block;
+  aspect-ratio: 1 / 1.1;
   border-radius: 3px;
+  outline: 2px solid transparent;
+  outline-offset: 1px;
   background: color-mix(
     in srgb,
-    var(--green) calc(var(--heat) * 100%),
-    var(--bg)
+    var(--green-bright) clamp(0%, calc((var(--heat) - 0.72) * 200%), 55%),
+    color-mix(in srgb, var(--green) calc(var(--heat) * 100%), var(--bg))
   );
-  padding: 0;
+  box-shadow: 0 0 calc(var(--heat) * var(--heat) * 12px) color-mix(in srgb, var(--green) calc(var(--heat) * 60%), transparent);
 }
-:is(.lab, .tool-studio) .lore-heat-row button:disabled {
-  opacity: 1;
+:is(.lab, .tool-studio) .studio-lore.lore .lore__cell[data-empty] {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--green) 13%, transparent);
 }
-:is(.lab, .tool-studio) .lore-heat-row button[aria-pressed="true"] {
-  outline: 2px solid var(--amber);
+:is(.lab, .tool-studio) .studio-lore.lore .lore__cell[data-pick] {
+  outline-color: color-mix(in srgb, var(--amber) 70%, transparent);
 }
-:is(.lab, .tool-studio) .lore-people {
-  max-height: 320px;
-  overflow: auto;
+:is(.lab, .tool-studio) .studio-lore.lore .lore__cell[data-at] {
+  outline-color: var(--amber);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--amber) 70%, transparent);
 }
-:is(.lab, .tool-studio) .lore-people button {
+:is(.lab, .tool-studio) .studio-lore.lore .lore__beam {
+  display: none;
+}
+
+/* The voices: a bar each, the loudest first. */
+:is(.lab, .tool-studio) .studio-lore.lore .lore__voices {
+  grid-area: voices;
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__voice-list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__voice {
+  display: grid;
+  grid-template-columns: minmax(0, 6.5em) minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 12px 0;
-  border: 0;
-  border-bottom: 1px solid var(--lab-line);
-  background: transparent;
-  color: var(--green);
+  min-height: 34px;
+  padding: 0 6px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--green-bright);
+  font: inherit;
+  font-size: 0.8rem;
+  line-height: 1.2;
   text-align: left;
+  touch-action: manipulation;
 }
-:is(.lab, .tool-studio) .lore-people button[aria-pressed="true"] {
+:is(.lab, .tool-studio) .studio-lore.lore button.lore__voice:hover {
+  border-color: var(--green-line);
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__voice[aria-pressed="true"] {
+  border-color: var(--amber);
+  color: var(--amber-bright);
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__voice-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__voice-bar {
+  display: block;
+  height: 8px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--green) calc(var(--share) * 100%), var(--green-line) calc(var(--share) * 100%));
+  box-shadow: 0 0 6px color-mix(in srgb, var(--green) 25%, transparent);
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__voice[aria-pressed="true"] .lore__voice-bar {
+  background: linear-gradient(to right, var(--amber) calc(var(--share) * 100%), var(--green-line) calc(var(--share) * 100%));
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__voice-count {
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── the timeline ─────────────────────────────────────────────────────── */
+
+:is(.lab, .tool-studio) .studio-lore.lore .lore__timeline {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+/* Inset seven pixels a side, like the range's rail, so a thumb sits over the day it names. */
+:is(.lab, .tool-studio) .studio-lore.lore .lore__bars {
+  display: block;
+  width: calc(100% - 14px);
+  height: 52px;
+  margin: 0 7px;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__bars rect {
+  fill: var(--green-line);
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__bars rect.is-lit {
+  fill: var(--green);
+}
+/* The range: the track first, then the dates and the presets on one line.
+   Its label names the group for a screen reader and says nothing a sighted
+   reader needs, over a strip that already shows it. */
+:is(.lab, .tool-studio) .studio-lore.lore .lore__range {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 16px;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__range > .inst-dates__track {
+  grid-column: 1 / -1;
+  order: 0;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__range > .inst-dates__readout {
+  order: 1;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__range > .inst-seg-field {
+  order: 2;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__range .inst-seg__legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__range-wait {
+  height: 102px;
+}
+
+/* ── the figures, the phrases ─────────────────────────────────────────── */
+
+/* One strip: the example's honesty, the figures as readouts, the counts'
+   honesty. No punctuation between them, so a wrap never strands a dot. */
+:is(.lab, .tool-studio) .studio-lore.lore .lore__figures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 18px;
+  max-width: none;
+  margin: 0;
+  color: var(--green);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__figure b {
+  font-family: var(--font-screen);
+  font-size: 1.3rem;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--green-bright);
+  font-variant-numeric: tabular-nums;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__caption {
   color: var(--amber);
 }
-:is(.lab, .tool-studio) .lore-people strong {
-  display: block;
-  font-size: 0.8rem;
-  overflow-wrap: anywhere;
+
+:is(.lab, .tool-studio) .studio-lore.lore .lore__phrases {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  min-width: 0;
 }
-:is(.lab, .tool-studio) .lore-people i {
-  display: block;
-  height: 3px;
-  background: currentColor;
-  margin-top: 7px;
+:is(.lab, .tool-studio) .studio-lore.lore .lore__phrase {
+  --weight: 0.5;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 0 13px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--green-bright);
+  font: inherit;
+  font-size: calc(0.76rem + var(--weight) * 0.44rem);
+  line-height: 1.2;
+  touch-action: manipulation;
 }
-:is(.lab, .tool-studio) .lore-people b {
+:is(.lab, .tool-studio) .studio-lore.lore .lore__phrase b {
   font-size: 0.7rem;
   font-weight: 400;
-}
-:is(.lab, .tool-studio) .lore-avatar {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--lab-line);
-  border-radius: 50%;
-  font-size: 0.65rem;
-  flex-shrink: 0;
   color: var(--amber);
 }
-:is(.lab, .tool-studio) .lore-phrases {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+:is(.lab, .tool-studio) .studio-lore.lore button.lore__phrase:hover,
+:is(.lab, .tool-studio) .studio-lore.lore .lore__phrase[aria-pressed="true"] {
+  border-color: var(--amber);
 }
-:is(.lab, .tool-studio) .lore-phrases button {
-  display: flex;
-  gap: 22px;
-  align-items: center;
-  background: var(--bg);
-  border: 1px solid var(--lab-line);
-  padding: 14px 18px;
-  color: var(--green-bright);
-  border-radius: 4px;
+:is(.lab, .tool-studio) .studio-lore.lore .lore__phrase[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--amber) 10%, var(--bg));
 }
-:is(.lab, .tool-studio) .lore-phrases b {
-  color: var(--amber);
-  font-size: 0.7rem;
-}
-:is(.lab, .tool-studio) .lore-archive {
-  scroll-margin-top: 24px;
-}
-:is(.lab, .tool-studio) .lore-archive > .studio-note {
-  margin-top: 16px;
-}
-:is(.lab, .tool-studio) .lore-messages {
-  max-height: 600px;
-  overflow: auto;
-}
-:is(.lab, .tool-studio) .lore-messages article {
-  padding: 20px 0;
-  border-top: 1px solid var(--lab-line);
-}
-:is(.lab, .tool-studio) .lore-messages article > div {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
+:is(.lab, .tool-studio) .studio-lore.lore .lore__none {
+  color: var(--green);
   font-size: 0.8rem;
 }
-:is(.lab, .tool-studio) .lore-messages time {
-  margin-left: auto;
-  font-size: 0.66rem;
-  color: var(--studio-soft);
+
+/* ── quiet buttons, the search opener, the deck ───────────────────────── */
+
+:is(.lab, .tool-studio) .studio-lore.lore :is(.lore__quiet, .lore__search-open, .lore__go) {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--green-bright);
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  touch-action: manipulation;
 }
-:is(.lab, .tool-studio) .lore-messages p {
+:is(.lab, .tool-studio) .studio-lore.lore :is(.lore__quiet, .lore__search-open, .lore__go):hover:not(:disabled) {
+  border-color: var(--amber);
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__quiet[aria-expanded="true"] {
+  border-color: var(--green);
+  background: color-mix(in srgb, var(--green) 12%, var(--bg));
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__go {
+  border-color: var(--amber);
+  background: var(--amber);
+  color: var(--bg);
+  width: fit-content;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__glyph {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+/* The deck: where a chat comes in, then how the result leaves. Two rows on
+   purpose; measured at 1440 they need 993px of a 938px stage in one. */
+:is(.lab, .tool-studio) .studio-lore.lore .lore__deck {
+  display: grid;
+  gap: 12px;
+  min-height: 60px;
+  padding-top: 16px;
+  border-top: 1px solid var(--green-line);
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__intake {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px 10px;
+  min-width: 0;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__busy {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--green-bright);
+  font-size: 0.82rem;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__exports {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 16px;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__exports .inst-export__note {
+  max-width: 44ch;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__paste {
+  display: grid;
+  gap: 10px;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__error {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 2px solid var(--amber);
+  color: var(--amber);
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+/* ── the messages ─────────────────────────────────────────────────────── */
+
+:is(.lab, .tool-studio) .studio-lore.lore .lore__explorer {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px 16px 16px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  scroll-margin-top: 90px;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__explorer-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__count {
+  margin-right: auto;
+  font-family: var(--font-screen);
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--green-bright);
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--amber) 10%, var(--bg));
+  color: var(--amber-bright);
+  font: inherit;
+  font-size: 0.8rem;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__chip::after {
+  content: "\00d7";
+  font-size: 1rem;
+  line-height: 1;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__close {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: none;
+  color: var(--green-bright);
+  font: inherit;
+  font-size: 1.2rem;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__close::before {
+  content: "\00d7";
+  line-height: 1;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__close:hover {
+  border-color: var(--amber);
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__search {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--green);
+  font-size: 0.75rem;
+}
+:is(.lab, .tool-studio) .studio-lore.lore :is(.lore__search-input, .lore__paste-input) {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  color: var(--green-bright);
+  font: inherit;
+  font-size: 16px;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__paste-input {
+  min-height: 132px;
+  resize: vertical;
+}
+:is(.lab, .tool-studio) .studio-lore.lore :is(.lore__search-input, .lore__paste-input):focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__note {
+  margin: 0;
+  color: var(--green);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore-messages {
+  max-height: min(60vh, 540px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore-messages article {
+  padding: 12px 0;
+  border-top: 1px solid var(--green-line);
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore-messages article > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore__avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--green-line);
+  border-radius: 50%;
+  color: var(--amber);
+  font-size: 0.68rem;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore-messages time {
+  margin-left: auto;
+  color: var(--green);
+  font-size: 0.7rem;
+}
+:is(.lab, .tool-studio) .studio-lore.lore .lore-messages p {
+  max-width: 72ch;
+  margin: 8px 0 0 36px;
+  color: var(--green-bright);
+  font-size: 0.86rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  margin: 10px 0 0 40px;
-  font-size: 0.87rem;
 }
-:is(.lab, .tool-studio) .lore-portrait img {
-  width: 100%;
-  height: auto;
-  max-width: 800px;
-  display: block;
-  margin-bottom: 20px;
-}
-@media (max-width: 1050px) {
-  :is(.lab, .tool-studio) .lore-overview {
-    grid-template-columns: 1fr;
+
+/* ── narrower screens ─────────────────────────────────────────────────── */
+
+/* The voices go under the week, two to a row. */
+@media (max-width: 860px) {
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__screen {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "reading"
+      "week"
+      "voices";
+    gap: 16px 0;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__voice-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 14px;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__voice {
+    min-height: 44px;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__exports {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
-@media (max-width: 650px) {
-  :is(.lab, .tool-studio) .lore-messages p {
-    margin-left: 0;
+
+/* A phone: the week turns on its side, days across and hours down, so each
+   cell is about forty pixels wide and the whole week, evenings included,
+   fits the first screen. The old grid kept the hours across at 44px a cell
+   and scrolled every lit hour of the example out of sight. The media query
+   is `WEEK_TRANSPOSE_QUERY` in lib/studio/lore.ts, and the arrow keys turn
+   with it. */
+@media (max-width: 640px) {
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__screen {
+    --osd: 48px;
+    --gap: 2px;
+    padding: 0 12px 14px;
   }
-  :is(.lab, .tool-studio) .lore-messages time {
-    margin-left: 40px;
+  /* A voice and a Wednesday do not fit one line at 320: wrap, never cut the count. */
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__reading {
+    padding: 10px 0;
+    white-space: normal;
+    line-height: 1.1;
   }
-  :is(.lab, .tool-studio) .lore-heat-scroll {
-    padding-bottom: 20px;
+  /* Two or three phrases a line rather than one. */
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__phrase {
+    gap: 6px;
+    padding: 0 10px;
+    font-size: calc(0.72rem + var(--weight) * 0.16rem);
   }
-}
-@media (max-width: 650px) {
-  :is(.lab, .tool-studio) .lore-heat-row,
-:is(.lab, .tool-studio) .lore-heat-axis {
-    grid-template-columns: 34px repeat(24, 44px);
-    min-width: 1186px;
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__week {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      ". days"
+      "hours cells";
+    gap: 6px 8px;
   }
-  :is(.lab, .tool-studio) .lore-heat-row button {
-    width: 44px;
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__days {
+    grid-template-rows: none;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    text-align: center;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__hours {
+    grid-template-columns: none;
+    grid-template-rows: repeat(24, 10px);
+    font-size: 0.64rem;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__cells {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-rows: repeat(24, 10px);
+    grid-auto-flow: column;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__cell {
+    aspect-ratio: auto;
+    border-radius: 2px;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__voice-list {
+    column-gap: 10px;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__voice {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "name count"
+      "bar bar";
+    gap: 4px 8px;
+    padding: 4px 6px;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__voice-name {
+    grid-area: name;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__voice-bar {
+    grid-area: bar;
+    height: 6px;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__voice-count {
+    grid-area: count;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__bars {
     height: 44px;
   }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__range {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore-messages p {
+    margin-left: 0;
+  }
 }
-:is(.lab, .tool-studio) .lore-filters { align-items: flex-end; }
-:is(.lab, .tool-studio) .lore-filters .lore-dates { flex: 1 1 420px; max-width: 680px; }
+
+/* ── motion, only for those who have not asked for less ───────────────── */
+
+/* Phosphor persistence: a cell lights at once and fades slowly, so the
+   pointer leaves a short trail across the week. A new chat runs the beam
+   down the week once. Nothing moves at rest, and nothing here runs under
+   reduced motion, where the beam is not drawn at all. */
+@media (prefers-reduced-motion: no-preference) {
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__cell {
+    transition:
+      background-color 420ms ease-out,
+      box-shadow 700ms ease-out,
+      outline-color 700ms ease-out;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__cell:is([data-at], [data-pick]) {
+    transition-duration: 40ms;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__bars rect {
+    transition: fill 260ms ease-out;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__beam {
+    display: block;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  :is(.lab, .tool-studio) .studio-lore.lore .lore__beam::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -30%;
+    height: 30%;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--green-bright) 18%, transparent) 70%,
+      color-mix(in srgb, var(--green-bright) 50%, transparent) 97%,
+      transparent
+    );
+    mix-blend-mode: plus-lighter;
+    animation: lore-beam 900ms cubic-bezier(0.4, 0.1, 0.4, 1) forwards;
+  }
+  @keyframes lore-beam {
+    to {
+      transform: translateY(445%);
+    }
+  }
+}

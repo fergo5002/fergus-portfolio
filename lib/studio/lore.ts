@@ -238,11 +238,15 @@ export function dateOrderOf(text: string): { order: Order; certain: boolean } {
   return { order: "dmy", certain: false };
 }
 
-/** Read a chat, in the order asked for or the one `dateOrderOf` found. */
+/**
+ * Read a chat, in the order asked for or the one `dateOrderOf` found.
+ * `certain` is about the file, not the choice: an ambiguous file stays
+ * ambiguous after the visitor picks an order, so the page keeps offering it.
+ */
 export function readChat(text: string, order?: Order): { messages: ChatMessage[]; order: Order; certain: boolean } {
   const found = dateOrderOf(text);
   const used = order ?? found.order;
-  return { messages: importChat(text, used), order: used, certain: order ? true : found.certain };
+  return { messages: importChat(text, used), order: used, certain: found.certain };
 }
 
 /**

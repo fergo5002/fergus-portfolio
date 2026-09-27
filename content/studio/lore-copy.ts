@@ -22,9 +22,17 @@ export const loreCopy = {
   reading: (cell: { day: number; hour: number }, n: number, voice?: string) =>
     `${voice ? `${voice} · ` : ""}${DAYS[cell.day]} ${hour(cell.hour)} · ${messages(n)}`,
   messages,
-  /** The figures under the timeline. */
+  /** The figures under the timeline, each a value and what it counts. */
   figures: (n: number, voices: number, days: number, conversations: number) =>
-    [messages(n), count(voices, "voice", "voices"), count(days, "active day", "active days"), count(conversations, "conversation", "conversations")],
+    [
+      [n, "message", "messages"],
+      [voices, "voice", "voices"],
+      [days, "active day", "active days"],
+      [conversations, "conversation", "conversations"],
+    ].map(([value, one, many]) => ({
+      value: (value as number).toLocaleString("en-GB"),
+      label: value === 1 ? (one as string) : (many as string),
+    })),
   counts: "Counts describe this export, not relationships.",
   exampleCaption: "An invented chat.",
 
@@ -32,6 +40,7 @@ export const loreCopy = {
   voicesLabel: "The voices",
   phrasesLabel: "Things you keep saying",
   moreVoices: (n: number) => `${n} more`,
+  fewerVoices: "Fewer",
   pseudo: "Use pseudonyms",
   timeline: "Messages over time",
   stretch: "Stretch",
@@ -144,30 +153,4 @@ export const loreLabels = {
   monthDayYear: "Month / day / year",
   readingMessages: "Reading messages…",
   noPhrases: "No repeated two-word phrases in this stretch.",
-  portraitAlt: "Anonymous activity portrait preview",
-  // Legacy: the pre-rebuild page's labels, removed with it.
-  messagesInTheCompleteExportDarkerQuieter: " messages in the complete export · darker = quieter",
-  noRepeatedTwoWordPhrasesInThis: "No repeated two-word phrases in this export.",
-  matches: " matches",
-  anonymousActivityPortraitPreview: "Anonymous activity portrait preview",
 } as const;
-
-/** Legacy: the pre-rebuild page's words, removed with it. */
-export const legacyLoreCopy = {
-  rhythm: "The weekly rhythm",
-  rhythmNote:
-    "Tap a square to read that hour’s messages. Times use this browser’s timezone; WhatsApp dates have no timezone information.",
-  people: "The voices",
-  phrases: "Things you keep saying",
-  archive: "Message explorer",
-  dates: "Dates",
-  person: "Participant",
-  all: "All voices",
-  heatClear: "Clear hour filter",
-  session:
-    "A conversation starts after a gap of more than 30 minutes. Counts describe this export, not relationships.",
-  portraitTitle: "The shape of us",
-  portraitDownload: "Download portrait SVG",
-  importNote:
-    "WhatsApp text; Telegram or DiscordChatExporter JSON; ZIP containing one chat export. 10 MB of chat text, up to 30 MB ZIP. Media is not analysed.",
-};

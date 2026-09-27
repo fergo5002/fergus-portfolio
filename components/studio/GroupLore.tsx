@@ -1,110 +1,170 @@
 "use client";
-import { studioLabels } from "@/content/studio/labels";
-const ui = studioLabels.GroupLore;
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { copy } from "@/content/lab/copy";
+import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from "react";
 import { studioCopy } from "@/content/studio/copy";
+import { studioLabels } from "@/content/studio/labels";
 import {
-  importChat,
-  loreStats,
-  filterMessages,
   anonymousSummary,
-  type LoreFilter,
+  filterMessages,
+  loreView,
+  peakCell,
+  portraitSvg,
+  pseudonymsOf,
+  readChat,
+  type Cell,
+  type Order,
+  type Stretch,
 } from "@/lib/studio/lore";
-import type { ChatMessage } from "@/lib/lab/chat";
+import { exampleChat } from "@/lib/studio/lore-example";
 import { unpackZip } from "@/lib/studio/intake";
-import {
-  Button,
-  Field,
-  Metrics,
-  ErrorMessage,
-  download,
-  jsonDownload,
-  xml,
-} from "@/components/lab/shared";
-import { DateRange, DropSlot, ExportBar, Segmented, Select, Toggle, useIntake } from "@/components/instrument";
-import { densityOf, spanOf } from "@/lib/instrument/dates";
-const c = studioCopy.lore,
-  days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+import { spanOf } from "@/lib/instrument/dates";
+import { DropSlot, ExportBar, Segmented, useIntake } from "@/components/instrument";
+import { useSystem } from "@/components/system/SystemProvider";
+import Week from "./lore/Week";
+import Timeline from "./lore/Timeline";
+import Voices from "./lore/Voices";
+import Phrases from "./lore/Phrases";
+import Explorer from "./lore/Explorer";
+
+const c = studioCopy.lore;
+const ui = studioLabels.GroupLore;
+
+/**
+ * Group Lore: when a group chat talks, who talks and what it keeps saying.
+ *
+ * The stage, top to bottom: the screen (the week as lit cells, the one line
+ * that reads the cell under the pointer, the voices beside it), the messages
+ * when something has opened them, the timeline that chooses the stretch of
+ * time everything follows, one line of figures, the phrases, and one row for
+ * the intake and the two downloads. The week comes first and nothing sits
+ * above it.
+ *
+ * It opens on an invented chat, read by the real parser in a lazy
+ * initialiser, and the page renders it on the server: the first paint is the
+ * week. Controls that need a handler wait for hydration (`ready`).
+ *
+ * The stretch (`range`) moves the week, the voices and the phrases together;
+ * a voice pressed narrows the week and the phrases to that voice. Pseudonyms
+ * are ranked on the whole export so a label never changes hands. Both
+ * downloads are built from what the week shows, and hold counts only.
+ *
+ * Files are read in a worker, dropped anywhere on the stage or picked. A
+ * newer read, a cancel or the example supersedes an older one through
+ * `generation`. A WhatsApp file whose dates could be read either way is the
+ * only time the page asks which way round they are.
+ */
+type Chat = ReturnType<typeof readChat>;
+
 export default function GroupLore() {
-  const [messages, setMessages] = useState<ChatMessage[]>(() =>
-      importChat(copy.chat.sample, "dmy"),
-    ),
-    [raw, setRaw] = useState(""),
-    [filter, setFilter] = useState<LoreFilter>({}),
-    [order, setOrder] = useState<"dmy" | "mdy">("dmy"),
-    [pseudo, setPseudo] = useState(true),
-    [busy, setBusy] = useState(false),
-    [error, setError] = useState(""),
-    [limit, setLimit] = useState(50),
-    [portrait, setPortrait] = useState(false),
-    worker = useRef<Worker | null>(null),
-    generation = useRef(0),
-    archive = useRef<HTMLElement>(null),
-    deferred = useDeferredValue(filter);
-  useEffect(
-    () => () => {
+  const { scrollTo } = useSystem();
+  const [chat, setChat] = useState<Chat>(() => readChat(exampleChat()));
+  const [example, setExample] = useState(true);
+  const [range, setRange] = useState<Stretch>({});
+  const [focus, setFocus] = useState("");
+  const [pseudo, setPseudo] = useState(true);
+  const [aim, setAim] = useState<Cell | null>(null);
+  const [pick, setPick] = useState<Cell | null>(null);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const [limit, setLimit] = useState(50);
+  const [paste, setPaste] = useState(false);
+  const [raw, setRaw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [ready, setReady] = useState(false);
+  const [sweep, setSweep] = useState(0);
+  const worker = useRef<Worker | null>(null);
+  const generation = useRef(0);
+  const source = useRef("");
+  const panel = useRef<HTMLElement>(null);
+  const search = useRef<HTMLInputElement>(null);
+  const reveal = useRef<"panel" | "search" | null>(null);
+  const readingId = useId();
+  const stretch = useDeferredValue(range);
+  const words = useDeferredValue(query);
+  const messages = chat.messages;
+  const certain = chat.certain;
+
+  useEffect(() => {
+    setReady(true);
+    return () => {
       generation.current++;
       worker.current?.terminate();
-    },
-    [],
+    };
+  }, []);
+
+  const view = useMemo(() => loreView(messages, { range: stretch, person: focus }), [messages, stretch, focus]);
+  const names = useMemo(() => pseudonymsOf(messages), [messages]);
+  const span = useMemo(() => spanOf(messages.map((m) => m.at)), [messages]);
+  const peak = useMemo(() => peakCell(view.stats.heat), [view]);
+  const found = useMemo(
+    () => (open ? filterMessages(view.focus, { query: words, day: pick?.day, hour: pick?.hour }) : []),
+    [open, view, words, pick],
   );
-  const allStats = useMemo(() => loreStats(messages), [messages]),
-    filtered = useMemo(
-      () => filterMessages(messages, deferred),
-      [messages, deferred],
-    ),
-    stats = useMemo(() => loreStats(filtered), [filtered]),
-    span = useMemo(() => spanOf(messages.map((m) => m.at)), [messages]),
-    density = useMemo(
-      () => (span ? densityOf(messages.map((m) => m.at), span, 64) : []),
-      [messages, span],
-    ),
-    labels = useMemo(
-      () =>
-        new Map(
-          allStats.participants.map((p, i) => [p.name, `Voice ${i + 1}`]),
-        ),
-      [allStats],
-    );
-  function change(next: Partial<LoreFilter>) {
-    setFilter((f) => ({ ...f, ...next }));
+
+  /* Opening the messages brings them into view when they would open out of sight. */
+  useEffect(() => {
+    const want = reveal.current;
+    reveal.current = null;
+    if (!open || !want) return;
+    if (want === "search") search.current?.focus({ preventScroll: true });
+    const el = panel.current;
+    if (el && el.getBoundingClientRect().top > window.innerHeight - 160) scrollTo(el);
+  }, [open, pick, query, scrollTo]);
+
+  const label = (name: string) => (pseudo ? (names.get(name) ?? "Voice") : name);
+  const number = (name: string) => (names.get(name) ?? "").replace("Voice ", "");
+  const shown = aim ?? (open ? pick : null) ?? peak;
+  const reading = shown
+    ? c.reading(shown, view.stats.heat[shown.day][shown.hour], focus ? label(focus) : undefined)
+    : c.messages(0);
+
+  function show(next: Chat, isExample: boolean) {
+    setChat(next);
+    setExample(isExample);
+    setRange({});
+    setFocus("");
+    setAim(null);
+    setPick(null);
+    setQuery("");
+    setOpen(false);
+    setPaste(false);
     setLimit(50);
-    setPortrait(false);
+    setSweep((n) => n + 1);
   }
-  function label(name: string) {
-    return pseudo ? (labels.get(name) ?? "Voice") : name;
+
+  function stop() {
+    generation.current++;
+    worker.current?.terminate();
+    setBusy(false);
   }
-  function read(text: string, dateOrder = order) {
+
+  function read(text: string, order?: Order) {
     worker.current?.terminate();
     const token = ++generation.current;
     setBusy(true);
     setError("");
-    const w = new Worker(
-      new URL("../../lib/studio/lore.worker.ts", import.meta.url),
-    );
+    const w = new Worker(new URL("../../lib/studio/lore.worker.ts", import.meta.url));
     worker.current = w;
-    w.onmessage = (e) => {
+    w.onmessage = (e: MessageEvent<Chat | { error: string }>) => {
       w.terminate();
       if (token !== generation.current) return;
       setBusy(false);
-      if (e.data.error) setError(e.data.error);
+      if ("error" in e.data) setError(e.data.error);
       else {
-        setMessages(e.data.messages);
-        setFilter({});
-        setLimit(50);
-        setPortrait(false);
+        source.current = text;
+        show(e.data, false);
       }
     };
     w.onerror = () => {
       w.terminate();
       if (token === generation.current) {
         setBusy(false);
-        setError("Could not read this chat. Try a smaller export.");
+        setError(c.read);
       }
     };
-    w.postMessage({ text, order: dateOrder });
+    w.postMessage({ text, order });
   }
+
   async function upload(file: File) {
     const token = ++generation.current;
     worker.current?.terminate();
@@ -113,23 +173,12 @@ export default function GroupLore() {
       setError("");
       if (file.name.endsWith(".zip")) {
         if (file.size > 30_000_000) throw new Error("ZIP limit: 30 MB.");
-        setBusy(true);
-        const files = await unpackZip(
-            new Uint8Array(await file.arrayBuffer()),
-            30_000_000,
-          ),
-          chats = files.filter(
-            (f) =>
-              /\.(txt|json)$/i.test(f.path) && !f.path.startsWith("__MACOSX"),
-          );
+        const files = await unpackZip(new Uint8Array(await file.arrayBuffer()), 30_000_000),
+          chats = files.filter((f) => /\.(txt|json)$/i.test(f.path) && !f.path.startsWith("__MACOSX"));
         if (chats.length !== 1)
-          throw new Error(
-            "Choose a ZIP containing one .txt or .json chat export, or select the chat file directly.",
-          );
-        if (chats[0].bytes.length > 10_000_000)
-          throw new Error("Chat limit: 10 MB.");
-        if (token === generation.current)
-          read(new TextDecoder().decode(chats[0].bytes));
+          throw new Error("Choose a ZIP containing one .txt or .json chat export, or select the chat file directly.");
+        if (chats[0].bytes.length > 10_000_000) throw new Error("Chat limit: 10 MB.");
+        if (token === generation.current) read(new TextDecoder().decode(chats[0].bytes));
       } else {
         if (file.size > 10_000_000) throw new Error("Chat limit: 10 MB.");
         const text = await file.text();
@@ -141,285 +190,231 @@ export default function GroupLore() {
       setError(e instanceof Error ? e.message : String(e));
     }
   }
+
+  function showExample() {
+    stop();
+    setError("");
+    source.current = "";
+    show(readChat(exampleChat()), true);
+  }
+
+  function openAt(cell: Cell) {
+    setPick(cell);
+    setOpen(true);
+    setLimit(50);
+    reveal.current = "panel";
+  }
+
+  function openPhrase(phrase: string) {
+    setQuery(phrase);
+    setPick(null);
+    setOpen(true);
+    setLimit(50);
+    reveal.current = "panel";
+  }
+
+  function openSearch() {
+    setPick(null);
+    setQuery("");
+    setOpen(true);
+    setLimit(50);
+    reveal.current = "search";
+  }
+
   const intake = useIntake({
     accept: ".txt,.json,.zip",
     disabled: busy,
     onFiles: ([file]) => void upload(file),
   });
-  const heatMax = Math.max(1, ...allStats.heat.flat()),
-    personMax = Math.max(1, ...allStats.participants.map((p) => p.count));
-  const portraitSvg = useMemo(() => {
-    const summary = anonymousSummary(filtered),
-      max = Math.max(1, ...summary.heat.flat());
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900"><rect width="1200" height="900" fill="#09140f"/><g font-family="monospace"><text x="70" y="200" fill="#e5ffe9" font-size="65">${xml(c.portraitTitle)}</text><text x="70" y="260" fill="#94c8a4" font-size="24">${summary.count.toLocaleString("en-GB")} messages · ${summary.participants.length} voices · ${summary.activeDays} active days</text>${summary.heat.map((row, d) => `<text x="70" y="${338 + d * 44}" fill="#94c8a4" font-size="16">${days[d]}</text>${row.map((n, h) => `<rect x="${135 + h * 40}" y="${314 + d * 44}" width="31" height="31" rx="4" fill="#7bffb0" opacity="${0.08 + (0.92 * n) / max}"/>`).join("")}`).join("")}<text x="135" y="660" fill="#94c8a4" font-size="16">00:00</text><text x="565" y="660" fill="#94c8a4" font-size="16">12:00</text><text x="1010" y="660" fill="#94c8a4" font-size="16">23:00</text><text x="70" y="760" fill="#e5ffe9" font-size="24">${summary.sessions} conversations, each beginning after 30 quiet minutes.</text><text x="70" y="835" fill="#94c8a4" font-size="16">An activity portrait of the selected messages. No names. No quotations.</text></g></svg>`;
-  }, [filtered]);
+
+  const figures = c.figures(view.stats.count, view.voices.length, view.stats.activeDays, view.stats.sessions);
+
   return (
-    <div className="lab-work studio studio-lore" {...intake.stageProps}>
-      <div className="studio-intake">
-        <DropSlot intake={intake} id="lore-file" label={c.upload} hint={c.importNote} />
-        <Segmented
-          label={c.dateOrder}
-          size="sm"
-          value={order}
-          disabled={busy}
-          onChange={setOrder}
-          options={[
-            { value: "dmy", label: ui.dayMonthYear },
-            { value: "mdy", label: ui.monthDayYear },
-          ]}
+    <div className="lab-work studio studio-lore lore" {...intake.stageProps}>
+      <div className="lore__screen">
+        <Week
+          heat={view.stats.heat}
+          cursor={shown}
+          pick={open ? pick : null}
+          readingId={readingId}
+          label={c.weekLabel}
+          days={c.daysShort}
+          hour={c.hour}
+          sweep={sweep}
+          onAim={setAim}
+          onPick={openAt}
         />
-        <Button disabled={busy} onClick={() => read(copy.chat.sample, "dmy")}>
-          {studioCopy.example}
-        </Button>
-      </div>
-      <details className="studio-details lore-paste">
-        <summary>{c.paste}</summary>
-        <Field label={c.paste}>
-          <textarea
-            value={raw}
-            onChange={(e) => setRaw(e.target.value)}
-            maxLength={10_000_000}
-          />
-        </Field>
-        <Button disabled={!raw.trim() || busy} onClick={() => read(raw)}>
-          {c.analyse}
-        </Button>
-      </details>
-      <ErrorMessage error={error} />
-      {busy && (
-        <div className="studio-toolbar" role="status">
-          <span>{ui.readingMessages}</span>
-          <Button
-            onClick={() => {
-              generation.current++;
-              worker.current?.terminate();
-              setBusy(false);
-            }}
-          >
-            {studioCopy.cancel}
-          </Button>
-        </div>
-      )}
-      <Metrics
-        items={[
-          ["Messages", stats.count.toLocaleString()],
-          ["Voices", stats.participants.length],
-          ["Active days", stats.activeDays],
-          ["Conversations", stats.sessions],
-        ]}
-      />
-      <div className="studio-toolbar lore-filters">
-        <DateRange
-          label={c.dates}
-          span={span}
-          density={density}
-          value={{ start: filter.start, end: filter.end }}
-          onChange={({ start, end }) => change({ start, end })}
-          className="lore-dates"
-        />
-        <Toggle label={c.pseudo} checked={pseudo} onChange={setPseudo} />
-        <Button
-          onClick={() => {
-            setFilter({});
+        <output id={readingId} className="lore__reading" aria-live="polite">
+          {reading}
+        </output>
+        <Voices
+          voices={view.voices}
+          label={label}
+          focus={focus}
+          onFocus={(name) => {
+            setFocus(name);
             setLimit(50);
           }}
-        >
-          {c.clear}
-        </Button>
-      </div>
-      <div className="lore-overview">
-        <section className="studio-panel">
-          <h3>{c.rhythm}</h3>
-          <p>{c.rhythmNote}</p>
-          <div className="lore-heat-scroll">
-            <div className="lore-heat-axis">
-              <span />
-              {Array.from({ length: 24 }, (_, h) => (
-                <span key={h}>
-                  {h % 4 === 0 ? String(h).padStart(2, "0") : ""}
-                </span>
-              ))}
-            </div>
-            {allStats.heat.map((row, d) => (
-              <div className="lore-heat-row" key={d}>
-                <span>{days[d]}</span>
-                {row.map((n, h) => (
-                  <button
-                    key={h}
-                    aria-label={`${days[d]} ${h}:00, ${n} messages`}
-                    aria-pressed={filter.day === d && filter.hour === h}
-                    disabled={!n}
-                    style={
-                      {
-                        "--heat": 0.06 + (0.94 * n) / heatMax,
-                      } as React.CSSProperties
-                    }
-                    onClick={() => {
-                      change({ day: d, hour: h });
-                      archive.current?.scrollIntoView({
-                        behavior: "instant",
-                        block: "start",
-                      });
-                    }}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-          <p className="studio-note">
-            {allStats.count.toLocaleString()}
-            {ui.messagesInTheCompleteExportDarkerQuieter}
-          </p>
-        </section>
-        <section className="studio-panel">
-          <h3>{c.people}</h3>
-          <div className="lore-people">
-            {allStats.participants.slice(0, 40).map((p, i) => (
-              <button
-                key={p.name}
-                aria-pressed={filter.person === p.name}
-                onClick={() =>
-                  change({ person: filter.person === p.name ? "" : p.name })
-                }
-              >
-                <span className="lore-avatar">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span>
-                  <strong>{label(p.name)}</strong>
-                  <i style={{ width: `${(p.count / personMax) * 100}%` }} />
-                </span>
-                <b>{p.count.toLocaleString()}</b>
-              </button>
-            ))}
-          </div>
-        </section>
-      </div>
-      <section className="studio-panel">
-        <h3>{c.phrases}</h3>
-        <div className="lore-phrases">
-          {allStats.phrases.map((p) => (
-            <button
-              key={p.phrase}
-              aria-pressed={filter.query === p.phrase}
-              onClick={() => {
-                change({ query: p.phrase });
-                archive.current?.scrollIntoView({
-                  behavior: "instant",
-                  block: "start",
-                });
-              }}
-            >
-              <span>“{p.phrase}”</span>
-              <b>{p.count}×</b>
-            </button>
-          ))}
-        </div>
-        {!allStats.phrases.length && <p>{ui.noRepeatedTwoWordPhrasesInThis}</p>}
-      </section>
-      <section className="studio-panel lore-archive" ref={archive}>
-        <div className="studio-section-head">
-          <h3>{c.archive}</h3>
-          <span>
-            {filtered.length.toLocaleString()}
-            {ui.matches}
-          </span>
-        </div>
-        <div className="studio-toolbar">
-          <Field label={c.search}>
-            <input
-              type="search"
-              value={filter.query ?? ""}
-              onChange={(e) => change({ query: e.target.value })}
-            />
-          </Field>
-          <Select
-            label={c.person}
-            value={filter.person ?? ""}
-            onChange={(person) => change({ person })}
-          >
-            <option value="">{c.all}</option>
-            {allStats.participants.map((p) => (
-              <option key={p.name} value={p.name}>
-                {label(p.name)}
-              </option>
-            ))}
-          </Select>
-          {filter.hour !== undefined && (
-            <Button onClick={() => change({ hour: undefined, day: undefined })}>
-              {days[filter.day!]} {filter.hour}:00 · {c.heatClear}
-            </Button>
-          )}
-        </div>
-        <p className="studio-note">{c.privacy}</p>
-        <div className="lore-messages">
-          {filtered.slice(0, limit).map((m, i) => (
-            <article key={`${m.at}-${i}`}>
-              <div>
-                <span className="lore-avatar">
-                  {labels.get(m.sender)?.replace("Voice ", "")}
-                </span>
-                <strong>{label(m.sender)}</strong>
-                <time dateTime={new Date(m.at).toISOString()}>
-                  {new Date(m.at).toLocaleString("en-GB", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </time>
-              </div>
-              <p>{m.text}</p>
-            </article>
-          ))}
-        </div>
-        {!filtered.length && <p>{studioCopy.empty}</p>}
-        {filtered.length > limit && (
-          <Button onClick={() => setLimit(limit + 50)}>{c.more}</Button>
-        )}
-      </section>
-      <p className="studio-note">{c.session}</p>
-      <div className="studio-keep">
-        <Button
-          primary
-          disabled={!filtered.length}
-          onClick={() => setPortrait(!portrait)}
-        >
-          {c.portrait}
-        </Button>
-        <ExportBar
-          label={c.exports}
-          actions={[
-            {
-              label: c.summary,
-              kind: "json",
-              onClick: () => jsonDownload("group-lore-summary.json", anonymousSummary(filtered)),
-            },
-          ]}
+          pseudo={pseudo}
+          onPseudo={setPseudo}
+          ready={ready}
+          words={c}
         />
       </div>
-      {portrait && (
-        <section className="studio-panel lore-portrait">
-          <h3>{c.portraitTitle}</h3>
-          <img
-            src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(portraitSvg)}`}
-            alt={ui.anonymousActivityPortraitPreview}
-            width={1200}
-            height={900}
-          />
+
+      {open && (
+        <Explorer
+          ref={panel}
+          found={found}
+          limit={limit}
+          onMore={() => setLimit(limit + 50)}
+          query={query}
+          onQuery={(next) => {
+            setQuery(next);
+            setLimit(50);
+          }}
+          searchRef={search}
+          pick={pick}
+          onUnpick={() => setPick(null)}
+          voice={focus}
+          onUnfocus={() => setFocus("")}
+          onClear={() => {
+            setPick(null);
+            setFocus("");
+            setQuery("");
+            setLimit(50);
+          }}
+          onClose={() => setOpen(false)}
+          label={label}
+          number={number}
+          words={{ ...c, empty: studioCopy.empty }}
+        />
+      )}
+
+      <Timeline
+        messages={messages}
+        span={span}
+        range={range}
+        lit={stretch}
+        onRange={(next) => {
+          setRange(next);
+          setLimit(50);
+        }}
+        ready={ready}
+        label={c.timeline}
+        stretchLabel={c.stretch}
+      />
+
+      <p className="lore__figures">
+        {example ? <span className="lore__caption">{c.exampleCaption}</span> : null}
+        {figures.map(({ value, label: what }) => (
+          <span key={what} className="lore__figure">
+            <b>{value}</b> {what}
+          </span>
+        ))}
+        <span>{c.counts}</span>
+      </p>
+
+      <Phrases
+        phrases={view.stats.phrases}
+        active={open ? words : ""}
+        onPhrase={openPhrase}
+        onSearch={openSearch}
+        ready={ready}
+        words={{ ...c, none: ui.noPhrases }}
+      />
+
+      <div className="lore__deck">
+        {ready ? (
+          <div className="lore__intake">
+            <DropSlot intake={intake} id="lore-file" label={c.upload} />
+            <button type="button" className="lore__quiet" aria-expanded={paste} onClick={() => setPaste(!paste)}>
+              {c.paste}
+            </button>
+            {!example ? (
+              <button type="button" className="lore__quiet" disabled={busy} onClick={showExample}>
+                {studioCopy.example}
+              </button>
+            ) : null}
+            {!certain && (
+              <Segmented
+                label={c.dateOrder}
+                size="sm"
+                value={chat.order}
+                disabled={busy}
+                onChange={(order) => read(source.current, order)}
+                options={[
+                  { value: "dmy", label: ui.dayMonthYear },
+                  { value: "mdy", label: ui.monthDayYear },
+                ]}
+              />
+            )}
+            {busy ? (
+              <span className="lore__busy" role="status">
+                {ui.readingMessages}
+                <button type="button" className="lore__quiet" onClick={stop}>
+                  {studioCopy.cancel}
+                </button>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+        {ready ? (
           <ExportBar
+            className="lore__exports"
             label={c.exports}
+            note={c.keepNote}
             actions={[
               {
-                label: c.portraitDownload,
+                label: c.summary,
+                kind: "json",
+                disabled: !view.focus.length,
+                onClick: () => save("group-lore-summary.json", JSON.stringify(anonymousSummary(view.focus), null, 2), "application/json"),
+              },
+              {
+                label: c.portrait,
                 kind: "svg",
-                onClick: () => download("group-lore-portrait.svg", portraitSvg, "image/svg+xml"),
+                disabled: !view.focus.length,
+                onClick: () => save("group-lore-portrait.svg", portraitSvg(view.focus, c.portraitWords), "image/svg+xml"),
               },
             ]}
           />
-        </section>
-      )}
+        ) : null}
+      </div>
+
+      {ready && paste ? (
+        <div className="lore__paste">
+          <label className="lore__search">
+            <span>{c.pasteLabel}</span>
+            <textarea
+              className="lore__paste-input"
+              value={raw}
+              maxLength={10_000_000}
+              spellCheck={false}
+              onChange={(event) => setRaw(event.target.value)}
+            />
+          </label>
+          <button type="button" className="lore__go" disabled={!raw.trim() || busy} onClick={() => read(raw)}>
+            {c.analyse}
+          </button>
+        </div>
+      ) : null}
+
+      {error ? (
+        <p className="lore__error" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
+}
+
+/** A file handed to the browser, never uploaded: a blob, an anchor, and the URL let go. */
+function save(name: string, data: string, type: string) {
+  const url = URL.createObjectURL(new Blob([data], { type }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

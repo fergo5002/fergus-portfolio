@@ -1,5 +1,5 @@
 import { atlasCopy } from "./atlas-copy";
-import { legacyLoreCopy, loreCopy } from "./lore-copy";
+import { loreCopy } from "./lore-copy";
 import { musicCopy } from "./music-copy";
 import { studioSharedCopy } from "./shared";
 
@@ -11,7 +11,7 @@ import { studioSharedCopy } from "./shared";
 export const studioCopy = {
   ...studioSharedCopy,
   atlas: atlasCopy,
-  lore: { ...legacyLoreCopy, ...loreCopy },
+  lore: loreCopy,
   music: musicCopy,
 };
 

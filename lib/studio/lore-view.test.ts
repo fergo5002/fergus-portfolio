@@ -182,6 +182,8 @@ describe("the date order of a WhatsApp export", () => {
     expect(readChat(ambiguous).certain).toBe(false);
     expect(new Date(readChat(ambiguous, "mdy").messages[0].at).getMonth()).toBe(1);
     expect(readChat(ambiguous, "mdy").order).toBe("mdy");
+    // Choosing an order does not make the file less ambiguous: the choice stays offered.
+    expect(readChat(ambiguous, "mdy").certain).toBe(false);
     expect(readChat(ambiguous, "mdy").messages).toEqual(importChat(ambiguous, "mdy"));
   });
 });
