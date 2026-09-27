@@ -32,10 +32,10 @@ type Geometry = {
 };
 
 const WIDE: Geometry = {
-  cardW: 148, cardH: 196, pitch: CARD_PITCH, cardTop: CARD_Y - 98, lift: 12,
+  cardW: 148, cardH: 196, pitch: CARD_PITCH, cardTop: CARD_Y - 98, lift: 10,
   rank: 46, suit: 84, heldH: 30, heldText: 17, hint: 15,
   busY: 340,
-  target: { labelY: 66, valueY: 100, label: 12, value: 36, meter: { x: 180, y: 74, w: 540, h: 22 } },
+  target: { labelY: 62, valueY: 95, label: 12, value: 34, meter: { x: 180, y: 70, w: 540, h: 22 } },
   hand: { nameY: HAND_ANCHOR.y + 2, name: 46, worthY: 420, worth: 14, label: 12, sideLabelY: 380, sideValueY: 414, sideValue: 30, pip: 9 },
   table: { top: 442, rows: 3, cols: 3, rowH: 32, gap: 4, name: 13, points: 22, x: 20, w: 860 },
 };
@@ -93,8 +93,8 @@ function drawCard(pen: Pen, g: Geometry, r: Rect, card: number, index: number, h
   // held is said by the lift, the bright edge, the glow ring outside it and the strip.
   if (held) {
     c.globalCompositeOperation = "lighter";
-    roundRect(c, r.x - 5, r.y - 5, r.w + 10, r.h + 10, 12);
-    c.lineWidth = 10;
+    roundRect(c, r.x - 4, r.y - 4, r.w + 8, r.h + 8, 11);
+    c.lineWidth = 8;
     c.strokeStyle = p.inkGlow;
     c.stroke();
     c.globalCompositeOperation = "source-over";

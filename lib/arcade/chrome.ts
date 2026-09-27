@@ -305,7 +305,9 @@ export function drawGameOver(pen: Pen, stage: Stage, run: Run, face: CabinetFace
   const { c, p } = pen;
   const k = stage.big ? 1.5 : 1;
   const t = run.clock;
-  const cx = stage.w / 2, cy = stage.h / 2;
+  // Centred in the play area: on a tall stage the HUD has a band of its own above it.
+  const top = stage.kind === "tall" ? stage.hud.h : 0;
+  const cx = stage.w / 2, cy = top + (stage.h - top) / 2;
   box(c, 0, 0, stage.w, stage.h, p.scrim, null);
   const reveal = Math.min(1, t / 0.25);
   c.save();

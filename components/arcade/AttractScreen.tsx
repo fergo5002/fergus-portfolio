@@ -40,7 +40,7 @@ type Props = {
 export default function AttractScreen({ game, theme, board = null, cycle = false, phase = 0, live = true, className = "" }: Props) {
   const { onFrame } = useSystem();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // Lazy: `useRef(createAttract(...))` would deal a fresh dungeon on every render and throw it away.
+  // Lazy: `useRef(createAttract(...))` would deal a fresh game on every render and throw it away.
   const attractRef = useRef<Attract | null>(null);
   if (!attractRef.current) attractRef.current = createAttract(game, (crypto.getRandomValues(new Uint32Array(1))[0] ?? 1) >>> 0);
   const attractHandle = attractRef.current;
