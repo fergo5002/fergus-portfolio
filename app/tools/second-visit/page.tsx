@@ -28,11 +28,12 @@ export const metadata: Metadata = {
 /**
  * `/tools/second-visit`.
  *
- * The shell draws the prompt line, the heading, the lede, the privacy line and
- * the "Can't see" list from the registry entry. This file owns the island and
- * the one graph edge the registry has no field for: `isBasedOn`, pointing at
- * the business whose model this is. Both the edge and the credit block come
- * from `TIGH_CREDIT`, so setting that to null removes them together.
+ * The shell draws the prompt line, the heading, the one sentence, the privacy
+ * line and the disclosure from the registry entry. This file owns the island,
+ * the credit line it hands the disclosure, and the one graph edge the registry
+ * has no field for: `isBasedOn`, pointing at the business whose model this is.
+ * Both the edge and the credit come from `TIGH_CREDIT`, so setting that to
+ * null removes them together.
  */
 export default function SecondVisitPage() {
   return (
@@ -40,6 +41,16 @@ export default function SecondVisitPage() {
       tool={tool}
       extraSchema={TIGH_CREDIT ? { isBasedOn: TIGH_CREDIT.href } : undefined}
       talk="If you ran this on a real export, I'd like to know what it got wrong."
+      notes={
+        TIGH_CREDIT ? (
+          <p className="sv__credit">
+            {TIGH_CREDIT.line}{" "}
+            <a className="prose__link" href={TIGH_CREDIT.href}>
+              {TIGH_CREDIT.name}
+            </a>
+          </p>
+        ) : null
+      }
     >
       <SecondVisitTool />
     </ToolPage>

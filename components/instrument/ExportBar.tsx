@@ -10,14 +10,16 @@ import "./instrument.css";
  * <ExportBar label="Take it away" actions={[
  *   { label: "PNG", kind: "png", onClick: () => save("png"), disabled: !ready },
  *   { label: "SVG in millimetres", kind: "svg", onClick: () => save("svg") },
- * ]} note={failure} />
+ * ]} note={beforeYouTakeIt} />
  * ```
  *
  * Each action is a plain `<button>` whose accessible name and text content are
  * exactly its `label`: the format glyph is an SVG hidden from assistive
  * technology and carries no text, so `getByRole("button", { name: "PNG" })`
- * and a `textContent` comparison both see only the label. `note` is a status
- * line under the row for a failed download.
+ * and a `textContent` comparison both see only the label. `note` is a plain
+ * line under the row, for what a visitor should know before taking the file
+ * (Second Visit's report carries customer identifiers). A failed download is
+ * the tool's own status message, not this.
  */
 export type ExportKind = "png" | "svg" | "stl" | "json" | "csv" | "wav" | "pdf" | "html" | "md" | "file";
 
@@ -71,11 +73,7 @@ export default function ExportBar({
           </button>
         ))}
       </div>
-      {note ? (
-        <p className="inst-export__note" role="status">
-          {note}
-        </p>
-      ) : null}
+      {note ? <p className="inst-export__note">{note}</p> : null}
     </div>
   );
 }

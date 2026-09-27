@@ -414,7 +414,7 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.inst-export__note { margin: 0; color: var(--amber); font-size: 0.82rem; }
+.inst-export__note { margin: 0; max-width: 80ch; color: var(--green); font-size: 0.78rem; line-height: 1.55; }
 
 /* ── DateRange ────────────────────────────────────────────────────────── */
 
