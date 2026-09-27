@@ -16,12 +16,22 @@
 .writing__list--figured .writing__item:focus-within {
   background: color-mix(in srgb, var(--green) 5%, transparent);
 }
-/* The whole row is the target; the link's name is still only the title. */
+/* The row is the target (the figure and the space around the text), while the
+   link's name stays the title. The stretched layer sits UNDER the description
+   and date: text must be the top thing where it is drawn, for selection and
+   for the phone instrument, which reads contrast at the text's own pixels and
+   counts covered text as unread. */
 .writing__list--figured .writing__link::after {
   content: "";
   position: absolute;
   inset: 0;
+  z-index: 0;
   border-radius: var(--radius);
+}
+.writing__list--figured .writing__desc,
+.writing__list--figured .writing__meta {
+  position: relative;
+  z-index: 1;
 }
 .writing__list--figured .writing__link:focus-visible { outline: none; }
 .writing__list--figured .writing__link:focus-visible::after { outline: 2px solid var(--amber); outline-offset: 2px; }

@@ -73,7 +73,10 @@
 .mcp-console__preset[aria-pressed="true"] { color: var(--bg); background: var(--amber); border-color: var(--amber); text-shadow: none; }
 .mcp-console__preset:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 .mcp-console__panes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-3); }
-.mcp-console__pane { min-width: 0; border: 1px solid var(--green-line); border-radius: 2px; background: var(--bg); padding: var(--sp-3); }
+/* Fixed height, scrolling inside: an answer arriving must never move the page
+   (it did, by 254px on a phone, until the heights stopped depending on it). */
+.mcp-console__pane { display: flex; flex-direction: column; height: 20rem; min-width: 0; overflow: auto; border: 1px solid var(--green-line); border-radius: 2px; background: var(--bg); padding: var(--sp-3); }
+.mcp-console__pane > .mcp-console__code { flex: 1 1 auto; max-height: none; min-height: 0; }
 .mcp-console__label { display: flex; justify-content: space-between; gap: var(--sp-2); margin: 0 0 var(--sp-2); color: var(--green); font-size: 0.75rem; }
 .mcp-console__meta { color: var(--amber); }
 .mcp-console__code { margin: 0; max-height: 18rem; overflow: auto; color: var(--green-bright); font-size: 0.78rem; line-height: 1.55; white-space: pre; }
