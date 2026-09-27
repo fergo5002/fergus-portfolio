@@ -1,3 +1,29 @@
+## 2026-09-27: the redesign, part one (the site)
+
+Fergus asked for the site to be more novel while staying understated, with a list
+of specific changes. This is the site half, on `redesign`; the arcade (three
+cabinets, Kernel Panic, a rebalanced Dead Signal) and the tools (an instrument
+shell, a controls kit, five rebuilt shelf tools) follow as their own PRs.
+
+- The boot mounts `/usr/tighsauna`, reads the visitor's own machine, and has the
+  beam trace the site's mark into the phosphor; it runs as a timeline on the frame
+  clock. A skip mid-trace used to leave the beam drawing: fixed and guarded.
+- The status strip's readouts are back (uptime, hex address, fps, pointer, clock).
+- `drop page` is `gravity` (and no longer drops the hero name twice); `zoom out` is
+  `eject`, now a monitor with a working channel dial, colour and contrast knobs,
+  degauss and power.
+- Home says `current` and `previously`; previews open above when below would clip.
+- Contact's mug and phone are pixel sprites; the Remand card shows idea, Reddit,
+  signal; the writing index has a summary and a drawn figure per piece; `/mcp`
+  leads with a live console; a missing page is a no-signal test card; the
+  screensaver is an oscilloscope figure drawn by the beam.
+
+Verification before the PR: 2,859 unit tests (one load-sensitive timer passed on
+a rerun alone); the boot, eject, saver, gravity, phone polish and phone checks
+against a production build on Chromium and WebKit.
+Not verified before merge: a real phone, a real GPU beyond ANGLE, screen readers.
+The PR carries CI and the production check.
+
 ## 2026-09-24: inline shell and quieter contact links
 
 Fergus asked to restore the interactive shell directly below About and keep only
