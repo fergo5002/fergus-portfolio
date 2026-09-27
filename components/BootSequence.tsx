@@ -1,54 +1,94 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Typewriter from "./Typewriter";
 import { useSystem } from "@/components/system/SystemProvider";
 import {
   BOOTING_CLASS,
+  BOOT_PHASES,
   BOOT_REARM_MS,
   BOOT_WATCHDOG_MS,
-  FULL_BOOT,
-  MEMORY_K,
   SESSION_KEY,
   armBootFailsafe,
+  bootTimeline,
   disarmBootFailsafe,
   pickBootProfile,
 } from "@/lib/boot";
-import type { BootProfile } from "@/lib/boot";
+import type { BootPhase } from "@/lib/boot";
+import { typedText } from "@/lib/arcade/bios";
+import { postLines, postReveal, refreshFromGaps } from "@/lib/post";
+import type { HostEnv } from "@/lib/post";
+import { MARK_VIEWBOX, markPointIn, markRuns, markStrokePaths, markTraceAt } from "@/lib/mark";
+import { beamGainFor, beamLength, clearBeam, readBeam, writeBeam } from "@/lib/beam";
+import "./boot.css";
 
-type Phase = "dark" | "head" | "memory" | "devices" | "bar";
+const [CHEVRON, CARET] = markStrokePaths();
+const VIEWBOX = `${MARK_VIEWBOX.x} ${MARK_VIEWBOX.y} ${MARK_VIEWBOX.w} ${MARK_VIEWBOX.h}`;
+const STEP = Object.fromEntries(BOOT_PHASES.map((p, i) => [p, i])) as Record<BootPhase, number>;
+
+/**
+ * The visitor's machine, as their browser reports it. Read once on mount and
+ * kept in the effect's closure until the boot ends: never stored, never sent,
+ * and only ever written to a text node inside an overlay PostHog is told to
+ * ignore. `lib/post.ts` decides what of it is printed and how.
+ */
+function readHost(): HostEnv {
+  try {
+    const nav = navigator as Navigator & { deviceMemory?: number };
+    let timeZone: string | undefined;
+    try {
+      timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      /* no Intl: the locale line says what it can */
+    }
+    return {
+      cores: nav.hardwareConcurrency,
+      memoryGb: nav.deviceMemory,
+      screenW: window.screen?.width,
+      screenH: window.screen?.height,
+      dpr: window.devicePixelRatio,
+      locale: nav.language,
+      timeZone,
+    };
+  } catch {
+    return {};
+  }
+}
 
 /**
  * Renders its children immediately (good for SSR / no-JS / SEO) and, on the first
  * visit of a session, overlays a one-time cold start.
  *
- * v5 makes this a real power-on rather than a fade. The tube is genuinely off:
- * `frame.boot` is driven to zero, so the shader collapses the picture to a
- * single bright horizontal line, then opens it vertically over about a second
- * and a half while the vertical hold rolls a few times before locking. The BIOS
- * text types into that opening band, which is why the sequence starts dark and
- * silent for four hundred milliseconds: the machine has not finished striking
- * yet, and text appearing before it would give the game away.
+ * The tube is genuinely off, then its line strikes and the picture opens (the
+ * shader's `frame.boot` path). The BIOS types its header, counts its memory,
+ * reads out the visitor's own machine, and works through Fergus's devices down
+ * to the caffeine. Then the picture drops out for a mode switch, the tube comes
+ * live, and the beam traces the site's mark in one stroke, leaving a real trail
+ * in the phosphor. The mark folds to a line, and the page opens out of it.
+ *
+ * All of that is `bootTimeline` read once a frame off the one frame clock, and
+ * written through refs and CSS variables. The only timers are the strike, the
+ * watchdog and the handoff, so a slow machine lands the same words at the same
+ * moments in fewer frames, and a tab that comes back from the background
+ * catches up rather than crawling.
  *
  * Skippable at any point, never shown twice in a session, and never shown under
- * `prefers-reduced-motion`.
+ * `prefers-reduced-motion`. The ownership of the reveal is in `lib/boot.ts`.
  */
 export default function BootSequence({ children }: { children: React.ReactNode }) {
   const [booting, setBooting] = useState(false);
-  const [phase, setPhase] = useState<Phase>("dark");
-  const [memory, setMemory] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const { frame, degauss, burstRain, audio } = useSystem();
+  const { frame, degauss, burstRain, audio, onFrame } = useSystem();
   const finishedRef = useRef(false);
   // Read by the watchdog below. Held in a ref rather than named as an effect
   // dependency so that the mount effect keeps a stable identity: re-running it
   // would restrike the tube mid-sequence.
   const finishRef = useRef<() => void>(() => {});
-  // Which boot this machine gets: the full BIOS or the phone's two seconds.
-  // Decided once, on mount, from the pointer and the width; a ref because the
-  // timings below read it from effects and the lines from render, and it
-  // must not change under a running sequence.
-  const profileRef = useRef<BootProfile>(FULL_BOOT);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const headRef = useRef<HTMLDivElement>(null);
+  const memRef = useRef<HTMLDivElement>(null);
+  const postRef = useRef<HTMLDivElement>(null);
+  const devRef = useRef<HTMLDivElement>(null);
+  const markRef = useRef<SVGSVGElement>(null);
+  const coverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // The pre-paint script in <head> already decided whether to boot (session +
@@ -59,10 +99,13 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     // arms its failsafe on the same branch that adds the class.
     if (!document.documentElement.classList.contains(BOOTING_CLASS)) return;
 
-    profileRef.current = pickBootProfile({
+    // Which boot this machine gets, decided once: it must not change under a
+    // running sequence.
+    const profile = pickBootProfile({
       coarse: window.matchMedia("(pointer: coarse)").matches,
       width: window.innerWidth,
     });
+    const host = readHost();
     setBooting(true);
     const f = frame.current;
     // Hold the phosphor layer dark until the machine is actually up...
@@ -72,18 +115,119 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     f.boot = 0;
     f.bootTarget = 0;
 
+    // The one phase a timer runs: the tube sits off, then deflection comes up,
+    // the line strikes and the picture opens. The timeline's clock starts at
+    // the first frame after this, so a strike that fires late delays the whole
+    // sequence evenly instead of letting the text run ahead of the tube.
+    let struck = false;
     const strike = window.setTimeout(() => {
-      // Deflection comes up: the line strikes and the picture opens.
+      struck = true;
       frame.current.bootTarget = 1;
       audio.powerOn();
-      setPhase("head");
-    }, profileRef.current.strikeMs);
+    }, profile.strikeMs);
+
+    let struckAt = -1;
+    let lastTime = -1;
+    let lastStep = -1;
+    let handoff = 0;
+    // Frame gaps until the POST prints, for the refresh rate. Measured across
+    // the strike, when the tube is doing its heaviest drawing, which is the
+    // honest test of whether a steady rate is really there.
+    const gaps: number[] = [];
+    let post: string[] | null = null;
+    // Where the beam had got to, and how long it has been lit along the path
+    // the tube has not read yet.
+    let lastU = 0;
+    let litMs = 0;
+    let markBox: DOMRect | null = null;
+    const written: Record<string, string> = {};
+
+    const text = (el: HTMLElement | null, key: string, value: string) => {
+      if (el && written[key] !== value) {
+        el.textContent = value;
+        written[key] = value;
+      }
+    };
+    const publish = (el: Element | null, name: string, value: number) => {
+      const v = value.toFixed(4);
+      if (el && written[name] !== v) {
+        (el as HTMLElement | SVGElement).style.setProperty(name, v);
+        written[name] = v;
+      }
+    };
+
+    const unsubscribe = onFrame((time) => {
+      if (lastTime >= 0 && post === null) gaps.push(time - lastTime);
+      lastTime = time;
+      if (!struck) return;
+      if (struckAt < 0) struckAt = time;
+      const snap = bootTimeline(profile, profile.strikeMs + (time - struckAt));
+
+      const overlay = overlayRef.current;
+      if (overlay && overlay.dataset.phase !== snap.phase) overlay.dataset.phase = snap.phase;
+      if (snap.step !== lastStep) {
+        if (lastStep < STEP.switch && snap.step >= STEP.switch) {
+          // The mode switch: the picture drops out with a relay's clunk, and
+          // the tube comes up live for the beam to draw on.
+          overlay?.classList.add("is-graphic");
+          frame.current.targetLive = 1;
+          audio.relay();
+        }
+        if (lastStep < STEP.trace && snap.step >= STEP.trace) {
+          markBox = markRef.current?.getBoundingClientRect() ?? null;
+        }
+        lastStep = snap.step;
+      }
+
+      text(headRef.current, "head", typedText(profile.headLines, snap.headChars));
+      if (profile.memoryMs > 0 && snap.step >= STEP.memory) {
+        const count = String(snap.memoryK).padStart(6, "0");
+        text(memRef.current, "mem", `Memory Test: ${count}K${snap.step > STEP.memory ? " OK" : ""}`);
+      }
+      if (snap.step >= STEP.post) {
+        if (post === null) post = postLines({ ...host, refreshHz: refreshFromGaps(gaps) }, profile.postFields);
+        text(postRef.current, "post", postReveal(post, snap.postMs, profile.postMs));
+      }
+      text(devRef.current, "dev", typedText(profile.deviceLines, snap.deviceChars));
+
+      publish(coverRef.current, "--cover", snap.cover);
+      const trace = markTraceAt(snap.trace);
+      publish(markRef.current, "--mark-a", trace.strokes[0]);
+      publish(markRef.current, "--mark-b", trace.strokes[1]);
+      publish(markRef.current, "--collapse", snap.collapse);
+
+      // The beam: the lit path swept since the last frame, onto the phosphor.
+      // If the tube has not read the last path yet (it draws at 30fps on a
+      // phone) and this one carries straight on from it, the two are joined
+      // rather than the first being overwritten.
+      if (markBox && lastU < 1 && snap.step >= STEP.trace) {
+        const runs = markRuns(lastU, snap.trace);
+        const run = runs[runs.length - 1];
+        if (run) {
+          const box = markBox;
+          const pts = run.pts.map((p) => {
+            const q = markPointIn(p, box);
+            return { x: q.x / window.innerWidth, y: q.y / window.innerHeight };
+          });
+          const joins = runs.length === 1 && run.from === lastU && frame.current.beamCount > 0;
+          const path = joins ? [...readBeam(frame.current), ...pts.slice(1)] : pts;
+          litMs = (joins ? litMs : 0) + (run.to - run.from) * profile.traceMs;
+          const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+          writeBeam(frame.current, path, beamGainFor(litMs, beamLength(path, aspect)));
+        }
+        lastU = snap.trace;
+      }
+
+      // The end. Dropping the overlay is a state change, and state never
+      // changes inside a frame callback, so it is handed to a timeout.
+      if (snap.done && !handoff) handoff = window.setTimeout(() => finishRef.current(), 0);
+    });
 
     // Covers the case disarming the inline failsafe opens up: this component
-    // mounted, took ownership of the reveal, and then stalled part-way (a
-    // typewriter whose onDone never fires, a rAF loop that never gets a frame).
-    // Goes through finish() rather than stripping the class, so the tube still
-    // powers on properly instead of the overlay simply vanishing.
+    // mounted, took ownership of the reveal, and then stalled part-way (no
+    // frames at all: a tab that never comes back, a main thread that never
+    // yields). Goes through finish() rather than stripping the class, so the
+    // tube still powers on properly instead of the overlay simply vanishing.
     const watchdog = window.setTimeout(() => finishRef.current(), BOOT_WATCHDOG_MS);
 
     // Take ownership only once the replacement is actually in place. Disarming
@@ -92,8 +236,11 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     disarmBootFailsafe();
 
     return () => {
+      unsubscribe();
       window.clearTimeout(strike);
       window.clearTimeout(watchdog);
+      window.clearTimeout(handoff);
+      clearBeam(frame.current);
       // Hand ownership back. Without this, unmounting before finish() leaves
       // `booting` set with no timer anywhere: the inline failsafe is cancelled,
       // the watchdog is cleared on the line above, and the visitor is looking at
@@ -102,9 +249,15 @@ export default function BootSequence({ children }: { children: React.ReactNode }
       // removing a safety net always creates. Clicking any nav link while the
       // BIOS is typing reaches it, since this component lives in app/page.tsx.
       // So does a render error in anything it wraps, and Fast Refresh.
-      if (!finishedRef.current) armBootFailsafe(BOOT_REARM_MS);
+      if (!finishedRef.current) {
+        armBootFailsafe(BOOT_REARM_MS);
+        // And never leave the tube dark behind a page that is about to be
+        // shown: the same rule the arcade entrance keeps.
+        frame.current.bootTarget = 1;
+        frame.current.targetLive = 1;
+      }
     };
-  }, [frame, audio]);
+  }, [frame, audio, onFrame]);
 
   const finish = useCallback(() => {
     if (finishedRef.current) return;
@@ -125,6 +278,7 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     f.bootTarget = 1;
     if (f.boot < 0.6) f.boot = 0.6;
     f.targetLive = 1;
+    clearBeam(f);
 
     document.documentElement.classList.remove(BOOTING_CLASS);
     setBooting(false);
@@ -138,13 +292,18 @@ export default function BootSequence({ children }: { children: React.ReactNode }
       degauss();
       burstRain(1400);
 
-      const el = document.querySelector(".screen");
+      const el = document.querySelector<HTMLElement>(".screen");
       const nav = document.querySelector(".nav");
+      // The mark folded into a line across the middle of the viewport, so the
+      // page opens out of that line, not out of the middle of a document that
+      // may be three screens tall.
+      if (el) el.style.transformOrigin = `50% ${window.innerHeight / 2 - el.getBoundingClientRect().top}px`;
       el?.classList.add("power-on");
       nav?.classList.add("power-on");
       window.setTimeout(() => {
         el?.classList.remove("power-on");
         nav?.classList.remove("power-on");
+        if (el) el.style.transformOrigin = "";
       }, 680);
     } catch {
       /* the site is already up; the flourish is not worth a broken page */
@@ -157,87 +316,35 @@ export default function BootSequence({ children }: { children: React.ReactNode }
     finishRef.current = finish;
   });
 
-  // ── memory test ───────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!booting || phase !== "memory") return;
-    const started = performance.now();
-    let raf = 0;
-    const step = (t: number) => {
-      const p = Math.min(1, (t - started) / profileRef.current.memoryMs);
-      setMemory(Math.floor(p * MEMORY_K));
-      if (p < 1) raf = requestAnimationFrame(step);
-      else setPhase("devices");
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [booting, phase]);
-
-  // ── loading bar, then hand over to the desktop ────────────────────────────
-  useEffect(() => {
-    if (!booting || phase !== "bar") return;
-    let raf = 0;
-    let handoff = 0;
-    const started = performance.now();
-    const step = (t: number) => {
-      const p = Math.min(1, (t - started) / profileRef.current.barMs);
-      setProgress(p);
-      if (p < 1) raf = requestAnimationFrame(step);
-      else handoff = window.setTimeout(finish, profileRef.current.handoffMs);
-    };
-    raf = requestAnimationFrame(step);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.clearTimeout(handoff);
-    };
-  }, [booting, phase, finish]);
-
-  const bars = Math.round(progress * 24);
-  const profile = profileRef.current;
-
   return (
     <>
       {booting && (
         <div
-          className="boot"
+          ref={overlayRef}
+          className="boot ph-no-capture"
           role="status"
           aria-label="System booting"
+          data-phase="off"
           onClick={finish}
           onKeyDown={finish}
         >
-          {/* Squeezed into the tube's opening band by `--boot-open`. The skip
-              button deliberately sits outside it: an escape hatch that is itself
-              a millimetre tall for the first second is not an escape hatch. */}
-          <div className="boot__inner">
-            {phase !== "dark" && (
-              <Typewriter
-                lines={[...profile.headLines]}
-                speed={profile.headSpeedMs}
-                onDone={() => setPhase("memory")}
-              />
-            )}
-
-            {(phase === "memory" || phase === "devices" || phase === "bar") && (
-              <div className="boot__mem">
-                Memory Test: {String(memory).padStart(6, "0")}K {phase === "memory" ? "" : "OK"}
-              </div>
-            )}
-
-            {(phase === "devices" || phase === "bar") && (
-              <Typewriter
-                lines={[...profile.deviceLines]}
-                speed={profile.deviceSpeedMs}
-                onDone={() => setPhase("bar")}
-              />
-            )}
-
-            {phase === "bar" && (
-              <div className="boot__bar">
-                starting phosphor display [{"█".repeat(bars)}
-                {"·".repeat(24 - bars)}] {Math.round(progress * 100)}%
-              </div>
-            )}
+          {/* Squeezed into the tube's opening band by `--boot-open`. Hidden from
+              assistive technology: it is costume, typed a character a frame,
+              and the status label already says what is happening. */}
+          <div className="boot__inner" aria-hidden="true">
+            <div ref={headRef} className="boot__lines" />
+            <div ref={memRef} className="boot__lines boot__mem" />
+            <div ref={postRef} className="boot__lines" />
+            <div ref={devRef} className="boot__lines" />
           </div>
-
+          <svg ref={markRef} className="boot__mark" viewBox={VIEWBOX} aria-hidden="true" focusable="false">
+            <path className="boot__stroke boot__stroke--chevron" d={CHEVRON} pathLength={1} />
+            <path className="boot__stroke boot__stroke--caret" d={CARET} pathLength={1} />
+          </svg>
+          <div ref={coverRef} className="boot__cover" aria-hidden="true" />
+          {/* The skip button deliberately sits outside the squeezed band: an
+              escape hatch that is itself a millimetre tall for the first second
+              is not an escape hatch. */}
           <button type="button" className="boot__skip" onClick={finish}>
             skip &gt;
           </button>

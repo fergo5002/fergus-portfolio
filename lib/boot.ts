@@ -39,6 +39,7 @@
  */
 
 import { SYSTEM_VERSION } from "@/content/machine";
+import { typedCount, typingDuration } from "@/lib/arcade/bios";
 
 export const HEAD_LINES = [
   `FergusOS BIOS v${SYSTEM_VERSION}   (c) 2026 Patrick Fergus O'Reilly`,
@@ -60,66 +61,85 @@ export const SETTINGS_KEY = "fergusos_settings";
 export const BOOTING_CLASS = "booting";
 export const MEMORY_K = 65536;
 
-/** How long the tube sits dark, striking its line, before any text appears. */
-export const STRIKE_MS = 420;
-/** Milliseconds per character for each of the two typewriters. */
-export const HEAD_SPEED_MS = 11;
-export const DEVICE_SPEED_MS = 8;
-/** The rAF-driven memory count, the rAF-driven loading bar, and the pause after it. */
-export const MEMORY_MS = 900;
-export const BAR_MS = 780;
-export const HANDOFF_MS = 420;
-
 /**
- * How long a `Typewriter` takes to finish, at its floor.
- *
- * It schedules one tick per character, one more at each line boundary, and one
- * final tick that fires `onDone`. The FIRST of those is scheduled with
- * `startDelay`, not with `speed` (see `components/Typewriter.tsx`), so only the
- * remaining ticks are spaced by `speed`. Missing that is an off-by-one-tick, and
- * an earlier version of this function had it.
+ * How long the black cover takes to lift once the line has struck. A tube's
+ * line does not fade in, it arrives; this only takes the edge off a first frame
+ * that would otherwise pop.
  */
-export function typewriterMs(
-  lines: readonly string[],
-  speed: number,
-  startDelay = 0,
-): number {
-  const ticks = lines.reduce((n, line) => n + line.length, 0) + lines.length + 1;
-  return startDelay + (ticks - 1) * speed;
-}
+export const STRIKE_FADE_MS = 90;
+
+/** The readings of the visitor's own machine a POST can print. `lib/post.ts` formats them. */
+export type PostField = "cpu" | "memory" | "display" | "locale";
 
 /**
  * Everything that decides how long a boot takes and what it types, as one
- * value, because there are now two of them.
+ * value, because there are two of them.
  *
- * The full sequence is 6.4 seconds of BIOS, and on a phone that is a black
+ * The full sequence is several seconds of BIOS, and on a phone that is a black
  * screen for longer than most people give a link. Fergus chose a shorter boot
  * for phones over skipping it (2026-09-06): the same story with fewer lines,
  * the skip button still there. The lines are drawn from the same script rather
  * than written fresh, so the phone tells a shorter version of the same boot,
  * not a different one. It ran at about two seconds until 2026-09-13, when
  * Fergus called it and it went to about three and a half; see `PHONE_BOOT`.
+ *
+ * Since 2026-09-27 every field is a duration on one clock, read by
+ * `bootTimeline`, rather than the delay of a timer. In order:
+ *
+ *   off ........ the tube is genuinely off (`strikeMs`, the one phase a timer runs)
+ *   head ....... the BIOS header types
+ *   memory ..... the memory test counts up (none on a phone)
+ *   post ....... the visitor's own machine is read out, one line at a time
+ *   devices .... Fergus's device lines, ending on the caffeine punchline
+ *   punchline .. a beat to read it
+ *   switch ..... the picture drops out, the way a monitor's does when the
+ *                mode changes
+ *   trace ...... the beam traces the site's mark in one stroke
+ *   ready ...... the mark holds
+ *   collapse ... it folds to a line, and the page opens out of that line
  */
 export type BootProfile = {
   readonly headLines: readonly string[];
   readonly deviceLines: readonly string[];
+  readonly postFields: readonly PostField[];
   readonly strikeMs: number;
   readonly headSpeedMs: number;
-  readonly deviceSpeedMs: number;
+  /** A pause at the end of each header line, so the eye can land on it. */
+  readonly headHoldMs: number;
   readonly memoryMs: number;
-  readonly barMs: number;
-  readonly handoffMs: number;
+  readonly postMs: number;
+  readonly deviceSpeedMs: number;
+  readonly deviceHoldMs: number;
+  readonly punchlineMs: number;
+  readonly switchMs: number;
+  readonly traceMs: number;
+  readonly readyMs: number;
+  readonly collapseMs: number;
 };
 
+/**
+ * About 7.3 seconds, up from 6.4. The second came from the POST reading the
+ * visitor's machine and the beam drawing the mark; the loading bar and the
+ * handoff pause it replaces gave some of it back. Typing is a touch quicker
+ * than the old 11 and 8 milliseconds a character; at 60 frames a second that
+ * is still only two or three characters a frame, so a line visibly types.
+ */
 export const FULL_BOOT: BootProfile = {
   headLines: HEAD_LINES,
   deviceLines: DEVICE_LINES,
-  strikeMs: STRIKE_MS,
-  headSpeedMs: HEAD_SPEED_MS,
-  deviceSpeedMs: DEVICE_SPEED_MS,
-  memoryMs: MEMORY_MS,
-  barMs: BAR_MS,
-  handoffMs: HANDOFF_MS,
+  postFields: ["cpu", "memory", "display", "locale"],
+  strikeMs: 320,
+  headSpeedMs: 10,
+  headHoldMs: 40,
+  memoryMs: 600,
+  postMs: 900,
+  deviceSpeedMs: 7,
+  deviceHoldMs: 30,
+  punchlineMs: 300,
+  switchMs: 150,
+  traceMs: 820,
+  readyMs: 360,
+  collapseMs: 150,
 };
 
 /**
@@ -132,6 +152,13 @@ export const FULL_BOOT: BootProfile = {
  * slower than the desktop boot on purpose, and a third device line was added
  * back so the list has a middle rather than a first and last.
  *
+ * Reworked on 2026-09-27 inside the same length, about 3.8 seconds, which is
+ * the window Fergus approved on 2026-09-13 and `lib/boot.test.ts` holds. The
+ * memory test went, to pay for two readings of the visitor's phone and the
+ * beam drawing the mark, which are the parts worth the time. The mount line is
+ * `/usr/tighsauna` now, so a phone is told what Fergus is building too. Typing
+ * stays at the slower speeds, 12 and 8, for the reason above.
+ *
  * The floor still sits under `BOOT_FAILSAFE_MS`, which is coincidence and not
  * a constraint: `BootSequence` disarms that timer on mount, so the sequence is
  * not racing it. See the note on `BOOT_FAILSAFE_MS` for why it must not grow to
@@ -140,24 +167,147 @@ export const FULL_BOOT: BootProfile = {
 export const PHONE_BOOT: BootProfile = {
   headLines: [HEAD_LINES[0]],
   deviceLines: [DEVICE_LINES[1], DEVICE_LINES[2], DEVICE_LINES[5]],
-  strikeMs: 420,
-  headSpeedMs: 14,
-  deviceSpeedMs: 9,
-  memoryMs: 460,
-  barMs: 480,
-  handoffMs: 300,
+  postFields: ["display", "locale"],
+  strikeMs: 280,
+  headSpeedMs: 12,
+  headHoldMs: 40,
+  memoryMs: 0,
+  postMs: 440,
+  deviceSpeedMs: 8,
+  deviceHoldMs: 25,
+  punchlineMs: 220,
+  switchMs: 130,
+  traceMs: 600,
+  readyMs: 200,
+  collapseMs: 140,
 };
 
-/** The floor of one profile: every term is a timer or a ramp that can run late and never early. */
+/** Every phase of a boot, in the order they play. `done` is the open-ended last one. */
+export const BOOT_PHASES = [
+  "off",
+  "head",
+  "memory",
+  "post",
+  "devices",
+  "punchline",
+  "switch",
+  "trace",
+  "ready",
+  "collapse",
+  "done",
+] as const;
+export type BootPhase = (typeof BOOT_PHASES)[number];
+export type PhaseSpan = { readonly phase: BootPhase; readonly start: number; readonly end: number };
+
+const spanCache = new WeakMap<BootProfile, readonly PhaseSpan[]>();
+
+/**
+ * When each phase starts and ends, in milliseconds from the moment the overlay
+ * mounted. A phase of zero length (the phone's memory test) starts and ends at
+ * the same instant and is never current.
+ */
+export function bootPhases(profile: BootProfile): readonly PhaseSpan[] {
+  const cached = spanCache.get(profile);
+  if (cached) return cached;
+  const lengths: Record<Exclude<BootPhase, "done">, number> = {
+    off: profile.strikeMs,
+    head: typingDuration(profile.headLines, profile.headSpeedMs, profile.headHoldMs),
+    memory: profile.memoryMs,
+    post: profile.postMs,
+    devices: typingDuration(profile.deviceLines, profile.deviceSpeedMs, profile.deviceHoldMs),
+    punchline: profile.punchlineMs,
+    switch: profile.switchMs,
+    trace: profile.traceMs,
+    ready: profile.readyMs,
+    collapse: profile.collapseMs,
+  };
+  let at = 0;
+  const spans: PhaseSpan[] = [];
+  for (const phase of BOOT_PHASES) {
+    if (phase === "done") {
+      spans.push({ phase, start: at, end: Infinity });
+      break;
+    }
+    spans.push({ phase, start: at, end: at + lengths[phase] });
+    at += lengths[phase];
+  }
+  spanCache.set(profile, spans);
+  return spans;
+}
+
+/**
+ * The floor of one profile: the moment `bootTimeline` reports `done`. Every term
+ * is a duration the sequence can only reach late, never early: the strike is a
+ * timer that can fire late, and the rest is read off a clock that starts when
+ * it does.
+ */
 export function bootFloorMs(profile: BootProfile): number {
-  return (
-    profile.strikeMs +
-    typewriterMs(profile.headLines, profile.headSpeedMs) +
-    profile.memoryMs +
-    typewriterMs(profile.deviceLines, profile.deviceSpeedMs) +
-    profile.barMs +
-    profile.handoffMs
-  );
+  const spans = bootPhases(profile);
+  return spans[spans.length - 1].start;
+}
+
+/** What the screen should show at one instant of a boot. */
+export type BootSnapshot = {
+  readonly phase: BootPhase;
+  /** Index of `phase` in `BOOT_PHASES`. Never decreases. */
+  readonly step: number;
+  /** Characters of the header typed so far, for `typedText`. */
+  readonly headChars: number;
+  /** The memory test's count, in K. */
+  readonly memoryK: number;
+  /** Milliseconds into the POST block, clamped to its length. */
+  readonly postMs: number;
+  readonly deviceChars: number;
+  /** 0..1 along the beam's trace of the mark. */
+  readonly trace: number;
+  /** 0..1 through the mark folding to a line. */
+  readonly collapse: number;
+  /** 0..1 opacity of the black cover: the tube off, or the mode switch. Not monotonic. */
+  readonly cover: number;
+  readonly done: boolean;
+};
+
+const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+
+/**
+ * The whole sequence as a pure function of elapsed time.
+ *
+ * `BootSequence` calls this once a frame from the one frame clock and writes the
+ * result through refs, so the words on screen are a function of the clock and
+ * nothing else. A frame that arrives late catches up rather than falling
+ * behind, a tab that comes back from the background lands where it should, and
+ * the sequence ends at `bootFloorMs(profile)` on every machine that is drawing
+ * frames at all. Every field except `cover` only ever moves forward.
+ */
+export function bootTimeline(profile: BootProfile, elapsedMs: number): BootSnapshot {
+  const spans = bootPhases(profile);
+  const e = Number.isNaN(elapsedMs) ? 0 : Math.max(0, elapsedMs);
+  let step = 0;
+  while (step < spans.length - 1 && e >= spans[step].end) step++;
+
+  const at = (phase: BootPhase) => spans[BOOT_PHASES.indexOf(phase)];
+  const ratio = (phase: BootPhase) => {
+    const s = at(phase);
+    return s.end > s.start ? clamp01((e - s.start) / (s.end - s.start)) : e >= s.end ? 1 : 0;
+  };
+
+  const phase = spans[step].phase;
+  let cover = 0;
+  if (phase === "off" || phase === "switch") cover = 1;
+  else if (e < profile.strikeMs + STRIKE_FADE_MS) cover = 1 - (e - profile.strikeMs) / STRIKE_FADE_MS;
+
+  return {
+    phase,
+    step,
+    headChars: typedCount(profile.headLines, e - at("head").start, profile.headSpeedMs, profile.headHoldMs),
+    memoryK: profile.memoryMs > 0 ? Math.floor(MEMORY_K * ratio("memory")) : 0,
+    postMs: Math.min(profile.postMs, Math.max(0, e - at("post").start)),
+    deviceChars: typedCount(profile.deviceLines, e - at("devices").start, profile.deviceSpeedMs, profile.deviceHoldMs),
+    trace: ratio("trace"),
+    collapse: ratio("collapse"),
+    cover: clamp01(cover),
+    done: phase === "done",
+  };
 }
 
 /**
@@ -171,9 +321,9 @@ export function pickBootProfile(env: { coarse: boolean; width: number }): BootPr
 }
 
 /**
- * The shortest the sequence can possibly run. A floor, not an estimate: every
- * term is a timer or a rAF-driven ramp that the browser may run late and can
- * never run early.
+ * The shortest the sequence can possibly run. A floor, not an estimate: the
+ * strike is a timer the browser may run late, and everything after it is read
+ * off a clock that starts at the strike, so nothing can land early.
  *
  * No delay in this file is derived from it. It is recorded because getting it
  * wrong by 2.4 seconds is what caused the bug at the top of this file, and it is
@@ -207,6 +357,11 @@ export const BOOT_REARM_MS = 1000;
  * case neither of the above can: mounted, took ownership, then stalled part-way
  * through. Finishes through `finish()` so the tube still powers on properly
  * rather than the overlay simply vanishing.
+ *
+ * Since the sequence is read off the frame clock, "stalled" now means no frames
+ * at all: a tab that stays hidden, a main thread that never yields. A slow
+ * machine still finishes at the floor, only in fewer frames. So this can stay
+ * well clear of both floors, which `lib/boot.test.ts` holds at twice over.
  */
 export const BOOT_WATCHDOG_MS = 20_000;
 

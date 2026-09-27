@@ -612,12 +612,7 @@ html.crt-off body {
   opacity: 0.6;
 }
 
-/* ----- typewriter / cursor ---------------------------------------------- */
-.tw__line {
-  min-height: 1.6em;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
+/* ----- cursor ------------------------------------------------------------ */
 .cursor {
   color: var(--green-bright);
 }
@@ -1589,8 +1584,7 @@ html.js .exp__spine {
 }
 
 /* ----- boot extras -------------------------------------------------------- */
-.boot__mem,
-.boot__bar {
+.boot__mem {
   margin-top: var(--sp-2);
   color: var(--green);
   font-variant-numeric: tabular-nums;

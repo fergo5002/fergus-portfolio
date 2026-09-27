@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { MARK_VIEWBOX, markPath, markStrokePaths, markSweep, markTraceAt } from "./mark";
+import { MARK_VIEWBOX, markPath, markPointIn, markRuns, markStrokePaths, markSweep, markTraceAt } from "./mark";
 
 /** The icon's own geometry, read from the file rather than retyped. */
 function iconStrokes(): number[][][] {
@@ -145,5 +145,34 @@ describe("markSweep", () => {
       const end = one[one.length - 1];
       expect(two[0][0]).toEqual(end[end.length - 1]);
     }
+  });
+});
+
+describe("markRuns", () => {
+  it("is markSweep with the time each run spent lit", () => {
+    for (const [a, b] of [[0, 1], [0.1, 0.3], [0.55, 0.8], [0.3, 0.3]]) {
+      expect(markRuns(a, b).map((r) => r.pts)).toEqual(markSweep(a, b));
+    }
+    const [first, second] = markRuns(0, 1);
+    expect(first.from).toBe(0);
+    expect(second.to).toBe(1);
+    // The gap between them is the blanked move, and nothing lit happens in it.
+    expect(second.from).toBeGreaterThan(first.to);
+    expect(markTraceAt((first.to + second.from) / 2).lit).toBe(false);
+  });
+
+  it("starts a run exactly where the last frame left the beam, so a writer can tell it continues", () => {
+    const [run] = markRuns(0.2, 0.25);
+    expect(run.from).toBe(0.2);
+    expect(run.to).toBe(0.25);
+  });
+});
+
+describe("markPointIn", () => {
+  it("maps the view box onto an element's box, corner to corner", () => {
+    const rect = { left: 100, top: 50, width: 380, height: 280 };
+    const { x, y, w, h } = MARK_VIEWBOX;
+    expect(markPointIn({ x: x / 64, y: y / 64 }, rect)).toEqual({ x: 100, y: 50 });
+    expect(markPointIn({ x: (x + w) / 64, y: (y + h) / 64 }, rect)).toEqual({ x: 480, y: 330 });
   });
 });

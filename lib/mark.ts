@@ -176,21 +176,24 @@ function strokeOfBlank(step: Step): number {
   return PLAN.steps.slice(i).find((s) => s.stroke >= 0)?.stroke ?? PLAN.strokeLengths.length;
 }
 
+/** One lit run of a sweep, and the stretch of the trace (0..1) the gun spent drawing it. */
+export type MarkRun = { pts: MarkPoint[]; from: number; to: number };
+
 /**
- * The lit path the beam swept between two moments, split wherever the gun was
- * off, corners included. A frame hands this to the phosphor, so a fast beam
- * leaves a continuous trail instead of a row of dots, and a beam sitting still
- * comes back as a single point.
+ * `markSweep` with each run's time span, which is what a writer needs to
+ * light it in proportion to how long the gun was on. `from` equals the `u0`
+ * passed in whenever the gun was already on then, which is how a writer can
+ * tell a run continues the path it wrote last frame.
  */
-export function markSweep(u0: number, u1: number): MarkPoint[][] {
+export function markRuns(u0: number, u1: number): MarkRun[] {
   const a = Math.max(0, u0);
   const b = Math.min(1, u1);
   if (!(b > a)) return [];
-  const runs: MarkPoint[][] = [];
-  let run: MarkPoint[] | null = null;
+  const runs: MarkRun[] = [];
+  let run: MarkRun | null = null;
   const push = (p: MarkPoint) => {
-    const last = run![run!.length - 1];
-    if (!last || last.x !== p.x || last.y !== p.y) run!.push(p);
+    const last = run!.pts[run!.pts.length - 1];
+    if (!last || last.x !== p.x || last.y !== p.y) run!.pts.push(p);
   };
   for (const step of PLAN.steps) {
     const start = Math.max(a, step.start);
@@ -201,11 +204,37 @@ export function markSweep(u0: number, u1: number): MarkPoint[][] {
       continue;
     }
     if (!run) {
-      run = [];
+      run = { pts: [], from: start, to: end };
       runs.push(run);
       push(position(step, start));
     }
+    run.to = end;
     push(position(step, end));
   }
-  return runs.filter((r) => r.length > 0);
+  return runs;
+}
+
+/**
+ * The lit path the beam swept between two moments, split wherever the gun was
+ * off, corners included. A frame hands this to the phosphor, so a fast beam
+ * leaves a continuous trail instead of a row of dots, and a beam sitting still
+ * comes back as a single point.
+ */
+export function markSweep(u0: number, u1: number): MarkPoint[][] {
+  return markRuns(u0, u1).map((r) => r.pts);
+}
+
+/**
+ * A point of the mark in an element's box, when that element shows the view
+ * box at the same aspect ratio. `BootSequence` uses it to put the beam exactly
+ * where the SVG draws the stroke.
+ */
+export function markPointIn(
+  p: MarkPoint,
+  rect: { left: number; top: number; width: number; height: number },
+): MarkPoint {
+  return {
+    x: rect.left + ((p.x * U - MARK_VIEWBOX.x) / MARK_VIEWBOX.w) * rect.width,
+    y: rect.top + ((p.y * U - MARK_VIEWBOX.y) / MARK_VIEWBOX.h) * rect.height,
+  };
 }
