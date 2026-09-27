@@ -134,6 +134,10 @@ jobs:
         run: node scripts/saver-check.mjs
         env:
           REVISION_BASE: http://localhost:3000
+      - name: eject's hardware works, fits a phone and agrees with the bezel
+        run: node scripts/eject-check.mjs --no-shots
+        env:
+          REVISION_BASE: http://localhost:3000
       - name: phone check through the hidden arcade door
         run: node scripts/arcade-phone-check.mjs --base http://localhost:3000 --out .phone-check/arcade
       - name: tools workflows on desktop and phones

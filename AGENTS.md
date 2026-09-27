@@ -328,6 +328,20 @@ brought with it:
   beam from a browser check, watch `uBeamGain` uploads, not `uBeamCount`: ogl uploads a uniform
   only when it changes, and a writer that always sends full strokes leaves the count unchanged.
   The boot's mark and the screensaver both draw through it.
+- **Eject is a monitor you can operate** (2026-09-27). `lib/eject.ts` is still the one geometry:
+  it lays out the case, chin and hardware, the shader takes it as uniforms and `EjectHardware`
+  places its real DOM controls from the same function, so they agree by construction;
+  `scripts/eject-check.mjs` samples the canvas and holds the DOM screen's corners on the bezel
+  within 2px. The chin carries a channel dial (a detent per route in `content/nav.ts`; you stay
+  ejected), colour and contrast knobs (through `setTheme` and `setScanlines`, so they persist only
+  when non-default), degauss, and power (a collapse to a line inside the glass, then the strike;
+  every way out switches the tube back on). The glass never tilts: leaning shows the case's side
+  and moves a light, so CSS and the shader never need to share a homography.
+  `html.is-ejecting .crt__assembly` uses `overflow: clip`, not `hidden`: `hidden` makes it a
+  scroll container, and a channel change's scroll-to-top then scrolled the assembly out from
+  under the glass. `EjectRig` re-measures the scroll spacer whenever the page changes height. At
+  phone scale the status strip's `enter` is 32.6px tall because the whole screen is scaled; the
+  chin's own controls are 44px.
 - **The screensaver is an oscilloscope** (`lib/lissajous.ts`). After 45 idle seconds the page
   steps aside (`html.is-saving`, like `.booting`) and the beam retraces a slowly retuning
   Lissajous figure; with no WebGL or the CRT off, the old plate bounces instead. Its idle
