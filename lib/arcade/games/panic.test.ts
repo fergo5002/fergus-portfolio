@@ -404,6 +404,20 @@ describe("Kernel Panic: chips never collide near the top", () => {
     });
   }
 
+  it("places a fork's children clear of the fork itself, so its fading image is never under them", () => {
+    for (const touch of [false, true]) {
+      for (const x of [120, 450, 780]) {
+        const s = fresh(1, touch);
+        const fork = put(s, touch ? "fork" : "fork()", 260, "fork", x);
+        const ghost = { ...fork };
+        type(s, fork.name);
+        const children = s.processes.filter((p) => p.kind === "child");
+        expect(children).toHaveLength(2);
+        for (const c of children) expect(collide(c, ghost), `${touch ? "touch" : "desk"} fork at ${x}: ${c.name} on the fork`).toBe(false);
+      }
+    }
+  });
+
   it("places a fork's children clear of what is already there, even on a crowded row", () => {
     const s = fresh(1, true);
     const fork = put(s, "fork", 300, "fork", 450);

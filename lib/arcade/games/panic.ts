@@ -258,25 +258,26 @@ export function chipGeometry(p: Placed, layout: ChipLayout): ChipGeometry {
 const meets = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 const column = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w;
 
-/** Whether a chip placed like `c` would clear every live chip but `ignore`, on both layouts. */
-function clearOf(s: PanicState, c: Placed, ignore?: Proc): boolean {
+/** Whether a chip placed like `c` would clear every live chip, and anything in `also`, on both layouts. */
+function clearOf(s: PanicState, c: Placed, also: readonly Placed[] = []): boolean {
   for (const layout of LAYOUTS) {
     const a = chipGeometry(c, layout).bounds;
-    for (const q of s.processes) if (q !== ignore && meets(a, chipGeometry(q, layout).bounds)) return false;
+    for (const q of [...s.processes, ...also]) if (meets(a, chipGeometry(q, layout).bounds)) return false;
   }
   return true;
 }
 
 /**
  * A clear x for a new chip at height `y`: one that spreads the top out, or
- * with `prefer` the clear x nearest it. Null when there is no room.
+ * with `prefer` the clear x nearest it, also clearing anything in `also`.
+ * Null when there is no room.
  */
-function place(s: PanicState, name: string, kind: ProcKind, y: number, prefer?: number): number | null {
+function place(s: PanicState, name: string, kind: ProcKind, y: number, prefer?: number, also: readonly Placed[] = []): number | null {
   let best: number | null = null, bestScore = -Infinity;
   const xs = prefer === undefined ? Array.from({ length: 24 }, () => 40 + rand(s) * 820) : Array.from({ length: 70 }, (_, i) => 36 + i * 12);
   for (const x of xs) {
     const c = { name, kind, x, y };
-    if (!clearOf(s, c)) continue;
+    if (!clearOf(s, c, also)) continue;
     const near = s.processes.filter((q) => q.y < SPAWN_Y + 140);
     const score = prefer !== undefined ? -Math.abs(x - prefer) : near.length ? Math.min(...near.map((q) => Math.abs(q.x - x))) : 0;
     if (score > bestScore) { best = x; bestScore = score; }
@@ -370,8 +371,9 @@ function spawnSudo(s: PanicState) {
 
 /**
  * Two children fall from where the fork died, each as near its side of it as
- * there is room for; if the row is full they start a little higher, and if
- * there is nowhere at all they wait for room at the top.
+ * there is room for, and clear of the fork's own box, because the tube shows
+ * its fading image there for a moment. If the row is full they start a little
+ * higher, and if there is nowhere at all they wait for room at the top.
  */
 function split(s: PanicState, parent: Proc) {
   const words = wordsOf(s);
@@ -384,7 +386,7 @@ function split(s: PanicState, parent: Proc) {
     let x: number | null = null, y = parent.y;
     for (let rise = 0; x === null; rise += 30) {
       y = Math.max(SPAWN_Y, parent.y - rise);
-      x = place(s, name, "child", y, clamp(parent.x + side * 100, 70, 830));
+      x = place(s, name, "child", y, clamp(parent.x + side * 100, 70, 830), [parent]);
       if (y === SPAWN_Y) break;
     }
     if (x !== null) spawnProcess(s, name, "child", x, y, parent.speed * 1.15);

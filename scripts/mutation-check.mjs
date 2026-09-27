@@ -1619,6 +1619,7 @@ const MUTATIONS = [
     ["a nudge closes a gap completely (the rounding fix reverted)", / - 1e-6\)\)/g, "))", "lib/arcade/games/panic.test.ts"],
     ["a knock pushes a chip into its neighbour", /    nudge\(s, target, -KNOCK\);/, "    target.y -= KNOCK;", "lib/arcade/games/panic.test.ts"],
     ["a chip's box forgets its caption", /  const parts = \[chip, label, caption, mark\]/, "  const parts = [chip, label, mark]", "lib/arcade/games/panic.test.ts"],
+    ["a fork's children land on the fork's fading image", /, \[parent\]\);/, ");", "lib/arcade/games/panic.test.ts"],
   ].map(([name, pattern, replace, tests]) => ({ name: `kernel panic: ${name}`, file: "lib/arcade/games/panic.ts", pattern, replace, tests })),
   {
     name: "kernel panic: the drawer stops fitting a name into its chip",
