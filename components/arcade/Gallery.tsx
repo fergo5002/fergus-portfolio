@@ -7,6 +7,7 @@ import type { ArcadeTheme } from "@/lib/arcade/theme";
 import { useSystem } from "@/components/system/SystemProvider";
 import AttractScreen from "./AttractScreen";
 import HallOfFame from "./HallOfFame";
+import SoundSwitch from "./SoundSwitch";
 
 /**
  * The room's front: the cabinets, each playing itself, and the Hall of Fame under them.
@@ -47,6 +48,9 @@ export default function Gallery({ boards, theme, live, onSelect }: Props) {
         <p className="arcade-marquee__hint" aria-hidden="true">
           ▸ {copy.hint}
         </p>
+        <div className="arcade-marquee__actions">
+          <SoundSwitch />
+        </div>
       </div>
       <ul className="arcade-cabinets">
         {cabinets.map((c, i) => (

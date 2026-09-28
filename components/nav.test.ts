@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { navDoor } from "@/content/nav";
 
 /**
  * Source-coupling checks for the nav, in the same spirit as
@@ -19,10 +20,15 @@ describe("cd arcade in the nav (Fergus, 2026-09-06)", () => {
     expect(code(nav)).toContain('shellStore.dispatch({ type: "open" })');
   });
 
-  it("leaves an open arcade when pressed again, because a touch screen has no Escape key (2026-09-27)", () => {
+  it("leaves an open arcade when pressed again, because the room has no header and a phone has no Escape key (2026-09-28)", () => {
     const toggle = /function toggleArcade\(\): void \{([\s\S]*?)\n\}/.exec(code(nav))?.[1] ?? "";
-    expect(toggle).toMatch(/if \(shellStore\.get\(\)\.arcade !== "closed"\) \{\s*shellStore\.dispatch\(\{ type: "close" \}\);\s*return;\s*\}/);
+    expect(toggle).toMatch(/if \(shellStore\.get\(\)\.arcade !== "closed"\) \{\s*if \(!requestArcadeLeave\(\)\) shellStore\.dispatch\(\{ type: "close" \}\);\s*return;\s*\}/);
     expect(code(nav)).toMatch(/onClick=\{toggleArcade\}/);
+  });
+
+  it("says it leaves while the arcade is open, keeping its visible words in its name", () => {
+    expect(code(nav)).toMatch(/aria-label=\{arcadeOpen \? navDoor\.leaveLabel : undefined\}/);
+    expect(navDoor.leaveLabel.startsWith("cd arcade")).toBe(true);
   });
 
   it("never becomes a link: there is no /arcade route to crawl", () => {

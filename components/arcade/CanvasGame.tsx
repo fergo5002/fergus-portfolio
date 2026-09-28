@@ -15,6 +15,7 @@ import type { ArcadeTheme } from "@/lib/arcade/theme";
 import { pushImpact } from "@/lib/system";
 import { useSystem } from "@/components/system/SystemProvider";
 import ScoreBoard from "./ScoreBoard";
+import SoundSwitch from "./SoundSwitch";
 
 /**
  * One cabinet, running: the run's phases (`lib/arcade/run.ts`) drawn through
@@ -346,7 +347,7 @@ export default function CanvasGame({ cabinet, seed, replay, theme, boards, onBac
       <h2 className="arcade-play__title">{cabinet.title}</h2>
       <div className="arcade-play__tools">
         <button type="button" className="arcade-btn arcade-tool arcade-tool--pause" onClick={() => pause(!paused)} aria-keyshortcuts="P" disabled={!!result || !!error}>{paused ? copy.resume : copy.pause}</button>
-        <button type="button" className={`arcade-btn arcade-tool arcade-tool--sound${audioLive ? " is-on" : ""}`} onClick={() => setAudioEnabled(!audioLive)} aria-pressed={audioLive} aria-keyshortcuts="M">{audioLive ? copy.soundOn : copy.soundOff}</button>
+        <SoundSwitch className="arcade-tool arcade-tool--sound" keyShortcut="M" returnFocus={() => stageRef.current?.focus({ preventScroll: true })} />
       </div>
     </div>
     <div className="arcade-frame window" style={{ "--stage-ratio": stage.w / stage.h } as CSSProperties}>

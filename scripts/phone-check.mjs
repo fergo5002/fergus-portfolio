@@ -848,6 +848,23 @@ async function checkRoute(browser, profile, url, outDir, label, readySelector = 
     // through hydration. revision-check separately proves the native form.
     await page.locator(".meeting__picker:not([inert])").waitFor({ state: "visible", timeout });
   }
+  if (await page.locator(".mcp-console").count()) {
+    // The console sends its first question by itself once it scrolls into
+    // view, then paints the answer in and grows the page. The viewport resize
+    // below brings it into view, so without this the audit photographed a page
+    // halfway through changing: 1 run in 3 failed on main and 2 in 3 on the
+    // arcade branch (2026-09-28). Start the exchange here and let it finish.
+    // By selector inside the page, not an element handle: hydration can swap
+    // the node between finding it and scrolling to it.
+    await page.evaluate(() => document.querySelector(".mcp-console")?.scrollIntoView({ block: "center" }));
+    await page.locator(".mcp-console__lines li, .mcp-console__hint[role='alert']").first().waitFor({ state: "visible", timeout });
+    await page.waitForFunction(
+      () => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity),
+      null,
+      { timeout },
+    );
+    await page.evaluate(() => window.scrollTo(0, 0));
+  }
   if (readySelector) await page.locator(readySelector).first().waitFor({ state: "visible", timeout });
   await page.waitForTimeout(500);
 

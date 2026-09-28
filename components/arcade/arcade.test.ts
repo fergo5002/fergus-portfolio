@@ -373,7 +373,8 @@ describe("a game view without the header bar", () => {
 
   it("carries pause and sound as visible controls, with P and M as their keys", () => {
     expect(game).toMatch(/className="arcade-btn arcade-tool arcade-tool--pause"[^\n]*aria-keyshortcuts="P"/);
-    expect(game).toMatch(/className=\{`arcade-btn arcade-tool arcade-tool--sound[^\n]*aria-keyshortcuts="M"/);
+    expect(game).toMatch(/<SoundSwitch className="arcade-tool arcade-tool--sound" keyShortcut="M" returnFocus=/);
+    expect(code(read("components", "arcade", "SoundSwitch.tsx"))).toMatch(/aria-keyshortcuts=\{keyShortcut\}/);
     expect(game).toMatch(/if \(k === "p"\) \{ e\.preventDefault\(\); if \(!e\.repeat\) pause\(!runRef\.current!\.paused\); return; \}/);
     expect(game).toMatch(/if \(k === "m"\) \{ e\.preventDefault\(\); if \(!e\.repeat\) setAudioEnabled\(!audioLive\); return; \}/);
   });
@@ -531,5 +532,41 @@ describe("the room keeps a typing game's field and a held finger honest (code re
   it("steers towards a held finger every frame, not only on pointer events", () => {
     expect(room).toMatch(/steerTo\.current = at;/);
     expect(room).toMatch(/for \(const k of steerKeys\(s\.player, steerTo\.current\)\) keys\.current\.add\(k\);/);
+  });
+});
+
+/* ── one universal header (Fergus, 2026-09-28) ─────────────────────────────── */
+
+const gallery = code(read("components", "arcade", "Gallery.tsx"));
+
+describe("the room has no header of its own: the site nav is the only one", () => {
+  it("draws no bar, prompt or header inside the room", () => {
+    expect(room).not.toMatch(/<header/);
+    expect(room).not.toMatch(/arcade-bar/);
+    expect(css).not.toMatch(/\.arcade-bar/);
+  });
+
+  it("keeps a sound switch where sound happens: the gallery front and beside the running game", () => {
+    const sound = code(read("components", "arcade", "SoundSwitch.tsx"));
+    expect(sound).toMatch(/setAudioEnabled\(!audioLive\)/);
+    expect(sound).toMatch(/aria-pressed=\{audioLive\}/);
+    expect(sound).toMatch(/audioLive \? copy\.soundOn : copy\.soundOff/);
+    expect(gallery).toMatch(/<SoundSwitch \/>/);
+    const head = /<div className="arcade-play__head">([\s\S]*?)<\/div>/.exec(game)?.[1] ?? "";
+    expect(head).toMatch(/<SoundSwitch [^>]*returnFocus=\{\(\) => stageRef\.current\?\.focus\(/);
+  });
+
+  it("never takes focus off a running game's stage, so a held key cannot stick on the switch", () => {
+    const sound = code(read("components", "arcade", "SoundSwitch.tsx"));
+    expect(sound).toMatch(/onPointerDown=\{returnFocus \? \(e\) => e\.preventDefault\(\) : undefined\}/);
+    expect(sound).toMatch(/returnFocus\?\.\(\);/);
+  });
+
+  it("leaves through its own leave() when the nav asks, the same way Escape does", () => {
+    expect(room).toMatch(/useEffect\(\(\) => subscribeArcadeLeave\(leave\), \[leave\]\);/);
+  });
+
+  it("still leaves on Escape", () => {
+    expect(room).toMatch(/if \(e\.key === "Escape"\) \{\s*e\.preventDefault\(\);\s*leave\(\);/);
   });
 });

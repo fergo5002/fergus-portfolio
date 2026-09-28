@@ -1635,7 +1635,7 @@ const MUTATIONS = [
   },
   // ── Kernel Panic: chips never collide near the top ──
   ...[
-    ["a chip spawns without checking for room", /    if \(!clearOf\(s, c\)\) continue;/, "", "lib/arcade/games/panic.test.ts"],
+    ["a chip spawns without checking for room", /    if \(!clearOf\(s, c, also\)\) continue;/, "", "lib/arcade/games/panic.test.ts"],
     ["near the top a chip falls into the one below it", /      if \(p\.y < TOP_ZONE_END\) nudge\(s, p, p\.speed \* dt\);\n      else p\.y \+= p\.speed \* dt;/, "      p.y += p.speed * dt;", "lib/arcade/games/panic.test.ts"],
     ["a nudge closes a gap completely (the rounding fix reverted)", / - 1e-6\)\)/g, "))", "lib/arcade/games/panic.test.ts"],
     ["a knock pushes a chip into its neighbour", /    nudge\(s, target, -KNOCK\);/, "    target.y -= KNOCK;", "lib/arcade/games/panic.test.ts"],

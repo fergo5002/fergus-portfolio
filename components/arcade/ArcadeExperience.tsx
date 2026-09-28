@@ -10,6 +10,7 @@ import { GAME_IDS, type GameId } from "@/lib/arcade/engine";
 import type { ProgramSpec } from "@/lib/arcade/program";
 import { arcadeSession, markArcadeEntered, setArcadeBoards } from "@/lib/arcade/session";
 import { shellStore } from "@/lib/shell";
+import { subscribeArcadeLeave } from "@/lib/shell-request";
 import { useSystem } from "@/components/system/SystemProvider";
 import ArcadeEntrance from "./ArcadeEntrance";
 import ArcadeScreen from "./ArcadeScreen";
@@ -27,8 +28,10 @@ import "./arcade.css";
  * page read as a CRT reaches the arcade too. The page, drawer and status
  * strip are hidden while it is up. The regular navigation returns after the
  * entrance, and a normal link closes this room's host before changing route.
- * There is no bar of its own: Escape leaves, the nav's `cd arcade` leaves on a
- * screen with no Escape key, and each view carries its own way back.
+ * There is no bar of its own: the site nav is the one header (Fergus,
+ * 2026-09-28). Escape leaves, the nav's `cd arcade` leaves the same way on a
+ * screen with no Escape key, each view carries its own way back, and a sound
+ * switch sits wherever sound happens.
  *
  * `data-lenis-prevent` is the scroll fix. Lenis is stopped for the document
  * behind the room, and a stopped Lenis cancels every wheel event it sees
@@ -130,6 +133,8 @@ function Room({ program, onExit }: Props) {
     degauss();
     exitRef.current([arcadeCopy.left]);
   }, [degauss]);
+
+  useEffect(() => subscribeArcadeLeave(leave), [leave]);
 
   const start = (game: GameId, replay = false) => {
     const seed = (crypto.getRandomValues(new Uint32Array(1))[0] ?? 1) >>> 0;

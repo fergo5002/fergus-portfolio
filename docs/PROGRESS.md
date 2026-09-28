@@ -1,3 +1,47 @@
+## 2026-09-28: the arcade joins the one-header site
+
+Fergus asked for everything to go out together, so the three-cabinet arcade
+(part two, below) is merged with the one-header work. Where they overlapped:
+the nav's `cd arcade` leaves through the room's own `leave()`, as Escape does,
+with "cd arcade, leave the arcade" as its name while the room is up; the in-game
+sound control keeps its M key but is now `SoundSwitch`, which never takes focus
+off the stage; the gallery front gains a sound switch; the Hall of Fame stays
+under the cabinets, so the hall of fame button main had is not carried over.
+
+Two red CI jobs on this branch, both mended:
+- A Kernel Panic mutation anchor still read `clearOf(s, c)` after the call
+  gained a third argument, so the mutant was never planted. It is anchored on
+  `clearOf(s, c, also)` now, and three Kernel Panic tests kill it.
+- The phone check failed `/mcp` at random, on main as well (1 run in 3 locally;
+  main's CI had been lucky). The console sends its first question by itself when
+  it scrolls into view, and the check's viewport resize scrolled it into view, so
+  the audit photographed a page mid-exchange. The check now starts the exchange
+  and waits for it to settle: 9 clean runs in 9, against 3 failures in 6 without.
+
+## 2026-09-28: one header, the Hatch105 egg, a new hero line
+
+Fergus stopped every portfolio agent (the Group Lore rebuild subagent and its
+dev servers) and asked for three changes to the live redesign, and nothing else.
+
+- The hero line is "I build things, and then I scale them", his exact words with
+  no trailing full stop. The meta description and `llms.txt` add their own full
+  stop after the tagline, so the old line rendered "them.." there; this fixes it.
+- The Hatch105 hover card shows the accelerator's own cracked-egg wordmark,
+  vendored at `assets/sources/hatch105-cracked-logo.webp` from hatch105.com and
+  built to `public/img/hatch105.png` by `scripts/build-images.mjs --hatch-only`.
+  The lettering stand-in (`work-preview__hatch`) is gone, so every card is an image.
+- The arcade has no bar of its own: the site nav is the one header. Its four jobs
+  moved: each view keeps its own back button, the gallery front has a hall of fame
+  button, a sound switch (`SoundSwitch.tsx`) sits on the gallery front and beside
+  the running game, and the nav's `cd arcade` leaves when pressed again (a phone
+  has no Escape key), through the room's own `leave()` via `requestArcadeLeave`
+  in `lib/shell-request.ts`, so it behaves exactly like Escape. While the room is
+  up the door's accessible name is "cd arcade, leave the arcade". The in-game
+  switch never takes focus off the stage, so a held key cannot stick on it.
+  This is the six-cabinet arcade that is live. Fergus chose it over shipping PR 29
+  (three new cabinets, red CI), which stays open and untouched and will conflict
+  with this in `ArcadeExperience.tsx`, `Gallery.tsx`, `CanvasGame.tsx` and `Nav.tsx`.
+- Not continued: the tools rebuild (`redesign-tools` and the `agent-*` worktrees).
 ## 2026-09-27: the redesign, part two (the arcade)
 
 Three cabinets: Dead Signal, rebalanced so it can be lost (the beam fires only
