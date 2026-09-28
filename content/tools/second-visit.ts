@@ -50,7 +50,7 @@ export const secondVisitCopy = {
   },
   honesty: {
     body: [
-      "Your file never leaves this tab. It is read and modelled in your own browser, and the page names whether that happened in a background worker or on the main thread. Nothing is uploaded, stored or sent anywhere. The forget command has nothing to wipe here, because this tool writes nothing to your machine at all.",
+      "Your file never leaves this tab. It is read and modelled in your own browser, and the page names whether that happened in a background worker or on the main thread. The file is not uploaded, stored or sent anywhere. The forget command has nothing to wipe here, because this tool writes nothing to your machine at all.",
       "The distance bands were drawn for a rural Irish sauna. Fifteen kilometres is habit range, ninety-five is the point where Dublin stops being a catchment and starts being a day out. For your business those numbers may be nonsense, which is why every one of them is a slider.",
       "The priors are stated assumptions rather than fitted parameters, and the people who wrote them say so in the code. One venue and eighteen months is not enough history to fit five coefficients without overfitting, so somebody wrote down what they believed and left it arguable.",
       "The model has never been scored against what customers went on to do. Nobody has taken a list of people it called lapsed and checked how many were. It reorganises the dates you already have, which is worth doing, and it is a different thing from knowing what happens next.",

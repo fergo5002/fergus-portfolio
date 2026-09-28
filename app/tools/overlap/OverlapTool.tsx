@@ -544,6 +544,7 @@ export default function OverlapTool({ roomsAvailable = false }: { roomsAvailable
           {overlapCopy.connect.sameNetwork}
         </button>
         <p className="overlap__hint">{overlapCopy.honesty.stun}</p>
+        <p className="overlap__hint">{overlapCopy.honesty.theyLearn}</p>
 
         {codesOff ? <p className="bench-warning">{overlapCopy.relay.unavailable}</p> : (
           <div className="overlap__row">

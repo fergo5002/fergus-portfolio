@@ -45,7 +45,7 @@ export const toolShellCopy = {
   indexCommand: "ls -la ./tools",
   indexPath: "~/tools",
   privacy: {
-    browser: "Runs in your browser. Nothing leaves this tab.",
+    browser: "Runs in your browser. What you put in never leaves this tab.",
     server: "Runs on the server. Keeps a hashed IP for a day, nothing else.",
   },
   cantSeeHeading: "Can't see",

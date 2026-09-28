@@ -179,3 +179,12 @@ describe("the stylesheet clears the phone floors before the phone check runs", (
     expect(bare).toMatch(/@media \(prefers-reduced-motion: no-preference\)[\s\S]*overlap__result/);
   });
 });
+
+describe("the peer screen says what the other browser learns, before you connect (Codex review, 2026-09-28)", () => {
+  it("shows that they learn your address and roughly how many connections you have, above the create button", () => {
+    const warning = source.indexOf("{overlapCopy.honesty.theyLearn}");
+    const create = source.indexOf("onClick={create}");
+    expect(warning).toBeGreaterThan(-1);
+    expect(warning).toBeLessThan(create);
+  });
+});

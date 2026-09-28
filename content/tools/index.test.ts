@@ -135,7 +135,9 @@ describe.each(tools.map((t) => [t.slug, t] as const))("tool: %s", (_slug, tool) 
 
 describe("tool shell copy", () => {
   it("carries both privacy lines verbatim from the programme interface", () => {
-    expect(toolShellCopy.privacy.browser).toBe("Runs in your browser. Nothing leaves this tab.");
+    // Scoped to what you put in (Codex review, 2026-09-28): a browser tool still
+    // counts that a run happened, its outcome and its time, so "nothing" was false.
+    expect(toolShellCopy.privacy.browser).toBe("Runs in your browser. What you put in never leaves this tab.");
     expect(toolShellCopy.privacy.server).toBe(
       "Runs on the server. Keeps a hashed IP for a day, nothing else.",
     );
@@ -173,5 +175,14 @@ describe("relief", () => {
     const lines = (toolBySlug("relief")?.cantSee ?? []).join(" ");
     expect(lines).toMatch(/private/i);
     expect(lines).toMatch(/local time|local clock/i);
+  });
+});
+
+describe("second visit's honesty notes (Codex review, 2026-09-28)", () => {
+  it("says the file is never sent, not that nothing is, because the page counts a run's outcome and time", async () => {
+    const { secondVisitCopy } = await import("./second-visit");
+    const body = secondVisitCopy.honesty.body.join(" ");
+    expect(body).not.toContain("Nothing is uploaded, stored or sent anywhere");
+    expect(body).toContain("The file is not uploaded, stored or sent anywhere");
   });
 });
