@@ -1,3 +1,26 @@
+## 2026-09-28: the redesign, part three (the tools)
+
+Five shelf tools rebuilt on one instrument shell (`components/tools/ToolPage.tsx`,
+the kit in `components/instrument/*` and `lib/instrument/*`): the visual first on
+the stage, one reading line, compact controls under it, and the method folded into
+one disclosure. Relief set the bar; Resonance, Pocket Redact, Atlas and Group Lore
+followed, each in its own worktree with its own tests-first guards, mutation cases
+and browser checks, then merged here. Group Lore's rebuild found that on a phone the
+week heatmap opened scrolled to the small hours with every lit cell off screen, and
+that iPhone WhatsApp exports had failed to import since 6 September (every line
+starts with `[`, read as JSON). Both fixed.
+
+Reviewed before shipping by Codex (gpt-5.6-sol, read-only, Fergus's choice of a
+cheap pass over the 20,000-line diff). Two honesty findings, both taken: the browser
+line and Second Visit said nothing leaves the tab while the page counts runs (tool,
+outcome, time), so they now say what you put in never leaves; and Overlap's warning
+that the other browser learns your address is back beside the peer controls, where
+the rebuild had moved it into the folded disclosure below the tool.
+
+Known and left: the phrase finder in the shared parser still produces odd pairs,
+and an iPhone export's encryption notice counts as a voice of its own (the parser
+also serves the lab, so it was not changed here).
+
 ## 2026-09-28: the arcade joins the one-header site
 
 Fergus asked for everything to go out together, so the three-cabinet arcade
