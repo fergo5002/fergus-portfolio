@@ -112,10 +112,10 @@ describe("groupDigits", () => {
 });
 
 describe("formatBoard", () => {
-  const board = { game: "pong", rows: [{ initials: "FOR", score: 4200 }, { initials: "CKK", score: 910 }] };
+  const board = { game: "poker", rows: [{ initials: "FOR", score: 4200 }, { initials: "CKK", score: 910 }] };
 
   it("fits the narrowest grid, every line", () => {
-    for (const line of formatBoard(board, 32, GAME_TITLES.pong)) {
+    for (const line of formatBoard(board, 32, GAME_TITLES.poker)) {
       expect(line.length, line).toBeLessThanOrEqual(32);
     }
   });
@@ -124,15 +124,15 @@ describe("formatBoard", () => {
     // Nine columns of furniture (two of rank, two spaces, three of initials,
     // two spaces) and the rest is the score field, so a row fills the width
     // exactly. At 24 that is a 15-column score field.
-    const lines = formatBoard(board, 24, GAME_TITLES.pong);
-    expect(lines[0]).toBe(GAME_TITLES.pong);
+    const lines = formatBoard(board, 24, GAME_TITLES.poker);
+    expect(lines[0]).toBe(GAME_TITLES.poker);
     expect(lines[1]).toBe(" 1  FOR            4,200");
     expect(lines[2]).toBe(" 2  CKK              910");
     for (const line of lines.slice(1)) expect(line).toHaveLength(24);
   });
 
   it("says the board is empty rather than printing a heading over nothing", () => {
-    const lines = formatBoard({ game: "pong", rows: [] }, 32, GAME_TITLES.pong);
+    const lines = formatBoard({ game: "poker", rows: [] }, 32, GAME_TITLES.poker);
     expect(lines[1]).toContain(arcadeCopy.board.empty);
   });
 });
@@ -151,17 +151,17 @@ describe("formatBoards", () => {
     const snapshot = {
       available: true,
       boards: [
-        { game: "pong", rows: [{ initials: "FOR", score: 10 }] },
-        { game: "snake", rows: [] },
+        { game: "poker", rows: [{ initials: "FOR", score: 10 }] },
+        { game: "signal", rows: [] },
       ],
     };
     const lines = formatBoards(snapshot, 32, GAME_TITLES);
-    expect(lines.join("\n")).toContain(GAME_TITLES.pong);
-    expect(lines.join("\n")).not.toContain(GAME_TITLES.snake);
+    expect(lines.join("\n")).toContain(GAME_TITLES.poker);
+    expect(lines.join("\n")).not.toContain(GAME_TITLES.signal);
   });
 
   it("says the same empty sentence when every game is empty", () => {
-    const snapshot = { available: true, boards: [{ game: "pong", rows: [] }] };
+    const snapshot = { available: true, boards: [{ game: "poker", rows: [] }] };
     expect(formatBoards(snapshot, 32, GAME_TITLES)).toEqual([arcadeCopy.board.empty]);
   });
 });

@@ -59,14 +59,14 @@ describe("initialsReduce", () => {
 describe("initialsView", () => {
   it("fills the grid exactly, at both sizes", () => {
     for (const [cols, rows] of [[48, 20], [32, 16]] as const) {
-      const lines = initialsView(initialInitialsState("FOR"), "bounce", 4200, cols, rows);
+      const lines = initialsView(initialInitialsState("FOR"), "poker", 4200, cols, rows);
       expect(lines).toHaveLength(rows);
       for (const line of lines) expect(line.length).toBe(cols);
     }
   });
 
   it("shows the three characters, the score, and which character is being changed", () => {
-    const text = initialsView(initialInitialsState("FOR"), "bounce", 4200, 48, 20).join("\n");
+    const text = initialsView(initialInitialsState("FOR"), "poker", 4200, 48, 20).join("\n");
     expect(text).toContain("F O R");
     expect(text).toContain("4,200");
     expect(text).toContain(arcadeCopy.initials.footer);
@@ -81,7 +81,7 @@ describe("createInitialsProgram", () => {
   it("submits once, whatever the visitor presses after that", () => {
     const got: string[] = [];
     const p = createInitialsProgram({
-      game: "bounce",
+      game: "poker",
       score: 12,
       seed: "FOR",
       onSubmit: (initials) => got.push(initials),
@@ -99,7 +99,7 @@ describe("createInitialsProgram", () => {
     // contact form's spam filter was rewritten to stop making.
     let exited = 0;
     const p = createInitialsProgram({
-      game: "bounce", score: 12, seed: "FOR", onSubmit: () => {},
+      game: "poker", score: 12, seed: "FOR", onSubmit: () => {},
     }).start(host({ exit: () => void exited++ }));
     p.key("start", true);
     expect(exited).toBe(0);
@@ -109,7 +109,7 @@ describe("createInitialsProgram", () => {
   it("says it is posting rather than leaving a dead screen", () => {
     let last: string[] = [];
     const p = createInitialsProgram({
-      game: "bounce", score: 12, seed: "FOR", onSubmit: () => {},
+      game: "poker", score: 12, seed: "FOR", onSubmit: () => {},
     }).start(host({ draw: (lines) => void (last = lines) }));
     p.key("start", true);
     expect(last.join("\n")).toContain(arcadeCopy.initials.posting);

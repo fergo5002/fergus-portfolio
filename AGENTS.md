@@ -379,7 +379,7 @@ after that. Anything that unmounts the entrance part-way must leave `bootTarget`
 entrance and the room do, because a dark tube with no room over it is the worst state on the site.
 
 The cabinets play themselves. `lib/arcade/attract.ts` is a deterministic unattended player for all
-six engines and `AttractScreen.tsx` runs it from the one frame clock, only while on screen, at
+three cabinets and `AttractScreen.tsx` runs it from the one frame clock, only while on screen, at
 half rate and without the persistence layer on a coarse pointer. The renderer takes its colours
 from `lib/arcade/theme.ts`, read off the site's tokens, and holds no colour literal; the games
 follow the amber and ice phosphors for that reason alone.
@@ -565,8 +565,8 @@ docs/
 
 **Arcade update, 2026-09-05.** Fergus's rebuild request supersedes the character-only
 arcade presentation described below. `ArcadeExperience` loads on demand from Terminal,
-opens a native modal, runs a skippable phosphor corridor and presents six illustrated
-cabinets. Gameplay remains pure in `lib/arcade/engine.ts`; `renderer.ts` draws the canvas;
+opens a native modal, runs a skippable phosphor corridor and presents illustrated
+cabinets (three since 2026-09-27; see below). Gameplay remains pure in `lib/arcade/engine.ts`; `renderer.ts` draws the canvas;
 `CanvasGame` subscribes to the one SystemProvider clock at fixed 60Hz. CSS is isolated in
 `components/arcade/arcade.css`. The old `ArcadeScreen` remains the ProgramSpec fallback.
 The shared contracts still apply: Escape restores the prompt, resize preserves the run,
@@ -582,10 +582,32 @@ separate. Scores are casual client reports, not verified competition. Only the A
 board rows; replay receipts stay private. The opt-in real-store test writes development
 rows only. Never use the canonical production domain for generated test scores.
 
-Pong and Ouroboros multiplayer reuse Overlap's WebRTC primitives with manual signalling.
-The host is authoritative; bounded peer packets are validated in `lib/arcade/network.ts`.
-No TURN relay is promised. Two local Chromium browsers prove the connection, not arbitrary
-networks. CI runs phone, multiplayer and game-over/replay/sound/forget flows.
+**Three cabinets, 2026-09-27.** Fergus cut the arcade to DEAD SIGNAL (`signal`), CIRCUIT POKER
+(`poker`) and a new typing game, KERNEL PANIC (`panic`). Breakpoint, Phosphor Pong, Ouroboros and
+Under the Terminal are retired, and with them arcade multiplayer (`network.ts`, `NetworkLobby`);
+Overlap's own WebRTC code is separate and stays. Retired ids are refused by the boards, and their
+stored rows are left where they are: nothing was migrated or deleted.
+
+- **One module per cabinet** in `lib/arcade/games/`, each a `GameModule` (`types.ts`): created
+  from a seed, stepped at a fixed rate, pure and deterministic, emitting sound events, banners
+  and a HUD model through its state. `engine.ts` is the one import point. A typing game declares
+  `input: "text"` and `typeable`; the room gives it a real text input and turns the field's value
+  into `char:` and `erase` presses (`text-input.ts`), because phone keyboards do not send keys.
+  `GameOptions.touch` lets a game shape a phone run (Kernel Panic uses letters and spaces only and
+  runs slower); the boards never replay a run from its inputs, so that is safe.
+- **Shared chrome** (`chrome.ts`, `draw/kit.ts`): a title card with keycaps lit by the demo, a
+  countdown, an on-canvas HUD, banners and a game-over screen, the same for every cabinet. No
+  eyebrow above a title, ever: `chrome.test.ts` fails if any text is drawn above one.
+- **The header bar is gone**; the Hall of Fame is a section of the arcade front, one table per
+  board, empty slots as dashes and no invented rows. `cd arcade` in the nav closes an open room.
+- **Dead Signal is losable**: the beam fires only while you move, contact costs hull without
+  killing the enemy, and each wave brings a new kind. Balance is judged by the pure simulation in
+  its tests (an idle player loses within 30 seconds on 20 seeds), not by headless play, where game
+  time runs at a quarter to a third of wall time under software WebGL.
+- The direction pad is hidden on a fine pointer with hover; touch screens keep it.
+
+CI runs the phone, game-over/replay/sound/forget and wheel-scroll flows, plus the collection check,
+which types a Kernel Panic process to death and scores a Dead Signal kill through the real input.
 
 `lib/commands.ts` stays **pure**, and since 2026-09-03 it is a thin dispatcher over a registry.
 Every command is a `defineCommand({ name, aliases, help, hidden, argPool, run })` in one of the

@@ -16,7 +16,8 @@ const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\{\/\*[
 describe("cd arcade in the nav (Fergus, 2026-09-06)", () => {
   it("is a button that asks the shell to open the door, because the arcade is not a page", () => {
     expect(code(nav)).toMatch(/<button[^>]*className=\{`nav__link nav__link--cmd/);
-    expect(code(nav)).toContain('requestCommand("cd arcade")');
+    expect(code(nav)).toContain("requestCommand(navDoor.command)");
+    expect(navDoor.command).toBe("cd arcade");
     expect(code(nav)).toContain('shellStore.dispatch({ type: "open" })');
   });
 
@@ -28,7 +29,7 @@ describe("cd arcade in the nav (Fergus, 2026-09-06)", () => {
 
   it("says it leaves while the arcade is open, keeping its visible words in its name", () => {
     expect(code(nav)).toMatch(/aria-label=\{arcadeOpen \? navDoor\.leaveLabel : undefined\}/);
-    expect(navDoor.leaveLabel.startsWith("cd arcade")).toBe(true);
+    expect(navDoor.leaveLabel.startsWith(navDoor.command)).toBe(true);
   });
 
   it("never becomes a link: there is no /arcade route to crawl", () => {

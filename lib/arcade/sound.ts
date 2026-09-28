@@ -31,7 +31,7 @@ export const ARCADE_SOUNDS: Record<ArcadeSound, SoundCall> = {
   blip: { method: "hover" },
   /** A ball off a wall. Under a hit, so a rally has a shape. */
   wall: { method: "impact", energy: 0.18 },
-  /** A ball off a paddle, a snake eating, a hit landing. */
+  /** A ball off a wall, a card held, a hit landing. */
   hit: { method: "impact", energy: 0.42 },
   /** A point. The relay clunk, because a score is a mechanism moving. */
   score: { method: "relay" },

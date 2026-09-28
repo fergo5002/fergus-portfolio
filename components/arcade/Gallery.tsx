@@ -6,10 +6,11 @@ import type { GameId } from "@/lib/arcade/engine";
 import type { ArcadeTheme } from "@/lib/arcade/theme";
 import { useSystem } from "@/components/system/SystemProvider";
 import AttractScreen from "./AttractScreen";
+import HallOfFame from "./HallOfFame";
 import SoundSwitch from "./SoundSwitch";
 
 /**
- * The room's front: six cabinets, each playing itself.
+ * The room's front: the cabinets, each playing itself, and the Hall of Fame under them.
  *
  * A cabinet is a list item with a stretched button, not a button wrapping a
  * canvas and a list, because a `<button>` may only hold phrasing content and
@@ -23,10 +24,9 @@ type Props = {
   theme: ArcadeTheme;
   live: boolean;
   onSelect(game: GameId): void;
-  onFame(): void;
 };
 
-export default function Gallery({ boards, theme, live, onSelect, onFame }: Props) {
+export default function Gallery({ boards, theme, live, onSelect }: Props) {
   const { audio } = useSystem();
   const boardFor = (id: GameId) => boards?.boards.find((b) => b.game === id) ?? null;
 
@@ -49,9 +49,6 @@ export default function Gallery({ boards, theme, live, onSelect, onFame }: Props
           ▸ {copy.hint}
         </p>
         <div className="arcade-marquee__actions">
-          <button type="button" className="arcade-btn" onClick={onFame}>
-            {copy.fame}
-          </button>
           <SoundSwitch />
         </div>
       </div>
@@ -74,7 +71,7 @@ export default function Gallery({ boards, theme, live, onSelect, onFame }: Props
               <span className="cabinet__row">
                 <span className="cabinet__no">{String(i + 1).padStart(2, "0")}</span>
                 <span className="cabinet__genre">{c.genre}</span>
-                <span className="cabinet__players">{c.multiplayer ? copy.players2 : copy.players1}</span>
+                <span className="cabinet__players">{copy.players1}</span>
               </span>
               <span className="cabinet__title">{c.title}</span>
               <span className="cabinet__line">{c.subtitle}</span>
@@ -82,6 +79,7 @@ export default function Gallery({ boards, theme, live, onSelect, onFame }: Props
           </li>
         ))}
       </ul>
+      <HallOfFame boards={boards} />
       <p className="arcade-note">{copy.privacy}</p>
     </main>
   );

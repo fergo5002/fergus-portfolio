@@ -1,3 +1,23 @@
+## 2026-09-28: the arcade joins the one-header site
+
+Fergus asked for everything to go out together, so the three-cabinet arcade
+(part two, below) is merged with the one-header work. Where they overlapped:
+the nav's `cd arcade` leaves through the room's own `leave()`, as Escape does,
+with "cd arcade, leave the arcade" as its name while the room is up; the in-game
+sound control keeps its M key but is now `SoundSwitch`, which never takes focus
+off the stage; the gallery front gains a sound switch; the Hall of Fame stays
+under the cabinets, so the hall of fame button main had is not carried over.
+
+Two red CI jobs on this branch, both mended:
+- A Kernel Panic mutation anchor still read `clearOf(s, c)` after the call
+  gained a third argument, so the mutant was never planted. It is anchored on
+  `clearOf(s, c, also)` now, and three Kernel Panic tests kill it.
+- The phone check failed `/mcp` at random, on main as well (1 run in 3 locally;
+  main's CI had been lucky). The console sends its first question by itself when
+  it scrolls into view, and the check's viewport resize scrolled it into view, so
+  the audit photographed a page mid-exchange. The check now starts the exchange
+  and waits for it to settle: 9 clean runs in 9, against 3 failures in 6 without.
+
 ## 2026-09-28: one header, the Hatch105 egg, a new hero line
 
 Fergus stopped every portfolio agent (the Group Lore rebuild subagent and its
@@ -22,6 +42,17 @@ dev servers) and asked for three changes to the live redesign, and nothing else.
   (three new cabinets, red CI), which stays open and untouched and will conflict
   with this in `ArcadeExperience.tsx`, `Gallery.tsx`, `CanvasGame.tsx` and `Nav.tsx`.
 - Not continued: the tools rebuild (`redesign-tools` and the `agent-*` worktrees).
+## 2026-09-27: the redesign, part two (the arcade)
+
+Three cabinets: Dead Signal, rebalanced so it can be lost (the beam fires only
+while you move, contact costs hull, a new enemy kind each wave); Circuit Poker,
+legible (big cards, a lit paytable, held cards, a target meter); and Kernel
+Panic, a new typing defence game that works with a phone keyboard. Shared
+chrome for all three, the header bar replaced by a Hall of Fame under the
+cabinets, and multiplayer retired with the four other games.
+
+Balance is proven by pure simulation over 20 seeds per player type, not by
+hand: nobody has played the new versions on a real phone keyboard yet.
 
 ## 2026-09-27: the redesign, part one (the site)
 

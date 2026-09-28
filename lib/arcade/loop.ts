@@ -11,7 +11,7 @@
  * Thirty a second, and the reason is the grid. A character cell is the smallest
  * thing that can change, so a tick that cannot move anything into a new cell is
  * work nobody can see. At 48 columns one cell a tick crosses the screen in 1.6
- * seconds, which is a Pong ball; slower things count ticks. Worst case a key
+ * seconds, which is a fast ball; slower things count ticks. Worst case a key
  * waits one tick and one frame, about 50ms. Sixty would double the cost for no
  * visible change.
  *
