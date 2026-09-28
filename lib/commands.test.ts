@@ -342,7 +342,7 @@ describe("reduced motion", () => {
 describe("neofetch and the boards", () => {
   const boards = {
     available: true,
-    boards: [{ game: "bounce", rows: [{ initials: "FOR", score: 12 }] }],
+    boards: [{ game: "poker", rows: [{ initials: "FOR", score: 12 }] }],
   };
 
   it("says nothing about the arcade to somebody who has not found it", () => {

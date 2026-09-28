@@ -7,7 +7,7 @@ const jsonResponse = (body: unknown, status = 200): Response =>
 
 describe("readSnapshot", () => {
   it("accepts a well-formed available snapshot", () => {
-    const body = { available: true, boards: [{ game: "pong", rows: [{ initials: "FOR", score: 10 }] }] };
+    const body = { available: true, boards: [{ game: "poker", rows: [{ initials: "FOR", score: 10 }] }] };
     expect(readSnapshot(body)).toEqual(body);
   });
 
@@ -20,7 +20,7 @@ describe("readSnapshot", () => {
   it("drops a row it cannot trust rather than rendering it", () => {
     const body = {
       available: true,
-      boards: [{ game: "pong", rows: [{ initials: "FOR", score: 10 }, { initials: "TOOLONG", score: 1 }, { initials: "CKK", score: "x" }] }],
+      boards: [{ game: "poker", rows: [{ initials: "FOR", score: 10 }, { initials: "TOOLONG", score: 1 }, { initials: "CKK", score: "x" }] }],
     };
     expect(readSnapshot(body).boards[0].rows).toEqual([{ initials: "FOR", score: 10 }]);
   });
@@ -29,7 +29,7 @@ describe("readSnapshot", () => {
     const body = {
       available: true,
       boards: [{
-        game: "pong",
+        game: "poker",
         rows: [
           { initials: "A\nB", score: 1 },
           { initials: "A😀", score: 2 },
@@ -46,7 +46,7 @@ describe("readSnapshot", () => {
 describe("fetchBoards", () => {
   it("returns the boards when the route answers properly", async () => {
     let signal: AbortSignal | undefined;
-    const body = { available: true, boards: [{ game: "pong", rows: [] }] };
+    const body = { available: true, boards: [{ game: "poker", rows: [] }] };
     const snapshot = await fetchBoards(async (_url, init) => {
       signal = init?.signal as AbortSignal | undefined;
       return jsonResponse(body);
@@ -83,7 +83,7 @@ describe("fetchBoards", () => {
 describe("submitScore", () => {
   it("refuses locally before it sends anything, so the visitor sees why", async () => {
     let called = false;
-    const result = await submitScore({ game: "pong", initials: "KKK", score: 10 }, async () => {
+    const result = await submitScore({ game: "poker", initials: "KKK", score: 10 }, async () => {
       called = true;
       return jsonResponse({});
     });
@@ -94,36 +94,36 @@ describe("submitScore", () => {
   it("posts the cleaned initials and a whole score", async () => {
     let sent: unknown = null;
     let signal: AbortSignal | undefined;
-    await submitScore({ game: "pong", initials: " f o r ", score: 42.7 }, async (_url, init) => {
+    await submitScore({ game: "poker", initials: " f o r ", score: 42.7 }, async (_url, init) => {
       sent = JSON.parse(String((init as RequestInit).body));
       signal = init?.signal as AbortSignal | undefined;
-      return jsonResponse({ ok: true, board: { game: "pong", rows: [] } });
+      return jsonResponse({ ok: true, board: { game: "poker", rows: [] } });
     });
-    expect(sent).toEqual({ game: "pong", initials: "FOR", score: 42 });
+    expect(sent).toEqual({ game: "poker", initials: "FOR", score: 42 });
     expect(signal).toBeInstanceOf(AbortSignal);
   });
 
   it("hands back the board the server returned", async () => {
-    const board = { game: "pong", rows: [{ initials: "FOR", score: 42 }] };
-    const result = await submitScore({ game: "pong", initials: "for", score: 42 }, async () =>
+    const board = { game: "poker", rows: [{ initials: "FOR", score: 42 }] };
+    const result = await submitScore({ game: "poker", initials: "for", score: 42 }, async () =>
       jsonResponse({ ok: true, board }));
     expect(result).toEqual({ ok: true, board });
   });
 
   it("passes the server's own sentence through when it refuses", async () => {
-    const result = await submitScore({ game: "pong", initials: "for", score: 42 }, async () =>
+    const result = await submitScore({ game: "poker", initials: "for", score: 42 }, async () =>
       jsonResponse({ reason: "three a day is the limit. try tomorrow." }, 429));
     expect(result).toEqual({ ok: false, reason: "three a day is the limit. try tomorrow." });
   });
 
   it("refuses to print a server sentence long enough to break the grid", async () => {
-    const result = await submitScore({ game: "pong", initials: "for", score: 42 }, async () =>
+    const result = await submitScore({ game: "poker", initials: "for", score: 42 }, async () =>
       jsonResponse({ reason: "x".repeat(400) }, 429));
     expect(result).toEqual({ ok: false, reason: arcadeCopy.initials.refused });
   });
 
   it("never throws, whatever the network does", async () => {
-    const result = await submitScore({ game: "pong", initials: "for", score: 1 }, async () => {
+    const result = await submitScore({ game: "poker", initials: "for", score: 1 }, async () => {
       throw new Error("offline");
     });
     expect(result.ok).toBe(false);

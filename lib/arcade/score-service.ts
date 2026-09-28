@@ -16,7 +16,8 @@ export type BoardRepository = {
 export class ScoreError extends Error { constructor(message: string, readonly status = 400) { super(message); } }
 const date = (at: number) => new Date(at).toISOString().slice(0, 10);
 export function emptyLedger(at = Date.now()): Ledger { return { version: 2, day: date(at), month: date(at).slice(0, 7), dayCount: 0, monthCount: 0, boards: {}, receipts: [] }; }
-function key(game: string, scope: string, day: string) { return `${scope}:${game}${game === "under" ? `:${day}` : ""}`; }
+/** One all-time board per cabinet. Retired cabinets keep their stored rows; nothing lists or writes them. */
+function key(game: string, scope: string) { return `${scope}:${game}`; }
 function signature(body: string, secret: string) { return createHmac("sha256", secret).update(`fergusos-arcade-v2:${body}`).digest("base64url"); }
 export function issueTicket(game: string, scope: string, secret: string, now = Date.now()) {
   if (!GAME_IDS.includes(game as GameId)) throw new ScoreError("That cabinet does not exist.");
@@ -34,11 +35,10 @@ export function verifyTicket(ticket: unknown, game: string, scope: string, secre
   if (claim.game !== game || claim.scope !== scope || !Number.isSafeInteger(claim.at) || typeof claim.nonce !== "string" || !/^[a-f0-9]{32}$/.test(claim.nonce)) throw new ScoreError("The receipt belongs to another run.");
   if (now - claim.at < 8000) throw new ScoreError("Play for at least eight seconds before posting.");
   if (now - claim.at > 7_200_000) throw new ScoreError("This run expired. Start a new run.");
-  if (game === "under" && date(now) !== date(claim.at)) throw new ScoreError("A new daily dungeon has started. Play again.");
   return claim;
 }
-export function boardSnapshot(ledger: Ledger | null, scope: string, now = Date.now()): BoardSnapshot {
-  return { available: true, boards: GAME_IDS.map(game => ledger?.boards[key(game, scope, date(now))] ?? { game, rows: [] }) };
+export function boardSnapshot(ledger: Ledger | null, scope: string): BoardSnapshot {
+  return { available: true, boards: GAME_IDS.map(game => ledger?.boards[key(game, scope)] ?? { game, rows: [] }) };
 }
 export async function recordScore(repo: BoardRepository, raw: unknown, scope: string, secret: string, now = Date.now()): Promise<Board> {
   if (!raw || typeof raw !== "object") throw new ScoreError("The score is invalid.");
@@ -49,7 +49,7 @@ export async function recordScore(repo: BoardRepository, raw: unknown, scope: st
   const check = checkInitials(e.initials); if (!check.ok) throw new ScoreError(check.reason);
   verifyTicket(e.ticket, e.game, scope, secret, now);
   const id = createHash("sha256").update(e.ticket as string).digest("hex");
-  const entry = `${scope}:${e.game}:${check.initials}:${e.score}`, day = date(now), boardKey = key(e.game, scope, day);
+  const entry = `${scope}:${e.game}:${check.initials}:${e.score}`, day = date(now), boardKey = key(e.game, scope);
   for (let attempt = 0; attempt < 4; attempt++) {
     const current = await repo.read(), ledger = current.ledger ?? emptyLedger(now);
     const receipt = ledger.receipts.find(r => r.id === id);
@@ -60,13 +60,8 @@ export async function recordScore(repo: BoardRepository, raw: unknown, scope: st
     if (ledger.day !== day) { ledger.day = day; ledger.dayCount = 0; }
     if (ledger.month !== day.slice(0, 7)) { ledger.month = day.slice(0, 7); ledger.monthCount = 0; }
     if (ledger.dayCount >= DAY_LIMIT || ledger.monthCount >= MONTH_LIMIT) throw new ScoreError("The board's free-tier posting budget is full. Try later.", 429);
-    const existing = ledger.boards[boardKey]?.rows ?? [];
-    // A daily dungeon retains one best entry for each chosen set of initials.
-    const rows = e.game === "under" ? existing.filter(row => row.initials !== check.initials) : existing;
-    const previous = e.game === "under" ? existing.find(row => row.initials === check.initials)?.score ?? 0 : 0;
-    const board = { game: e.game, rows: insertScore(rows, { initials: check.initials, score: Math.max(previous, e.score) }) };
+    const board = { game: e.game, rows: insertScore(ledger.boards[boardKey]?.rows ?? [], { initials: check.initials, score: e.score }) };
     ledger.boards[boardKey] = board;
-    for (const k of Object.keys(ledger.boards)) if (k.includes(":under:") && !k.endsWith(day)) delete ledger.boards[k];
     ledger.dayCount++; ledger.monthCount++;
     ledger.receipts = [...ledger.receipts.filter(r => now - r.at <= 7_200_000), { id, at: now, entry }];
     if (await repo.write(ledger, current.version)) return board;

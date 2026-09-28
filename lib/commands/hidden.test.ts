@@ -31,17 +31,25 @@ describe("the door", () => {
   });
 
   it("starts a named game straight from the door", () => {
-    const res = runCommand("cd arcade bounce");
+    const res = runCommand("cd arcade signal");
     expect(res.type).toBe("program");
     if (res.type !== "program") return;
-    expect(res.program.id).toBe("bounce");
+    expect(res.program.id).toBe("signal");
   });
 
-  it("opens the implemented Pong cabinet", () => {
-    const res = runCommand("arcade pong");
+  it("opens the Circuit Poker cabinet", () => {
+    const res = runCommand("arcade poker");
     expect(res.type).toBe("program");
     if (res.type !== "program") return;
-    expect(res.program.title).toBe(GAME_TITLES.pong);
+    expect(res.program.title).toBe(GAME_TITLES.poker);
+  });
+
+  it("no longer opens a retired cabinet, and says so", () => {
+    for (const retired of ["bounce", "pong", "snake", "under"]) {
+      const res = runCommand(`arcade ${retired}`);
+      expect(res.type, retired).toBe("output");
+      if (res.type === "output") expect(res.lines.join(" ")).toContain(retired);
+    }
   });
 
   it("refuses a future registered game whose implementation is still missing", () => {

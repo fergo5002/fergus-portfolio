@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { attractPlan, createAttract, createAttractMemory, seededRng } from "./attract";
-import { createGame, GAME_IDS, type GameId } from "./engine";
+import { attractPlan, capOf, createAttract, createAttractMemory, LIT_PRESS, seededRng } from "./attract";
+import { createGame, GAME_IDS, inputOf, MODULES, pressGame, stepGame, type GameId } from "./engine";
+
+/** A key game's names, or for a typing game `erase` and one `char:` of a character its words can contain. */
+function understood(id: GameId, key: string): boolean {
+  if (inputOf(id) !== "text") return /^(up|down|left|right|action|bank|[1-5])$/.test(key);
+  if (key === "erase") return true;
+  const c = key.startsWith("char:") ? key.slice(5) : "";
+  return [...c].length === 1 && (MODULES[id].typeable?.test(c) ?? false);
+}
 
 /**
  * Attract mode is a real arcade behaviour: the cabinet plays itself until
@@ -32,42 +40,21 @@ describe("seededRng", () => {
 });
 
 describe("the unattended player", () => {
-  it("launches Breakpoint's ball within three seconds and breaks a brick within forty", () => {
-    const launched = run("bounce", 3, (a) => !a.state.ball.attached);
-    expect(launched.reached).toBe(true);
-    const scored = run("bounce", 40, (a) => a.state.score > 0);
-    expect(scored.reached).toBe(true);
-  });
-
-  it("returns a serve in Phosphor Pong within thirty seconds", () => {
-    const hit = run("pong", 30, (a) => a.state.score > 0);
-    expect(hit.reached).toBe(true);
-  });
-
-  it("eats in Ouroboros within twenty-five seconds and is still alive at six", () => {
-    const alive = run("snake", 6);
-    expect(alive.attract.restarts).toBe(0);
-    const ate = run("snake", 25, (a) => a.state.score > 0);
-    expect(ate.reached).toBe(true);
-  });
-
-  it("scores Under the Terminal within ninety seconds by moving through the maze", () => {
-    const moved = run("under", 5, (a) => a.state.turn > 3);
-    expect(moved.reached).toBe(true);
-    const scored = run("under", 90, (a) => a.state.score > 0);
-    expect(scored.reached).toBe(true);
-  });
-
   it("survives ten seconds of Dead Signal and builds a kill chain within twenty", () => {
     const alive = run("signal", 10);
     expect(alive.attract.restarts).toBe(0);
-    const killed = run("signal", 20, (a) => a.state.combo > 0);
+    const killed = run("signal", 20, (a) => a.state.id === "signal" && a.state.combo > 0);
     expect(killed.reached).toBe(true);
   });
 
   it("banks a Circuit Poker hand within eight seconds", () => {
-    const banked = run("poker", 8, (a) => a.state.bank > 0 || a.state.score > 0);
+    const banked = run("poker", 8, (a) => a.state.score > 0);
     expect(banked.reached).toBe(true);
+  });
+
+  it("types a Kernel Panic process to death within twenty seconds", () => {
+    const killed = run("panic", 20, (a) => a.state.score > 0);
+    expect(killed.reached).toBe(true);
   });
 
   for (const id of GAME_IDS) {
@@ -81,7 +68,7 @@ describe("the unattended player", () => {
 
 describe("restarting", () => {
   it("holds the finished screen for a beat and then deals a fresh game", () => {
-    const attract = createAttract("bounce", 3);
+    const attract = createAttract("signal", 3);
     attract.state.over = true;
     const seed = attract.state.seed;
     for (let i = 0; i < 60; i++) attract.step(TICK);
@@ -93,35 +80,62 @@ describe("restarting", () => {
     expect(attract.state.seed).not.toBe(seed);
   });
 
-  it("never spends the daily dungeon seed, so the demo cannot spoil today's board", () => {
-    const today = Number(new Date().toISOString().slice(0, 10).replaceAll("-", ""));
-    const attract = createAttract("under", today);
-    expect(attract.state.seed).not.toBe(today >>> 0);
-  });
 });
 
 describe("attractPlan", () => {
-  it("holds a direction for the games that steer and presses for the games that turn", () => {
+  it("holds a direction for the game that steers and presses for the game that deals", () => {
     const rng = seededRng(1), memory = createAttractMemory();
     const signal = attractPlan(createGame("signal", 1), rng, memory);
     expect([...signal.hold].every((k) => ["up", "down", "left", "right", "action"].includes(k))).toBe(true);
-    const under = createGame("under", 1);
-    under.time = 5;
-    const plan = attractPlan(under, rng, memory);
+    const poker = createGame("poker", 1);
+    poker.time = 5;
+    const plan = attractPlan(poker, rng, createAttractMemory());
     expect(plan.press.length).toBeGreaterThan(0);
     expect(plan.hold.size).toBe(0);
   });
 
   it("only ever emits keys the engine understands", () => {
-    const allowed = new Set(["up", "down", "left", "right", "action", "bank", "1", "2", "3", "4", "5"]);
     for (const id of GAME_IDS) {
       const rng = seededRng(2), memory = createAttractMemory();
       const s = createGame(id, 2);
-      for (let i = 0; i < 300; i++) {
-        s.time += TICK;
+      // Played for real and long enough to reach later waves, not just a clock nudged forward.
+      for (let i = 0; i < 60 * 150 && !s.over; i++) {
         const plan = attractPlan(s, rng, memory);
-        for (const k of [...plan.hold, ...plan.press]) expect(allowed.has(k), `${id} emitted ${k}`).toBe(true);
+        for (const k of [...plan.hold, ...plan.press]) expect(understood(id, k), `${id} emitted ${JSON.stringify(k)}`).toBe(true);
+        for (const k of plan.press) pressGame(s, k);
+        stepGame(s, TICK, plan.hold);
       }
     }
+  });
+});
+
+describe("the keycaps the how-to-play card lights", () => {
+  it("lights the cap under each key the demo presses, and lets it go out", () => {
+    const attract = createAttract("poker", 11);
+    let lit = false;
+    for (let i = 0; i < 60 * 4 && !lit; i++) {
+      attract.step(TICK);
+      lit = ["1", "2", "3", "4", "5", "action", "bank"].some((k) => (attract.lit.get(k) ?? 0) > 0);
+    }
+    expect(lit).toBe(true);
+    // The poker demo acts about once a second, so nothing relights it in the next few tenths.
+    for (let i = 0; i < Math.ceil(60 * LIT_PRESS) + 2; i++) attract.step(TICK);
+    expect(attract.lit.size).toBe(0);
+  });
+
+  it("lights the held direction while Dead Signal steers", () => {
+    const attract = createAttract("signal", 3);
+    for (let i = 0; i < 30; i++) attract.step(TICK);
+    expect([...attract.lit.keys()].some((k) => ["up", "down", "left", "right"].includes(k))).toBe(true);
+  });
+
+  it("folds every typed letter onto the one TYPE cap", () => {
+    expect(capOf("char:k")).toBe("type");
+    expect(capOf("erase")).toBe("erase");
+    const attract = createAttract("panic", 5);
+    let typed = false;
+    for (let i = 0; i < 60 * 10 && !typed; i++) { attract.step(TICK); typed = (attract.lit.get("type") ?? 0) > 0; }
+    expect(typed).toBe(true);
+    expect([...attract.lit.keys()].every((k) => !k.startsWith("char:"))).toBe(true);
   });
 });

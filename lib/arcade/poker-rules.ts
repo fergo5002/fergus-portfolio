@@ -14,3 +14,22 @@ export function evaluateHand(cards: readonly number[]) {
   const value = tie.reduce((v, r, i) => v + r * 15 ** (4 - i), rank * 15 ** 5);
   return { rank, value, name: HAND_NAMES[rank], points: HAND_POINTS[rank] };
 }
+
+/**
+ * Which of the five cards make the hand: all five for a straight, flush, full
+ * house or straight flush; the matched ranks for pairs, trips and quads; the
+ * single top card for high card. Circuit Poker wires these together and lights
+ * them, which is the "circuit" in its name.
+ */
+export function handCards(cards: readonly number[]): boolean[] {
+  const { rank } = evaluateHand(cards);
+  if (rank === 4 || rank === 5 || rank === 6 || rank === 8) return cards.map(() => true);
+  const ranks = cards.map((c) => c % 13);
+  if (rank === 0) {
+    const top = ranks.indexOf(Math.max(...ranks));
+    return ranks.map((_, i) => i === top);
+  }
+  const counts = new Map<number, number>();
+  for (const r of ranks) counts.set(r, (counts.get(r) ?? 0) + 1);
+  return ranks.map((r) => (counts.get(r) ?? 0) >= 2);
+}

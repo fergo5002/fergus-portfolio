@@ -3,8 +3,9 @@ import { ARCADE_GAMES, BOARD_GAMES, findGame, isReady } from "@/lib/arcade/games
 import { GAME_TITLES } from "@/content/arcade";
 
 describe("the game list", () => {
-  it("holds all six games in the rebuilt collection", () => {
-    expect(ARCADE_GAMES.map((g) => g.id)).toEqual(["bounce", "poker", "pong", "signal", "snake", "under"]);
+  it("holds the cabinets that survived the 2026-09-27 cut, and nothing retired", () => {
+    expect(ARCADE_GAMES.map((g) => g.id)).toEqual(["panic", "poker", "signal"]);
+    for (const retired of ["bounce", "pong", "snake", "under"]) expect(findGame(retired), retired).toBeUndefined();
   });
 
   it("stays alphabetical by id, so two game pull requests rarely collide", () => {
@@ -29,7 +30,7 @@ describe("the game list", () => {
   });
 
   it("finds a game by id and nothing by a name nobody registered", () => {
-    expect(findGame("pong")?.title).toBe(GAME_TITLES.pong);
+    expect(findGame("poker")?.title).toBe(GAME_TITLES.poker);
     expect(findGame("tetris")).toBeUndefined();
   });
 });

@@ -14,7 +14,7 @@ import { useSystem } from "@/components/system/SystemProvider";
  * Runs from the site's one frame clock, only while it is on screen (an
  * IntersectionObserver gates it) and only while the tab is visible. On a
  * coarse pointer it skips the persistence layer and renders every other frame,
- * because six of these on a phone would otherwise eat the budget the tube
+ * because a row of these on a phone would otherwise eat the budget the tube
  * itself needs.
  *
  * With `cycle` it alternates between the demo and the cabinet's top five, the
@@ -30,7 +30,7 @@ type Props = {
   theme: ArcadeTheme;
   board?: Board | null;
   cycle?: boolean;
-  /** Offset into the demo/board cycle, so six cabinets do not switch together. */
+  /** Offset into the demo/board cycle, so the cabinets do not switch together. */
   phase?: number;
   /** Turns the whole screen off, for example while a modal sits over it. */
   live?: boolean;
@@ -40,7 +40,7 @@ type Props = {
 export default function AttractScreen({ game, theme, board = null, cycle = false, phase = 0, live = true, className = "" }: Props) {
   const { onFrame } = useSystem();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // Lazy: `useRef(createAttract(...))` would deal a fresh dungeon on every render and throw it away.
+  // Lazy: `useRef(createAttract(...))` would deal a fresh game on every render and throw it away.
   const attractRef = useRef<Attract | null>(null);
   if (!attractRef.current) attractRef.current = createAttract(game, (crypto.getRandomValues(new Uint32Array(1))[0] ?? 1) >>> 0);
   const attractHandle = attractRef.current;
@@ -62,7 +62,7 @@ export default function AttractScreen({ game, theme, board = null, cycle = false
     const ghostCanvas = coarse ? null : document.createElement("canvas");
     const ghost = ghostCanvas?.getContext("2d") ?? null;
     let parity = 0;
-    // Under the Terminal follows the player on a narrow screen, the way it does on a phone.
+    // A narrow cabinet draws like a phone: bigger type where there is any.
     let compact = false;
 
     const measure = () => {

@@ -1,7 +1,8 @@
 import type { GameId } from "@/lib/arcade/engine";
+import type { KeySpec } from "@/lib/arcade/chrome";
 
 /**
- * The six cabinets and every word the room prints.
+ * The cabinets and every word the room prints.
  *
  * Two voices, on purpose. A cabinet's marquee and anything drawn on its screen
  * is uppercase, the way a real cabinet shouts its own name. Everything the
@@ -17,64 +18,30 @@ export type Cabinet = {
   objective: string;
   controls: string;
   action: string;
-  multiplayer: boolean;
+  /** The how-to-play card drawn on the screen before a run: two or three short lines and the real keys. */
+  card: { lines: readonly string[]; keys: readonly KeySpec[] };
+  /** What the GAME OVER screen says under the words GAME OVER. */
+  overLine: string;
 };
 
 export const cabinets: readonly Cabinet[] = [
-  {
-    id: "bounce",
-    title: "BREAKPOINT",
-    subtitle: "everything has a breaking point.",
-    genre: "MAGNETIC BRICK BREAKER",
-    description: "an electron loose inside the machine. tear through the memory banks, bend the rebound, and when the ball comes back hold the field to catch it. then let it go.",
-    objective: "clear the banks. chain hits for a ×5 multiplier. every cleared sector earns an extra ball.",
-    controls: "a / d, the arrows, or drag. space launches. hold space as the ball returns to catch it on the magnet; a catch costs 25 charge.",
-    action: "LAUNCH / MAGNET",
-    multiplayer: false,
-  },
-  {
-    id: "pong",
-    title: "PHOSPHOR PONG",
-    subtitle: "the shortest path is never straight.",
-    genre: "GRAVITY-WELL DUEL",
-    description: "a singularity drifts down the middle of the tube and bends every rally. read the curve, hold your nerve, overcharge the return. one tube, two ends.",
-    objective: "first to seven. an overcharge just before contact sends it back faster. play the machine or a friend.",
-    controls: "solo: w / s or the arrows; space overcharges. two players: w / s and space for green, up / down and enter for amber. drag a paddle on touch.",
-    action: "OVERCHARGE",
-    multiplayer: true,
-  },
-  {
-    id: "snake",
-    title: "OUROBOROS",
-    subtitle: "your past is trying to kill you.",
-    genre: "PHASE-SHIFT SNAKE",
-    description: "eat the signal and become the maze. for 1.8 seconds you can phase through your own history and slip off one edge of the screen onto the other. spend it well.",
-    objective: "collect the amber signals. a phase costs 65 charge; food gives some back. in two-player mode the first crash ends the match.",
-    controls: "wasd, the arrows, or the direction pad. space phases. two players: wasd and space for green, arrows and enter for amber.",
-    action: "PHASE SHIFT",
-    multiplayer: true,
-  },
-  {
-    id: "under",
-    title: "UNDER THE TERMINAL",
-    subtitle: "something is still running down there.",
-    genre: "DAILY DESCENT",
-    description: "below the command line the abandoned processes are awake. find the key, reach the lift, go down. a different dungeon every utc day, and the same one for everybody.",
-    objective: "find the amber key, then the lift. walk into a bug to attack it. a pulse clears the bugs around you. nothing moves until you do.",
-    controls: "wasd, the arrows, or the direction pad. space sends a test pulse for 45 charge. moving restores charge. a green cross repairs two health.",
-    action: "TEST PULSE",
-    multiplayer: false,
-  },
   {
     id: "signal",
     title: "DEAD SIGNAL",
     subtitle: "you are the last live pixel.",
     genre: "VECTOR SURVIVAL",
-    description: "the noise is closing in. your beam hunts on its own; you concentrate on staying alive. thread the swarm, build a chain, and when it gets tight discharge the whole screen.",
-    objective: "survive the waves. the beam aims at the nearest threat. kills build the multiplier and recharge the pulse.",
-    controls: "wasd, the arrows, drag, or the direction pad. space discharges a pulse around you for 65 charge. three hull points.",
+    description: "the noise is closing in, and your beam only fires while you move. keep moving, thread the swarm, and when it gets tight discharge the pulse. each wave brings something new: shooters, chargers, splitters, tanks.",
+    objective: "survive the waves. the beam aims at the nearest enemy but fires only while you move, so standing still is how you lose. clear a wave to get a hull point back.",
+    controls: "wasd, the arrows, drag, or the direction pad to move, and moving is what fires. space discharges a pulse around you for 65 charge. touching an enemy or its shot costs one of three hull points.",
     action: "DISCHARGE",
-    multiplayer: false,
+    card: {
+      lines: ["THE BEAM FIRES ONLY WHILE YOU MOVE.", "DODGE THE SWARM AND ITS SHOTS.", "THREE HITS AND THE SIGNAL IS LOST."],
+      keys: [
+        { caps: ["↑", "←", "↓", "→"], keys: ["up", "left", "down", "right"], label: "MOVE / WASD", cluster: true, touch: ["D-PAD", "DRAG"], touchLabel: "TO MOVE" },
+        { caps: ["SPACE"], keys: ["action"], label: "PULSE CLEARS AROUND YOU", touch: ["DISCHARGE"], touchLabel: "CLEARS AROUND YOU" },
+      ],
+    },
+    overLine: "SIGNAL LOST",
   },
   {
     id: "poker",
@@ -84,8 +51,34 @@ export const cabinets: readonly Cabinet[] = [
     description: "five cards, two redraws, three hands to meet a rising target. hold the pieces of a good circuit, or bank what you have before the machine asks for more.",
     objective: "beat each circuit's target within three hands. each hand allows two redraws. bank a hand to score it and deal the next.",
     controls: "tap a card or press 1 to 5 to hold it. space redraws the rest. enter banks the hand. no money, no betting, no accounts.",
-    action: "REDRAW",
-    multiplayer: false,
+    action: "DRAW",
+    card: {
+      lines: ["HOLD THE CARDS THAT MAKE A HAND.", "DRAW UP TO TWICE, THEN BANK IT.", "THREE HANDS TO BEAT THE TARGET."],
+      keys: [
+        { caps: ["1", "2", "3", "4", "5"], keys: ["1", "2", "3", "4", "5"], label: "HOLD A CARD", touch: ["TAP A CARD"], touchLabel: "TO HOLD IT" },
+        { caps: ["SPACE"], keys: ["action"], label: "DRAW THE REST", touch: ["DRAW"], touchLabel: "THE REST" },
+        { caps: ["ENTER"], keys: ["bank"], label: "BANK THE HAND", touch: ["BANK"], touchLabel: "THE HAND" },
+      ],
+    },
+    overLine: "CIRCUIT BROKEN",
+  },
+  {
+    id: "panic",
+    title: "KERNEL PANIC",
+    subtitle: "type fast. the kernel is watching.",
+    genre: "TYPING DEFENCE",
+    description: "rogue processes are falling towards the kernel. type a name and it dies before it lands. forks split in two, sudo clears the screen, and three landings panic the kernel.",
+    objective: "type each falling name before it reaches the kernel. the first letter locks on to the lowest match. clean kills build the combo to x4, and every twelfth in a row drops a sudo.",
+    controls: "type on the keyboard. a wrong letter breaks the combo. backspace steps back, and from the first letter lets go. on a phone, tap to start and the keyboard comes up: phone runs ask for letters and spaces only.",
+    action: "TYPE",
+    card: {
+      lines: ["PROCESSES FALL TOWARDS THE KERNEL.", "TYPE A NAME TO KILL IT.", "LET THREE LAND AND THE KERNEL PANICS."],
+      keys: [
+        { caps: ["K", "I", "L", "L"], keys: ["type"], label: "TYPE THE NAME" },
+        { caps: ["⌫"], keys: ["erase"], label: "STEP BACK" },
+      ],
+    },
+    overLine: "KERNEL PANIC",
   },
 ];
 
@@ -101,25 +94,73 @@ export function biosLines(cabinetCount: number, boards: "online" | "offline" | "
   ];
 }
 
+/** Every word drawn on a game's screen. A cabinet's own voice, so uppercase. */
+export const screenCopy = {
+  pressSpace: "PRESS SPACE",
+  tapToStart: "TAP TO START",
+  orEnter: "OR ENTER",
+  demo: "DEMO",
+  score: "SCORE",
+  best: "BEST",
+  gameOver: "GAME OVER",
+  finalScore: "FINAL SCORE",
+  newBest: "NEW BEST",
+  reached: "REACHED",
+  held: "HELD",
+  bank: "BANK",
+  lives: { hull: "HULL", hand: "HANDS", core: "KERNEL" },
+  /** Circuit Poker's table. */
+  table: { banked: "BANKED", target: "TARGET", worth: "WORTH", draws: "DRAWS", hand: "HAND" },
+  /** Kernel Panic's floor. */
+  kernel: "KERNEL",
+  /** Small print under the two processes that do something when they die. */
+  panicTags: { fork: "SPLITS IN TWO", sudo: "CLEARS THE SCREEN" },
+  /** Dead Signal's small print over each enemy of the kind a wave brings in, on that wave. */
+  signalTags: { shooter: "FIRES BACK", charger: "WINDS UP, THEN DASHES", splitter: "SPLITS IN TWO", tank: "SLOW BUT TOUGH" },
+  /** What Dead Signal tells a player who has stood still, and the word for its kill chain. */
+  signalHint: "MOVE TO FIRE",
+  signalChain: "CHAIN",
+  /**
+   * What Kernel Panic's screen halts on. `{pid}`, `{comm}` and the hex fields
+   * are filled from the run by `lib/arcade/draw/panic.ts`; the drawer prefixes
+   * each line with a timestamp where the screen is wide enough.
+   */
+  panicDump: [
+    "Kernel panic - not syncing: Attempted to kill init! exitcode=0x0000000b",
+    "CPU: 0 PID: {pid} Comm: {comm} Not tainted 6.9.0-fergusos #1",
+    "Hardware name: FergusOS Phosphor CRT, BIOS 1.0 09/2026",
+    "Call Trace:",
+    " <TASK>",
+    " dump_stack_lvl+{a}/0x70",
+    " panic+{b}/0x3a0",
+    " kernel_line_breach+{c}/0x40",
+    " do_exit+{d}/0xb20",
+    " </TASK>",
+    "Kernel Offset: {offset} from 0xffffffff81000000",
+    "---[ end Kernel panic - not syncing: Attempted to kill init! ]---",
+  ],
+} as const;
+
 export const collectionCopy = {
   label: "FergusOS arcade",
   title: "FERGUSOS ARCADE",
   ledeLead: "you found the other side of the glass.",
-  lede: "six cabinets, running on the machine you are already using. free play, no coins, no accounts.",
+  lede: "three cabinets, running on the machine you are already using. free play, no coins, no accounts.",
   hint: "pick a cabinet",
   arrival: "entering the arcade",
   skip: "skip",
-  fame: "hall of fame",
-  fameLede: "every board on the machine. solo runs only. three initials, no accounts, no verification: a casual board, held honestly.",
+  exit: "leave the arcade",
+  fameTitle: "FERGUSOS ARCADE HALL OF FAME",
+  fameLede: "the best runs on every cabinet. three initials, no accounts, no verification: a casual board, held honestly. each cabinet counts something different, so each keeps its own column.",
+  fameRank: "rank",
+  fameSwitch: "choose a cabinet's board",
+  fameEmptySlot: "empty",
   soundOn: "sound on",
   soundOff: "sound off",
   players1: "1P",
-  players2: "1-2P",
   demo: "demo",
   topFive: "top five",
   play: "start solo run",
-  local: "two players, one screen",
-  online: "connect a friend",
   back: "all cabinets",
   objective: "objective",
   controls: "controls",
@@ -127,16 +168,11 @@ export const collectionCopy = {
   resume: "resume",
   restart: "play again",
   paused: "SYSTEM PAUSED",
-  over: "SIGNAL LOST",
-  won: "CIRCUIT COMPLETE",
-  matchResult: "match result",
-  draw: "DRAW",
-  greenWins: "GREEN WINS",
-  amberWins: "AMBER WINS",
+  pausedHelp: "p or the resume button carries on. escape leaves the arcade.",
+  typeLabel: "type here",
   score: "final score",
   board: "high scores",
   allTime: "all time",
-  today: "today, utc",
   loading: "reading the board…",
   empty: "no scores yet. be first.",
   unavailable: "the board is offline. the game still works.",
@@ -147,29 +183,16 @@ export const collectionCopy = {
   offBoard: "posted, but below the top twenty. the board keeps the best.",
   noTicket: "score entry could not be prepared. play again to retry.",
   initials: "your three initials",
-  boardNote: "casual, client-reported scores. no accounts. solo runs only.",
+  boardNote: "casual, client-reported scores. no accounts.",
   privacy: "the games run in your browser. posting shares three initials and a score, nothing else. the initials are kept on this device only when you post, and the forget command clears them.",
-  netPrivacy: "a direct connection shares your ip address with your opponent. cloudflare stun helps the browsers find each other. there is no relay for game traffic, so some networks cannot connect.",
-  netTitle: "link the cabinets",
-  netIntro: "open this game on both devices. the host sends an invite, the other player returns an answer, then the host connects.",
-  create: "create invite",
-  join: "answer invite",
-  connect: "connect cabinets",
-  copy: "copy",
-  copied: "copied",
-  invite: "invite or answer code",
-  outgoingHost: "send this invite to your friend",
-  outgoingGuest: "send this answer back to the host",
-  outgoing: "outgoing connection code",
-  selectToCopy: "select the code above and copy it.",
-  copyFailed: "copy failed. select the code above and copy it.",
-  netWait: "waiting for your friend…",
-  netConnecting: "connecting the cabinets…",
-  netReady: "cabinets linked. the host starts the match.",
-  netFailure: "the cabinets could not connect. try again, or play on one screen.",
-  disconnected: "your opponent disconnected. go back to the cabinets to reconnect.",
-  networkUnsupported: "this browser cannot open a direct connection. two players can still share this screen.",
-  match: "start linked match",
-  notRanked: "two-player matches are for bragging rights. the boards rank solo runs.",
   displayFailed: "this browser could not open the game display.",
 } as const;
+
+/** What the hidden status line tells a screen reader about the run, about once a second. */
+export function statusLine(parts: { title: string; phase: "card" | "countdown" | "play" | "over"; score: number; stage?: string; lives?: string; paused: boolean }): string {
+  if (parts.phase === "card") return `${parts.title.toLowerCase()}. press space or enter to start.`;
+  if (parts.phase === "countdown") return `${parts.title.toLowerCase()}. get ready.`;
+  if (parts.phase === "over") return `game over. ${parts.score} points.`;
+  const bits = [`${parts.score} points`, parts.stage, parts.lives].filter(Boolean).join(". ");
+  return parts.paused ? `paused. ${bits}.` : `${bits}.`;
+}

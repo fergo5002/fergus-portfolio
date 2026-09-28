@@ -209,3 +209,17 @@ Limits: no physical phone, no two-network WebRTC pair, no real board post (the l
 Blob token, so every board read "offline" and the BIOS line said so). The boards' online path is the
 release's unchanged code. Headless Chromium runs the tube in software, so nothing here is a frame-rate
 measurement.
+
+## Addendum, 2026-09-27: three cabinets
+
+Fergus asked for the arcade to be clearer and more of a game, cut to three
+cabinets: Dead Signal, Circuit Poker and a new typing game, Kernel Panic. The
+four others and arcade multiplayer are retired; their stored board rows are
+kept, and the boards refuse their ids. Each cabinet is now its own module in
+`lib/arcade/games/` behind one `GameModule` interface, and all three share the
+same chrome: a title card whose keycaps light with the demo, a countdown, an
+on-canvas HUD, wave banners and a game-over screen. The header bar is gone and
+the Hall of Fame sits under the cabinets. Dead Signal can now be lost (the beam
+fires only while you move), Circuit Poker shows its paytable, held cards and
+target, and Kernel Panic works with a phone keyboard by reading the input's
+value rather than its keys. AGENTS.md carries the rules each change brought.

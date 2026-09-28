@@ -34,7 +34,17 @@ try {
   await page.mouse.move(640, 400);
   await page.mouse.wheel(0, 600);
   await page.waitForTimeout(700);
-  out.controlScrollY = await page.evaluate(() => window.scrollY);
+  // Read the control once Lenis has finished smoothing. On a software-rendered page at two or
+  // three frames a second it was still 3px short at 700ms (597, settling at 600), which then read
+  // as a "leak" against the settled document. The leak tolerance below is unchanged.
+  let settled = await page.evaluate(() => window.scrollY);
+  for (let i = 0; i < 25; i++) {
+    await page.waitForTimeout(200);
+    const now = await page.evaluate(() => window.scrollY);
+    if (now === settled) break;
+    settled = now;
+  }
+  out.controlScrollY = settled;
   if (out.controlScrollY < 100) throw new Error(`instrument: a wheel on the page moved it ${out.controlScrollY}px, so nothing below is evidence`);
 
   await page.locator(".statusbar__prompt").click();

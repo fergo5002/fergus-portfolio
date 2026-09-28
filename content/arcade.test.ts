@@ -19,7 +19,6 @@ const gridStrings = (): { where: string; text: string }[] => [
   { where: "initials.blocked", text: arcadeCopy.initials.blocked },
   { where: "initials.shape", text: arcadeCopy.initials.shape },
   { where: "initials.posting", text: arcadeCopy.initials.posting },
-  { where: "bounce.footer", text: arcadeCopy.bounce.footer },
   ...Object.entries(GAME_TITLES).map(([id, title]) => ({ where: `GAME_TITLES.${id}`, text: title })),
 ];
 // `declined` and `noRoom` are deliberately absent: they are printed into the

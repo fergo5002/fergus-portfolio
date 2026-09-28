@@ -1,7 +1,7 @@
 # Three release gates. `check` covers types, tests and the production build.
 # `mutation` requires every part of the catalogue to pass in separate checkouts.
 # `phone` proves its instrument can fail, then checks sitemap routes, tools and arcade
-# layouts, actual workflows, downloads and local multiplayer connections.
+# layouts, actual workflows and downloads.
 #
 # The build needs no secrets. NEXT_PUBLIC_POSTHOG_KEY absent compiles
 # analytics to a no-op (see lib/analytics.ts), and RESEND_API_KEY is read at
@@ -159,16 +159,16 @@ jobs:
         env:
           LAB_URL: http://localhost:3000
           STUDIO_PREFIX: /tools
-      - name: two-browser arcade multiplayer
-        run: node scripts/arcade-multiplayer-check.mjs
-        env:
-          ARCADE_BASE: http://localhost:3000
       - name: arcade game over, replay, sound and forget
         run: node scripts/arcade-flow-check.mjs
         env:
           ARCADE_BASE: http://localhost:3000
       - name: the arcade room scrolls under a real wheel
         run: node scripts/arcade-scroll-check.mjs --base http://localhost:3000
+      - name: every cabinet on a desktop, played through its real input
+        run: node scripts/arcade-visual-check.mjs
+        env:
+          ARCADE_BASE: http://localhost:3000
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

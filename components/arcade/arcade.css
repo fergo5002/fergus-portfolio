@@ -18,6 +18,16 @@ html.arcade-open .statusbar {
 html.arcade-entering .nav {
   visibility: hidden;
 }
+/* No burn-in protection over a room that is always moving (attract screens or
+   a game). It also could not tell a keyboard player from an idle one: the
+   room's keydown handler stops propagation, so the screensaver's window
+   listener never hears a key, and measured on 2026-09-27 it came up over a
+   running game after 45 seconds of keys. The root cause is fixed in
+   components/system/Screensaver.tsx, which now listens in the capture phase
+   and never starts while the arcade is open; this rule is the second guard. */
+html.arcade-open .saver {
+  visibility: hidden;
+}
 
 /* ----- the room --------------------------------------------------------- */
 .arcade-room {
@@ -57,7 +67,7 @@ html.arcade-entering .nav {
 .arcade-room__inner {
   width: min(1180px, 100%);
   margin: 0 auto;
-  padding: 0 var(--arcade-gutter) 56px;
+  padding: var(--sp-3) var(--arcade-gutter) 56px;
 }
 .arcade-room__inner.is-entering {
   visibility: hidden;
@@ -146,24 +156,6 @@ html.arcade-entering .nav {
   display: block;
   font-size: 0.82rem;
   margin-bottom: var(--sp-2);
-}
-.arcade-room textarea {
-  display: block;
-  width: 100%;
-  min-height: 96px;
-  padding: var(--sp-2) var(--sp-3);
-  font: inherit;
-  font-size: 16px;
-  color: var(--green-bright);
-  background: var(--bg);
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
-  resize: vertical;
-  margin-bottom: var(--sp-3);
-}
-.arcade-room textarea:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 2px;
 }
 
 /* ----- the entrance ----------------------------------------------------- */
@@ -441,8 +433,7 @@ html.arcade-entering .nav {
 
 /* ----- one cabinet ------------------------------------------------------ */
 .arcade-detail,
-.arcade-play,
-.arcade-fame {
+.arcade-play {
   padding-top: var(--sp-4);
 }
 .arcade-detail__grid {
@@ -627,73 +618,121 @@ html.arcade-entering .nav {
 }
 
 /* ----- the hall of fame ------------------------------------------------- */
-.arcade-fame__title {
-  margin-top: var(--sp-4);
+/* One table, a column a cabinet (lib/arcade/fame.ts says why), in the
+   cabinets' own display face. */
+.fame {
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--green-line);
+}
+.fame__title {
   font-family: var(--font-screen);
   font-weight: 400;
-  font-size: clamp(2.6rem, 7vw, 5.5rem);
+  font-size: clamp(2.2rem, 5.5vw, 4.2rem);
   line-height: 0.95;
   letter-spacing: 0.02em;
   color: var(--green-bright);
   text-shadow:
     var(--glow),
-    0 0 32px var(--arcade-halo);
+    0 0 28px var(--arcade-halo);
 }
-.arcade-fame__lede {
+.fame__lede {
   max-width: 62ch;
   margin-top: var(--sp-3);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
 }
-.arcade-fame__grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--sp-4);
-  margin-top: var(--sp-5);
-}
-.arcade-fame__board .window__bar {
-  font-size: 0.82rem;
-}
-.arcade-fame__board .window__title {
-  font-family: var(--font-screen);
-  font-size: 1.3rem;
-  color: var(--green-bright);
-}
-.arcade-fame__when {
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  color: var(--amber);
-  white-space: nowrap;
-}
-.arcade-fame__body {
-  padding: var(--sp-2) var(--sp-3) var(--sp-3);
-}
-.arcade-fame__body .arcade-table {
-  font-size: 1.3rem;
-}
-.arcade-fame__play {
+.fame__state {
   margin-top: var(--sp-3);
+  font-size: 0.9rem;
+}
+.fame__switch {
+  display: none;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+}
+.fame__pick {
+  flex: 1;
+  min-width: 0;
+  padding: 0 8px;
+  font-family: var(--font-screen);
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  white-space: normal;
+  line-height: 1;
+}
+.fame__pick[aria-pressed="true"] {
+  color: var(--bg);
+  background: var(--green-bright);
+  border-color: var(--green-bright);
+  text-shadow: none;
+}
+.fame__table {
   width: 100%;
-}
-
-/* ----- the link (two cabinets over the network) ------------------------- */
-.arcade-link {
-  padding: var(--sp-3) var(--sp-4) var(--sp-4);
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
-  background: var(--bg-panel);
-}
-.arcade-link h3 {
+  margin-top: var(--sp-4);
+  border-collapse: collapse;
+  table-layout: fixed;
   font-family: var(--font-screen);
-  font-weight: 400;
   font-size: 1.5rem;
+  line-height: 1.1;
+}
+.fame__table th,
+.fame__table td {
+  padding: 7px 10px;
+  border-bottom: 1px dotted var(--green-line);
+  text-align: left;
+  font-weight: 400;
+}
+.fame__table thead th {
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  color: var(--amber);
+  border-bottom: 1px solid var(--green-line);
+}
+.fame__table th.fame__rank {
+  width: 5.8ch;
+  color: var(--green);
+}
+.fame__table thead th.fame__rank {
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: var(--amber);
+}
+.fame__table tbody tr:first-child th,
+.fame__table tbody tr:first-child .fame__initials {
+  color: var(--amber-bright);
+}
+.fame__table td {
+  display: table-cell;
+}
+.fame__initials {
+  display: inline-block;
+  min-width: 3.6ch;
+  letter-spacing: 0.12em;
   color: var(--green-bright);
 }
-.arcade-link > p {
-  margin: var(--sp-2) 0 var(--sp-3);
-  font-size: 0.86rem;
+.fame__score {
+  float: right;
+  font-variant-numeric: tabular-nums;
 }
-.arcade-link__output {
-  margin-top: var(--sp-3);
+/* Drawn, not written: the slot's meaning is the hidden word "empty". */
+.fame__empty::before {
+  content: "---";
+  letter-spacing: 0.12em;
+  color: var(--green-dim);
+}
+.fame__empty::after {
+  content: "------";
+  float: right;
+  color: var(--green-dim);
+}
+.fame__table td.is-you {
+  color: var(--amber-bright);
+  background: var(--arcade-amber-wash);
+  box-shadow: inset 0 0 16px var(--arcade-amber-halo);
+}
+.fame__table td.is-you .fame__initials {
+  color: var(--amber-bright);
 }
 
 /* ----- playing ---------------------------------------------------------- */
@@ -703,10 +742,24 @@ html.arcade-entering .nav {
   gap: var(--sp-3);
   margin-bottom: var(--sp-3);
 }
+.arcade-play__tools {
+  display: flex;
+  gap: var(--sp-2);
+}
+.arcade-tool {
+  font-size: 0.78rem;
+  padding: 0 12px;
+}
 .arcade-sound.is-on {
   color: var(--amber);
   border-color: color-mix(in srgb, var(--amber) 40%, transparent);
   background: var(--arcade-amber-wash);
+}
+/* Nothing to pause on the how-to-play card or the finished screen. The room
+   writes the run's phase onto the play view as it changes, once, not a frame. */
+.arcade-play[data-phase="card"] .arcade-tool--pause,
+.arcade-play[data-phase="over"] .arcade-tool--pause {
+  visibility: hidden;
 }
 .arcade-play__title {
   flex: 1;
@@ -721,22 +774,11 @@ html.arcade-entering .nav {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* The stage's own shape comes from lib/arcade/layout.ts as --stage-ratio:
+   lying down on a wide screen, standing up on a phone. */
 .arcade-frame {
-  width: min(100%, max(320px, calc((100dvh - 300px) * 1.607)));
+  width: min(100%, max(320px, calc((100dvh - 300px) * var(--stage-ratio, 1.607))));
   margin: 0 auto;
-}
-.arcade-frame .window__bar {
-  gap: var(--sp-2);
-}
-.arcade-live-hud {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.74rem;
-  letter-spacing: 0.04em;
-  color: var(--amber);
-  font-variant-numeric: tabular-nums;
 }
 .arcade-stage {
   position: relative;
@@ -751,6 +793,41 @@ html.arcade-entering .nav {
   width: 100%;
   aspect-ratio: 900 / 560;
   touch-action: none;
+  cursor: pointer;
+}
+
+/* ----- a typing game's line ---------------------------------------------- */
+.arcade-room .arcade-type {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-top: 1px solid var(--green-line);
+  background: var(--bg-panel-2);
+}
+.arcade-type__prompt::before {
+  content: "kill $";
+  color: var(--amber);
+}
+.arcade-type__input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--sp-2);
+  font: inherit;
+  /* 16px or iOS zooms the page when the field takes focus. */
+  font-size: 16px;
+  color: var(--green-bright);
+  caret-color: var(--amber);
+  background: var(--bg);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  text-shadow: var(--glow);
+}
+.arcade-type__input:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
 }
 .arcade-pause {
   position: absolute;
@@ -826,35 +903,42 @@ html.arcade-entering .nav {
 .arcade-controls .arcade-btn {
   touch-action: none;
 }
-.arcade-p2 {
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  color: var(--amber);
-  text-align: center;
-}
-.arcade-p2 > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
-  max-width: 220px;
-}
-.arcade-p2 .arcade-btn {
-  color: var(--amber);
-  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
-  padding: 0 12px;
-}
 .arcade-hold {
   display: flex;
   gap: 6px;
 }
 .arcade-hold .arcade-btn {
-  padding: 0 12px;
+  min-width: 56px;
+  padding: 0 10px;
+  font-weight: 700;
 }
 .arcade-hold .arcade-btn[aria-pressed="true"] {
-  color: var(--green-bright);
-  border-color: var(--green);
-  background: var(--arcade-wash-strong);
+  color: var(--bg);
+  border-color: var(--green-bright);
+  background: var(--green-bright);
+  text-shadow: none;
+}
+.arcade-deal {
+  display: flex;
+  gap: var(--sp-2);
+}
+.arcade-bank {
+  min-height: 56px;
+  min-width: 140px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 55%, transparent);
+  background: var(--arcade-amber-wash);
+}
+.arcade-result__best {
+  margin-top: calc(-1 * var(--sp-2));
+  margin-bottom: var(--sp-3);
+  font-family: var(--font-screen);
+  font-size: 1.6rem;
+  letter-spacing: 0.08em;
+  color: var(--amber-bright);
 }
 .arcade-help {
   max-width: 80ch;
@@ -912,8 +996,8 @@ html.arcade-entering .nav {
   .arcade-gallery.is-live .cabinet {
     animation: arcade-raster 640ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(160ms + var(--i, 0) * 70ms) both;
   }
-  .arcade-fame__board {
-    animation: arcade-raster 560ms cubic-bezier(0.16, 0.84, 0.3, 1) calc(var(--i, 0) * 60ms) both;
+  .arcade-gallery.is-live .fame {
+    animation: arcade-fade 520ms ease 420ms both;
   }
   .arcade-detail__grid,
   .arcade-play,
@@ -995,8 +1079,7 @@ html.arcade-entering .nav {
 
 /* ----- narrower --------------------------------------------------------- */
 @media (max-width: 1000px) {
-  .arcade-cabinets,
-  .arcade-fame__grid {
+  .arcade-cabinets {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .arcade-detail__grid {
@@ -1007,8 +1090,7 @@ html.arcade-entering .nav {
   .arcade-room {
     font-size: 15px;
   }
-  .arcade-cabinets,
-  .arcade-fame__grid {
+  .arcade-cabinets {
     grid-template-columns: 1fr;
     gap: var(--sp-3);
   }
@@ -1029,13 +1111,28 @@ html.arcade-entering .nav {
   .arcade-frame {
     width: 100%;
   }
-  /* The HUD gets the whole bar on a phone; the cabinet's name is in the play head above it. */
-  .arcade-frame .window__title {
-    display: none;
+  /* A phone keyboard takes the bottom of the screen; a typing game's stage
+     fits what the visual viewport has left (--vv-h, written on resize) under
+     the fixed nav, less the typing line (61px), the room's bottom padding
+     (56px) and a 16px gap, so the HUD band is still on the glass with the
+     room scrolled to its end. The old flat 150px left the top 18px of the
+     HUD under the nav at 390 by 400. */
+  .arcade-play--text .arcade-frame {
+    width: min(100%, calc((var(--vv-h, 100dvh) - var(--nav-h) - 133px) * var(--stage-ratio, 1.25)));
   }
-  .arcade-live-hud {
-    white-space: normal;
-    line-height: 1.4;
+  .arcade-play__tools {
+    margin-left: auto;
+  }
+  .arcade-hold .arcade-btn {
+    min-width: 48px;
+    flex: 1;
+  }
+  .arcade-hold,
+  .arcade-deal {
+    width: 100%;
+  }
+  .arcade-deal .arcade-btn {
+    flex: 1;
   }
   .arcade-controls {
     gap: var(--sp-3);
@@ -1060,6 +1157,20 @@ html.arcade-entering .nav {
     font-size: 0.85rem;
   }
 }
+/* Three columns will not fit a phone: the switcher shows one cabinet's board. */
+@media (max-width: 700px) {
+  .fame__switch {
+    display: flex;
+  }
+  .fame__table [data-game] {
+    display: none;
+  }
+  .fame__table[data-shown="signal"] [data-game="signal"],
+  .fame__table[data-shown="poker"] [data-game="poker"],
+  .fame__table[data-shown="panic"] [data-game="panic"] {
+    display: table-cell;
+  }
+}
 @media (max-width: 360px) {
   .arcade-marquee__title {
     font-size: 2.6rem;
@@ -1075,5 +1186,13 @@ html.arcade-entering .nav {
   }
   .arcade-frame {
     width: min(100%, max(320px, calc((100dvh - 220px) * 1.607)));
+  }
+}
+
+/* A mouse has a keyboard beside it: the arrows and WASD do the pad's job
+   there, and the pad under every game was clutter. Touch screens keep it. */
+@media (hover: hover) and (pointer: fine) {
+  .arcade-dpad {
+    display: none;
   }
 }
