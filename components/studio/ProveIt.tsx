@@ -13,13 +13,19 @@ import {
   calibration,
 } from "@/lib/studio/detective";
 import { Button, Field, Metrics, jsonDownload } from "@/components/lab/shared";
-import { StudioIntro, Range } from "./Furniture";
+import { ExportBar, Select, Slider } from "@/components/instrument";
 type Belief = {
   test: string;
   choice: number;
   confidence: number;
   prediction: string;
 };
+/**
+ * Prove It: one case on the stage from the first paint (case one, or today's
+ * case from the library). The shell's disclosure carries the scoring and the
+ * commit rule (`content/tools/prove-it.ts` `method`), so the stage shows only
+ * the brief, the explanations, the evidence and the verdict.
+ */
 export default function ProveIt() {
   const [index, setIndex] = useState(0),
     [state, setState] = useState<InvestigationState>({ used: [], spent: 0 }),
@@ -55,36 +61,29 @@ export default function ProveIt() {
     daily = dailyCase(day, cases.length);
   return (
     <div className="lab-work studio studio-detective">
-      <StudioIntro eyebrow={c.eyebrow} title={c.title} intro={c.intro} />
       <div className="studio-toolbar">
+        <Select label={c.choose} value={String(index)} onChange={(v) => open(Number(v))} className="detective-choose">
+          {cases.map((s, i) => (
+            <option key={s.id} value={i}>
+              {String(i + 1).padStart(2, "0")} · {s.title}
+            </option>
+          ))}
+        </Select>
+        <Button onClick={() => open(daily)}>{c.daily}</Button>
         <Button onClick={() => setLibrary(!library)}>
           {c.library} · {Object.keys(completed).length}/{cases.length}
         </Button>
-        <Button onClick={() => open(daily)}>{c.daily}</Button>
-        <Field label={ui.chooseCase}>
-          <select value={index} onChange={(e) => open(Number(e.target.value))}>
-            {cases.map((s, i) => (
-              <option key={s.id} value={i}>
-                {String(i + 1).padStart(2, "0")} · {s.title}
-              </option>
-            ))}
-          </select>
-        </Field>
       </div>
       {library && (
         <div className="detective-library">
           {cases.map((s, i) => (
             <button key={s.id} onClick={() => open(i)}>
-              <span className="studio-eyebrow">
-                {ui.case}
-                {String(i + 1).padStart(2, "0")}
-                {daily === i ? " / TODAY" : ""}
-              </span>
               <strong>{s.title}</strong>
               <span>
-                {completed[s.id] !== undefined
-                  ? `${completed[s.id]} points · reviewed`
-                  : `${s.budget} credits · unsolved`}
+                {ui.case}
+                {i + 1}
+                {daily === i ? ui.today : ""} ·{" "}
+                {completed[s.id] !== undefined ? c.solved(completed[s.id]) : c.unsolved(s.budget)}
               </span>
             </button>
           ))}
@@ -92,10 +91,6 @@ export default function ProveIt() {
       )}
       <section className="detective-brief">
         <div>
-          <p className="studio-eyebrow">
-            {ui.caseFile}
-            {String(index + 1).padStart(3, "0")} / {done ? "CLOSED" : "OPEN"}
-          </p>
           <h3>{scenario.title}</h3>
           <p>{scenario.setup}</p>
         </div>
@@ -114,10 +109,7 @@ export default function ProveIt() {
         </div>
       </section>
       <section>
-        <div className="studio-section-head">
-          <h3>{c.hypotheses}</h3>
-          <span>{ui.selectYourWorkingExplanation}</span>
-        </div>
+        <h3>{c.hypotheses}</h3>
         <div className="detective-hypotheses">
           {scenario.hypotheses.map((h, i) => (
             <button
@@ -132,22 +124,23 @@ export default function ProveIt() {
               {done && (
                 <small>
                   {i === scenario.answer
-                    ? "The explanation"
+                    ? c.answer
                     : survivors.includes(i)
-                      ? "Not excluded by your evidence"
-                      : "Excluded by your evidence"}
+                      ? c.standing
+                      : c.excluded}
                 </small>
               )}
             </button>
           ))}
         </div>
-        <Range
+        <Slider
           label={c.confidence}
           disabled={done}
           min={0}
           max={100}
           value={confidence}
-          display={`${confidence}%`}
+          format={(v) => `${v}%`}
+          layout="stack"
           onChange={(v) => {
             if (!done) setConfidence(v);
           }}
@@ -155,7 +148,6 @@ export default function ProveIt() {
       </section>
       <div className="detective-workspace">
         <section className="studio-panel">
-          <p className="studio-eyebrow">{ui.investigateObserve}</p>
           <h3>{c.tests}</h3>
           {!done && (
             <Field label={c.prediction}>
@@ -186,17 +178,13 @@ export default function ProveIt() {
                 >
                   <span>{used ? "✓" : String(t.cost).padStart(2, "0")}</span>
                   <strong>{t.label}</strong>
-                  <small>{used ? "In notebook" : `${t.cost} ${c.cost}`}</small>
+                  <small>{used ? c.inNotebook : `${t.cost} ${c.cost}`}</small>
                 </button>
               );
             })}
           </div>
         </section>
         <section className="studio-panel detective-notebook" aria-live="polite">
-          <p className="studio-eyebrow">
-            {ui.observations}
-            {state.used.length}
-          </p>
           <h3>{c.notebook}</h3>
           {!state.used.length ? (
             <p className="studio-empty">{c.empty}</p>
@@ -206,11 +194,6 @@ export default function ProveIt() {
                 belief = history[i];
               return (
                 <article className="detective-evidence" key={id}>
-                  <span className="studio-eyebrow">
-                    {ui.evidence}
-                    {String(i + 1).padStart(2, "0")} / {t.cost}
-                    {ui.credits}
-                  </span>
                   <h4>{t.label}</h4>
                   <blockquote>{t.outcomes[scenario.answer]}</blockquote>
                   {belief.prediction && (
@@ -233,7 +216,6 @@ export default function ProveIt() {
       </div>
       {!done && (
         <div className="detective-commit">
-          <p>{ui.youCanCommitAtAnyTimeA}</p>
           <Button
             primary
             onClick={() => {
@@ -247,24 +229,12 @@ export default function ProveIt() {
       )}
       {done && (
         <section className="detective-debrief" role="status">
-          <p className="studio-eyebrow">{c.debrief}</p>
-          <h3>
-            {correct
-              ? decisive
-                ? "You found it. And you can show why."
-                : "Right answer. The evidence is still thin."
-              : "A useful wrong turn."}
-          </h3>
+          <h3>{correct ? (decisive ? c.found : c.thin) : c.wrong}</h3>
           <Metrics
             items={[
-              ["Case score", `${score}/100`],
-              [
-                "Evidence",
-                decisive
-                  ? "Distinguishing"
-                  : `${survivors.length} explanations remain`,
-              ],
-              ["Confidence score", `${calibration(correct, confidence)}/100`],
+              [c.score, `${score}/100`],
+              [c.evidence, decisive ? c.distinguishing : c.remain(survivors.length)],
+              [c.confidenceScore, `${calibration(correct, confidence)}/100`],
             ]}
           />
           <p>
@@ -317,7 +287,6 @@ export default function ProveIt() {
               {confidence}%
             </li>
           </ol>
-          <p className="studio-note">{ui.scoring35ForTheConclusion40For}</p>
           <div className="studio-toolbar">
             <Button onClick={() => open(index)}>{c.again}</Button>
             <Button
@@ -331,25 +300,28 @@ export default function ProveIt() {
             >
               {c.next}
             </Button>
-            <Button
-              onClick={() =>
-                jsonDownload(`prove-it-${scenario.id}.json`, {
-                  format: "prove-it-v2",
-                  case: scenario.title,
-                  history,
-                  conclusion: scenario.hypotheses[choice],
-                  confidence,
-                  score,
-                  lesson: scenario.lesson,
-                })
-              }
-            >
-              {c.download}
-            </Button>
+            <ExportBar
+              label={c.exports}
+              actions={[
+                {
+                  label: c.download,
+                  kind: "json",
+                  onClick: () =>
+                    jsonDownload(`prove-it-${scenario.id}.json`, {
+                      format: "prove-it-v2",
+                      case: scenario.title,
+                      history,
+                      conclusion: scenario.hypotheses[choice],
+                      confidence,
+                      score,
+                      lesson: scenario.lesson,
+                    }),
+                },
+              ]}
+            />
           </div>
         </section>
       )}
-      <p className="studio-note">{c.limits}</p>
     </div>
   );
 }

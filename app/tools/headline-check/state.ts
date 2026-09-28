@@ -76,8 +76,16 @@ export const headlineCopy = {
   fixCopyFailed: "The clipboard refused. Select the snippet and copy it by hand.",
   readMore: "Where this came from",
 
-  limits:
-    "This reads the HTML the server sends and the style attributes in it. It cannot see your stylesheet, so a class that sets display:inline-block is invisible to it. One element per character is the signal that survives that, and it is the one this leans on.",
+  limitedTitle: "Slow down a moment",
+  failedTitle: "Could not read that page",
+  checked: "Checked:",
+  read: "Read",
+  redirects: (n: number) => ` after ${n} redirect${n === 1 ? "" : "s"}`,
+  nothing: "nothing at all",
+  statTag: "Heading read",
+  statChildren: "Child elements",
+  statCharacters: "Single-character elements",
+  noTag: "none found",
 } as const;
 
 export const VERDICTS: Record<Verdict, { title: string; body: string }> = {

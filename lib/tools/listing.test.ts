@@ -47,6 +47,13 @@ describe("toolListing", () => {
     expect(row.privacyLine).toBe("Names stay here; hashes go to your peer.");
   });
 
+  it("carries the tool's one sentence of purpose, falling back to the blurb", () => {
+    // The index card and the tool page read the same line, so they cannot disagree.
+    const [withPurpose, without] = toolListing([{ ...live, purpose: "Does alpha in one sentence." }, soon]);
+    expect(withPurpose.purpose).toBe("Does alpha in one sentence.");
+    expect(without.purpose).toBe(soon.blurb);
+  });
+
   it("keeps the order it was given", () => {
     expect(toolListing([soon, live]).map((r) => r.slug)).toEqual(["beta", "alpha"]);
   });

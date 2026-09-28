@@ -6,6 +6,8 @@ export type ToolRow = {
   slug: string;
   name: string;
   blurb: string;
+  /** The one sentence the index card shows: the same line as the tool page. */
+  purpose: string;
   privacyLine: string;
   /** `null` for a `soon` tool: listed, never linked. */
   href: string | null;
@@ -24,6 +26,7 @@ export function toolListing(entries: readonly ToolEntry[]): ToolRow[] {
     slug: t.slug,
     name: t.name,
     blurb: t.blurb,
+    purpose: t.purpose ?? t.blurb,
     privacyLine: t.privacyLine ?? toolShellCopy.privacy[t.privacy],
     href: t.status === "live" ? toolPath(t.slug) : null,
     soon: t.status === "soon",

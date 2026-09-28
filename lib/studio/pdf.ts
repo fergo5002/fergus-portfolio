@@ -1,6 +1,8 @@
 import type { Rect } from "@/lib/lab/redact";
 import { normaliseRect } from "@/lib/lab/redact";
 import type { TextBox } from "./redaction";
+import type { Pixels } from "./redact-verify";
+import { drawExample, EXAMPLE_FACE, exampleSheet } from "./redact-example";
 export type RedactPage = {
   url: string;
   width: number;
@@ -8,6 +10,8 @@ export type RedactPage = {
   pointsWidth: number;
   pointsHeight: number;
   text: TextBox[];
+  /** The example invoice: shown from its SVG, burned from its layout (see redact-example.ts). */
+  example?: boolean;
 };
 export const releasePages = (pages: RedactPage[]) =>
   pages.forEach((p) => URL.revokeObjectURL(p.url));
@@ -163,7 +167,8 @@ export async function flatten(page: RedactPage, rects: Rect[]) {
   if (!ctx) throw new Error("Canvas unavailable.");
   ctx.fillStyle = "#fff";
   ctx.fillRect(0, 0, page.width, page.height);
-  ctx.drawImage(await imageFrom(page.url), 0, 0);
+  if (page.example) drawExample(ctx, exampleSheet(), EXAMPLE_FACE);
+  else ctx.drawImage(await imageFrom(page.url), 0, 0);
   ctx.fillStyle = "#000";
   for (const r of rects)
     ctx.fillRect(
@@ -173,6 +178,36 @@ export async function flatten(page: RedactPage, rects: Rect[]) {
       Math.ceil(r.y + r.height) - Math.floor(r.y),
     );
   return canvas;
+}
+/** A page's pixels, decoded from its image: what the verify pass reads. */
+export async function readPixels(page: RedactPage): Promise<Pixels> {
+  const img = await imageFrom(page.url),
+    canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) throw new Error("Canvas unavailable.");
+  ctx.drawImage(img, 0, 0);
+  const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  canvas.width = 0;
+  canvas.height = 0;
+  return { data, width, height };
+}
+/** A page's image as a PNG file, re-encoded from its own pixels. */
+export async function pageBlob(page: RedactPage): Promise<Blob> {
+  const img = await imageFrom(page.url),
+    canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas unavailable.");
+  ctx.drawImage(img, 0, 0);
+  try {
+    return await canvasBlob(canvas);
+  } finally {
+    canvas.width = 0;
+    canvas.height = 0;
+  }
 }
 export async function rasterPdf(
   pages: RedactPage[],

@@ -121,12 +121,27 @@ describe("the stylesheet clears the phone floors before the phone check runs", (
     return bodies.join("\n");
   };
 
+  /**
+   * Since the instrument redesign (2026-09-27) the file picker and the column
+   * picker are kit controls (`DropSlot`, `Select`), so their floors are read
+   * from the kit's stylesheet and the tool's own `.overlap__file` and
+   * `.overlap__select` rules are gone. Dropping a kit floor still turns this red.
+   */
+  const kit = read("components", "instrument", "instrument.css");
+
+  it("uses the kit for the file and the column, and keeps their ids", () => {
+    expect(source).toMatch(/<DropSlot id="overlap-file"/);
+    expect(source).toMatch(/<Select\s+id="overlap-column"/);
+    expect(source).not.toMatch(/type="file"|<select/);
+  });
+
   it("puts 16px on every control, so iOS does not zoom on focus", () => {
-    for (const selector of [".overlap__input", ".overlap__select", ".overlap__file", ".overlap__blob"]) {
+    for (const selector of [".overlap__input", ".overlap__blob"]) {
       expect(rule(selector), selector).toContain("font-size: 16px");
     }
     expect(rule(".overlap__tab")).toContain("font-size: 16px");
     expect(rule(".overlap__button")).toContain("font-size: 16px");
+    expect(kit).toMatch(/\.inst-select \.inst-select__input \{[^}]*font-size: 16px/);
   });
 
   it("puts 44px under every tap target", () => {
@@ -134,13 +149,13 @@ describe("the stylesheet clears the phone floors before the phone check runs", (
       ".overlap__tab",
       ".overlap__button",
       ".overlap__input",
-      ".overlap__select",
-      ".overlap__file",
       ".overlap__blob",
       ".overlap__summary",
     ]) {
       expect(rule(selector), selector).toContain("min-height: 44px");
     }
+    expect(kit).toMatch(/\.inst-select \.inst-select__input \{[^}]*min-height: 44px/);
+    expect(kit).toMatch(/\.inst-picker__button \{[^}]*min-height: 44px/);
     // The label takes its 44px only where there is a finger.
     expect(bare).toMatch(/@media \(hover: none\)[\s\S]*?\.overlap__label \{[\s\S]*?min-height: 44px/);
   });
@@ -162,5 +177,14 @@ describe("the stylesheet clears the phone floors before the phone check runs", (
 
   it("gates the one animation behind reduced motion", () => {
     expect(bare).toMatch(/@media \(prefers-reduced-motion: no-preference\)[\s\S]*overlap__result/);
+  });
+});
+
+describe("the peer screen says what the other browser learns, before you connect (Codex review, 2026-09-28)", () => {
+  it("shows that they learn your address and roughly how many connections you have, above the create button", () => {
+    const warning = source.indexOf("{overlapCopy.honesty.theyLearn}");
+    const create = source.indexOf("onClick={create}");
+    expect(warning).toBeGreaterThan(-1);
+    expect(warning).toBeLessThan(create);
   });
 });

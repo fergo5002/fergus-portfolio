@@ -13,6 +13,9 @@ export const WEEKS = 52;
 export const HOURS = 24;
 export const MS_WEEK = 7 * 24 * 60 * 60 * 1000;
 
+/** The two ways the page shows one field: stacked week ridges, or contours seen from above. */
+export type ReliefView = "ridgeline" | "contour";
+
 /** One dated thing, already reduced to its cell. Nothing identifying survives. */
 export type ReliefEvent = { week: number; hour: number };
 
@@ -25,6 +28,11 @@ export type Polyline = Point[];
 export type Heightmap = {
   /** Normalised and smoothed, every value in [0, 1]. What gets contoured. */
   field: Field;
+  /**
+   * The same compression smoothed twice along each day and once across
+   * weeks, every value in [0, 1]. What the ridgeline stands on.
+   */
+  profile: Field;
   /** The raw counts, kept for the readout so the page can say a real number. */
   counts: Field;
   ceiling: number;

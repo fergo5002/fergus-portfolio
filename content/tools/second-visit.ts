@@ -10,23 +10,6 @@ export const TIGH_CREDIT: Credit | null = {
     "The model is Tigh Sauna's, a booking system for Irish saunas. It was ported from the SQL that runs in that product's database, and a test in this repository checks the port against that SQL, row for row, on every pull request.",
 };
 
-export const secondVisit: ToolEntry = {
-  slug: "second-visit",
-  name: "Second visit",
-  blurb:
-    "Drop a bookings export and see how many first-timers come back, with the uncertainty beside the number. The model a real business runs on.",
-  privacy: "browser",
-  cantSee: [
-    "Why anyone left. Every verdict here is a shape in your own dates. Somebody who moved house and somebody who had a bad time look identical from the outside, and nothing in this tool can tell them apart.",
-    "Anyone whose town is not in the table, and anyone with no town at all. Distance is worked out from town centroids, so a row with no match gets no distance and is judged on behaviour alone. That is deliberate: not knowing where somebody lives is a gap in your records, and it must not be charged to the customer as suspicion.",
-    "Your summer, if your file covers fewer than twelve months. The season factor is switched off below that and the page says so. One winter is no evidence at all about your summer.",
-    "The difference between a no-show and a completed visit, unless your export has a status column and you map it. Without one, every row that is not cancelled counts as a visit, which is a slightly kinder reading than the model uses in production.",
-    "Anything that is not in the file. No addresses, no marketing consent, no memberships or prepaid credits unless a column carries them, and nothing at all about people who have never booked.",
-    "Whether any of the verdicts are right. The model has never been scored against what customers went on to do. It reorganises what your dates already say, which is useful, and it is not the same thing as being correct.",
-  ],
-  status: "live",
-  order: 50,
-};
 
 export const secondVisitCopy = {
   steps: {
@@ -66,9 +49,8 @@ export const secondVisitCopy = {
     horizonDisabled: "Longer than your file covers.",
   },
   honesty: {
-    title: "What this is, and what it is not",
     body: [
-      "Your file never leaves this tab. It is read and modelled in your own browser, and the page names whether that happened in a background worker or on the main thread. Nothing is uploaded, stored or sent anywhere. The forget command has nothing to wipe here, because this tool writes nothing to your machine at all.",
+      "Your file never leaves this tab. It is read and modelled in your own browser, and the page names whether that happened in a background worker or on the main thread. The file is not uploaded, stored or sent anywhere. The forget command has nothing to wipe here, because this tool writes nothing to your machine at all.",
       "The distance bands were drawn for a rural Irish sauna. Fifteen kilometres is habit range, ninety-five is the point where Dublin stops being a catchment and starts being a day out. For your business those numbers may be nonsense, which is why every one of them is a slider.",
       "The priors are stated assumptions rather than fitted parameters, and the people who wrote them say so in the code. One venue and eighteen months is not enough history to fit five coefficients without overfitting, so somebody wrote down what they believed and left it arguable.",
       "The model has never been scored against what customers went on to do. Nobody has taken a list of people it called lapsed and checked how many were. It reorganises the dates you already have, which is worth doing, and it is a different thing from knowing what happens next.",
@@ -167,3 +149,24 @@ export const secondVisitCopy = {
     towns: "Town coordinates from GeoNames, CC BY 4.0.",
   },
 } as const;
+
+export const secondVisit: ToolEntry = {
+  slug: "second-visit",
+  name: "Second visit",
+  blurb:
+    "Drop a bookings export and see how many first-timers come back, with the uncertainty beside the number. The model a real business runs on.",
+  purpose: "See how many first-time customers come back, with the uncertainty beside the number.",
+  privacy: "browser",
+  cantSee: [
+    "Why anyone left. Every verdict here is a shape in your own dates. Somebody who moved house and somebody who had a bad time look identical from the outside, and nothing in this tool can tell them apart.",
+    "Anyone whose town is not in the table, and anyone with no town at all. Distance is worked out from town centroids, so a row with no match gets no distance and is judged on behaviour alone. That is deliberate: not knowing where somebody lives is a gap in your records, and it must not be charged to the customer as suspicion.",
+    "Your summer, if your file covers fewer than twelve months. The season factor is switched off below that and the page says so. One winter is no evidence at all about your summer.",
+    "The difference between a no-show and a completed visit, unless your export has a status column and you map it. Without one, every row that is not cancelled counts as a visit, which is a slightly kinder reading than the model uses in production.",
+    "Anything that is not in the file. No addresses, no marketing consent, no memberships or prepaid credits unless a column carries them, and nothing at all about people who have never booked.",
+    "Whether any of the verdicts are right. The model has never been scored against what customers went on to do. It reorganises what your dates already say, which is useful, and it is not the same thing as being correct.",
+  ],
+  /** The four paragraphs that say what the model is and is not, in the shell's disclosure. */
+  method: [...secondVisitCopy.honesty.body],
+  status: "live",
+  order: 50,
+};

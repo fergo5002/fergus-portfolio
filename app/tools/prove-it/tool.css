@@ -239,4 +239,4 @@
   :is(.lab, .tool-studio) .detective-debrief {
     padding: 16px;
   }
-}
+}:is(.lab, .tool-studio) .studio-toolbar .detective-choose { flex: 1 1 280px; max-width: 440px; }

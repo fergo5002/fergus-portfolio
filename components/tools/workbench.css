@@ -1,81 +1,267 @@
-/* Shared tools furniture. The shell, its shaders and its settings remain its own. */
-.tool-workbench, .tools-workbench { gap: 24px; text-shadow: none; }
-.tool-workbench > .prompt, .tools-workbench > .prompt { margin: 0; }
-.tool-workbench .page__title { margin: 0; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; }
-.tool-workbench .page__lede { margin: 0; max-width: 72ch; }
-.bench-back { display: inline-flex; min-height: 44px; align-items: center; color: var(--green); width: fit-content; gap: 12px; font-size: .85rem; }
+/* components/tools/workbench.css
+   The instrument shell (ToolPage) and the tools index. The site's shell, its
+   shader and its settings stay in app/globals.css; this file builds on the
+   .tool__privacy and .tool__cantsee rules there rather than replacing them.
+   Every colour is a token, so the amber and ice themes follow. */
+
+.tool-workbench,
+.tools-workbench { gap: 20px; text-shadow: none; }
+.tool-workbench > .prompt,
+.tools-workbench > .prompt { margin: 0; }
+
+.bench-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  width: fit-content;
+  color: var(--green);
+  font-size: 0.85rem;
+}
 .bench-back::before { content: "\2190"; }
-.bench-heading { display: grid; gap: 14px; }
-.bench-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 24px; padding: 28px 0; border-bottom: 1px solid var(--green-line); }
-.bench-intro h1 { font-family: var(--font-screen); color: var(--green-bright); font-size: clamp(2.7rem, 6vw, 4.8rem); max-width: 17ch; line-height: 1; margin: 0 0 22px; }
-.bench-intro h1 { max-width: 23ch; }
-.bench-intro p { max-width: 60ch; margin: 8px 0 0; }
-.bench-intro__count { font-family: var(--font-screen); font-size: 7rem; color: var(--amber); line-height: 1; }
-.bench-subline { color: var(--amber); font-size: .85rem; }
-.bench-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; list-style: none; padding: 0; margin: 0; }
-.bench-card { min-width: 0; background: var(--bg-panel); border: 1px solid var(--green-line); position: relative; }
-.bench-card:last-child { grid-column: 1 / -1; }
-.bench-card__link { display: grid; height: 100%; text-decoration: none; color: var(--green); padding: 24px; gap: 14px; }
-.bench-card__link:hover, .bench-card__link:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; background: var(--bg-panel-2); }
-.bench-card__top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.bench-card h2 { color: var(--green-bright); font-family: var(--font-screen); font-size: 1.85rem; margin: 0; }
-.bench-card p { margin: 0; }
-.bench-card__purpose { font-size: 1.04rem; color: var(--amber); }
-.bench-card__category, .bench-card__input { font-size: .78rem; color: var(--green); }
-.bench-card__open { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--green-line); padding-top: 16px; color: var(--amber); }
-.bench-card__open::after { content: "\2197"; font-size: 1.3rem; }
-.bench-preview { display: block; width: 100%; height: 135px; stroke: var(--green); stroke-width: 1.6; background: var(--bg); }
-.bench-preview__grid { stroke: var(--green-line); stroke-width: .5; }
-.bench-preview__secondary { stroke: var(--amber); }
-.tool-workbench > .tool__privacy { margin: 0; padding: 12px 16px; border-left: 2px solid var(--green); background: var(--bg-panel); font-size: .8rem; max-width: none; }
-.tool-workbench > .tool__privacynote { margin: -12px 0 0; font-size: .8rem; }
-.bench-surface { padding: clamp(16px, 3vw, 32px); background: var(--bg-panel); border: 1px solid var(--green-line); min-width: 0; }
-.bench-surface > :first-child { margin-top: 0; max-width: none; }
-.bench-surface :is(input, textarea, select, button) { font-size: 16px; max-width: 100%; }
-.bench-surface :is(button, select, input:not([type="hidden"]), summary) { min-height: 44px; }
-.bench-surface button { touch-action: manipulation; }
-.bench-surface :is(button, a, input, select, textarea, summary):focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
-.bench-surface textarea { resize: vertical; }
-.bench-surface button:disabled { cursor: not-allowed; }
+
+/* ── the heading and its one sentence ─────────────────────────────────── */
+
+.bench-head { display: grid; gap: 10px; }
+.tool-workbench .page__title { margin: 0; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; }
+.bench-head .page__lede { margin: 0; max-width: 62ch; font-size: 1rem; line-height: 1.55; }
+
+/* ── the stage: the instrument, at the full width of the page ────────── */
+
+/* A window of the machine, like the ones on the home and projects pages: a
+   narrow bar across the top with a pilot lamp and the window controls. Every
+   part of the bar is drawn here, never written into the document. */
+.bench-stage {
+  --bar: 34px;
+  position: relative;
+  min-width: 0;
+  padding: calc(var(--bar) + clamp(14px, 2.4vw, 26px)) clamp(14px, 2.4vw, 26px) clamp(14px, 2.4vw, 26px);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+}
+.bench-stage::before {
+  content: "[_] [\25A1] [x]";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--bar);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--green-line);
+  border-radius: var(--radius) var(--radius) 0 0;
+  background:
+    radial-gradient(circle at 18px 50%, var(--amber) 0 3px, transparent 4px),
+    var(--bg-panel-2);
+  color: var(--green);
+  font-size: 0.82rem;
+  letter-spacing: 1px;
+  opacity: 0.85;
+  pointer-events: none;
+}
+.bench-stage > :first-child { margin-top: 0; max-width: none; }
+/* Floors for a tool's own native controls. Kit controls ("inst-") carry
+   their own and are left out, so these rules never fight them. */
+.bench-stage :is(input, textarea, select, button):not([class*="inst-"]) { font-size: 16px; max-width: 100%; }
+.bench-stage :is(button, select, input:not([type="hidden"]), summary):not([class*="inst-"]) { min-height: 44px; }
+.bench-stage button { touch-action: manipulation; }
+/* A control scrolled into view (by focus, by a browser, by a test driver) must
+   land above the fixed status bar, not under it. Measured: with JavaScript
+   off, the headline form's submit button settled under the bar and could not
+   be clicked. */
+.bench-stage :is(button, input, select, textarea, summary, label) { scroll-margin-bottom: calc(var(--status-h) + var(--sp-3)); }
+.bench-stage :is(button, a, input, select, textarea, summary):not([class*="inst-"]):focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 3px;
+}
+.bench-stage textarea { resize: vertical; }
+.bench-stage button:disabled { cursor: not-allowed; }
+
+/* ── the privacy line, under the stage ───────────────────────────────── */
+
+.tool-workbench > .tool__privacy {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: -6px 0 0;
+  max-width: 90ch;
+  color: var(--green);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+.bench-lock {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  fill: none;
+  stroke: var(--amber);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+/* ── the one disclosure ──────────────────────────────────────────────── */
+
+.tool-workbench > .bench-disclosure {
+  max-width: none;
+  margin: 0;
+  padding-top: 4px;
+}
+.bench-disclosure > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  width: fit-content;
+  color: var(--amber);
+  cursor: pointer;
+  list-style: none;
+}
+.bench-disclosure > summary::-webkit-details-marker { display: none; }
+.bench-disclosure > summary::before { content: "+"; font-family: var(--font-screen); font-size: 1.3rem; line-height: 1; }
+.bench-disclosure[open] > summary::before { content: "\2212"; }
+.bench-disclosure > summary:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+.bench-disclosure__body {
+  display: grid;
+  gap: 12px;
+  max-width: 72ch;
+  padding: 6px 0 4px 26px;
+  font-size: 0.86rem;
+  line-height: 1.65;
+}
+.bench-disclosure__body > p { margin: 0; color: var(--green); }
+.bench-disclosure__body .tool__privacynote { margin: 0; font-size: inherit; max-width: none; }
+.bench-disclosure__body .tool__cantsee-title { margin: 8px 0 0; font-size: 1.15rem; }
+.bench-disclosure__body .tool__cantsee-list { gap: 10px; }
+/* Closed is closed: Chromium keeps a closed details' contents laid out, and the
+   phone check and assistive technology should agree that nothing is there. */
+.bench-disclosure:not([open]) > :not(summary),
+.bench-details:not([open]) > :not(summary) { display: none; }
+
+/* ── shared furniture the tools still use inside their stages ─────────── */
+
 .bench-details { margin-top: 20px; border-top: 1px solid var(--green-line); padding-top: 12px; }
-.bench-details > summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--amber); gap: 12px; }
+.bench-details > summary { display: flex; align-items: center; gap: 12px; min-height: 44px; color: var(--amber); cursor: pointer; }
 .bench-details > summary::before { content: "+"; }
 .bench-details[open] > summary::before { content: "\2212"; }
 .bench-details > summary::-webkit-details-marker { display: none; }
-/* Closed details can still expose descendant geometry through the browser's
-   content-visibility implementation. Give closed panels ordinary hidden layout
-   as well, so layout measurements and assistive visibility agree. */
-.bench-details:not([open]) > :not(summary),
-.bench-privacy-details:not([open]) > :not(summary) { display: none; }
-.bench-privacy-details { margin-top: -16px; font-size: .8rem; }
-.bench-privacy-details summary { cursor: pointer; color: var(--green); min-height: 44px; display: flex; align-items: center; }
-.bench-privacy-details summary::after { content: " +"; margin-left: 8px; }
-.bench-privacy-details p { margin: 0; max-width: 75ch; }
 .bench-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 16px 0; }
-.bench-button { min-height: 44px; border: 1px solid var(--green-line); padding: 10px 16px; background: var(--bg); color: var(--green-bright); font: inherit; cursor: pointer; }
-.bench-button:hover, .bench-button[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); }
+.bench-button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--green-bright);
+  font: inherit;
+  cursor: pointer;
+}
+.bench-button:hover,
+.bench-button[aria-pressed="true"] { border-color: var(--amber); color: var(--amber); }
 .bench-button--primary { background: var(--amber); border-color: var(--amber); color: var(--bg); }
-.bench-button--primary:hover { background: var(--green-bright); color: var(--bg); border-color: var(--green-bright); }
-.bench-input { width: 100%; min-height: 44px; background: var(--bg); border: 1px solid var(--green-line); color: var(--green-bright); padding: 12px; font: inherit; }
+.bench-button--primary:hover { background: var(--green-bright); border-color: var(--green-bright); color: var(--bg); }
+.bench-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 12px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--green-bright);
+  font: inherit;
+}
 .bench-label { display: flex; align-items: center; min-height: 44px; color: var(--green-bright); }
-.bench-note { font-size: .82rem; color: var(--green); line-height: 1.6; }
-.bench-warning { color: var(--amber); border-left: 2px solid var(--amber); padding: 12px 16px; background: var(--bg-panel-2); }
-.bench-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--green-line); margin: 24px 0; }
-.bench-metrics > div { padding: 18px; min-width: 0; }
-.bench-metrics dt { font-size: .8rem; color: var(--green); }
-.bench-metrics dd { font-family: var(--font-screen); font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.2; margin: 8px 0 0; color: var(--amber); }
+.bench-note { color: var(--green); font-size: 0.82rem; line-height: 1.6; }
+.bench-warning { padding: 12px 16px; border-left: 2px solid var(--amber); background: var(--bg-panel-2); color: var(--amber); }
+.bench-subline { color: var(--amber); font-size: 0.85rem; }
+.bench-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 24px 0; border: 1px solid var(--green-line); }
+.bench-metrics > div { min-width: 0; padding: 18px; }
+.bench-metrics dt { color: var(--green); font-size: 0.8rem; }
+.bench-metrics dd { margin: 8px 0 0; color: var(--amber); font-family: var(--font-screen); font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.2; }
 .bench-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .bench-columns > * { min-width: 0; }
-.tool-workbench .tool__cantsee { max-width: none; margin-top: 0; }
-.tool-workbench .tool__cantsee-title { margin: 0; }
+
+/* ── the tools index ─────────────────────────────────────────────────
+   Five cards, three over two on a wide screen. Each card is one link: a live
+   preview of the tool (components/tools/ToolPreview.tsx), its name, its one
+   sentence and a way in. Nothing else. */
+
+.bench-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bench-card { grid-column: span 2; min-width: 0; }
+.bench-card:nth-child(n + 4) { grid-column: span 3; }
+.bench-card__link {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+  overflow: hidden;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg-panel);
+  color: var(--green);
+  text-decoration: none;
+  text-shadow: none;
+}
+.bench-card__link:hover { border-color: var(--amber); }
+.bench-card__link:focus-visible { border-color: var(--amber); outline: 2px solid var(--amber); outline-offset: 3px; }
+.bench-card__screen {
+  display: block;
+  aspect-ratio: 20 / 9;
+  border-bottom: 1px solid var(--green-line);
+  background: var(--bg);
+}
+.bench-card__body { display: grid; align-content: start; gap: 8px; padding: 16px 18px 18px; }
+.bench-card h2 { margin: 0; color: var(--green-bright); font-family: var(--font-screen); font-size: 1.9rem; line-height: 1; }
+.bench-card__purpose { margin: 0; color: var(--green); font-size: 0.9rem; line-height: 1.5; }
+.bench-card__open { display: inline-flex; align-items: center; gap: 8px; margin-top: 2px; color: var(--amber); font-size: 0.85rem; }
+.bench-card__open::after { content: "\2192"; }
+
+/* The previews: every stroke and fill is a theme token, so the amber and ice
+   phosphors repaint them with nothing here to change. */
+.bench-preview { display: block; width: 100%; height: 100%; }
+.bench-attract__grid { fill: none; stroke: var(--green-line); stroke-width: 0.5; }
+.bench-attract__line { stroke: var(--green); stroke-width: 1.4; }
+.bench-attract__node { fill: var(--bg-panel); stroke: var(--green-bright); stroke-width: 1.6; }
+.bench-attract__hub { fill: var(--bg-panel); stroke: var(--amber); stroke-width: 2; }
+.bench-attract__signal { fill: var(--amber); }
+.bench-attract__signal-line { stroke: var(--amber); stroke-width: 1.2; }
+.bench-attract__page { fill: var(--bg-panel-2); stroke: var(--green); stroke-width: 1.2; }
+.bench-attract__text { fill: var(--green); fill-opacity: 0.55; }
+.bench-attract__mask { fill: var(--amber); }
+.bench-attract__scan { stroke: var(--amber); stroke-width: 1.5; }
+.bench-attract__cell { fill: var(--green); }
+.bench-attract__contour { fill: none; stroke: var(--green); stroke-width: 1; }
+.bench-attract__contour-strong { fill: none; stroke: var(--green-bright); stroke-width: 1.8; }
+.bench-attract__step { fill: var(--green); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .bench-card__link { transition: border-color 140ms ease-out; }
+  .bench-card__open::after { transition: transform 140ms ease-out; }
+  .bench-card__link:hover .bench-card__open::after { transform: translateX(3px); }
+}
+@media (max-width: 900px) {
+  .bench-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bench-card,
+  .bench-card:nth-child(n + 4) { grid-column: auto; }
+  .bench-card:last-child { grid-column: 1 / -1; }
+}
+
 @media (max-width: 620px) {
-  .bench-grid, .bench-columns { grid-template-columns: minmax(0, 1fr); }
+  .bench-grid,
+  .bench-columns { grid-template-columns: minmax(0, 1fr); }
   .bench-card:last-child { grid-column: auto; }
-  .bench-card__link { padding: 20px; }
-  .bench-intro { grid-template-columns: minmax(0, 1fr); padding-top: 12px; }
-  .bench-intro__count { display: none; }
   .bench-metrics > div { padding: 12px 8px; }
-  .bench-metrics dt { font-size: .72rem; overflow-wrap: anywhere; }
-  .bench-surface { padding: 16px; }
+  .bench-metrics dt { font-size: 0.72rem; overflow-wrap: anywhere; }
+  .bench-stage { padding: calc(var(--bar) + 14px) 14px 14px; }
+  .bench-disclosure__body { padding-left: 0; }
   .bench-actions > button { flex: 1 1 auto; }
 }

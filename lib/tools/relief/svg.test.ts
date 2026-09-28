@@ -3,7 +3,8 @@ import { contourLayers } from "./contour";
 import { buildHeightmap } from "./heightmap";
 import { demoEvents } from "./demo";
 import { HOURS, WEEKS } from "./types";
-import { A4_LANDSCAPE, fitToSheet, pathData, plotterSvg } from "./svg";
+import { ridgelines } from "./ridgeline";
+import { A4_LANDSCAPE, fitToSheet, pathData, plotterSvg, ridgelineSvg, sheetRidgeLayout } from "./svg";
 
 const layers = contourLayers(buildHeightmap(demoEvents()).field);
 const svg = plotterSvg(layers);
@@ -128,5 +129,60 @@ describe("plotterSvg", () => {
     const empty = plotterSvg([]);
     expect(empty).toContain("<svg");
     expect(empty).toContain('id="neatline"');
+  });
+});
+
+/**
+ * The ridgeline as a plotter file. The canvas can get away with painting a
+ * ridge over the ones behind it; a pen cannot, because a pen has no fill and
+ * every hidden line would be drawn. So the file is only the visible strokes,
+ * which `ridgelines` has already worked out, in millimetres, one group a week.
+ */
+describe("ridgelineSvg", () => {
+  const field = buildHeightmap(demoEvents()).profile;
+  const out = ridgelineSvg(field);
+  const layout = sheetRidgeLayout(A4_LANDSCAPE);
+  const ridges = ridgelines(field, layout);
+
+  it("reports its size in millimetres on the same sheet as the contours", () => {
+    expect(out).toMatch(/^<svg[^>]*width="297mm"[^>]*height="210mm"[^>]*viewBox="0 0 297 210"/);
+  });
+
+  it("is strokes and nothing else: no fill, no text, no font", () => {
+    expect(out).toContain('fill="none"');
+    expect(out).not.toMatch(/fill="(?!none)/);
+    expect(out).not.toContain("<text");
+    expect(out).not.toContain("font");
+  });
+
+  it("writes one group per week, back to front, so the far weeks can take a finer pen", () => {
+    const groups = [...out.matchAll(/<g id="week-(\d{2})" data-week="(\d+)">/g)];
+    expect(groups.map((m) => Number(m[2]))).toEqual(Array.from({ length: WEEKS }, (_, i) => i + 1));
+  });
+
+  it("draws only what can be seen: one path per visible stretch", () => {
+    const paths = (out.match(/<path /g) ?? []).length;
+    const visible = ridges.reduce((a, r) => a + r.visible.length, 0);
+    expect(paths).toBe(visible);
+    // The demo has hills, so some ridges are broken by the ones in front.
+    expect(visible).toBeGreaterThan(WEEKS);
+  });
+
+  it("keeps every coordinate inside the sheet's margins", () => {
+    const numbers = [...out.matchAll(/[ML]([\d.]+) ([\d.]+)/g)].map((m) => [Number(m[1]), Number(m[2])]);
+    expect(numbers.length).toBeGreaterThan(1000);
+    const m = A4_LANDSCAPE.marginMm;
+    for (const [x, y] of numbers) {
+      expect(x).toBeGreaterThanOrEqual(m - 0.01);
+      expect(x).toBeLessThanOrEqual(A4_LANDSCAPE.widthMm - m + 0.01);
+      expect(y).toBeGreaterThanOrEqual(m - 0.01);
+      expect(y).toBeLessThanOrEqual(A4_LANDSCAPE.heightMm - m + 0.01);
+    }
+  });
+
+  it("is well formed enough to open, and one element deep at the root", () => {
+    expect(out.startsWith("<svg")).toBe(true);
+    expect(out.trimEnd().endsWith("</svg>")).toBe(true);
+    expect((out.match(/<svg/g) ?? []).length).toBe(1);
   });
 });

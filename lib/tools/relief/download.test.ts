@@ -62,6 +62,24 @@ describe("plateFilename", () => {
   });
 });
 
+describe("plateFilename for the ridgeline", () => {
+  it("says which view the picture is, so both views of one day do not collide", () => {
+    expect(plateFilename("demo", "png", "2026-09-27T10:00:00.000Z", "ridgeline")).toBe(
+      "relief-demo-ridges-2026-09-27.png",
+    );
+    expect(plateFilename("csv", "svg", "2026-09-27T10:00:00.000Z", "ridgeline")).toBe(
+      "relief-csv-ridges-2026-09-27.svg",
+    );
+    // The contour view keeps the name it always had.
+    expect(plateFilename("csv", "svg", "2026-09-27T10:00:00.000Z", "contour")).toBe("relief-csv-2026-09-27.svg");
+  });
+
+  it("still carries nothing that came from the visitor", () => {
+    const name = plateFilename("github", "svg", "2026-09-27T10:00:00.000Z", "ridgeline");
+    expect(name).toMatch(/^relief-(demo|github|csv)-ridges-\d{4}-\d{2}-\d{2}\.(png|svg|stl)$/);
+  });
+});
+
 describe("the union types line up with the copy", () => {
   // `PlateSource` and `PlateKind` are declared in lib and the labels live in
   // content. Neither can see the other, so this is the seam that pins them.

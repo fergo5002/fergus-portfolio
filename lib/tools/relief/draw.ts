@@ -1,4 +1,5 @@
 import type { ContourLayer } from "./contour";
+import { hourX, type Ridge, type RidgeLayout } from "./ridgeline";
 import { HOURS, WEEKS, type Point } from "./types";
 
 /**
@@ -67,6 +68,8 @@ export type Ctx2D = {
   fillStyle: string | CanvasGradient | CanvasPattern;
   strokeStyle: string | CanvasGradient | CanvasPattern;
   lineWidth: number;
+  /** The pen's strength, for the ridgeline's glow and its far weeks. Every op sets it. */
+  globalAlpha: number;
   font: string;
   textAlign: string;
   fillRect(x: number, y: number, w: number, h: number): void;
@@ -118,11 +121,11 @@ export function plateGeometry(width: number): PlateGeometry {
 
 export type DrawOp =
   | { op: "clear"; w: number; h: number; fill: string }
-  | { op: "polyline"; points: readonly Point[]; stroke: string; width: number }
-  | { op: "text"; text: string; x: number; y: number; fill: string; align: "left" | "right" };
+  | { op: "polyline"; points: readonly Point[]; stroke: string; width: number; alpha?: number }
+  | { op: "text"; text: string; x: number; y: number; fill: string; align: "left" | "right" | "center" };
 
 /** Every sixth hour. Four labels fit at any width that has labels at all. */
-export function hourLabels(_geometry: PlateGeometry): { text: string; row: number }[] {
+export function hourLabels(_geometry?: PlateGeometry): { text: string; row: number }[] {
   const rows = [0, 6, 12, 18];
   return rows.map((row) => ({ text: String(row).padStart(2, "0"), row }));
 }
@@ -169,10 +172,83 @@ export function planPlate(input: {
   return ops;
 }
 
+/**
+ * The ridgeline, in two parts so it can be drawn in one ridge at a time:
+ * `ground` is the clear and the hour labels, `ridges` is one list of strokes
+ * per week, back to front. Drawing `ground` then every list in order is the
+ * finished picture; the component spends the lists over a second of the frame
+ * clock when motion is allowed, and all at once when it is not.
+ *
+ * Every stroke is a stretch the geometry says a viewer can see, so there is
+ * no fill anywhere and nothing to paint over. Each is drawn twice in the
+ * active phosphor: a wide faint pass, which is the bloom a real trace has,
+ * and the line itself. The far weeks are drawn a little weaker than the near
+ * ones, the way distance reads, and never below half strength.
+ */
+export type RidgePlan = { ground: DrawOp[]; ridges: DrawOp[][] };
+
+/**
+ * The back ridge's strength. Flattened onto --bg it measures 4.91:1 on green,
+ * 3.95 on amber and 4.47 on ice (2026-09-27), against WCAG 1.4.11's 3:1 for
+ * a graphical object; `draw.test.ts` recomputes it from the theme blocks.
+ */
+const FAR_ALPHA = 0.55;
+const BLOOM_ALPHA = 0.16;
+const BLOOM_WIDTH = 3.4;
+
+export function planRidgeline(input: {
+  ridges: readonly Ridge[];
+  geometry: RidgeLayout;
+  palette: Palette;
+  labels: boolean;
+}): RidgePlan {
+  const { ridges, geometry: g, palette, labels } = input;
+  const ground: DrawOp[] = [{ op: "clear", w: g.width, h: g.height, fill: palette.bg }];
+  if (labels) {
+    const y = Math.min(g.height - 4, g.height - g.padBottom + 15);
+    for (const { text, row } of hourLabels()) {
+      ground.push({ op: "text", text, x: hourX(g, row), y, fill: palette.label, align: "center" });
+    }
+  }
+
+  const pen = Math.min(1.4, Math.max(0.9, g.spacing * 0.2));
+  const last = Math.max(1, ridges.length - 1);
+  const planned = ridges.map((ridge, i) => {
+    const alpha = i >= last ? 1 : FAR_ALPHA + ((1 - FAR_ALPHA) * i) / last;
+    return ridge.visible.flatMap((points): DrawOp[] => [
+      { op: "polyline", points, stroke: palette.index, width: pen * BLOOM_WIDTH, alpha: alpha * BLOOM_ALPHA },
+      { op: "polyline", points, stroke: palette.index, width: pen, alpha },
+    ]);
+  });
+  return { ground, ridges: planned };
+}
+
+/**
+ * The contour plate's cell under a point: weeks across, hours down, the
+ * nearest cell, kept on the plate.
+ */
+export function pickPlate(g: PlateGeometry, x: number, y: number): { week: number; hour: number } {
+  const week = 1 + Math.round(((x - g.padLeft) / g.plotWidth) * (WEEKS - 1));
+  const hour = Math.round(((y - g.padTop) / g.plotHeight) * (HOURS - 1));
+  return {
+    week: Math.max(1, Math.min(WEEKS, week)),
+    hour: Math.max(0, Math.min(HOURS - 1, hour)),
+  };
+}
+
+/** Where a cell sits on the contour plate, for the crosshair: the inverse of `pickPlate`. */
+export function platePoint(g: PlateGeometry, week: number, hour: number): Point {
+  return {
+    x: g.padLeft + ((week - 1) / (WEEKS - 1)) * g.plotWidth,
+    y: g.padTop + (hour / (HOURS - 1)) * g.plotHeight,
+  };
+}
+
 /** Plays the list. The only part that needs a real canvas. */
 export function paint(ctx: Ctx2D, ops: readonly DrawOp[]): void {
   for (const op of ops) {
     if (op.op === "clear") {
+      ctx.globalAlpha = 1;
       ctx.fillStyle = op.fill;
       ctx.fillRect(0, 0, op.w, op.h);
     } else if (op.op === "polyline") {
@@ -182,8 +258,10 @@ export function paint(ctx: Ctx2D, ops: readonly DrawOp[]): void {
       for (let i = 1; i < op.points.length; i++) ctx.lineTo(op.points[i].x, op.points[i].y);
       ctx.strokeStyle = op.stroke;
       ctx.lineWidth = op.width;
+      ctx.globalAlpha = op.alpha ?? 1;
       ctx.stroke();
     } else {
+      ctx.globalAlpha = 1;
       ctx.fillStyle = op.fill;
       ctx.textAlign = op.align;
       ctx.fillText(op.text, op.x, op.y);

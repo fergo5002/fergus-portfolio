@@ -14,6 +14,8 @@
  * ordering below is a tested fact rather than a hope.
  */
 
+import type { ReliefView } from "./types";
+
 export type PlateSource = "demo" | "github" | "csv";
 export type PlateKind = "png" | "svg" | "stl";
 
@@ -35,8 +37,9 @@ export const STL_MIME = "model/stl";
  * tab, and a username in it is a small unasked-for disclosure on a shared
  * machine. Not the dropped file's own name either, for the same reason.
  */
-export function plateFilename(source: PlateSource, kind: PlateKind, iso: string): string {
-  return `relief-${source}-${iso.slice(0, 10)}.${kind}`;
+export function plateFilename(source: PlateSource, kind: PlateKind, iso: string, view: ReliefView = "contour"): string {
+  const shown = view === "ridgeline" ? "-ridges" : "";
+  return `relief-${source}${shown}-${iso.slice(0, 10)}.${kind}`;
 }
 
 /** The four browser globals a download needs, so a test can be all four. */

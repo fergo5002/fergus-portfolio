@@ -108,8 +108,6 @@
 }
 
 .overlap__input,
-.overlap__select,
-.overlap__file,
 .overlap__blob {
   min-height: 44px;
   width: 100%;
@@ -127,8 +125,6 @@
 }
 
 .overlap__input:focus-visible,
-.overlap__select:focus-visible,
-.overlap__file:focus-visible,
 .overlap__blob:focus-visible,
 .overlap__tab:focus-visible,
 .overlap__button:focus-visible,
@@ -249,8 +245,9 @@
 }
 .overlap-workbench { min-width: 0; }
 .overlap-workbench > .bench-actions:first-child { margin-top: 0; }
-.overlap-upload { border: 1px solid var(--green-line); padding: 16px; background: var(--bg); }
-.overlap-upload input { padding: 8px; }
+.overlap-upload { display: grid; gap: 8px; border: 1px solid var(--green-line); padding: 16px; background: var(--bg); min-width: 0; }
+.overlap-upload .bench-note { margin: 0; }
+.overlap-intake { margin-bottom: 4px; }
 .overlap-local-list { list-style: none; padding: 0; margin: 0; }
 .overlap-local-list li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--green-line); overflow-wrap: anywhere; }
 .overlap-local-list li span { min-width: 0; }

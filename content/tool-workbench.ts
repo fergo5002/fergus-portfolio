@@ -1,33 +1,41 @@
-/** Product copy shared by the work surfaces, separate from the tool registry. */
+/**
+ * Every word the controls kit (`components/instrument/`) says on its own
+ * behalf. Labels are always passed in by the tool; these are the kit's
+ * refusals, hints and the date range's presets.
+ */
+export const instrumentCopy = {
+  dropHint: "or drop it here",
+  dropHintMany: "or drop them here",
+  /** Shown in the slot while a file is held over the stage. */
+  dropOver: "Drop to open",
+  /** "TXT, JSON or ZIP": no serial comma, per the house style. */
+  list: (items: string[]) =>
+    items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} or ${items[items.length - 1]}`,
+  refusedType: (name: string, formats: string) =>
+    formats ? `${name} is not a file this reads. It takes ${formats}.` : `${name} could not be read.`,
+  refusedSize: (name: string, limit: string) => `${name} is over the ${limit} limit.`,
+  refusedCount: (kept: string) => `One file at a time, so this is using ${kept}.`,
+  megabytes: (bytes: number) => `${Math.round(bytes / 1_000_000)} MB`,
+  dates: {
+    label: "Dates",
+    from: "From",
+    to: "To",
+    presets: { all: "Everything", year: "Last year", quarter: "Last 90 days", month: "Last 30 days" },
+  },
+} as const;
+
+/** The shell's and the index's own words, separate from the tool registry. */
 export const workbenchCopy = {
   indexTitle: "tools",
-  title: "Small tools. Useful results.",
-  description: "Find a connection. Make something. Get a useful answer. Free tools for your files, your ideas and your curiosity.",
   back: "All tools",
   open: "Open tool",
-  limits: "How to read the result",
-  details: "Method and limitations",
-  privacyDetails: "Connection details",
   noAccount: "No account. No installation.",
-  example: "Start with an example or bring your own data.",
-  tools: {
-    atlas: { purpose: "Find the thread in your files", input: "Files, folders, ZIP or a public GitHub repo", output: "A graph you can pull apart, search and explore", category: "Exploring", preview: "Files → connections" },
-    "group-lore": { purpose: "Discover your group chat's history", input: "WhatsApp, Telegram or Discord exports", output: "Find the rhythms. Follow a thread. Keep a portrait", category: "Connections", preview: "Your chat, over time" },
-    "pocket-redact": { purpose: "Cover it. Check it. Take it away", input: "A PDF or an image", output: "Inspect a fresh PDF containing only visible pixels", category: "Documents", preview: "Marked → flattened → reviewed" },
-    "prove-it": { purpose: "Find the evidence that changes your mind", input: "Twelve cases. A limited investigation budget", output: "Test your theory and compare what you learnt", category: "Thinking", preview: "A claim needs evidence" },
-    resonance: { purpose: "Make a little music machine", input: "Four voices, sixteen steps and your hands", output: "Play, sequence and shape sound. Keep a patch or WAV", category: "Making", preview: "Four voices. Your rhythm." },
-    "headline-check": { purpose: "Make your headline readable", input: "A URL or a little HTML", output: "Compare the visible words with extracted text", category: "Web", preview: "HTML → readable words" },
-    drift: { purpose: "Keep your writing sounding like you", input: "Your writing + a draft", output: "Find changed habits and sentences to revisit", category: "Writing", preview: "Your voice / this draft" },
-    relief: { purpose: "Turn your year into a landscape", input: "Dated CSV or GitHub commits", output: "Explore your terrain. Export PNG, SVG or STL", category: "Making", preview: "52 weeks × 24 hours" },
-    overlap: { purpose: "Find the people you both know", input: "Two LinkedIn connection exports", output: "A searchable list of shared connections", category: "Connections", preview: "Two lists. Common ground." },
-    "second-visit": { purpose: "Find out who comes back", input: "A bookings or orders CSV", output: "Retention curves and useful follow-up lists", category: "Business", preview: "First visit → next visit" },
-  } as Record<string, { purpose: string; input: string; output: string; category: string; preview: string }>,
 };
 
 export const localOverlapCopy = {
   local: "Compare two files",
   peer: "Connect with someone",
-  intro: "Have both exports? Compare them here in seconds. Both files stay in this tab. Only use files you have permission to read.",
+  intro: "Both files stay in this tab. Only use exports you have permission to read.",
   first: "First connection list",
   second: "Second connection list",
   choose: "Choose a LinkedIn CSV",
@@ -51,20 +59,19 @@ export const localOverlapCopy = {
   count: (used: number, skipped: number) => `${used.toLocaleString("en-IE")} profiles${skipped ? ` · ${skipped} rows skipped or repeated` : ""}`,
   showing: (visible: number, total: number) => `Showing ${visible} of ${total.toLocaleString("en-IE")} matches. Search to narrow the list; the download includes all matches in this view.`,
   peerIntro: "Keep one file on each person's computer. The browsers exchange salted profile hashes, not names. The other person learns your list size and IP address and can test guesses against the hashes. Direct connections can fail on restrictive networks.",
-  peerDetails: "What the other person and the connection service can see",
 };
 
 export const headlineLabCopy = {
-  heading: "Try it on your HTML",
-  intro: "Paste a heading or a page's source. Nothing is uploaded and pasted code is never executed.",
+  /** The stage's accessible name. Not drawn: the two readings say what they are. */
+  heading: "Two readings of one heading",
   label: "HTML to inspect",
   broken: "Split-letter example",
   clean: "Readable example",
   sample: "Build something worth reading",
-  limit: "Up to 100,000 characters. This checks source HTML, not a rendered page.",
+  limit: "Up to 100,000 characters. Pasted code is never run.",
   waiting: "Paste HTML to see both readings.",
-  browser: "Visible text model",
-  crawler: "Extracted text model",
+  browser: "What a person sees",
+  crawler: "What a tag stripper gets",
   tooLarge: "That source is too large. Paste just the heading and its surrounding HTML (under 100,000 characters).",
 };
 
@@ -73,7 +80,6 @@ export const driftWorkbenchCopy = {
   draft: (words: number) => `${words.toLocaleString("en-IE")} words · 150 needed for a distance`,
   addPiece: "Add another piece",
   storage: "Saving and deleting your profile",
-  method: "Reference and measurement details",
   stale: "Your text has changed. Rebuild the profile or measure the draft to update this report.",
   oversized: "That is too much text for this browser workbench. Use up to 50 sample pieces, under 100,000 characters in total, and a draft under 30,000 characters.",
   demo: "Example report",
@@ -92,7 +98,6 @@ export const reliefWorkbenchCopy = {
   hour: "Hour of the day",
   cell: (week: number, hour: number, count: number) => `Week ${week}, ${String(hour).padStart(2, "0")}:00 · ${count} events`,
   guide: "Peaks are busy hours. Valleys are quiet ones. Move the controls to read the original count behind any part of the terrain.",
-  details: "How the terrain and exports are made",
   stale: "No new landscape is ready. The previous view is shown for reference; exports are paused until a file is accepted or you return to the demo.",
   newDemo: "Try another landscape",
   source: "Landscape on display",

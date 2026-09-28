@@ -1,62 +1,18 @@
 "use client";
-import { useId, type ReactNode } from "react";
-export function StudioIntro({
-  eyebrow,
-  title,
-  intro,
-}: {
-  eyebrow: string;
-  title: string;
-  intro: string;
-}) {
-  return (
-    <header className="studio-intro">
-      <p className="studio-eyebrow">{eyebrow}</p>
-      <h2>{title}</h2>
-      <p>{intro}</p>
-    </header>
-  );
-}
-export function Range({
-  label,
-  value,
-  onChange,
-  min,
-  max,
-  step = 1,
-  display,
-  disabled = false,
-}: {
-  label: string;
-  value: number;
-  onChange: (v: number) => void;
-  min: number;
-  max: number;
-  step?: number;
-  display?: ReactNode;
-  disabled?: boolean;
-}) {
-  const id = useId();
-  return (
-    <div className="lab-field">
-      <label htmlFor={id}>{label}</label>
-      <span className="studio-range">
-        <input
-          id={id}
-          type="range"
-          disabled={disabled}
-          min={min}
-          max={max}
-          step={step}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-        />
-        <output htmlFor={id}>{display ?? Number(value.toFixed(2))}</output>
-      </span>
-    </div>
-  );
-}
-export function Toggle({
+import type { ReactNode } from "react";
+
+/**
+ * A pressed button: `<button aria-pressed>`, for an action whose label names
+ * what it does and may change with its state ("Focus neighbours" and "Whole
+ * map", "Pause physics" and "Resume physics", a mode such as "Select / move").
+ *
+ * An on/off setting is a switch instead: `Toggle` from `components/instrument`.
+ * A value is a `Knob` or a `Slider`, and one choice from a few is a
+ * `Segmented`. The studios' second hero (`StudioIntro`) and the stock range
+ * (`Range`) that used to live here are gone: the shell says what a tool is,
+ * and the kit draws every control.
+ */
+export function Press({
   children,
   active,
   onClick,
@@ -68,13 +24,7 @@ export function Toggle({
   disabled?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      className="studio-toggle"
-      aria-pressed={active}
-      onClick={onClick}
-      disabled={disabled}
-    >
+    <button type="button" className="studio-toggle" aria-pressed={active} onClick={onClick} disabled={disabled}>
       {children}
     </button>
   );

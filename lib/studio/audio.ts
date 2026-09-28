@@ -16,7 +16,13 @@ export function createInstrument(
     feedback = context.createGain(),
     wet = context.createGain(),
     master = context.createGain(),
-    limiter = context.createDynamicsCompressor();
+    limiter = context.createDynamicsCompressor(),
+    // The scope's ear. In line after the limiter, so what it draws is what
+    // reaches the speakers (or the WAV), and an analyser passes its input
+    // through unchanged. 2048 samples hold two cycles of the lowest note.
+    scope = context.createAnalyser();
+  scope.fftSize = 2048;
+  scope.smoothingTimeConstant = 0;
   input.gain.value = 0.22;
   filter.type = "lowpass";
   filter.frequency.value = p.cutoff;
@@ -33,7 +39,8 @@ export function createInstrument(
   delay.connect(wet);
   wet.connect(master);
   master.connect(limiter);
-  limiter.connect(context.destination);
+  limiter.connect(scope);
+  scope.connect(context.destination);
   let voices = 0;
   const active = new Set<OscillatorNode>();
   function pluck(v: Voice, when = context.currentTime, velocity = 1) {
@@ -80,7 +87,7 @@ export function createInstrument(
         osc.stop();
       } catch {}
   }
-  return { pluck, update, silence };
+  return { pluck, update, silence, scope };
 }
 export async function renderWav(p: StudioPatch, bars = 8) {
   const duration = stepTime(16 * bars, p) + 3,

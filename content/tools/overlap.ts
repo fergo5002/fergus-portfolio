@@ -120,6 +120,7 @@ export const overlap: ToolEntry = {
   name: "Overlap",
   blurb:
     "Find the people you both know. Compare two LinkedIn exports without either file leaving its own computer.",
+  purpose: "Find the people two LinkedIn connection exports have in common.",
   privacy: "browser",
   privacyLine:
     "Your files and names stay in this browser. Salted profile hashes go directly to the other browser only in connected mode. Room codes use a daily-changing address hash for a short request budget.",
@@ -131,6 +132,14 @@ export const overlap: ToolEntry = {
     "Anyone who has changed their profile URL since one of the two exports was taken. The slug is the identifier, so an old file and a new one hold two different people as far as the hashing is concerned, and nothing can detect that.",
     "Rows with no profile link. LinkedIn leaves the URL out when a connection has restricted it, and those rows are counted and reported rather than guessed at.",
     "Old style /pub/ links from exports taken years ago. They are a different identifier space from an /in/ slug and comparing the two would invent matches.",
+  ],
+  /** What a salted hash does and does not protect, in the shell's disclosure. */
+  method: [
+    overlapCopy.honesty.notPsi,
+    overlapCopy.honesty.claim,
+    overlapCopy.honesty.theyLearn,
+    overlapCopy.honesty.relaySees,
+    overlapCopy.honesty.storage,
   ],
   status: "live",
   order: 30,

@@ -56,8 +56,111 @@ describe("the client island", () => {
     expect(tool).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
   });
 
+  it("labels the plate in the page's own face, read off the canvas rather than the root", () => {
+    // The root has no font-family of its own; reading it there drew the hour
+    // labels in the browser's default serif, on both views, until 2026-09-27.
+    expect(tool).toContain("window.getComputedStyle(canvas).fontFamily");
+    expect(tool).not.toContain("style.fontFamily");
+  });
+
   it("redraws when the theme changes, because the plate is painted in tokens", () => {
-    expect(tool).toMatch(/\[layers, geometry, settings\.theme\]/);
+    // The paint effect now draws two views, so its dependency list is longer
+    // than the three it had; the theme must still be one of them.
+    const deps = tool.match(/paint\(context, plan\.ground\);[\s\S]*?\n {2}\}, \[([^\]]*)\]\);/)?.[1] ?? "";
+    expect(deps).toContain("layers");
+    expect(deps).toContain("ridges");
+    expect(deps).toContain("settings.theme");
+  });
+});
+
+/**
+ * The instrument redesign (2026-09-27). The terrain is the first thing on
+ * the stage and everything else is a compact control under it: no fieldset
+ * above it, no prose box, no headings inside the stage for an eyebrow to sit
+ * on. Read off the JSX the component returns.
+ */
+describe("the instrument", () => {
+  const jsx = tool.slice(tool.indexOf('<div className="relief"'));
+
+  it("found the JSX it means to check", () => {
+    expect(jsx.length).toBeGreaterThan(2000);
+  });
+
+  it("puts the terrain first, before any control, figure or sentence", () => {
+    const canvas = jsx.indexOf("<canvas");
+    expect(canvas).toBeGreaterThan(0);
+    for (const tag of ["<p", "<output", "<Segmented", "<Slider", "<DropSlot", "<ExportBar", "<Select", "<button", "<input", "<span"]) {
+      const at = jsx.indexOf(tag);
+      if (at >= 0) expect(at, tag).toBeGreaterThan(canvas);
+    }
+  });
+
+  it("has no heading, legend or fieldset on the stage, so there is nothing for an eyebrow to sit on", () => {
+    expect(jsx).not.toMatch(/<h[1-6][\s>]/);
+    expect(jsx).not.toMatch(/<fieldset|<legend/);
+  });
+
+  it("opens on the ridgeline, with the contour plate one choice away", () => {
+    expect(tool).toMatch(/useState<ReliefView>\("ridgeline"\)/);
+    expect(tool).toMatch(/const VIEWS: ReliefView\[\] = \["ridgeline", "contour"\];/);
+    expect(tool).toContain("label: reliefCopy.views[key]");
+  });
+
+  it("chooses the view and the source with the kit's segmented control, not stock buttons", () => {
+    expect([...jsx.matchAll(/<Segmented\s/g)]).toHaveLength(2);
+    expect(jsx).not.toContain("aria-pressed");
+  });
+
+  it("gives every button and input on the stage a designed class", () => {
+    const tags = [...jsx.matchAll(/<(button|input)\b[^>]*>/g)].map((m) => m[0]);
+    expect(tags.length).toBeGreaterThan(2);
+    for (const tag of tags) expect(tag, tag).toMatch(/className=/);
+  });
+
+  it("draws the ridgeline through the tested modules and the palette guard", () => {
+    for (const call of ["ridgeGeometry(", "ridgelines(", "planRidgeline(", "pickRidge(", "pickPlate(", "readCount("]) {
+      expect(tool, call).toContain(call);
+    }
+    // Each week on its own day profile: the week-smoothed field would draw fifty-two near-copies.
+    expect(tool).toContain("ridgelines(heightmap.profile, ridgeBox)");
+    expect(tool).not.toMatch(/Math\.(round|floor)\([^)]*WEEKS/);
+  });
+
+  it("reads the crosshair's count off the raw counts, never the smoothed field", () => {
+    expect(tool).toMatch(/readCount\(heightmap\.counts, at\.week, at\.hour\)/);
+    expect(tool).not.toMatch(/heightmap\.field\[/);
+  });
+
+  it("keeps the two sliders as the keyboard path to the same crosshair", () => {
+    const sliders = [...jsx.matchAll(/<Slider[\s\S]*?\/>/g)].map((m) => m[0]);
+    expect(sliders).toHaveLength(2);
+    expect(sliders[0]).toContain("value={at.week}");
+    expect(sliders[1]).toContain("value={at.hour}");
+  });
+
+  it("says the demo is generated on the stage, whenever the demo is what is drawn", () => {
+    expect(jsx).toMatch(/plateSource === "demo" \? <span className="relief__caption">\{reliefCopy\.demoCaption\}<\/span>/);
+  });
+
+  it("draws in once, off the one frame clock, only on screen and never under reduced motion", () => {
+    expect(tool).not.toContain("requestAnimationFrame");
+    expect(tool).not.toContain("setInterval");
+    expect(tool).toContain("onFrame(");
+    expect(tool).toContain("new IntersectionObserver(");
+    // Subscribed to the clock only once the canvas is seen, so off screen it costs nothing.
+    expect(tool).toMatch(/if \(stop \|\| !entries\.some\(\(entry\) => entry\.isIntersecting\)\) return;/);
+    expect(tool).toMatch(/if \(!fresh \|\| reducedMotion \|\| document\.visibilityState !== "visible"\)/);
+    // Elapsed time off the frame's own timestamp, never a sum of the clamped
+    // `dt`: a starved tab draws the sweep in bigger steps, never slower.
+    expect(tool).toMatch(/\(time - start\) \/ SWEEP_MS/);
+    expect(tool).not.toMatch(/\+= dt/);
+  });
+
+  it("takes away the view on screen: the ridgeline or the contours as the SVG", () => {
+    const body = tool.match(/async function onExport\([\s\S]*?\n {2}\}/)?.[0] ?? "";
+    expect(body).toContain("ridgelineSvg(heightmap.profile)");
+    expect(body).toContain("plotterSvg(layers)");
+    expect(body).toContain("settle.current?.()");
   });
 });
 
@@ -152,16 +255,40 @@ describe("what it reports", () => {
 });
 
 describe("the stylesheet", () => {
+  /**
+   * Since the instrument redesign (2026-09-27) the CSV file, its date column,
+   * the two explorer sliders and the three exports are kit controls from
+   * `components/instrument/`, and the stock `.relief__file`, `.relief__select`
+   * and bare range rules are gone. The floors did not move out of reach: the
+   * kit's own stylesheet is read here, so dropping one still turns this red.
+   */
+  const kit = read("components", "instrument", "instrument.css");
+
+  it("uses the kit for the file, the column, the sliders and the exports", () => {
+    expect(tool).toMatch(/<DropSlot[^>]*id=\{fileId\}/);
+    expect(tool).toMatch(/<Select\s+id=\{columnId\}/);
+    expect([...tool.matchAll(/<Slider\s/g)]).toHaveLength(2);
+    expect(tool).toMatch(/<ExportBar\s/);
+    expect(tool).not.toMatch(/type="range"|type="file"|<select/);
+  });
+
   it("keeps every input at 16px, which is what stops iOS zooming on focus", () => {
-    for (const selector of ["\\.relief__input", "\\.relief__file", "\\.relief__select"]) {
-      expect(css, selector).toMatch(new RegExp(`${selector}[^}]*font-size:\\s*16px`));
-    }
+    expect(css).toMatch(/\.relief__input[^}]*font-size:\s*16px/);
+    expect(kit).toMatch(/\.inst-select \.inst-select__input\s*\{[^}]*font-size:\s*16px/);
+    expect(kit).toMatch(/\.inst-slider \.inst-slider__input\s*\{[^}]*font-size:\s*16px/);
   });
 
   it("gives every control a 44px floor, the select included", () => {
-    for (const selector of ["\\.relief__button", "\\.relief__file", "\\.relief__select"]) {
-      expect(css, selector).toMatch(new RegExp(`${selector}[^}]*min-height:\\s*44px`));
+    expect(css).toMatch(/\.relief__button[^}]*min-height:\s*44px/);
+    expect(css).toMatch(/\.relief__input[^}]*min-height:\s*44px/);
+    for (const selector of [".inst-select .inst-select__input", ".inst-slider .inst-slider__input", ".inst-picker__button", ".inst-export__btn"]) {
+      const block = new RegExp(`${selector.replace(/\./g, "\\.")}\\s*\\{[^}]*min-height:\\s*44px`);
+      expect(kit, selector).toMatch(block);
     }
+  });
+
+  it("no longer tints a stock range with an accent colour", () => {
+    expect(css).not.toContain("accent-color");
   });
 
   it("stops the plate pushing the page sideways at 320", () => {
@@ -185,6 +312,18 @@ describe("the stylesheet", () => {
   it("never dims its text with the two tokens that fail on two of the three themes", () => {
     expect(css).not.toMatch(/color:\s*var\(--green-dim\)/);
     expect(css).not.toMatch(/color:\s*var\(--green-faint\)/);
+  });
+
+  it("lets a finger scroll the page past the terrain and drag along a ridge", () => {
+    expect(css).toMatch(/\.relief__plate\s*\{[^}]*touch-action:\s*pan-y/);
+  });
+
+  it("leaves the reading hit-testable, so the phone check can measure its contrast", () => {
+    expect(css).not.toMatch(/\.relief__cell\s*\{[^}]*pointer-events:\s*none/);
+  });
+
+  it("writes no small capitals, the other half of an eyebrow", () => {
+    expect(css).not.toMatch(/text-transform:\s*uppercase/);
   });
 
   it("gates its one animation behind reduced motion", () => {

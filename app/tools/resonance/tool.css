@@ -1,291 +1,488 @@
 @import "../../../components/studio/base.css";
 @import "../../../components/studio/studio.css";
 
-:is(.lab, .tool-studio) .music-transport {
-  display: flex;
-  gap: 16px;
-  align-items: flex-end;
-  flex-wrap: wrap;
-  padding: 18px;
-  border: 1px solid var(--lab-line);
-  border-radius: 6px;
-  background: var(--studio-paper);
+/* Resonance: one hardware face.
+
+   Every colour is one of the shell's tokens, so the amber and ice phosphors
+   follow. The two canvases take their ink from their own `color`, set here.
+   Every motion is a short transition under no-preference, at the foot of
+   this file; under reduced motion the lamps switch rather than fade.
+
+   The face is a container, so it lays itself out by its own width: the lab
+   and the tools page both host it. At 700px and up it is one panel (play,
+   scope and pad across the top, the grid, the knob row, the keep row).
+   Under that it is a stack, and the grid shows one voice's sixteen steps as
+   four by four, with the four voices as keys above it.
+
+   `workbench.css` gives every non-kit button 16px type and a 44px floor at
+   (0,2,1). The face's own buttons are named at (0,3,1) where they need other
+   type, and keep the 44px floor everywhere. */
+
+.tool-studio .reso,
+.lab .reso {
+  display: block;
+  container: reso / inline-size;
+  --reso-line: var(--green-line);
+  --reso-glass: var(--bg);
 }
-:is(.lab, .tool-studio) .music-transport > .lab-field {
-  flex: 1 1 160px;
+.reso:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 6px;
 }
-:is(.lab, .tool-studio) .music-transport > .studio-badge {
-  align-self: center;
+.reso__row[data-row="1"],
+.reso__row[data-row="3"],
+.reso__voice-dials[data-row="1"],
+.reso__voice-dials[data-row="3"] {
+  --row: var(--amber);
 }
-:is(.lab, .tool-studio) .music-machine {
-  border: 1px solid var(--lab-line);
-  border-radius: 6px;
+.reso__row,
+.reso__voice-dials {
+  --row: var(--green);
+}
+
+/* ── the panel ────────────────────────────────────────────────────────── */
+
+.reso__face {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 104px minmax(0, 1fr) 212px;
+  grid-template-areas:
+    "play screen pad"
+    "worlds worlds pad"
+    "matrix matrix matrix"
+    "dials dials dials"
+    "deck deck deck"
+    "error error error";
+  align-items: start;
+}
+.reso__screen { grid-area: screen; }
+.reso .reso__face .reso-play { grid-area: play; }
+.reso__worlds { grid-area: worlds; }
+.reso__matrix { grid-area: matrix; }
+.reso__dials { grid-area: dials; }
+.reso__pad { grid-area: pad; }
+.reso__deck { grid-area: deck; }
+.reso__error { grid-area: error; }
+
+/* ── the scope ────────────────────────────────────────────────────────── */
+
+.reso__screen {
+  position: relative;
+  height: 148px;
   overflow: hidden;
-  background: var(--bg);
+  border: 1px solid var(--reso-line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(var(--reso-line), var(--reso-line)) center / 100% 1px no-repeat,
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(12.5% - 1px),
+      color-mix(in srgb, var(--reso-line) 45%, transparent) calc(12.5% - 1px) 12.5%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 calc(25% - 1px),
+      color-mix(in srgb, var(--reso-line) 45%, transparent) calc(25% - 1px) 25%
+    ),
+    var(--reso-glass);
+  box-shadow: inset 0 0 36px color-mix(in srgb, var(--green) 7%, transparent);
 }
-:is(.lab, .tool-studio) .music-machine canvas {
+.reso__scope {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
-  height: auto;
-  touch-action: none;
-  cursor: ns-resize;
-}
-:is(.lab, .tool-studio) .music-machine p {
-  font-size: 0.7rem;
-  margin: 0;
-  padding: 12px 18px;
-  border-top: 1px solid var(--lab-line);
-}
-:is(.lab, .tool-studio) .music-pads {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-}
-:is(.lab, .tool-studio) .music-pad {
-  position: relative;
-  padding: 20px;
-  border: 1px solid var(--lab-line);
-  border-bottom: 3px solid var(--green);
-  border-radius: 5px;
-  background: var(--studio-paper);
+  height: 100%;
   color: var(--green-bright);
+  pointer-events: none;
 }
-:is(.lab, .tool-studio) .music-pad:nth-child(even) {
-  border-bottom-color: var(--amber);
-}
-:is(.lab, .tool-studio) .music-pad:active {
-  background: color-mix(in srgb, var(--green) 20%, var(--bg));
-  transform: translateY(2px);
-}
-:is(.lab, .tool-studio) .music-pad > span {
+.reso__readout {
   position: absolute;
   top: 8px;
-  left: 10px;
-  font-size: 0.65rem;
-  opacity: 0.6;
-}
-:is(.lab, .tool-studio) .music-pad strong {
-  display: block;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
   font-family: var(--font-screen);
-  font-size: 2.3rem;
-  font-weight: 400;
-}
-:is(.lab, .tool-studio) .music-pad small {
-  font-size: 0.65rem;
-}
-:is(.lab, .tool-studio) .music-sequencer {
-  border: 1px solid var(--lab-line);
-  border-radius: 6px;
-  overflow: hidden;
-}
-:is(.lab, .tool-studio) .music-step-head {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 20px;
-  padding: 14px 18px;
-  font-size: 0.65rem;
+  font-size: 1.4rem;
+  line-height: 1.1;
   color: var(--amber);
+  text-shadow: 0 0 8px color-mix(in srgb, var(--amber) 40%, transparent);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
 }
-:is(.lab, .tool-studio) .music-step-head > div,
-:is(.lab, .tool-studio) .music-steps {
+/* The separators are costume, so they are drawn, not written. */
+.reso__readout > span + span::before {
+  content: "\00B7";
+  margin-right: 10px;
+}
+.reso__count:empty { display: none; }
+
+/* ── the play key ─────────────────────────────────────────────────────── */
+
+.reso .reso__face button.reso-play {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  height: 148px;
+  padding: 0;
+  border: 1px solid var(--amber);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--amber) 9%, var(--bg));
+  color: var(--amber-bright);
+  font-family: var(--font-screen);
+  font-size: 1.45rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.reso .reso__face button.reso-play:hover { border-color: var(--amber-bright); }
+.reso .reso__face button.reso-play[data-playing] {
+  background: var(--amber);
+  color: var(--bg);
+  box-shadow: 0 0 26px color-mix(in srgb, var(--amber) 32%, transparent);
+}
+.reso-play__glyph {
+  width: 38px;
+  height: 38px;
+  fill: currentColor;
+}
+
+/* ── the grid ─────────────────────────────────────────────────────────── */
+
+.reso__matrix {
+  position: relative;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 6px 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--reso-line);
+  border-radius: var(--radius);
+  background: var(--reso-glass);
+}
+.reso__row { display: contents; }
+.reso__head {
+  display: flex;
+  gap: 4px;
+}
+.reso__steps {
   display: grid;
   grid-template-columns: repeat(16, minmax(0, 1fr));
-  gap: 5px;
+  gap: 4px;
 }
-:is(.lab, .tool-studio) .music-step-head > div {
-  text-align: center;
-}
-:is(.lab, .tool-studio) .music-voice {
-  border-top: 1px solid var(--lab-line);
-  padding: 16px 18px;
-  background: var(--studio-paper);
-}
-:is(.lab, .tool-studio) .music-voice-main {
-  display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  gap: 20px;
+/* A wider gap between beats: four sixteenths to a beat. */
+.reso-cell:nth-child(4n + 1):not(:first-child) { margin-left: 6px; }
+
+.reso .reso__face button.reso-voice {
+  display: inline-flex;
   align-items: center;
+  gap: 8px;
+  min-width: 86px;
+  padding: 0 10px;
+  border: 1px solid var(--reso-line);
+  border-radius: 4px;
+  background: var(--bg-panel-2);
+  color: var(--green-bright);
+  font-family: var(--font-screen);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
 }
-:is(.lab, .tool-studio) .music-voice-label strong {
-  font-size: 0.85rem;
+.reso__row[data-selected] .reso-voice {
+  border-color: var(--row);
+  box-shadow: inset 0 0 0 1px var(--row);
 }
-:is(.lab, .tool-studio) .music-voice-label > div {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
+.reso-voice__led {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--row) 28%, var(--bg));
 }
-:is(.lab, .tool-studio) .music-voice-label .studio-toggle {
-  padding: 3px 8px;
-  min-height: 32px;
-  font-size: 0.65rem !important;
+.reso-voice[data-hit] .reso-voice__led {
+  background: var(--row);
+  box-shadow: 0 0 9px var(--row);
 }
-:is(.lab, .tool-studio) .music-steps button {
-  min-height: 44px;
+.reso-voice__note { min-width: 3.2ch; text-align: left; }
+.reso-voice[data-mute] .reso-voice__note { text-decoration: line-through; }
+/* The keyboard key that plays it, where there is a keyboard. */
+.reso-voice::after {
+  content: attr(data-key);
+  margin-left: auto;
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  color: var(--green);
+}
+@media (pointer: coarse) {
+  .reso-voice::after { content: none; }
+}
+
+.reso .reso__face button.reso-ms {
+  width: 34px;
   padding: 0;
-  border: 1px solid var(--lab-line);
-  border-radius: 3px;
-  background: var(--bg);
+  border: 1px solid var(--reso-line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--green);
+  font-size: 0.78rem;
+  cursor: pointer;
 }
-:is(.lab, .tool-studio) .music-steps button:nth-child(4n + 1) {
-  border-left-color: var(--green);
-}
-:is(.lab, .tool-studio) .music-steps button[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--green) 65%, var(--bg));
-  border-color: var(--green);
-}
-:is(.lab, .tool-studio) .music-voice:nth-child(odd) .music-steps button[aria-pressed="true"] {
-  background: color-mix(in srgb, var(--amber) 65%, var(--bg));
+.reso .reso__face button.reso-ms[data-kind="mute"][aria-pressed="true"] {
+  background: var(--amber);
   border-color: var(--amber);
+  color: var(--bg);
 }
-:is(.lab, .tool-studio) .music-steps button[data-current] {
-  outline: 2px solid var(--green-bright);
-  outline-offset: 2px;
+.reso .reso__face button.reso-ms[data-kind="solo"][aria-pressed="true"] {
+  background: var(--green-bright);
+  border-color: var(--green-bright);
+  color: var(--bg);
 }
-:is(.lab, .tool-studio) .music-voice > details {
-  margin-top: 12px;
+
+.reso .reso__face button.reso-cell {
+  padding: 0;
+  border: 1px solid var(--reso-line);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--row) 5%, var(--bg));
+  cursor: pointer;
 }
-:is(.lab, .tool-studio) .music-voice summary {
-  font-size: 0.65rem !important;
-  min-height: 24px !important;
+.reso .reso__face button.reso-cell[aria-pressed="true"] {
+  border-color: var(--row);
+  background: color-mix(in srgb, var(--row) 58%, var(--bg));
 }
-:is(.lab, .tool-studio) .music-performance {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 30px;
-  align-items: center;
-  border: 1px solid var(--lab-line);
-  padding: 24px;
-  border-radius: 6px;
+.reso .reso__face button.reso-cell[data-current] {
+  border-color: var(--green-bright);
 }
-:is(.lab, .tool-studio) .music-xy {
+.reso .reso__face button.reso-cell[aria-pressed="true"][data-current] {
+  background: var(--row);
+  box-shadow: 0 0 14px var(--row);
+}
+.reso .reso__face button.reso-cell:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 1px;
+}
+
+/* The playhead: a line of light through all four rows, placed by the frame
+   clock with a transform, and shown only once the first step has sounded
+   (an audio device can take a second to start). Nothing to catch a pointer. */
+.reso__playhead {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 0;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--green-bright);
+  box-shadow: 0 0 10px var(--green-bright);
+  opacity: 0;
+  pointer-events: none;
+}
+.reso__face[data-playing] .reso__playhead[data-on] { opacity: 0.85; }
+
+/* ── the knob row ─────────────────────────────────────────────────────── */
+
+.reso__dials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px 6px;
+  padding: 2px 10px 10px;
+  border: 1px solid var(--reso-line);
+  border-radius: var(--radius);
+}
+.reso .inst-knob { --knob: 46px; min-width: 66px; }
+/* The seven sound knobs share the row; the chosen voice's four sit together at its end. */
+.reso__dials > .inst-knob { flex: 1 1 0; }
+/* The four sound worlds span the width under the play key and the scope. */
+.reso__worlds .inst-seg { width: 100%; }
+.reso__worlds .inst-seg__opt { flex: 1 1 auto; }
+.reso__voice-dials {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px 6px;
+  margin-left: auto;
+  padding-left: 12px;
+  border-left: 2px solid var(--row);
+}
+
+/* ── the performance pad ──────────────────────────────────────────────── */
+
+.reso__pad {
   position: relative;
-  height: 260px;
+  aspect-ratio: 1;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--reso-line);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(var(--reso-line), var(--reso-line)) center / 100% 1px no-repeat,
+    linear-gradient(var(--reso-line), var(--reso-line)) center / 1px 100% no-repeat,
+    radial-gradient(circle at 100% 0, color-mix(in srgb, var(--amber) 10%, transparent), transparent 70%),
+    var(--reso-glass);
   touch-action: none;
   cursor: crosshair;
-  overflow: hidden;
-  border: 1px solid var(--lab-line);
-  border-radius: 6px;
-  background:
-    linear-gradient(
-      0deg,
-      transparent 49.5%,
-      var(--lab-line) 50%,
-      transparent 50.5%
-    ),
-    linear-gradient(
-      90deg,
-      transparent 49.5%,
-      var(--lab-line) 50%,
-      transparent 50.5%
-    ),
-    radial-gradient(
-      ellipse at top right,
-      color-mix(in srgb, var(--amber) 12%, var(--bg)),
-      var(--bg)
-    );
+  user-select: none;
+  -webkit-user-select: none;
 }
-:is(.lab, .tool-studio) .music-xy > span {
+.reso__trail {
   position: absolute;
-  left: 14px;
-  top: 10px;
-  font-size: 0.7rem;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  color: var(--amber);
   pointer-events: none;
 }
-:is(.lab, .tool-studio) .music-xy > small {
+.reso__puck {
   position: absolute;
-  left: 14px;
-  bottom: 10px;
-  font-size: 0.65rem;
-  pointer-events: none;
-}
-:is(.lab, .tool-studio) .music-xy i {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  border: 1px solid var(--amber);
-  background: color-mix(in srgb, var(--amber) 20%, transparent);
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 1.5px solid var(--amber);
   border-radius: 50%;
-  transform: translate(-50%, -50%);
+  background: color-mix(in srgb, var(--amber) 22%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--amber) 45%, transparent);
   pointer-events: none;
-  box-shadow: 0 0 35px color-mix(in srgb, var(--amber) 25%, transparent);
 }
-@media (max-width: 1050px) {
-  :is(.lab, .tool-studio) .music-step-head,
-:is(.lab, .tool-studio) .music-voice-main {
-    grid-template-columns: 140px minmax(0, 1fr);
-    gap: 12px;
-  }
-  :is(.lab, .tool-studio) .music-steps {
-    gap: 3px;
-  }
+.reso__axis {
+  position: absolute;
+  font-size: 0.72rem;
+  line-height: 1;
+  color: var(--green);
+  pointer-events: none;
 }
-@media (max-width: 650px) {
-  :is(.lab, .tool-studio) .music-transport {
-    padding: 14px;
-  }
-  :is(.lab, .tool-studio) .music-pads {
-    gap: 7px;
-  }
-  :is(.lab, .tool-studio) .music-pad {
-    padding: 18px 8px 12px;
-  }
-  :is(.lab, .tool-studio) .music-pad strong {
-    font-size: 1.9rem;
-  }
-  :is(.lab, .tool-studio) .music-machine canvas {
-    min-height: 190px;
-    object-fit: cover;
-  }
-  :is(.lab, .tool-studio) .music-step-head {
-    display: none;
-  }
-  :is(.lab, .tool-studio) .music-voice {
-    padding: 14px 10px;
-  }
-  :is(.lab, .tool-studio) .music-voice-main {
-    grid-template-columns: 1fr;
-    gap: 14px;
-  }
-  :is(.lab, .tool-studio) .music-voice-label {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-  :is(.lab, .tool-studio) .music-voice-label > div {
-    margin: 0;
-  }
-  :is(.lab, .tool-studio) .music-steps {
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-    gap: 6px;
-  }
-  :is(.lab, .tool-studio) .music-steps button {
-    min-height: 36px;
-  }
-  :is(.lab, .tool-studio) .music-performance {
-    grid-template-columns: 1fr;
-    padding: 16px;
-    gap: 18px;
-  }
-  :is(.lab, .tool-studio) .music-xy {
-    height: 220px;
-  }
+.reso__axis::after { content: " \2192"; }
+.reso__axis--x { left: 10px; bottom: 9px; }
+.reso__axis--y {
+  left: 9px;
+  bottom: 30px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
 }
-@media (max-width: 650px) {
-  :is(.lab, .tool-studio) .music-steps {
-    grid-template-columns: repeat(4, minmax(44px, 1fr));
-  }
-  :is(.lab, .tool-studio) .music-steps button {
-    min-height: 44px;
-  }
-  :is(.lab, .tool-studio) .music-voice-label .studio-toggle {
-    min-height: 44px;
-  }
+
+/* ── the keep row ─────────────────────────────────────────────────────── */
+
+.reso__deck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
 }
-:is(.lab, .tool-studio) .music-steps button {
+.reso__pattern {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-right: auto;
+}
+.reso .reso__face button.reso-key {
+  padding: 0 14px;
+  border: 1px solid var(--reso-line);
+  border-radius: var(--radius);
+  background: var(--bg);
   color: var(--green-bright);
-  font-size: 0.65rem;
+  font-size: 0.84rem;
+  cursor: pointer;
 }
-:is(.lab, .tool-studio) .music-steps button[aria-pressed="true"] {
-  color: var(--bg);
+.reso__deck .inst-export__note { font-size: 0.74rem; }
+.reso .reso__face .reso__error {
+  margin: 0;
+  max-width: none;
+  padding: 8px 12px;
+  border-left: 2px solid var(--amber);
+  color: var(--amber);
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+/* ── the stack, on a phone or any narrow host ─────────────────────────── */
+
+@container reso (max-width: 699px) {
+  .reso__face {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "screen" "play" "worlds" "matrix" "dials" "pad" "deck" "error";
+  }
+  .reso__screen { height: 128px; }
+  .reso .reso__face button.reso-play {
+    grid-auto-flow: column;
+    justify-content: center;
+    gap: 10px;
+    height: 56px;
+  }
+  .reso-play__glyph { width: 26px; height: 26px; }
+
+  /* One voice at a time: the four voices are keys across the top, the
+     chosen one's mute and solo under them, and its sixteen steps as four
+     beats of four. */
+  .reso__matrix {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px;
+  }
+  .reso__head { display: contents; }
+  .reso .reso__face button.reso-voice {
+    grid-row: 1;
+    min-width: 0;
+    justify-content: center;
+    padding: 0 4px;
+  }
+  .reso__row[data-row="0"] .reso-voice { grid-column: 1; }
+  .reso__row[data-row="1"] .reso-voice { grid-column: 2; }
+  .reso__row[data-row="2"] .reso-voice { grid-column: 3; }
+  .reso__row[data-row="3"] .reso-voice { grid-column: 4; }
+  .reso__row:not([data-selected]) :is(.reso-ms, .reso__steps) { display: none; }
+  .reso .reso__face button.reso-ms {
+    grid-row: 2;
+    width: auto;
+  }
+  .reso .reso__face button.reso-ms[data-kind="mute"] { grid-column: 1 / 3; }
+  .reso .reso__face button.reso-ms[data-kind="solo"] { grid-column: 3 / 5; }
+  .reso__steps {
+    grid-row: 3;
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px 6px;
+    margin-top: 4px;
+  }
+  .reso-cell:nth-child(4n + 1):not(:first-child) { margin-left: 0; }
+  .reso .reso__face button.reso-cell { aspect-ratio: 5 / 4; }
+  .reso__playhead { display: none; }
+
+  .reso__dials {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    justify-items: center;
+    padding: 2px 6px 10px;
+  }
+  .reso .inst-knob { --knob: 44px; min-width: 0; }
+  .reso__voice-dials {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    justify-items: center;
+    width: 100%;
+    margin: 6px 0 0;
+    padding: 4px 0 0;
+    border-left: 0;
+    border-top: 2px solid var(--row);
+  }
+  .reso__pad { max-width: 340px; justify-self: center; }
+  .reso__deck { flex-direction: column; align-items: stretch; }
+  .reso__pattern { margin-right: 0; }
+  .reso__pattern > .reso-key { flex: 1 1 0; }
+}
+
+/* ── motion, only where it is welcome ─────────────────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A lamp lights at once and decays like phosphor: the transition is on
+     the resting state, so it runs only on the way out. */
+  .reso .reso__face button.reso-cell {
+    transition: background-color 280ms ease-out, box-shadow 280ms ease-out, border-color 200ms ease-out;
+  }
+  .reso .reso__face button.reso-cell[data-current] { transition: none; }
+  .reso-voice__led { transition: background-color 240ms ease-out, box-shadow 240ms ease-out; }
+  .reso-voice[data-hit] .reso-voice__led { transition: none; }
+  .reso__playhead { transition: opacity 160ms ease-out; }
+  .reso .reso__face button.reso-play { transition: background-color 140ms ease-out, color 140ms ease-out; }
 }

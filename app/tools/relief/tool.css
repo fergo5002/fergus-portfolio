@@ -1,103 +1,52 @@
 /* app/tools/relief/tool.css */
 /* The route's own rules. `app/globals.css` stays the shell's stylesheet
-   (design section 2, rule 2), so nothing here appends to it. */
+   (design section 2, rule 2), so nothing here appends to it. Every colour is
+   a token, so the amber and ice phosphors repaint the whole instrument. */
 
 .relief {
+  position: relative;
   display: grid;
-  gap: var(--sp-4);
+  gap: 14px;
+  min-width: 0;
 }
 
-.relief__sources,
-.relief__panel {
-  border: 1px solid var(--green-line);
-  padding: var(--sp-3);
-  margin: 0;
+/* ── the screen: the terrain and its readout ──────────────────────────── */
+
+/* The screen: a tube face with a band of sky across the top for its own
+   display (the reading, and the view switch where there is room), then the
+   terrain. `--osd` is the band's height. */
+.relief__screen {
+  --osd: 56px;
+  position: relative;
   display: grid;
-  gap: 0.5rem;
-}
-
-.relief__sources {
-  grid-auto-flow: column;
-  justify-content: start;
-}
-
-.relief__legend,
-.relief__label {
-  display: block;
-  font-weight: 600;
-}
-
-/* `--green`, not `--green-dim`. `app/globals.test.ts` measured the dim token at
-   4.45 against the background on the amber theme and 4.46 on ice, so it passes
-   on the theme a developer happens to be looking at and fails on the two a
-   visitor reaches by typing four characters at the terminal. */
-.relief__hint,
-.relief__note {
-  color: var(--green);
-  margin: 0;
-  max-width: 68ch;
-}
-
-/* 16px exactly, on all three. Anything smaller and iOS zooms the viewport on
-   focus and drops the visitor into a sideways-scrolled page. */
-.relief__input,
-.relief__file,
-.relief__select {
-  width: 100%;
-  box-sizing: border-box;
-  font: inherit;
-  font-size: 16px;
-  min-height: 44px;
-  line-height: 1.5;
-  color: var(--green);
-  background: var(--bg-panel);
-  border: 1px solid var(--green-line);
-  padding: 0.5rem 0.75rem;
-}
-
-.relief__input:focus-visible,
-.relief__file:focus-visible,
-.relief__select:focus-visible,
-.relief__button:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 2px;
-}
-
-.relief__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-/* 44px is the floor `scripts/phone-check.mjs` fails below. */
-.relief__button {
-  min-height: 44px;
-  min-width: 44px;
-  padding: 0 1rem;
-  font: inherit;
-  font-size: 16px;
-  color: var(--green);
-  background: transparent;
-  border: 1px solid var(--green-line);
-  cursor: pointer;
-}
-
-.relief__button[aria-pressed="true"] {
-  color: var(--amber);
-  border-color: var(--amber);
-}
-
-.relief__button[disabled] {
-  opacity: 0.5;
-  cursor: not-allowed;
+  gap: 10px;
+  min-width: 0;
 }
 
 /* The frame is what the ResizeObserver measures, so it must be the thing that
-   is allowed to be narrower than the page. */
+   is allowed to be narrower than the page. It is the tube face the terrain is
+   drawn on: the page's own ground, a hairline edge and a faint inner bloom.
+   Its top padding is the display band; the canvas starts under it. */
 .relief__frame {
+  position: relative;
   width: 100%;
+  padding-top: var(--osd);
   overflow: hidden;
+  border: 1px solid var(--green-line);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--bg);
 }
+/* The inner bloom lies over the whole face, band and terrain alike. Under the
+   canvas it lit the band and stopped at the canvas's opaque ground: a seam. */
+.relief__frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  box-shadow: inset 0 0 56px color-mix(in srgb, var(--green) 6%, transparent);
+  pointer-events: none;
+}
+/* The canvas, the crosshair drawn over it and its dot share one box. */
+.relief__glass { position: relative; }
 
 /* The canvas carries an intrinsic width from its width attribute, which is the
    device-pixel width and is larger than the CSS box at any DPR above 1. Without
@@ -111,67 +60,258 @@
    the ground was stretched 60% at 320 on load, 52% mid-resize and 148% straight
    after a 375 to 900 change, and putting that height back brings all three
    numbers back. With the height left to the bitmap's own ratio the lag costs
-   resolution for a frame and never the shape: 0.0% skew at every reading. */
+   resolution for a frame and never the shape: 0.0% skew at every reading.
+
+   `touch-action: pan-y` is the phone's half of the crosshair: a vertical swipe
+   still scrolls the page past the terrain, and a sideways drag belongs to the
+   ridge the finger landed on. */
 .relief__plate {
   display: block;
   width: 100%;
   max-width: 100%;
   height: auto;
+  touch-action: pan-y;
+  cursor: crosshair;
 }
 
-.relief__readout {
-  margin: 0;
-  display: grid;
-  gap: 0.35rem;
+/* The crosshair: the chosen week's whole ridge in the accent colour, dashed
+   where nearer weeks hide it (a draughtsman's hidden line), a drop line to the
+   hour axis and a lit dot on the hour. Drawn over the canvas, never into it, so
+   moving it costs a few SVG attributes rather than a repaint of the year. */
+.relief__sight {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--amber) 70%, transparent));
+}
+.relief__sight-behind,
+.relief__sight-ridge,
+.relief__sight-drop {
+  fill: none;
+  stroke: var(--amber);
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.relief__sight-behind { stroke-width: 1; stroke-dasharray: 2 4; opacity: 0.55; }
+.relief__sight-ridge { stroke-width: 1.6; }
+.relief__sight-drop { stroke-width: 1; stroke-dasharray: 1 4; opacity: 0.8; }
+.relief__dot {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 3.5px var(--amber),
+    0 0 14px var(--amber);
+  pointer-events: none;
 }
 
-.relief__row {
+/* The reading sits in the band, top left, the way a scope prints its cursor.
+   It takes the pointer like any text: it is over the band, never the
+   terrain, and with `pointer-events: none` the phone check's hit test fell
+   through to the frame and left the reading unmeasured. */
+.relief__cell {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  display: flex;
+  align-items: center;
+  height: var(--osd);
+  padding: 0 16px;
+  font-family: var(--font-screen);
+  font-size: clamp(1.4rem, 2.4vw, 1.75rem);
+  line-height: 1;
+  color: var(--amber);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 7px color-mix(in srgb, var(--amber) 45%, transparent);
+  white-space: nowrap;
+}
+/* The view switch shares the band on a wide screen, top right. */
+.relief__views {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+}
+
+/* One line under the screen: the demo's honesty first, then the year in figures. */
+.relief__figures {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  border-bottom: 1px solid var(--green-line);
-  padding-bottom: 0.35rem;
+  gap: 2px 14px;
+  margin: -2px 0 0;
+  color: var(--green);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+.relief__caption { color: var(--amber); }
+
+.relief__dials {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 32px;
+  min-width: 0;
 }
 
-.relief__row dt {
-  font-weight: 600;
+/* ── the deck: where the year comes from, and how it leaves ───────────── */
+
+.relief__deck {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--green-line);
+  min-width: 0;
+}
+.relief__sources {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+/* Three classes deep on purpose: the stage's floor for a tool's own buttons
+   sets 16px at a specificity one class and one element high, and this is a
+   quiet link-weight action beside the kit's 0.76rem options, not an input. */
+.relief .relief__deck .relief__again {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--green);
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.relief__again:hover { color: var(--amber); }
+.relief__again:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.relief__again-glyph {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.relief__row dd {
+/* ── the two source panels, only when asked for ───────────────────────── */
+
+.relief__panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  min-width: 0;
+}
+
+/* `--green`, not `--green-dim`. `app/globals.test.ts` measured the dim token at
+   4.45 against the background on the amber theme and 4.46 on ice, so it passes
+   on the theme a developer happens to be looking at and fails on the two a
+   visitor reaches by typing four characters at the terminal. */
+.relief__hint,
+.relief__note {
   margin: 0;
-  color: var(--amber);
+  max-width: 72ch;
+  color: var(--green);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+/* An empty status line takes no row, but stays a live region: out of flow,
+   never `display: none`, so the next message is still announced. */
+.relief__note:empty {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
 }
 
-.relief__heading {
-  margin: var(--sp-2) 0 0;
+.relief__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+.relief__field { display: grid; gap: 6px; min-width: 0; }
+.relief__label { font-size: 0.75rem; color: var(--green); }
+
+/* 16px exactly. Anything smaller and iOS zooms the viewport on
+   focus and drops the visitor into a sideways-scrolled page. */
+.relief__input {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 16px;
+  min-height: 44px;
+  line-height: 1.5;
+  color: var(--green-bright);
+  background: var(--bg-panel);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
 }
 
-/* The one bit of motion on the route, and it is on the figure rather than the
-   drawing. There is no progressive draw-on: SystemProvider owns the only rAF
-   loop and a second one is forbidden. */
+.relief__input:focus-visible,
+.relief__button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.relief__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 44px is the floor `scripts/phone-check.mjs` fails below. */
+.relief__button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 16px;
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--green-bright);
+  background: var(--bg);
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.relief__button--go { border-color: var(--amber); color: var(--amber); }
+.relief__button:hover:not([disabled]) { border-color: var(--amber); }
+.relief__button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 620px) {
+  /* No room for both in the band: the switch drops under the screen. */
+  .relief__screen { --osd: 40px; }
+  .relief__views { position: static; }
+  .relief__cell { padding: 0 12px; font-size: 1.3rem; }
+  .relief__dials,
+  .relief__fields { grid-template-columns: minmax(0, 1fr); }
+  .relief__deck { justify-content: flex-start; }
+}
+
+/* The ridges draw themselves in off the frame clock (see the component); the
+   only CSS motion is the crosshair settling onto its next cell. */
 @media (prefers-reduced-motion: no-preference) {
-  .relief__frame {
-    animation: relief-fade 240ms ease-out both;
-  }
-
-  @keyframes relief-fade {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
+  .relief__dot { transition: left 90ms ease-out, top 90ms ease-out; }
+  .relief__again,
+  .relief__button { transition: color 120ms ease-out, border-color 120ms ease-out; }
 }
-.relief__frame { position: relative; border: 1px solid var(--green-line); background: var(--bg); }
-.relief__crosshair { position: absolute; width: 14px; height: 14px; transform: translate(-50%, -50%); border: 2px solid var(--amber); border-radius: 50%; pointer-events: none; }
-.relief__crosshair::after { content: ""; position: absolute; inset: 3px; background: var(--amber); border-radius: 50%; }
-.relief__explorer { padding: 20px; background: var(--bg); border: 1px solid var(--green-line); margin-top: 16px; }
-.relief__explore-label { display: grid; gap: 8px; font-size: .85rem; margin: 16px 0; }
-.relief__explore-label input { width: 100%; min-height: 44px; accent-color: var(--amber); }
-.relief__cell { color: var(--amber); font-family: var(--font-screen); font-size: 1.5rem; display: block; }
-.relief__readout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.relief__readout .relief__row { display: grid; align-content: start; gap: 8px; padding: 16px; border: 1px solid var(--green-line); }
-.relief__readout dd { font-family: var(--font-screen); font-size: 1.6rem; margin: 0; }
-.relief__hint { font-size: .84rem; line-height: 1.6; }
-@media (max-width: 620px) { .relief__readout { grid-template-columns: minmax(0, 1fr); } .relief__explorer { padding: 16px; } }

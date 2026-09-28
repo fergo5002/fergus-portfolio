@@ -192,3 +192,64 @@ describe("buildHeightmap", () => {
     expect(buildHeightmap(spread(600))).toEqual(buildHeightmap(spread(600)));
   });
 });
+
+/**
+ * The ridgeline's heights, between two failures measured on 2026-09-27.
+ * The contour ground (two passes across both axes) draws fifty-two
+ * near-copies of one line. One pass along the day and none across weeks
+ * leaves every week its own Poisson noise, so nearer weeks cut each ridge
+ * about 126 times on the demo and it reads as a tangle. Two passes along the
+ * day and one across neighbouring weeks cut it about 45 times and reads as
+ * ground. Same counts, same compression as the field.
+ */
+describe("buildHeightmap's ridge profile, for the ridgeline", () => {
+  const spike: ReliefEvent[] = Array.from({ length: 5 }, () => ({ week: 10, hour: 5 }));
+
+  it("smooths twice along the day, so a spike has shoulders two hours either side and no further", () => {
+    const { profile } = buildHeightmap(spike);
+    expect(profile[5][10]).toBeGreaterThan(profile[4][10]);
+    expect(profile[4][10]).toBeGreaterThan(profile[3][10]);
+    expect(profile[3][10]).toBeGreaterThan(0);
+    expect(profile[6][10]).toBeCloseTo(profile[4][10], 12);
+    expect(profile[7][10]).toBeCloseTo(profile[3][10], 12);
+    expect(profile[2][10]).toBe(0);
+    expect(profile[8][10]).toBe(0);
+  });
+
+  it("smooths once across weeks, so a week agrees with its neighbours and no further", () => {
+    const { profile } = buildHeightmap(spike);
+    expect(profile[5][10]).toBeGreaterThan(profile[5][11]);
+    expect(profile[5][11]).toBeGreaterThan(0);
+    expect(profile[5][9]).toBeCloseTo(profile[5][11], 12);
+    expect(profile[5][12]).toBe(0);
+    expect(profile[5][8]).toBe(0);
+  });
+
+  it("smooths across weeks less than the contour ground does, so the ridges are not copies", () => {
+    const { profile, field } = buildHeightmap(spike);
+    expect(field[5][12]).toBeGreaterThan(0);
+    expect(profile[5][12]).toBe(0);
+  });
+
+  it("wraps the day at midnight, like the field", () => {
+    const { profile } = buildHeightmap([{ week: 3, hour: 0 }]);
+    expect(profile[HOURS - 1][3]).toBeGreaterThan(0);
+    expect(profile[1][3]).toBeCloseTo(profile[HOURS - 1][3], 12);
+  });
+
+  it("uses the field's compression, so a flat year is the same height both ways", () => {
+    const flat: ReliefEvent[] = [];
+    for (let w = 0; w < WEEKS; w++) for (let h = 0; h < HOURS; h++) for (let k = 0; k < 3; k++) flat.push({ week: w, hour: h });
+    const map = buildHeightmap(flat);
+    for (const row of map.profile) for (const v of row) expect(v).toBeCloseTo(normalise(3, map.ceiling), 12);
+    for (const row of map.field) for (const v of row) expect(v).toBeCloseTo(normalise(3, map.ceiling), 12);
+  });
+
+  it("stays in [0, 1]", () => {
+    const { profile } = buildHeightmap(spread(2000));
+    for (const row of profile) for (const v of row) {
+      expect(v).toBeGreaterThanOrEqual(0);
+      expect(v).toBeLessThanOrEqual(1);
+    }
+  });
+});

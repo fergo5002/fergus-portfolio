@@ -9,21 +9,10 @@
    so it appears on nothing a visitor has to read. Every animation is behind
    prefers-reduced-motion. */
 
-.sv { width: 100%; min-width: 0; max-width: 68ch; margin-top: var(--sp-5); }
-.sv__step, .sv__results, .sv__honesty { display: grid; gap: var(--sp-2); margin-top: var(--sp-5); }
+.sv { width: 100%; min-width: 0; display: grid; gap: var(--sp-4); }
+.sv__step, .sv__results { display: grid; gap: var(--sp-2); min-width: 0; }
+.sv p { max-width: 72ch; }
 .sv__label { display: grid; gap: var(--sp-1); color: var(--green); font-size: 0.82rem; }
-.sv__input, .sv__select, .sv__file {
-  font-size: 16px;
-  min-height: 44px;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  background: var(--bg-panel);
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
-  color: var(--green-bright);
-  text-overflow: ellipsis;
-}
 .sv__button {
   min-height: 44px;
   min-width: 44px;
@@ -33,7 +22,6 @@
   border-radius: var(--radius);
   color: var(--green-bright);
 }
-.sv__slider { min-height: 44px; width: 100%; }
 .sv__big { font-size: 2.4rem; line-height: 1.1; color: var(--amber-bright); }
 .sv__hint, .sv__message, .sv__warn { color: var(--green); font-size: 0.86rem; }
 .sv__warn { color: var(--amber); }
@@ -49,16 +37,14 @@
 .sv__step p, .sv__results p { margin: 4px 0 12px; }
 .sv__button { padding: 10px 16px; cursor: pointer; }
 .sv__primary { color: var(--bg); background: var(--amber); border-color: var(--amber); }
-.sv__results { border-top: 1px solid var(--green-line); padding-top: 24px; }
+.sv__results { border-top: 1px solid var(--green-line); padding-top: 20px; }
 .sv__results .sv__big { font-family: var(--font-screen); font-size: 5rem; color: var(--amber); margin: 12px 0 0; }
 .sv__chart { background: var(--bg); padding: 16px; border: 1px solid var(--green-line); margin: 16px 0; }
 .sv__table { border-collapse: collapse; font-size: .82rem; width: 100%; }
 .sv__table th, .sv__table td { text-align: left; padding: 12px; border-bottom: 1px solid var(--green-line); }
-.sv__results > p:has(.sv__button) { padding: 16px; border: 1px solid var(--green-line); display: grid; gap: 10px; background: var(--bg); }
 .sv__results > .bench-details { margin-top: 0; }
 .sv__setup > .sv__step { margin-top: 16px; }
 .sv__label { margin-bottom: 12px; }
-.sv__select, .sv__input { padding: 10px; }
 .sv__chart text { font: 15px var(--font-body); fill: var(--green); }
 .sv__gridline { stroke: var(--green-line); stroke-width: 1; }
 .sv__horizon { stroke: var(--green); stroke-dasharray: 4 5; stroke-width: 1; }
@@ -72,3 +58,20 @@
 .sv__axis-y { display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; }
 .sv__axis-x { display: flex; justify-content: space-between; grid-column: 2; }
 .sv__chart-frame .sv__axis-title { grid-column: 1 / -1; text-align: center; margin: 0; }
+
+/* The instrument shell's stage: the intake row, then the curve and the number
+   side by side where there is room, then everything that explains them. */
+.sv__intake-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 12px 20px; }
+.sv__intake-row > .inst-drop { flex: 1 1 320px; }
+.sv__intake { gap: var(--sp-2); }
+.sv__headline { display: grid; grid-template-columns: minmax(0, 16rem) minmax(0, 1fr); gap: 16px 32px; align-items: center; }
+.sv__figure p { margin: 0 0 6px; }
+.sv__results .sv__figure .sv__big { margin: 0 0 8px; line-height: 1; }
+.sv__headline .sv__chart-frame { margin: 0; }
+.sv__horizons { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0; }
+.sv__sliders { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 12px 28px; margin: 8px 0 16px; }
+.sv__credit { margin: 0; }
+.sv .inst-export { margin: 4px 0 8px; }
+@media (max-width: 720px) {
+  .sv__headline { grid-template-columns: minmax(0, 1fr); }
+}

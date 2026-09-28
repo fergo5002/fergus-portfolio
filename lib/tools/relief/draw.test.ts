@@ -11,9 +11,13 @@ import {
   hourLabels,
   paint,
   paletteFromTokens,
+  pickPlate,
   planPlate,
+  platePoint,
+  planRidgeline,
   plateGeometry,
 } from "./draw";
+import { hourX, ridgeGeometry, ridgelines } from "./ridgeline";
 
 const TOKENS: Record<string, string> = {
   "--bg": "#0a0e0a",
@@ -33,6 +37,7 @@ function recorder() {
     fillStyle: "",
     strokeStyle: "",
     lineWidth: 0,
+    globalAlpha: 1,
     font: "",
     textAlign: "left",
     fillRect(x, y, w, h) {
@@ -203,5 +208,164 @@ describe("paint", () => {
     const { ctx, calls } = recorder();
     paint(ctx, [{ op: "polyline", points: [], stroke: "S", width: 1 }]);
     expect(calls).toEqual([]);
+  });
+});
+
+describe("planRidgeline", () => {
+  const geometry = ridgeGeometry(760);
+  const ridges = ridgelines(buildHeightmap(demoEvents()).field, geometry);
+  const plan = planRidgeline({ ridges, geometry, palette, labels: true });
+  type Stroke = Extract<DrawOp, { op: "polyline" }>;
+  const strokes = plan.ridges.flat().filter((o): o is Stroke => o.op === "polyline");
+
+  it("clears to the page background first, before any ridge", () => {
+    expect(plan.ground[0]).toEqual({ op: "clear", w: geometry.width, h: geometry.height, fill: palette.bg });
+    expect(plan.ground.filter((o) => o.op === "polyline")).toEqual([]);
+  });
+
+  it("keeps one group of strokes per ridge, back to front, so it can be drawn in a ridge at a time", () => {
+    expect(plan.ridges).toHaveLength(ridges.length);
+    plan.ridges.forEach((ops, i) => {
+      // A soft wide pass and a sharp thin one for every stretch that can be seen.
+      expect(ops).toHaveLength(ridges[i].visible.length * 2);
+    });
+  });
+
+  it("strokes only what the geometry says is visible, and nothing hidden", () => {
+    plan.ridges.forEach((ops, i) => {
+      const cores = ops.filter((_, k) => k % 2 === 1) as Stroke[];
+      expect(cores.map((o) => o.points)).toEqual(ridges[i].visible);
+    });
+  });
+
+  it("draws every ridge in the active phosphor, never a colour of its own", () => {
+    expect(strokes.length).toBeGreaterThan(100);
+    expect(new Set(strokes.map((o) => o.stroke))).toEqual(new Set([palette.index]));
+  });
+
+  it("glows: each stretch has a wider, fainter pass under the line itself", () => {
+    for (const ops of plan.ridges) {
+      for (let k = 0; k < ops.length; k += 2) {
+        const [halo, core] = [ops[k], ops[k + 1]] as Stroke[];
+        expect(halo.points).toBe(core.points);
+        expect(halo.width).toBeGreaterThan(core.width * 2);
+        expect(halo.alpha ?? 1).toBeLessThan((core.alpha ?? 1) / 2);
+      }
+    }
+  });
+
+  it("fades the far weeks a little and draws the front at full strength", () => {
+    const coreAlpha = plan.ridges
+      .map((ops) => (ops[1] as Stroke | undefined)?.alpha)
+      .filter((a): a is number => a !== undefined);
+    expect(coreAlpha).toHaveLength(ridges.length);
+    expect(coreAlpha[coreAlpha.length - 1]).toBe(1);
+    for (let i = 1; i < coreAlpha.length; i++) expect(coreAlpha[i]).toBeGreaterThanOrEqual(coreAlpha[i - 1]);
+    // Faded, not gone: the back ridge must still clear WCAG 1.4.11's 3:1 on the
+    // themes, and `app/globals.test.ts` measures --green far above that.
+    expect(coreAlpha[0]).toBeGreaterThanOrEqual(0.5);
+  });
+
+  it("labels the hours along the front, centred on their hour, in the label colour", () => {
+    const labels = plan.ground.filter((o): o is Extract<DrawOp, { op: "text" }> => o.op === "text");
+    expect(labels.map((l) => l.text)).toEqual(["00", "06", "12", "18"]);
+    for (const label of labels) {
+      expect(label.fill).toBe(palette.label);
+      expect(label.align).toBe("center");
+      expect(label.x).toBeCloseTo(hourX(geometry, Number(label.text)), 6);
+      expect(label.y).toBeGreaterThan(ridges[ridges.length - 1].baseline);
+      expect(label.y).toBeLessThanOrEqual(geometry.height);
+    }
+    const bare = planRidgeline({ ridges, geometry, palette, labels: false });
+    expect(bare.ground.some((o) => o.op === "text")).toBe(false);
+  });
+});
+
+/**
+ * The far weeks are drawn weaker, and a line is a graphical object: WCAG
+ * 1.4.11 asks 3:1 of it. Measured on the composited colour, the back ridge's
+ * core pass flattened onto --bg, on every theme, from the tokens the theme
+ * blocks actually declare. The bloom under it only adds light, so this is the
+ * worst case.
+ */
+describe("the far weeks still clear 3:1 on every theme", () => {
+  const css = readFileSync(join(process.cwd(), "app", "globals.css"), "utf8");
+  const block = (selector: string) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const body = new RegExp(`${escaped}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
+    return Object.fromEntries([...body.matchAll(/(--[\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
+  };
+  const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.replace("#", "").slice(i - 1, i + 1), 16));
+  const lum = (c: number[]) =>
+    [0.2126, 0.7152, 0.0722].reduce((sum, k, i) => {
+      const s = c[i] / 255;
+      return sum + k * (s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4);
+    }, 0);
+  const contrast = (a: number[], b: number[]) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  const geometry = ridgeGeometry(760);
+  const ridges = ridgelines(buildHeightmap(demoEvents()).profile, geometry);
+  const back = planRidgeline({ ridges, geometry, palette, labels: false }).ridges[0][1] as Extract<DrawOp, { op: "polyline" }>;
+
+  it.each([":root", 'html[data-theme="amber"]', 'html[data-theme="ice"]'])("%s", (selector) => {
+    const vars = block(selector);
+    expect(vars["--green"], "the theme declares its phosphor").toMatch(/^#[0-9a-f]{6}$/i);
+    expect(vars["--bg"], "the theme declares its ground").toMatch(/^#[0-9a-f]{6}$/i);
+    const fg = rgb(vars["--green"]);
+    const bg = rgb(vars["--bg"]);
+    const alpha = back.alpha ?? 1;
+    expect(alpha).toBeLessThan(1);
+    const flat = fg.map((c, i) => Math.round(c * alpha + bg[i] * (1 - alpha)));
+    expect(contrast(flat, bg)).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe("paint with a fading pen", () => {
+  it("sets the pen's strength for a faded stroke and restores it for everything else", () => {
+    const { ctx } = recorder();
+    const alphas: number[] = [];
+    ctx.stroke = function stroke() {
+      alphas.push(this.globalAlpha);
+    };
+    ctx.fillText = function fillText() {
+      alphas.push(this.globalAlpha);
+    };
+    paint(ctx, [
+      { op: "polyline", points: [{ x: 0, y: 0 }, { x: 1, y: 1 }], stroke: "S", width: 1, alpha: 0.25 },
+      { op: "polyline", points: [{ x: 0, y: 0 }, { x: 1, y: 1 }], stroke: "S", width: 1 },
+      { op: "text", text: "00", x: 0, y: 0, fill: "L", align: "center" },
+    ]);
+    expect(alphas).toEqual([0.25, 1, 1]);
+  });
+});
+
+describe("pickPlate", () => {
+  const g = plateGeometry(760);
+
+  it("reads the week across and the hour down, snapped to the nearest cell", () => {
+    expect(pickPlate(g, g.padLeft, g.padTop)).toEqual({ week: 1, hour: 0 });
+    expect(pickPlate(g, g.padLeft + g.plotWidth, g.padTop + g.plotHeight)).toEqual({ week: 52, hour: 23 });
+    const x = g.padLeft + (26.4 / 51) * g.plotWidth;
+    const y = g.padTop + (11.6 / 23) * g.plotHeight;
+    expect(pickPlate(g, x, y)).toEqual({ week: 27, hour: 12 });
+  });
+
+  it("keeps a point off the plot on its nearest edge", () => {
+    expect(pickPlate(g, -40, -40)).toEqual({ week: 1, hour: 0 });
+    expect(pickPlate(g, g.width + 40, g.height + 40)).toEqual({ week: 52, hour: 23 });
+  });
+
+  it("puts every cell's crosshair where picking it back gives the same cell", () => {
+    for (const width of [320, 760]) {
+      const plate = plateGeometry(width);
+      for (let week = 1; week <= 52; week++) {
+        for (let hour = 0; hour < 24; hour++) {
+          const p = platePoint(plate, week, hour);
+          expect(pickPlate(plate, p.x, p.y)).toEqual({ week, hour });
+        }
+      }
+    }
   });
 });

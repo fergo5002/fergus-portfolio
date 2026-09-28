@@ -131,17 +131,17 @@ export default function HeadlineForm() {
       <div className="hcheck__result" role="status" aria-live="polite">
         {state.status === "limited" && (
           <div className="hcheck__panel is-warn">
-            <p className="hcheck__panel-title">Slow down a moment</p>
+            <p className="hcheck__panel-title">{headlineCopy.limitedTitle}</p>
             <p className="hcheck__panel-body">{state.message}</p>
           </div>
         )}
 
         {state.status === "failed" && (
           <div className="hcheck__panel is-failed">
-            <p className="hcheck__panel-title">Could not read that page</p>
+            <p className="hcheck__panel-title">{headlineCopy.failedTitle}</p>
             <p className="hcheck__panel-body">{state.message}</p>
             <p className="hcheck__panel-body">
-              Checked: <span className="hcheck__url">{state.url}</span>
+              {headlineCopy.checked} <span className="hcheck__url">{state.url}</span>
             </p>
           </div>
         )}
@@ -149,14 +149,9 @@ export default function HeadlineForm() {
         {state.status === "done" && (
           <div className="hcheck__report">
             <p className="hcheck__checked">
-              <span className="hcheck__checked-k">Read</span>
+              <span className="hcheck__checked-k">{headlineCopy.read}</span>
               <span className="hcheck__url">{state.finalUrl}</span>
-              {state.redirects > 0 && (
-                <span className="hcheck__hops">
-                  {" "}
-                  after {state.redirects} redirect{state.redirects === 1 ? "" : "s"}
-                </span>
-              )}
+              {state.redirects > 0 && <span className="hcheck__hops">{headlineCopy.redirects(state.redirects)}</span>}
             </p>
 
             <div className={`hcheck__verdict is-${state.report.verdict}`}>
@@ -168,28 +163,28 @@ export default function HeadlineForm() {
               <section className="hcheck__view">
                 <h2 className="hcheck__view-title">{headlineCopy.browserLabel}</h2>
                 <p className="hcheck__string">
-                  {state.report.browserText || <em className="hcheck__empty">nothing at all</em>}
+                  {state.report.browserText || <em className="hcheck__empty">{headlineCopy.nothing}</em>}
                 </p>
               </section>
               <section className="hcheck__view is-crawler">
                 <h2 className="hcheck__view-title">{headlineCopy.crawlerLabel}</h2>
                 <p className="hcheck__string">
-                  {state.report.crawlerText || <em className="hcheck__empty">nothing at all</em>}
+                  {state.report.crawlerText || <em className="hcheck__empty">{headlineCopy.nothing}</em>}
                 </p>
               </section>
             </div>
 
             <dl className="hcheck__evidence">
               <div className="hcheck__stat">
-                <dt>Heading read</dt>
-                <dd>{state.report.tag ?? "none found"}</dd>
+                <dt>{headlineCopy.statTag}</dt>
+                <dd>{state.report.tag ?? headlineCopy.noTag}</dd>
               </div>
               <div className="hcheck__stat">
-                <dt>Child elements</dt>
+                <dt>{headlineCopy.statChildren}</dt>
                 <dd>{state.report.childElements}</dd>
               </div>
               <div className="hcheck__stat">
-                <dt>Single-character elements</dt>
+                <dt>{headlineCopy.statCharacters}</dt>
                 <dd>{state.report.characterElements}</dd>
               </div>
             </dl>
@@ -219,7 +214,6 @@ export default function HeadlineForm() {
               </section>
             )}
 
-            <p className="hcheck__limits">{headlineCopy.limits}</p>
           </div>
         )}
       </div>

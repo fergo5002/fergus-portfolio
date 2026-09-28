@@ -7,14 +7,17 @@
   font-size: 0.92rem;
   line-height: 1.6;
 }
-:is(.lab, .tool-studio) .studio * {
+/* Every studio descendant may shrink, except the kit's controls, which carry
+   their own floors (a knob label's 44px) and their own min-width: 0 where a
+   track must shrink. */
+:is(.lab, .tool-studio) .studio *:not([class*="inst-"]) {
   min-width: 0;
   box-sizing: border-box;
 }
-:is(.lab, .tool-studio) .studio button,
-:is(.lab, .tool-studio) .studio input,
-:is(.lab, .tool-studio) .studio select,
-:is(.lab, .tool-studio) .studio textarea {
+:is(.lab, .tool-studio) .studio button:not([class*="inst-"]),
+:is(.lab, .tool-studio) .studio input:not([class*="inst-"]),
+:is(.lab, .tool-studio) .studio select:not([class*="inst-"]),
+:is(.lab, .tool-studio) .studio textarea:not([class*="inst-"]) {
   font: inherit;
 }
 :is(.lab, .tool-studio) .studio button {
@@ -24,7 +27,7 @@
   cursor: not-allowed;
   opacity: 0.7;
 }
-:is(.lab, .tool-studio) .studio :focus-visible {
+:is(.lab, .tool-studio) .studio :not([class*="inst-"]):focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 4px;
 }
@@ -40,33 +43,8 @@
   margin: 18px 0 10px;
   color: var(--green-bright);
 }
-:is(.lab, .tool-studio) .studio p {
+:is(.lab, .tool-studio) .studio p:not([class*="inst-"]) {
   margin: 0 0 14px;
-}
-:is(.lab, .tool-studio) .studio-intro {
-  padding: 26px 0 12px;
-  border-top: 1px solid var(--lab-line);
-}
-:is(.lab, .tool-studio) .studio-intro h2 {
-  max-width: 18ch;
-  font-family: var(--font-screen);
-  font-size: clamp(2.6rem, 5.4vw, 5rem);
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  color: var(--green-bright);
-  margin: 18px 0;
-}
-:is(.lab, .tool-studio) .studio-intro > p:last-child {
-  max-width: 65ch;
-  color: var(--studio-soft);
-  font-size: 1rem;
-}
-:is(.lab, .tool-studio) .studio-eyebrow {
-  font-size: 0.7rem !important;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--amber);
 }
 :is(.lab, .tool-studio) .studio-toolbar {
   display: flex;
@@ -90,9 +68,9 @@
   font-size: 0.75rem;
   color: var(--studio-soft);
 }
-:is(.lab, .tool-studio) .studio input:not([type="checkbox"]):not([type="range"]),
-:is(.lab, .tool-studio) .studio select,
-:is(.lab, .tool-studio) .studio textarea {
+:is(.lab, .tool-studio) .studio input:not([type="checkbox"]):not([type="range"]):not([class*="inst-"]),
+:is(.lab, .tool-studio) .studio select:not([class*="inst-"]),
+:is(.lab, .tool-studio) .studio textarea:not([class*="inst-"]) {
   width: 100%;
   min-height: 44px;
   padding: 10px 12px;
@@ -102,46 +80,14 @@
   border-radius: 4px;
   font-size: 16px;
 }
-:is(.lab, .tool-studio) .studio input[type="file"] {
-  max-width: 100%;
-  font-size: 0.78rem !important;
-  padding: 8px !important;
-}
-:is(.lab, .tool-studio) .studio input[type="file"]::file-selector-button {
-  background: var(--bg-panel);
-  color: var(--green);
-  border: 1px solid var(--lab-line);
-  padding: 5px 8px;
-  margin-right: 8px;
-}
 :is(.lab, .tool-studio) .studio textarea {
   min-height: 88px;
   resize: vertical;
 }
-:is(.lab, .tool-studio) .studio select {
+:is(.lab, .tool-studio) .studio select:not([class*="inst-"]) {
   overflow: hidden;
   text-overflow: ellipsis;
   padding-right: 30px;
-}
-:is(.lab, .tool-studio) .studio-range {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-}
-:is(.lab, .tool-studio) .studio-range input {
-  accent-color: var(--amber);
-  width: 100%;
-  height: 24px;
-  min-width: 60px;
-}
-:is(.lab, .tool-studio) .studio-range output {
-  min-width: 56px;
-  text-align: right;
-  white-space: nowrap;
-  color: var(--green-bright);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
 }
 :is(.lab, .tool-studio) .studio-toggle {
   border: 1px solid var(--lab-line);
@@ -287,7 +233,7 @@
   background: color-mix(in srgb, var(--green) 7%, var(--bg));
 }
 @media (min-width: 1100px) {
-  :is(.lab, .tool-studio):has(.studio) .bench-surface {
+  :is(.lab, .tool-studio):has(.studio) .bench-stage {
     padding: 28px;
   }
   :is(.lab, .tool-studio):has(.studio) .tool-workbench > .page__title {
@@ -305,12 +251,6 @@
 @media (max-width: 650px) {
   :is(.lab, .tool-studio) .studio {
     gap: 20px;
-  }
-  :is(.lab, .tool-studio) .studio-intro {
-    padding-top: 20px;
-  }
-  :is(.lab, .tool-studio) .studio-intro h2 {
-    font-size: 2.8rem;
   }
   :is(.lab, .tool-studio) .studio-panel,
 :is(.lab, .tool-studio) .studio-drop,
@@ -343,13 +283,22 @@
 :is(.lab, .tool-studio) .studio .bench-button {
   min-width: 44px;
 }
-:is(.lab, .tool-studio) .studio input[type="file"] {
-  font-size: 16px !important;
-}
 :is(.lab, .tool-studio) .studio details summary {
   min-height: 44px !important;
 }
 :is(.lab, .tool-studio) .studio details:not([open]) > :not(summary) { display:none!important; }
 :is(.lab, .tool-studio) .lab-field > label { min-height:44px;display:flex;align-items:center; }
 :is(.lab, .tool-studio) .studio { --studio-soft:var(--green); }
-:is(.lab, .tool-studio) .studio input[type=range] { min-height:44px;font-size:16px; }
+
+/* The intake row and the keep row: the kit's DropSlot and ExportBar, laid
+   out the same way in every studio. */
+:is(.lab, .tool-studio) .studio-intake,
+:is(.lab, .tool-studio) .studio-keep {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 20px;
+}
+:is(.lab, .tool-studio) .studio-intake > .inst-drop,
+:is(.lab, .tool-studio) .studio-keep > .inst-drop { flex: 1 1 320px; }
+:is(.lab, .tool-studio) .studio-intake > .inst-seg-field { flex: 0 1 auto; }

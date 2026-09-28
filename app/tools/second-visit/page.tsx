@@ -3,7 +3,11 @@ import ToolPage from "@/components/tools/ToolPage";
 import { profile } from "@/content/profile";
 import { TIGH_CREDIT, secondVisit as tool } from "@/content/tools/second-visit";
 import { OG_IMAGE, canonical, toolPath } from "@/lib/seo";
-import SecondVisitTool from "./SecondVisitTool";
+import { analyse } from "@/lib/tools/second-visit/analyse";
+import { parseCsv } from "@/lib/tools/second-visit/csv";
+import { DEMO_VENUE_TOWN, demoCsv } from "@/lib/tools/second-visit/demo";
+import { guessRoles, toBookings } from "@/lib/tools/second-visit/mapping";
+import SecondVisitTool, { type SecondVisitDemo } from "./SecondVisitTool";
 import "./tool.css";
 
 const PATH = toolPath(tool.slug);
@@ -28,20 +32,45 @@ export const metadata: Metadata = {
 /**
  * `/tools/second-visit`.
  *
- * The shell draws the prompt line, the heading, the lede, the privacy line and
- * the "Can't see" list from the registry entry. This file owns the island and
- * the one graph edge the registry has no field for: `isBasedOn`, pointing at
- * the business whose model this is. Both the edge and the credit block come
- * from `TIGH_CREDIT`, so setting that to null removes them together.
+ * The shell draws the prompt line, the heading, the one sentence, the privacy
+ * line and the disclosure from the registry entry. This file owns the island,
+ * the credit line it hands the disclosure, and the one graph edge the registry
+ * has no field for: `isBasedOn`, pointing at the business whose model this is.
+ * Both the edge and the credit come from `TIGH_CREDIT`, so setting that to
+ * null removes them together.
  */
+/**
+ * The made-up sauna, modelled once at build time with the same pure functions
+ * the worker runs, so the page opens on its curve with no layout arriving late.
+ * The per-customer rows stay behind (a third of a megabyte, only for the
+ * downloads); the island models the file again in the background for those.
+ */
+const demoSheet = parseCsv(demoCsv());
+const demoRead = toBookings(demoSheet, guessRoles(demoSheet));
+const demoAnalysis = analyse({ bookings: demoRead.bookings, asOfDay: null, venueTown: DEMO_VENUE_TOWN });
+const demo: SecondVisitDemo = {
+  analysis: { ...demoAnalysis, rows: [] },
+  conversion: { ignored: demoRead.ignored, ambiguousDates: demoRead.ambiguousDates },
+};
+
 export default function SecondVisitPage() {
   return (
     <ToolPage
       tool={tool}
       extraSchema={TIGH_CREDIT ? { isBasedOn: TIGH_CREDIT.href } : undefined}
       talk="If you ran this on a real export, I'd like to know what it got wrong."
+      notes={
+        TIGH_CREDIT ? (
+          <p className="sv__credit">
+            {TIGH_CREDIT.line}{" "}
+            <a className="prose__link" href={TIGH_CREDIT.href}>
+              {TIGH_CREDIT.name}
+            </a>
+          </p>
+        ) : null
+      }
     >
-      <SecondVisitTool />
+      <SecondVisitTool demo={demo} />
     </ToolPage>
   );
 }

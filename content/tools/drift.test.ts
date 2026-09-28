@@ -20,6 +20,12 @@ describe("the registry entry", () => {
     expect(drift.blurb.startsWith("This is not an AI detector.")).toBe(true);
   });
 
+  it("leads its page with what it is not, now that the purpose line is the lede", () => {
+    // Since the instrument shell, `ToolPage` renders `purpose` under the
+    // heading, so this is the first line of body copy a visitor reads.
+    expect(drift.purpose?.startsWith("Not an AI detector")).toBe(true);
+  });
+
   it("names the things it cannot see", () => {
     const joined = drift.cantSee.join(" ").toLowerCase();
     expect(joined).toContain("meaning");

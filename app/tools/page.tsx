@@ -62,25 +62,23 @@ export default function ToolsPage() {
         ]}
       />
       <PromptLine command={toolShellCopy.indexCommand} path={toolShellCopy.indexPath} />
-      <header className="bench-intro">
-        <div>
-          <h1>{workbenchCopy.indexTitle}</h1>
-          <p className="bench-subline">{workbenchCopy.noAccount}</p>
-        </div>
-        <span className="bench-intro__count" aria-label={`${featuredTools.length} tools`}>{String(featuredTools.length).padStart(2, "0")}</span>
+      <header className="bench-head">
+        <h1 className="page__title">{workbenchCopy.indexTitle}</h1>
+        <p className="page__lede">{workbenchCopy.noAccount}</p>
       </header>
       <ul className="bench-grid">
         {rows.map((row) => (
           <li key={row.slug} className="bench-card">
             {row.href ? (
               <Link href={row.href} className="bench-card__link">
-                <div className="bench-card__top">
+                <span className="bench-card__screen">
+                  <ToolPreview slug={row.slug} />
+                </span>
+                <span className="bench-card__body">
                   <h2>{row.name}</h2>
-                </div>
-                <p className="bench-card__purpose">{workbenchCopy.tools[row.slug]?.purpose ?? row.blurb}</p>
-                <ToolPreview slug={row.slug} />
-                <p className="bench-card__input">{workbenchCopy.tools[row.slug]?.input}</p>
-                <span className="bench-card__open">{workbenchCopy.open}</span>
+                  <p className="bench-card__purpose">{row.purpose}</p>
+                  <span className="bench-card__open">{workbenchCopy.open}</span>
+                </span>
               </Link>
             ) : (
               <h2 className="tools__title is-soon">

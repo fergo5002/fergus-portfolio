@@ -35,13 +35,30 @@ describe("the page", () => {
   });
 
   it("keeps native file controls inside a 320px WebKit grid", () => {
+    // Since the instrument redesign the file, the column and town pickers, the
+    // end date and the model sliders are kit controls, so the width rule that
+    // keeps them inside a 320px grid is read from the kit's stylesheet.
+    const tool = readFileSync(join(process.cwd(), "app", "tools", "second-visit", "SecondVisitTool.tsx"), "utf8");
+    const kit = readFileSync(join(process.cwd(), "components", "instrument", "instrument.css"), "utf8").replace(/\r\n/g, "\n");
     expect(styles).toMatch(/\.sv \{[^}]*min-width: 0;[^}]*\}/);
-    expect(styles).toMatch(/\.sv__input, \.sv__select, \.sv__file \{[^}]*width: 100%;[^}]*min-width: 0;[^}]*\}/);
+    expect(tool).toMatch(/<DropSlot[^>]*id="sv-file"/);
+    expect(tool).not.toMatch(/type="(file|date|range)"|<select/);
+    expect(kit).toMatch(/\.inst-select \.inst-select__input \{[^}]*width: 100%;[^}]*min-width: 0;[^}]*\}/);
+    expect(kit).toMatch(/\.inst-slider \.inst-slider__input \{[^}]*width: 100%;[^}]*min-width: 0;[^}]*\}/);
+    expect(kit).toMatch(/\.inst-picker__button \{[^}]*max-width: 100%;[^}]*\}/);
   });
 
   it("carries the credit as an edge in the graph, when there is one", () => {
     if (TIGH_CREDIT) expect(source).toContain("isBasedOn");
     expect(source).toContain("TIGH_CREDIT");
+  });
+
+  it("models the worked example on the server, leaving the per-customer rows behind", () => {
+    // The curve and the numbers are in the first paint; the rows (a third of a
+    // megabyte, only for the downloads) are modelled again in the browser.
+    expect(source).toContain("analyse({ bookings: demoRead.bookings");
+    expect(source).toContain("rows: []");
+    expect(source).toContain("<SecondVisitTool demo={demo} />");
   });
 
   it("is a server component: the island is imported, not inlined", () => {

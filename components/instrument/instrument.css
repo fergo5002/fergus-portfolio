@@ -1,0 +1,565 @@
+/* components/instrument/instrument.css
+   The controls kit. Every colour is one of the shell's tokens (--bg, --bg-panel,
+   --bg-panel-2, --green, --green-bright, --green-line, --amber, --amber-bright),
+   so the amber and ice themes follow with nothing here to change. Readouts use
+   the display face (VT323), labels the body face. --green-dim and --green-faint
+   are not used for text: they fail 4.5:1 on two of the three themes.
+
+   The studios' own stylesheets style bare inputs broadly; they skip anything
+   whose class starts "inst-", so these rules are not fighting them. Motion is
+   only ever a short transition, and only under no-preference. */
+
+.inst-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Knob ─────────────────────────────────────────────────────────────── */
+
+.inst-knob {
+  --knob: 56px;
+  display: inline-grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  min-width: calc(var(--knob) + 16px);
+}
+.inst-knob--sm { --knob: 44px; }
+.inst-knob--lg { --knob: 76px; }
+/* A label is tapped to focus its control, so it takes a thumb's 44px; the
+   text sits at the bottom, against the dial it names. */
+.inst-knob__label {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 0.72rem;
+  line-height: 1.3;
+  color: var(--green);
+  text-align: center;
+  max-width: 14ch;
+}
+.inst-knob__face {
+  position: relative;
+  display: block;
+  width: var(--knob);
+  height: var(--knob);
+  border-radius: 50%;
+  touch-action: none;
+  cursor: ns-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.inst-knob__dial {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.inst-knob__tick { stroke: var(--green-line); stroke-width: 1.4; stroke-linecap: round; }
+.inst-knob__track,
+.inst-knob__arc { fill: none; stroke-width: 3.2; stroke-linecap: round; }
+.inst-knob__track { stroke: var(--green-line); }
+.inst-knob__arc { stroke: var(--amber); }
+.inst-knob__body { fill: var(--bg-panel-2); stroke: var(--green-line); stroke-width: 1; }
+.inst-knob__pointer { stroke: var(--green-bright); stroke-width: 2.6; stroke-linecap: round; }
+.inst-knob__face:focus-within .inst-knob__body { stroke: var(--amber); }
+.inst-knob__face:has(.inst-knob__input:focus-visible) {
+  outline: 2px solid var(--amber);
+  outline-offset: 4px;
+}
+/* The native range sits over the dial, fully transparent and deaf to the
+   pointer: the dial takes the drag, the input keeps focus, keys and the
+   accessibility tree. */
+.inst-knob .inst-knob__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  font-size: 16px;
+}
+.inst-knob__value {
+  font-family: var(--font-screen);
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--green-bright);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.inst-knob[data-disabled] { opacity: 0.5; }
+.inst-knob[data-disabled] .inst-knob__face { cursor: not-allowed; }
+
+/* ── Slider ───────────────────────────────────────────────────────────── */
+
+.inst-slider {
+  --fill: 0%;
+  display: grid;
+  grid-template-columns: minmax(5ch, max-content) minmax(0, 1fr) minmax(4ch, max-content);
+  align-items: center;
+  gap: 4px 14px;
+  min-width: 0;
+}
+.inst-slider--stack {
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+.inst-slider--stack .inst-slider__input {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+.inst-slider__label { display: flex; align-items: center; min-height: 44px; min-width: 0; font-size: 0.78rem; color: var(--green); }
+.inst-slider--stack .inst-slider__label { align-items: flex-end; }
+.inst-slider__value {
+  font-family: var(--font-screen);
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--green-bright);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.inst-slider .inst-slider__input {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+}
+.inst-slider__input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--green) var(--fill), var(--green-line) var(--fill));
+}
+.inst-slider__input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 28px;
+  margin-top: -12px;
+  border: 1px solid var(--green-bright);
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--bg-panel-2) 0 42%, var(--green-bright) 42% 58%, var(--bg-panel-2) 58%);
+}
+.inst-slider__input::-moz-range-track { height: 4px; border-radius: 2px; background: var(--green-line); }
+.inst-slider__input::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--green); }
+.inst-slider__input::-moz-range-thumb {
+  width: 12px;
+  height: 26px;
+  border: 1px solid var(--green-bright);
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--bg-panel-2) 0 42%, var(--green-bright) 42% 58%, var(--bg-panel-2) 58%);
+}
+.inst-slider__input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.inst-slider__input:focus-visible::-webkit-slider-thumb { border-color: var(--amber); }
+.inst-slider__input:focus-visible::-moz-range-thumb { border-color: var(--amber); }
+.inst-slider[data-disabled] { opacity: 0.5; }
+.inst-slider[data-disabled] .inst-slider__input { cursor: not-allowed; }
+
+/* ── Segmented ────────────────────────────────────────────────────────── */
+
+.inst-seg-field { display: grid; gap: 6px; min-width: 0; }
+.inst-seg__legend { font-size: 0.72rem; color: var(--green); }
+.inst-seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+/* The radio is the lamp: a 44px zone at the start of the option, drawn with
+   no appearance of its own, lit amber when chosen. It sits beside the text
+   rather than over it, so a click on the text reaches it through the label,
+   a test driver's click lands on the radio itself, and nothing covers the
+   words the phone check reads for contrast. */
+.inst-seg__opt {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px 0 44px;
+  border-radius: calc(var(--radius) - 2px);
+  color: var(--green);
+  font-size: 0.82rem;
+  line-height: 1.2;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.inst-seg__opt[data-checked] {
+  background: color-mix(in srgb, var(--green) 14%, var(--bg));
+  color: var(--green-bright);
+}
+.inst-seg__opt:hover { color: var(--green-bright); }
+.inst-seg .inst-seg__input {
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 44px;
+  height: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--radius) - 2px) 0 0 calc(var(--radius) - 2px);
+  background: radial-gradient(circle at 62% 50%, var(--green-line) 0 3px, transparent 3.6px);
+  font-size: 16px;
+  cursor: inherit;
+}
+.inst-seg .inst-seg__input:checked {
+  background: radial-gradient(circle at 62% 50%, var(--amber) 0 3.5px, transparent 4.2px);
+  filter: drop-shadow(0 0 3px var(--amber));
+}
+.inst-seg__opt:has(.inst-seg__input:focus-visible) {
+  outline: 2px solid var(--amber);
+  outline-offset: 1px;
+}
+.inst-seg__opt:has(.inst-seg__input:disabled) { opacity: 0.45; cursor: not-allowed; }
+.inst-seg--sm .inst-seg__opt { padding: 0 11px 0 44px; font-size: 0.76rem; }
+
+/* ── Toggle ───────────────────────────────────────────────────────────── */
+
+.inst-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px 0 8px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--green);
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.2;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.inst-toggle__track {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  border: 1px solid var(--green-line);
+  border-radius: 10px;
+  background: var(--bg-panel-2);
+}
+.inst-toggle__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.inst-toggle[aria-checked="true"] { color: var(--green-bright); border-color: var(--green); }
+.inst-toggle[aria-checked="true"] .inst-toggle__track {
+  border-color: var(--amber);
+  background: color-mix(in srgb, var(--amber) 22%, var(--bg));
+}
+.inst-toggle[aria-checked="true"] .inst-toggle__thumb {
+  transform: translateX(16px);
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+}
+.inst-toggle:hover:not(:disabled) { border-color: var(--amber); }
+.inst-toggle:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+.inst-toggle:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── DropSlot and FilePicker ──────────────────────────────────────────── */
+
+.inst-drop { display: grid; gap: 8px; min-width: 0; }
+.inst-drop__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+.inst-picker { position: relative; display: inline-flex; max-width: 100%; }
+/* The native input: out of sight, in reach of the keyboard, the label and
+   the accessibility tree. */
+.inst-picker .inst-picker__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  opacity: 0;
+}
+.inst-picker__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 0 16px 0 13px;
+  border: 1px solid var(--green);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--green) 10%, var(--bg));
+  color: var(--green-bright);
+  font-size: 0.86rem;
+  line-height: 1.25;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.inst-picker--quiet .inst-picker__button { border-color: var(--green-line); background: var(--bg); }
+.inst-picker__button:hover,
+[data-drop="over"] .inst-picker__button { border-color: var(--amber); color: var(--amber-bright); }
+.inst-picker__glyph {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.inst-picker__input:focus-visible + .inst-picker__button { outline: 2px solid var(--amber); outline-offset: 3px; }
+.inst-picker__input:disabled + .inst-picker__button { opacity: 0.5; cursor: not-allowed; }
+.inst-drop__or { font-size: 0.78rem; color: var(--green); }
+[data-drop="over"] .inst-drop__or { color: var(--amber-bright); }
+.inst-drop__chips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.inst-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--green-line);
+  border-radius: 3px;
+  color: var(--green);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+}
+.inst-drop__hint { margin: 0; max-width: 80ch; color: var(--green); font-size: 0.76rem; line-height: 1.55; }
+.inst-drop__refusal {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 2px solid var(--amber);
+  color: var(--amber);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+.inst-drop__refusal:empty { padding: 0; border: 0; }
+/* The stage glow while a file is held over it. An outline and a shadow, so
+   nothing inside the stage moves. */
+[data-drop="over"] {
+  outline: 2px dashed var(--amber);
+  outline-offset: 6px;
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--amber) 10%, transparent),
+    0 0 42px color-mix(in srgb, var(--amber) 24%, transparent);
+}
+@media (hover: none) and (pointer: coarse) {
+  .inst-drop__or { display: none; }
+}
+
+/* ── ExportBar ────────────────────────────────────────────────────────── */
+
+.inst-export { display: grid; gap: 8px; min-width: 0; }
+.inst-export__row { display: flex; flex-wrap: wrap; gap: 8px; }
+.inst-export__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 0 15px 0 12px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--green-bright);
+  font: inherit;
+  font-size: 0.84rem;
+  line-height: 1.2;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.inst-export__btn.is-primary { border-color: var(--amber); background: var(--amber); color: var(--bg); }
+.inst-export__btn:hover:not(:disabled) { border-color: var(--amber); }
+.inst-export__btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+.inst-export__btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.inst-export__glyph {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.inst-export__note { margin: 0; max-width: 80ch; color: var(--green); font-size: 0.78rem; line-height: 1.55; }
+
+/* ── DateRange ────────────────────────────────────────────────────────── */
+
+.inst-dates { display: grid; gap: 8px; min-width: 0; }
+.inst-dates__track { position: relative; height: 44px; min-width: 0; }
+.inst-dates__rail {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  top: 50%;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to right,
+    var(--green-line) var(--from),
+    var(--green) var(--from),
+    var(--green) var(--to),
+    var(--green-line) var(--to)
+  );
+}
+.inst-dates__density {
+  position: absolute;
+  left: 7px;
+  right: 7px;
+  bottom: calc(50% + 4px);
+  height: 18px;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+}
+.inst-dates__density i { flex: 1; min-height: 1px; background: var(--green-line); }
+.inst-dates .inst-dates__input {
+  -webkit-appearance: none;
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  pointer-events: none;
+  font-size: 16px;
+}
+.inst-dates__input::-webkit-slider-runnable-track { height: 44px; background: none; }
+.inst-dates__input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  width: 14px;
+  height: 28px;
+  margin-top: 8px;
+  border: 1px solid var(--green-bright);
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--bg-panel-2) 0 42%, var(--green-bright) 42% 58%, var(--bg-panel-2) 58%);
+  cursor: ew-resize;
+}
+.inst-dates__input::-moz-range-track { background: none; }
+.inst-dates__input::-moz-range-thumb {
+  pointer-events: auto;
+  width: 12px;
+  height: 26px;
+  border: 1px solid var(--green-bright);
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--bg-panel-2) 0 42%, var(--green-bright) 42% 58%, var(--bg-panel-2) 58%);
+  cursor: ew-resize;
+}
+.inst-dates__input:focus-visible { outline: none; }
+.inst-dates__input:focus-visible::-webkit-slider-thumb { border-color: var(--amber); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--amber); }
+.inst-dates__input:focus-visible::-moz-range-thumb { border-color: var(--amber); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--amber); }
+.inst-dates__readout {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-family: var(--font-screen);
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--green-bright);
+}
+
+/* ── Select ───────────────────────────────────────────────────────────── */
+
+.inst-select { display: grid; gap: 6px; min-width: 0; }
+.inst-select__label { display: flex; align-items: flex-end; min-height: 44px; font-size: 0.75rem; color: var(--green); }
+.inst-select__box { position: relative; display: block; min-width: 0; }
+.inst-select__box::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  width: 7px;
+  height: 7px;
+  margin-top: -6px;
+  border-right: 1.5px solid var(--green);
+  border-bottom: 1.5px solid var(--green);
+  transform: rotate(45deg);
+  pointer-events: none;
+}
+.inst-select .inst-select__input {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 40px 0 12px;
+  border: 1px solid var(--green-line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  background-image: none;
+  color: var(--green-bright);
+  font: inherit;
+  font-size: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.inst-select__input:hover:not(:disabled) { border-color: var(--green); }
+.inst-select__input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.inst-select__input:disabled { opacity: 0.5; cursor: not-allowed; }
+.inst-select__input option { background: var(--bg-panel); color: var(--green-bright); }
+
+/* ── Motion, only for those who have not asked for less ───────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .inst-toggle__thumb,
+  .inst-toggle__track { transition: transform 140ms ease-out, background-color 140ms ease-out, border-color 140ms ease-out; }
+  .inst-seg__opt,
+  .inst-picker__button,
+  .inst-export__btn { transition: background-color 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out; }
+  .inst-knob__pointer,
+  .inst-knob__arc { transition: stroke 120ms ease-out; }
+  [data-drop] { transition: box-shadow 160ms ease-out, outline-color 160ms ease-out; }
+}

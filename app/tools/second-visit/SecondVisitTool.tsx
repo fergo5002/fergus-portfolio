@@ -9,7 +9,9 @@ import { MAX_BYTES } from "@/lib/tools/second-visit/csv";
 import { DEMO_VENUE_TOWN, demoCsv } from "@/lib/tools/second-visit/demo";
 import { exportFiles } from "@/lib/tools/second-visit/exports";
 import { PRODUCTION_PARAMS } from "@/lib/tools/second-visit/model";
-import { dayFromIso } from "@/lib/tools/second-visit/numbers";
+import { dayFromIso, isoFromDay } from "@/lib/tools/second-visit/numbers";
+import { formatDay } from "@/lib/instrument/dates";
+import { DropSlot, ExportBar, Select, Slider, useIntake } from "@/components/instrument";
 import { reportHtml, stepPath } from "@/lib/tools/second-visit/report";
 import { townOptions, TOWNS_ATTRIBUTION } from "@/lib/tools/second-visit/towns";
 import type { ColumnRoles, ModelParams } from "@/lib/tools/second-visit/types";
@@ -69,7 +71,19 @@ function save(name: string, body: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export default function SecondVisitTool() {
+/**
+ * The worked example, modelled once on the server so its curve and numbers are
+ * in the first paint and in the HTML. Everything but the per-customer rows,
+ * which are a third of a megabyte and only feed the downloads; the page fills
+ * them in by modelling the same file in the background, and keeps the
+ * downloads off until it has.
+ */
+export type SecondVisitDemo = {
+  analysis: Analysis;
+  conversion: { ignored: number; ambiguousDates: boolean };
+};
+
+export default function SecondVisitTool({ demo }: { demo?: SecondVisitDemo }) {
   const runner = useRef<Runner | null>(null);
   const [where, setWhere] = useState<Runner["where"] | null>(null);
   const [parsed, setParsed] = useState<Awaited<ReturnType<Runner["parse"]>> | null>(null);
@@ -77,13 +91,17 @@ export default function SecondVisitTool() {
   const [venueTown, setVenueTown] = useState("");
   const [asOfIso, setAsOfIso] = useState("");
   const [params, setParams] = useState<ModelParams>(PRODUCTION_PARAMS);
-  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [analysis, setAnalysis] = useState<Analysis | null>(demo?.analysis ?? null);
+  /** False while the analysis on screen is the server's summary, with no rows behind the downloads. */
+  const [full, setFull] = useState(!demo);
   const [message, setMessage] = useState<string | null>(null);
-  const [conversion, setConversion] = useState<{ ignored: number; ambiguousDates: boolean } | null>(null);
+  const [conversion, setConversion] = useState<{ ignored: number; ambiguousDates: boolean } | null>(demo?.conversion ?? null);
   const [busy, setBusy] = useState(false);
   const [timing, setTiming] = useState({ parseMs: 0, modelMs: 0 });
-  const [example, setExample] = useState(false);
+  const [example, setExample] = useState(Boolean(demo));
   const [horizonDay, setHorizonDay] = useState(90);
+  /** The newest attended date in the file, the default end, once a first analysis has found it. */
+  const [fileEnd, setFileEnd] = useState<string | null>(demo?.analysis.asOfIso ?? null);
   const generation = useRef(0);
   const sliderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -91,6 +109,10 @@ export default function SecondVisitTool() {
     const made = makeRunner();
     runner.current = made;
     setWhere(made.where);
+    // The server drew the made-up sauna. Model the same file here, quietly and
+    // without clearing the screen, so the downloads and the settings have the
+    // full analysis behind them.
+    void read(demoCsv(), DEMO_VENUE_TOWN, ++generation.current, true);
     return () => {
       generation.current++;
       if (sliderTimer.current) clearTimeout(sliderTimer.current);
@@ -101,17 +123,22 @@ export default function SecondVisitTool() {
 
   const towns = useMemo(() => townOptions(), []);
 
-  async function read(text: string, defaultTown: string, ticket = ++generation.current) {
+  /** `quiet` refreshes what is already on screen: nothing is cleared and no busy line is shown. */
+  async function read(text: string, defaultTown: string, ticket = ++generation.current, quiet = false) {
     if (sliderTimer.current) clearTimeout(sliderTimer.current);
     const active = runner.current;
     if (!active) return;
-    setBusy(true);
-    setMessage(null);
-    setAnalysis(null);
-    setConversion(null);
-    setParsed(null);
-    setRoles(null);
-    setParams(PRODUCTION_PARAMS);
+    if (!quiet) {
+      setBusy(true);
+      setMessage(null);
+      setAnalysis(null);
+      setFull(false);
+      setConversion(null);
+      setParsed(null);
+      setRoles(null);
+      setParams(PRODUCTION_PARAMS);
+      setFileEnd(null);
+    }
     setExample(defaultTown === DEMO_VENUE_TOWN);
     try {
       const result = await active.parse(text);
@@ -128,6 +155,8 @@ export default function SecondVisitTool() {
         if (analysed.used === 0) { setMessage(secondVisitCopy.refusals.badDates); }
         else {
           setAnalysis(analysed.analysis);
+          setFull(true);
+          setFileEnd(analysed.analysis.asOfIso);
           setTiming({ parseMs: result.ms, modelMs: analysed.ms });
         }
       }
@@ -145,7 +174,7 @@ export default function SecondVisitTool() {
     if (!file) return;
     const ticket = ++generation.current;
     if (sliderTimer.current) clearTimeout(sliderTimer.current);
-    setAnalysis(null); setParsed(null); setRoles(null); setConversion(null); setMessage(null); setExample(false);
+    setAnalysis(null); setParsed(null); setRoles(null); setConversion(null); setMessage(null); setExample(false); setFileEnd(null);
     if (file.size > MAX_BYTES) {
       setMessage(secondVisitCopy.refusals.tooBig);
       setBusy(false);
@@ -198,6 +227,7 @@ export default function SecondVisitTool() {
         return;
       }
       setAnalysis(result.analysis);
+      setFull(true);
       setTiming((current) => ({ ...current, modelMs: result.ms }));
       void trackToolRun({ tool: "second-visit", outcome: "ok", ms: round100(result.ms) });
     } catch {
@@ -221,7 +251,7 @@ export default function SecondVisitTool() {
   function invalidate() {
     generation.current++;
     if (sliderTimer.current) clearTimeout(sliderTimer.current);
-    setAnalysis(null); setConversion(null); setBusy(false);
+    setAnalysis(null); setFull(false); setConversion(null); setBusy(false);
   }
 
   function download(name: string, body: string, type: string) {
@@ -229,140 +259,45 @@ export default function SecondVisitTool() {
     catch { setMessage(workbench.downloadFailed); }
   }
 
+  // Never disabled: a new file bumps the generation, so it wins over a read in flight.
+  const intake = useIntake({ accept: ".csv,text/csv", onFiles: ([file]) => void onFile(file) });
   const horizon = analysis?.secondVisit.horizons.find((h) => h.day === horizonDay && !h.beyondFile && h.defined)
     ?? analysis?.secondVisit.horizons.find((h) => !h.beyondFile && h.defined)
     ?? analysis?.secondVisit.horizons[0];
   const percent = (value: number) => `${(value * 100).toFixed(1)}%`;
   const chartEnd = analysis?.secondVisit.curve.reduce((max, point) => Math.max(max, point.day), 1) ?? 1;
+  /* "Treat the file as ending on": a slider from the file's own end (the
+     default) forward to today, capped at two years. No stock date input. */
+  const endDay = fileEnd === null ? null : dayFromIso(fileEnd);
+  const todayDay = dayFromIso(new Date().toISOString().slice(0, 10)) ?? 0;
+  const asOfMax = endDay === null ? 0 : Math.max(0, Math.min(730, todayDay - endDay));
+  const asOfOffset = endDay === null || asOfIso === "" ? 0 : Math.max(0, (dayFromIso(asOfIso) ?? endDay) - endDay);
 
   return (
-    <div className="sv" aria-busy={busy}>
-      <section className="sv__step">
-        <h2>{secondVisitCopy.steps.file.title}</h2>
-        <p>{secondVisitCopy.steps.file.hint}</p>
-        <input
-          className="sv__file"
-          type="file"
-          accept=".csv,text/csv"
-          aria-label={secondVisitCopy.steps.file.button}
-          onChange={(event) => void onFile(event.target.files?.[0])}
-        />
-        <button className="sv__button sv__primary" type="button" disabled={busy} onClick={() => void read(demoCsv(), DEMO_VENUE_TOWN)}>
-          {secondVisitCopy.steps.file.demo}
-        </button>
-        <p className="sv__hint">{secondVisitCopy.steps.file.demoNote}</p>
+    <div className="sv" aria-busy={busy} {...intake.stageProps}>
+      <section className="sv__step sv__intake">
+        <div className="sv__intake-row">
+          <DropSlot intake={intake} id="sv-file" label={secondVisitCopy.steps.file.button} hint={secondVisitCopy.steps.file.hint} />
+          <button className="sv__button sv__primary" type="button" disabled={busy} onClick={() => void read(demoCsv(), DEMO_VENUE_TOWN)}>
+            {secondVisitCopy.steps.file.demo}
+          </button>
+        </div>
         {message ? <p className="sv__message" role="status">{message}</p> : null}
         {busy ? <p className="sv__hint" role="status">{secondVisitCopy.labels.working}</p> : null}
       </section>
 
-      {parsed && roles ? <details className="bench-details sv__setup" open={!analysis}>
-      <summary>{workbench.setup}</summary>
-      {parsed && roles ? (
-        <section className="sv__step">
-          <h2>{secondVisitCopy.steps.columns.title}</h2>
-          <p>{secondVisitCopy.steps.columns.hint}</p>
-          <p className="sv__hint">
-            {parsed.rows} {secondVisitCopy.labels.rows}, {secondVisitCopy.labels.parseMs} {timing.parseMs} ms
-            {where === null ? "" : ` (${where})`}
-          </p>
-          {parsed.truncated ? <p className="sv__warn" role="status">{secondVisitCopy.refusals.truncated}</p> : null}
-          {parsed.skipped > 0 ? (
-            <p className="sv__hint">{parsed.skipped} {secondVisitCopy.labels.skippedRows}</p>
-          ) : null}
-          {(["customer", "date"] as const).map((role) => (
-            <label className="sv__label" key={role}>
-              {workbench.mappings[role]}
-              <select
-                className="sv__select"
-                aria-label={workbench.mappings[role]}
-                value={roles[role]}
-                onChange={(event) => { invalidate(); setRoles({ ...roles, [role]: Number(event.target.value) }); }}
-              >
-                <option value={-1}>{workbench.chooseColumn}</option>
-                {parsed.header.map((name, index) => (
-                  <option key={`${name}-${index}`} value={index}>{name}</option>
-                ))}
-              </select>
-            </label>
-          ))}
-          <details className="bench-details"><summary>{workbench.optional}</summary>
-          <div className="bench-columns">
-          {OPTIONAL_ROLES.map((role) => (
-            <label className="sv__label" key={role}>
-              {workbench.mappings[role]}
-              <select
-                className="sv__select"
-                aria-label={workbench.mappings[role]}
-                value={roles[role] ?? -1}
-                onChange={(event) => {
-                  const index = Number(event.target.value);
-                  invalidate();
-                  setRoles({ ...roles, [role]: index < 0 ? null : index });
-                }}
-              >
-                <option value={-1}>{secondVisitCopy.labels.ignored}</option>
-                {parsed.header.map((name, index) => (
-                  <option key={`${name}-${index}`} value={index}>{name}</option>
-                ))}
-              </select>
-            </label>
-          ))}
-          </div></details>
-        </section>
-      ) : null}
-
-      {parsed && roles ? (
-        <section className="sv__step">
-          <h2>{secondVisitCopy.steps.where.title}</h2>
-          <label className="sv__label">
-            {secondVisitCopy.steps.where.townLabel}
-            <select className="sv__select" value={venueTown} onChange={(event) => { invalidate(); setVenueTown(event.target.value); }}>
-              <option value="">{secondVisitCopy.labels.unknownTown}</option>
-              {towns.map((town) => (
-                <option key={town.name} value={town.name}>{town.name}</option>
-              ))}
-            </select>
-          </label>
-          <p className="sv__hint">{secondVisitCopy.steps.where.townHint} {TOWNS_ATTRIBUTION}</p>
-          <label className="sv__label">
-            {secondVisitCopy.steps.where.asOfLabel}
-            <input className="sv__input" type="date" value={asOfIso} onChange={(event) => { invalidate(); setAsOfIso(event.target.value); }} />
-          </label>
-          <p className="sv__hint">{secondVisitCopy.steps.where.asOfHint}</p>
-          <button className="sv__button" type="button" disabled={busy} onClick={() => void run(params)}>
-            {secondVisitCopy.headline.title}
-          </button>
-        </section>
-      ) : null}
-      </details> : null}
-
       {analysis && horizon ? (
         <section className="sv__results">
           <p className="bench-subline">{example ? workbench.example : workbench.results}</p>
-          <dl className="bench-metrics">
-            <div><dt>{workbench.customers}</dt><dd>{analysis.counts.customers.toLocaleString("en-IE")}</dd></div>
-            <div><dt>{workbench.visits}</dt><dd>{analysis.counts.attended.toLocaleString("en-IE")}</dd></div>
-            <div><dt>{workbench.returned}</dt><dd>{analysis.secondVisit.events.toLocaleString("en-IE")}</dd></div>
-          </dl>
-          <h2>{secondVisitCopy.headline.title}</h2>
-          <div className="bench-actions" role="group" aria-label={workbench.horizon}>
-            {analysis.secondVisit.horizons.map(h => <button key={h.day} type="button" className="bench-button" disabled={h.beyondFile || !h.defined} aria-pressed={h.day === horizon.day} onClick={() => setHorizonDay(h.day)}>{h.day} {workbench.days}</button>)}
-          </div>
           {analysis.secondVisit.enough ? (
-            <>
-              <p className="sv__big">{percent(horizon.estimate)}</p>
-              <p>{secondVisitCopy.headline.kmLabel}, {secondVisitCopy.headline.horizonLabel} {horizon.day}.</p>
-              {horizon.defined ? (
-                <p>{secondVisitCopy.headline.intervalLabel}: {percent(horizon.lo)} to {percent(horizon.hi)}</p>
-              ) : null}
-              <p>{secondVisitCopy.headline.naiveLabel}: {percent(analysis.secondVisit.naive)}</p>
-              <p className="sv__hint">{secondVisitCopy.headline.naiveNote}</p>
-              <p>
-                {secondVisitCopy.headline.medianLabel}:{" "}
-                {analysis.secondVisit.medianDays === null
-                  ? secondVisitCopy.headline.medianNotReached
-                  : analysis.secondVisit.medianDays}
-              </p>
+            <div className="sv__headline">
+              <div className="sv__figure">
+                <p className="sv__big">{percent(horizon.estimate)}</p>
+                <p>{secondVisitCopy.headline.kmLabel}, {secondVisitCopy.headline.horizonLabel} {horizon.day}.</p>
+                {horizon.defined ? (
+                  <p>{secondVisitCopy.headline.intervalLabel}: {percent(horizon.lo)} to {percent(horizon.hi)}</p>
+                ) : null}
+              </div>
               <div className="sv__chart-frame">
                 <div className="sv__axis-y"><span>100%</span><span>50%</span><span>0%</span></div>
                 <svg className="sv__chart" viewBox="0 0 640 200" role="img" aria-label={secondVisitCopy.headline.kmLabel}>
@@ -373,10 +308,30 @@ export default function SecondVisitTool() {
                 <div className="sv__axis-x"><span>0</span><span>{Math.round(chartEnd / 2)}</span><span>{chartEnd}</span></div>
                 <p className="sv__axis-title">{workbench.chartDays}</p>
               </div>
-            </>
+            </div>
           ) : (
             <p>{secondVisitCopy.refusals.tooFew}</p>
           )}
+          <div className="sv__horizons" role="group" aria-label={workbench.horizon}>
+            {analysis.secondVisit.horizons.map(h => <button key={h.day} type="button" className="bench-button" disabled={h.beyondFile || !h.defined} aria-pressed={h.day === horizon.day} onClick={() => setHorizonDay(h.day)}>{h.day} {workbench.days}</button>)}
+          </div>
+          <dl className="bench-metrics">
+            <div><dt>{workbench.customers}</dt><dd>{analysis.counts.customers.toLocaleString("en-IE")}</dd></div>
+            <div><dt>{workbench.visits}</dt><dd>{analysis.counts.attended.toLocaleString("en-IE")}</dd></div>
+            <div><dt>{workbench.returned}</dt><dd>{analysis.secondVisit.events.toLocaleString("en-IE")}</dd></div>
+          </dl>
+          {analysis.secondVisit.enough ? (
+            <>
+              <p>{secondVisitCopy.headline.naiveLabel}: {percent(analysis.secondVisit.naive)}</p>
+              <p className="sv__hint">{secondVisitCopy.headline.naiveNote}</p>
+              <p>
+                {secondVisitCopy.headline.medianLabel}:{" "}
+                {analysis.secondVisit.medianDays === null
+                  ? secondVisitCopy.headline.medianNotReached
+                  : analysis.secondVisit.medianDays}
+              </p>
+            </>
+          ) : null}
 
           {analysis.usingProductionParams ? null : <p className="sv__warn">{secondVisitCopy.honesty.changed}</p>}
           {conversion?.ignored ? (
@@ -453,61 +408,134 @@ export default function SecondVisitTool() {
 
           </details>
           <details className="bench-details"><summary>{workbench.settings}</summary>
+          <div className="sv__sliders">
           {SLIDERS.map((slider) => (
-            <label className="sv__label" key={slider.key}>
-              {slider.label} ({params[slider.key]})
-              <input
-                className="sv__slider"
-                type="range"
-                min={slider.min}
-                max={slider.max}
-                step={slider.step}
-                value={params[slider.key]}
-                onChange={(event) => moveSlider(slider.key, Number(event.target.value))}
-              />
-            </label>
+            <Slider
+              key={slider.key}
+              label={slider.label}
+              min={slider.min}
+              max={slider.max}
+              step={slider.step}
+              value={params[slider.key]}
+              layout="stack"
+              onChange={(value) => moveSlider(slider.key, value)}
+            />
           ))}
+          </div>
           <button className="sv__button" type="button" onClick={() => { setParams(PRODUCTION_PARAMS); void run(PRODUCTION_PARAMS); }}>
             {secondVisitCopy.sliders.reset}
           </button>
           </details>
 
           <h3>{workbench.actions}</h3>
-          {exportFiles(analysis).map((file) => (
-            <p key={file.file}>
-              <button className="sv__button" type="button" disabled={busy} onClick={() => download(file.file, file.csv, "text/csv;charset=utf-8")}>
-                {file.name}
-              </button>
-              <span className="sv__hint">{file.note}</span>
-            </p>
-          ))}
-          <button
-            className="sv__button"
-            type="button"
-            disabled={busy}
-            onClick={() => download(secondVisitCopy.report.file, reportHtml(analysis), "text/html;charset=utf-8")}
-          >
-            {secondVisitCopy.report.button}
-          </button>
-          <p className="sv__hint">{secondVisitCopy.report.note}</p>
-          <p className="sv__hint">{secondVisitCopy.labels.modelMs} {timing.modelMs} ms</p>
+          <ExportBar
+            label={workbench.actions}
+            note={secondVisitCopy.report.note}
+            actions={[
+              ...exportFiles(analysis).map((file) => ({
+                label: file.name,
+                kind: "csv" as const,
+                disabled: busy || !full,
+                onClick: () => download(file.file, file.csv, "text/csv;charset=utf-8"),
+              })),
+              {
+                label: secondVisitCopy.report.button,
+                kind: "html" as const,
+                disabled: busy || !full,
+                onClick: () => download(secondVisitCopy.report.file, reportHtml(analysis), "text/html;charset=utf-8"),
+              },
+            ]}
+          />
         </section>
       ) : null}
 
-      <section className="sv__honesty">
-        <h2>{secondVisitCopy.honesty.title}</h2>
-        <details className="bench-details"><summary>{workbench.settings}</summary>
-        {secondVisitCopy.honesty.body.map((line) => (
-          <p key={line}>{line}</p>
-        ))}
-        </details>
-        {TIGH_CREDIT ? (
-          <p>
-            {TIGH_CREDIT.line}{" "}
-            <a className="prose__link" href={TIGH_CREDIT.href}>{TIGH_CREDIT.name}</a>
+      {/* Rendered while the server's example is on screen too, before the file has
+          been read here, so the line does not appear under the results later. */}
+      {(parsed && roles) || analysis ? <details className="bench-details sv__setup" open={!analysis}>
+      <summary>{workbench.setup}</summary>
+      {parsed && roles ? (
+        <section className="sv__step">
+          <h2>{secondVisitCopy.steps.columns.title}</h2>
+          <p>{secondVisitCopy.steps.columns.hint}</p>
+          <p className="sv__hint">
+            {parsed.rows} {secondVisitCopy.labels.rows}, {secondVisitCopy.labels.parseMs} {timing.parseMs} ms,{" "}
+            {secondVisitCopy.labels.modelMs} {timing.modelMs} ms
+            {where === null ? "" : ` (${where})`}
           </p>
-        ) : null}
-      </section>
+          {parsed.truncated ? <p className="sv__warn" role="status">{secondVisitCopy.refusals.truncated}</p> : null}
+          {parsed.skipped > 0 ? (
+            <p className="sv__hint">{parsed.skipped} {secondVisitCopy.labels.skippedRows}</p>
+          ) : null}
+          <div className="bench-columns">
+          {(["customer", "date"] as const).map((role) => (
+            <Select
+              key={role}
+              label={workbench.mappings[role]}
+              value={String(roles[role])}
+              onChange={(value) => { invalidate(); setRoles({ ...roles, [role]: Number(value) }); }}
+            >
+              <option value={-1}>{workbench.chooseColumn}</option>
+              {parsed.header.map((name, index) => (
+                <option key={`${name}-${index}`} value={index}>{name}</option>
+              ))}
+            </Select>
+          ))}
+          </div>
+          <details className="bench-details"><summary>{workbench.optional}</summary>
+          <div className="bench-columns">
+          {OPTIONAL_ROLES.map((role) => (
+            <Select
+              key={role}
+              label={workbench.mappings[role]}
+              value={String(roles[role] ?? -1)}
+              onChange={(value) => {
+                const index = Number(value);
+                invalidate();
+                setRoles({ ...roles, [role]: index < 0 ? null : index });
+              }}
+            >
+              <option value={-1}>{secondVisitCopy.labels.ignored}</option>
+              {parsed.header.map((name, index) => (
+                <option key={`${name}-${index}`} value={index}>{name}</option>
+              ))}
+            </Select>
+          ))}
+          </div></details>
+        </section>
+      ) : null}
+
+      {parsed && roles ? (
+        <section className="sv__step">
+          <h2>{secondVisitCopy.steps.where.title}</h2>
+          <Select
+            label={secondVisitCopy.steps.where.townLabel}
+            value={venueTown}
+            onChange={(value) => { invalidate(); setVenueTown(value); }}
+          >
+            <option value="">{secondVisitCopy.labels.unknownTown}</option>
+            {towns.map((town) => (
+              <option key={town.name} value={town.name}>{town.name}</option>
+            ))}
+          </Select>
+          <p className="sv__hint">{secondVisitCopy.steps.where.townHint} {TOWNS_ATTRIBUTION}</p>
+          {endDay !== null && asOfMax > 0 ? (
+            <Slider
+              label={secondVisitCopy.steps.where.asOfLabel}
+              min={0}
+              max={asOfMax}
+              value={asOfOffset}
+              layout="stack"
+              format={(offset) => formatDay(isoFromDay(endDay + offset))}
+              onChange={(offset) => { invalidate(); setAsOfIso(offset === 0 ? "" : isoFromDay(endDay + offset)); }}
+            />
+          ) : null}
+          <p className="sv__hint">{secondVisitCopy.steps.where.asOfHint}</p>
+          <button className="sv__button" type="button" disabled={busy} onClick={() => void run(params)}>
+            {secondVisitCopy.headline.title}
+          </button>
+        </section>
+      ) : null}
+      </details> : null}
     </div>
   );
 }

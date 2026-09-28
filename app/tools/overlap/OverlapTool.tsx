@@ -29,6 +29,7 @@ import {
   type Opened,
 } from "@/lib/tools/overlap/webrtc";
 import type { Entry } from "@/lib/tools/overlap/types";
+import { DropSlot, Select, useIntake } from "@/components/instrument";
 
 /**
  * The one client component, and it is wiring.
@@ -453,18 +454,11 @@ export default function OverlapTool({ roomsAvailable = false }: { roomsAvailable
 
   const ready = entries.length >= MIN_USABLE_ROWS;
   const shown = result ?? (panel === "demo" && !result ? demo : null);
+  const fileIntake = useIntake({ accept: ".csv,text/csv", disabled: busy, onFiles: ([chosen]) => readFile(chosen) });
 
   return (
     <div className="overlap">
       <p className="bench-note">{localOverlapCopy.peerIntro}</p>
-      <details className="bench-details">
-      <summary>{localOverlapCopy.peerDetails}</summary>
-      <p className="overlap__honesty">{overlapCopy.honesty.notPsi}</p>
-      <p className="overlap__honesty">{overlapCopy.honesty.claim}</p>
-      <p className="overlap__honesty">{overlapCopy.honesty.theyLearn}</p>
-      <p className="overlap__honesty">{overlapCopy.honesty.relaySees}</p>
-      <p className="overlap__honesty">{overlapCopy.honesty.storage}</p>
-      </details>
 
       <div className="overlap__panels" role="group" aria-label={overlapCopy.title}>
         <button
@@ -506,43 +500,25 @@ export default function OverlapTool({ roomsAvailable = false }: { roomsAvailable
               {overlapCopy.export.linkLabel}
             </a>
           </p>
-          <label className="overlap__label" htmlFor="overlap-file">
-            {overlapCopy.file.input}
-          </label>
-          <input
-            id="overlap-file"
-            className="overlap__file"
-            type="file"
-            accept=".csv,text/csv"
-            disabled={busy}
-            onChange={(event) => {
-              const chosen = event.target.files?.[0];
-              if (chosen) readFile(chosen);
-            }}
-          />
+          <DropSlot id="overlap-file" disabled={busy} intake={fileIntake} label={overlapCopy.file.input} zone />
           {file && column < 0 ? (
-            <>
-              <label className="overlap__label" htmlFor="overlap-column">
-                {overlapCopy.file.pick}
-              </label>
-              <select
-                id="overlap-column"
-                className="overlap__select"
-                value={column}
-                onChange={(event) => {
-                  const index = Number(event.target.value);
-                  setColumn(index);
-                  applyColumn(file, index);
-                }}
-              >
-                <option value={-1}>{overlapCopy.file.pick}</option>
-                {file.headers.map((header, i) => (
-                  <option key={`${header}-${i}`} value={i}>
-                    {header || `${i + 1}`}
-                  </option>
-                ))}
-              </select>
-            </>
+            <Select
+              id="overlap-column"
+              label={overlapCopy.file.pick}
+              value={String(column)}
+              onChange={(value) => {
+                const index = Number(value);
+                setColumn(index);
+                applyColumn(file, index);
+              }}
+            >
+              <option value={-1}>{overlapCopy.file.pick}</option>
+              {file.headers.map((header, i) => (
+                <option key={`${header}-${i}`} value={i}>
+                  {header || `${i + 1}`}
+                </option>
+              ))}
+            </Select>
           ) : null}
           {counts ? (
             <p className="overlap__counts">
@@ -568,6 +544,7 @@ export default function OverlapTool({ roomsAvailable = false }: { roomsAvailable
           {overlapCopy.connect.sameNetwork}
         </button>
         <p className="overlap__hint">{overlapCopy.honesty.stun}</p>
+        <p className="overlap__hint">{overlapCopy.honesty.theyLearn}</p>
 
         {codesOff ? <p className="bench-warning">{overlapCopy.relay.unavailable}</p> : (
           <div className="overlap__row">

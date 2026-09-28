@@ -45,7 +45,8 @@ for (const [engineName, engine] of [
       await page.goto(`${base}/lab/${slug}`, { timeout: 120000 });
       await page.locator(".lab-work").first().waitFor();
       await page.evaluate(() => document.fonts.ready);
-      if (["good-window", "pocket-redact"].includes(slug))
+      // Pocket Redact opens on its example invoice since the instrument redesign.
+      if (slug === "good-window")
         await page
           .getByRole("button", { name: "Load example", exact: true })
           .click();
