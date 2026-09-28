@@ -89,6 +89,15 @@ describe("the week itself", () => {
     expect(week).toMatch(/aria-describedby=\{/);
   });
 
+  it("reads the hour a finger taps, and opens it only on a second tap", () => {
+    // One tap used to read and open at once, and a phone scrolled to the
+    // messages before the reading could be seen. The browser half is the
+    // phone pass in scripts/studio-boundaries/group-lore.mjs.
+    expect(week).toMatch(/again: !!cell && same\(aim, cell\.day, cell\.hour\)/);
+    expect(week).toMatch(/if \(cell && \(!touch \|\| again\)\) onPick\(cell\);/);
+    expect(jsx).toMatch(/<Week[\s\S]*?aim=\{aim\}/);
+  });
+
   it("lights each cell from the heat scale, never from a raw share of the peak", () => {
     expect(week).toContain("heatLevel(");
     expect(week).toMatch(/"--heat"/);

@@ -23,6 +23,36 @@ describe("the example chat", () => {
     expect(exampleChat(EXAMPLE_SEED + 1)).not.toBe(text);
   });
 
+  it("draws the same week in every timezone, so the server's HTML is the week the browser hydrates", () => {
+    // The server renders in UTC and a visitor's browser reads the same text in
+    // local time. A spring-forward gap moves a message an hour, into another
+    // cell, and the page would not hydrate. Each zone here has such a gap in
+    // the example's months, at a different hour and weekday.
+    const saved = process.env.TZ;
+    const zones = ["UTC", "Europe/Dublin", "America/New_York", "America/Havana", "Asia/Beirut", "Asia/Jerusalem", "Africa/Cairo"];
+    try {
+      const weeks = zones.map((zone) => {
+        process.env.TZ = zone;
+        return JSON.stringify(loreStats(importChat(exampleChat(), "dmy")).heat);
+      });
+      // The instrument first: the zone change must move a local hour, or this proves nothing.
+      process.env.TZ = "America/New_York";
+      expect(new Date(Date.UTC(2026, 5, 1, 12)).getHours()).toBe(8);
+      for (const [i, week] of weeks.entries()) expect(week, zones[i]).toBe(weeks[0]);
+    } finally {
+      process.env.TZ = saved;
+    }
+  });
+
+  it("writes nothing into the small hours of a March or April weekend, where the clocks go forward", () => {
+    const risky = text.split("\n").filter((line) => {
+      const [, d, m, y, h] = line.match(/^(\d\d)\/(\d\d)\/(\d{4}), (\d\d):/)!.map(Number);
+      const weekday = (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7;
+      return (m === 3 || m === 4) && weekday >= 4 && h < 4;
+    });
+    expect(risky).toEqual([]);
+  });
+
   it("is a WhatsApp export the real parser reads, with dates nobody could misread", () => {
     expect(dateOrderOf(text)).toEqual({ order: "dmy", certain: true });
     expect(messages.length).toBeGreaterThanOrEqual(900);

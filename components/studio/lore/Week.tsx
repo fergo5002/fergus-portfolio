@@ -1,5 +1,5 @@
 "use client";
-import type { CSSProperties, KeyboardEvent, PointerEvent } from "react";
+import { useRef, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { WEEK_TRANSPOSE_QUERY, heatLevel, moveCell, type Cell } from "@/lib/studio/lore";
 
 /**
@@ -7,9 +7,12 @@ import { WEEK_TRANSPOSE_QUERY, heatLevel, moveCell, type Cell } from "@/lib/stud
  * many messages landed in it. The first thing on Group Lore's stage.
  *
  * One focusable surface rather than 168 buttons. A mouse reads whatever it
- * is over; a finger or a click picks a cell and opens its messages; the
- * arrow keys walk the week and Enter opens it. The line that says what the
- * cursor is on is the page's `<output>`, named here by `aria-describedby`.
+ * is over and a click opens that hour's messages; the arrow keys walk the
+ * week and Enter opens it. A finger reads the hour it taps and a second tap
+ * on the same hour opens it: when one tap did both, a phone scrolled to the
+ * messages and took the week and its reading out of sight before anyone had
+ * read them. The line that says what the cursor is on is the page's
+ * `<output>`, named here by `aria-describedby`.
  *
  * The cells are drawn by CSS from `--heat` (`heatLevel`, 0 to 1) and the
  * theme's own `--green`, so all three phosphors follow. On a phone the
@@ -20,6 +23,8 @@ type Props = {
   heat: readonly (readonly number[])[];
   /** The cell the reading describes: under the pointer, picked, or the peak. */
   cursor: Cell | null;
+  /** The cell a pointer, a finger or the keyboard is on, if any: not the peak. */
+  aim: Cell | null;
   /** The cell whose messages are open. */
   pick: Cell | null;
   readingId: string;
@@ -40,8 +45,10 @@ function cellOf(target: EventTarget | null): Cell | null {
   return { day: Number(el.dataset.d), hour: Number(el.dataset.h) };
 }
 
-export default function Week({ heat, cursor, pick, readingId, label, days, hour, sweep, onAim, onPick }: Props) {
+export default function Week({ heat, cursor, aim, pick, readingId, label, days, hour, sweep, onAim, onPick }: Props) {
   const max = Math.max(1, ...heat.flat());
+  /** How the last press came: a finger's first tap on an hour reads it, and only a second opens it. */
+  const press = useRef<{ touch: boolean; again: boolean }>({ touch: false, again: false });
 
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
     if (event.pointerType !== "mouse") return;
@@ -50,9 +57,10 @@ export default function Week({ heat, cursor, pick, readingId, label, days, hour,
   }
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
-    if (event.pointerType === "mouse") return;
     const cell = cellOf(event.target);
-    if (cell) onAim(cell);
+    const touch = event.pointerType !== "mouse";
+    press.current = { touch, again: !!cell && same(aim, cell.day, cell.hour) };
+    if (touch && cell) onAim(cell);
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -82,7 +90,9 @@ export default function Week({ heat, cursor, pick, readingId, label, days, hour,
       onPointerDown={onPointerDown}
       onClick={(event) => {
         const cell = cellOf(event.target);
-        if (cell) onPick(cell);
+        const { touch, again } = press.current;
+        press.current = { touch: false, again: false };
+        if (cell && (!touch || again)) onPick(cell);
       }}
       onKeyDown={onKeyDown}
     >

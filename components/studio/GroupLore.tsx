@@ -242,6 +242,7 @@ export default function GroupLore() {
         <Week
           heat={view.stats.heat}
           cursor={shown}
+          aim={aim}
           pick={open ? pick : null}
           readingId={readingId}
           label={c.weekLabel}
