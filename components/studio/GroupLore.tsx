@@ -70,6 +70,8 @@ export default function GroupLore() {
   const [raw, setRaw] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  /** The date order just asked for, shown at once while the worker re-reads the file in it. */
+  const [asked, setAsked] = useState<Order | null>(null);
   const [ready, setReady] = useState(false);
   const [sweep, setSweep] = useState(0);
   const worker = useRef<Worker | null>(null);
@@ -120,6 +122,7 @@ export default function GroupLore() {
 
   function show(next: Chat, isExample: boolean) {
     setChat(next);
+    setAsked(null);
     setExample(isExample);
     setRange({});
     setFocus("");
@@ -136,6 +139,7 @@ export default function GroupLore() {
     generation.current++;
     worker.current?.terminate();
     setBusy(false);
+    setAsked(null);
   }
 
   function read(text: string, order?: Order) {
@@ -149,8 +153,10 @@ export default function GroupLore() {
       w.terminate();
       if (token !== generation.current) return;
       setBusy(false);
-      if ("error" in e.data) setError(e.data.error);
-      else {
+      if ("error" in e.data) {
+        setError(e.data.error);
+        setAsked(null);
+      } else {
         source.current = text;
         show(e.data, false);
       }
@@ -160,6 +166,7 @@ export default function GroupLore() {
       if (token === generation.current) {
         setBusy(false);
         setError(c.read);
+        setAsked(null);
       }
     };
     w.postMessage({ text, order });
@@ -340,9 +347,12 @@ export default function GroupLore() {
               <Segmented
                 label={c.dateOrder}
                 size="sm"
-                value={chat.order}
+                value={asked ?? chat.order}
                 disabled={busy}
-                onChange={(order) => read(source.current, order)}
+                onChange={(order) => {
+                  setAsked(order);
+                  read(source.current, order);
+                }}
                 options={[
                   { value: "dmy", label: ui.dayMonthYear },
                   { value: "mdy", label: ui.monthDayYear },
