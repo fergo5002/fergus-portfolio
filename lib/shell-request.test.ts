@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { requestCommand, takeRequest, subscribeRequests } from "./shell-request";
+import { requestCommand, takeRequest, subscribeRequests, requestArcadeLeave, subscribeArcadeLeave } from "./shell-request";
 
 /**
  * The nav's `cd arcade` is a button, not a link: the arcade is not a page, it
@@ -29,5 +29,22 @@ describe("a pending shell command", () => {
     requestCommand("cd arcade");
     expect(takeRequest()).toBe("cd arcade");
     expect(takeRequest()).toBeNull();
+  });
+});
+
+describe("asking the arcade to leave from outside it (2026-09-28)", () => {
+  it("reaches the room that is listening, and says so", () => {
+    const leave = vi.fn();
+    const stop = subscribeArcadeLeave(leave);
+    expect(requestArcadeLeave()).toBe(true);
+    expect(leave).toHaveBeenCalledTimes(1);
+    stop();
+  });
+
+  it("reports false with no room listening, so the caller can close the shell itself", () => {
+    const leave = vi.fn();
+    subscribeArcadeLeave(leave)();
+    expect(requestArcadeLeave()).toBe(false);
+    expect(leave).not.toHaveBeenCalled();
   });
 });

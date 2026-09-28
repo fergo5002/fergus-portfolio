@@ -21,8 +21,10 @@ try {
   }
   await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
   await page.locator(".statusbar__prompt").click(); await page.locator(".term__input").fill("cd arcade poker"); await page.locator(".term__input").press("Enter");
-  await page.locator(".arcade-room").getByRole("button", { name: /^sound off$/i }).click(); await page.locator(".arcade-room").getByRole("button", { name: /^sound on$/i }).waitFor();
-  await page.getByRole("button", { name: /start solo run/i }).click(); await page.waitForTimeout(8500);
+  await page.getByRole("button", { name: /start solo run/i }).click();
+  // The switch sits beside the running game now that the room has no bar of its own (2026-09-28).
+  await page.locator(".arcade-play__head").getByRole("button", { name: /^sound off$/i }).click(); await page.locator(".arcade-play__head").getByRole("button", { name: /^sound on$/i }).waitFor();
+  await page.waitForTimeout(8500);
   await page.locator(".arcade-stage").focus();
   for (let i = 0; i < 32 && !await page.locator(".arcade-results").count(); i++) {
     // Exercise the real keyboard control. When completion moves focus to the

@@ -1,3 +1,28 @@
+## 2026-09-28: one header, the Hatch105 egg, a new hero line
+
+Fergus stopped every portfolio agent (the Group Lore rebuild subagent and its
+dev servers) and asked for three changes to the live redesign, and nothing else.
+
+- The hero line is "I build things, and then I scale them", his exact words with
+  no trailing full stop. The meta description and `llms.txt` add their own full
+  stop after the tagline, so the old line rendered "them.." there; this fixes it.
+- The Hatch105 hover card shows the accelerator's own cracked-egg wordmark,
+  vendored at `assets/sources/hatch105-cracked-logo.webp` from hatch105.com and
+  built to `public/img/hatch105.png` by `scripts/build-images.mjs --hatch-only`.
+  The lettering stand-in (`work-preview__hatch`) is gone, so every card is an image.
+- The arcade has no bar of its own: the site nav is the one header. Its four jobs
+  moved: each view keeps its own back button, the gallery front has a hall of fame
+  button, a sound switch (`SoundSwitch.tsx`) sits on the gallery front and beside
+  the running game, and the nav's `cd arcade` leaves when pressed again (a phone
+  has no Escape key), through the room's own `leave()` via `requestArcadeLeave`
+  in `lib/shell-request.ts`, so it behaves exactly like Escape. While the room is
+  up the door's accessible name is "cd arcade, leave the arcade". The in-game
+  switch never takes focus off the stage, so a held key cannot stick on it.
+  This is the six-cabinet arcade that is live. Fergus chose it over shipping PR 29
+  (three new cabinets, red CI), which stays open and untouched and will conflict
+  with this in `ArcadeExperience.tsx`, `Gallery.tsx`, `CanvasGame.tsx` and `Nav.tsx`.
+- Not continued: the tools rebuild (`redesign-tools` and the `agent-*` worktrees).
+
 ## 2026-09-27: the redesign, part one (the site)
 
 Fergus asked for the site to be more novel while staying understated, with a list

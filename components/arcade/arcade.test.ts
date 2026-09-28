@@ -330,3 +330,45 @@ describe("a running game lights the tube where things happen", () => {
     expect(game).toMatch(/themeRef\.current/);
   });
 });
+
+/* ── one universal header (Fergus, 2026-09-28) ─────────────────────────────── */
+
+const gallery = code(read("components", "arcade", "Gallery.tsx"));
+
+describe("the room has no header of its own: the site nav is the only one", () => {
+  it("draws no bar, prompt or header inside the room", () => {
+    expect(room).not.toMatch(/<header/);
+    expect(room).not.toMatch(/arcade-bar/);
+    expect(css).not.toMatch(/\.arcade-bar/);
+  });
+
+  it("still reaches the Hall of Fame, from the gallery front", () => {
+    expect(gallery).toMatch(/onClick=\{onFame\}/);
+    expect(gallery).toMatch(/\{copy\.fame\}/);
+    expect(room).toMatch(/onFame=\{\(\) => setScreen\(\{ kind: "fame" \}\)\}/);
+  });
+
+  it("keeps a sound switch where sound happens: the gallery front and beside the running game", () => {
+    const sound = code(read("components", "arcade", "SoundSwitch.tsx"));
+    expect(sound).toMatch(/setAudioEnabled\(!audioLive\)/);
+    expect(sound).toMatch(/aria-pressed=\{audioLive\}/);
+    expect(sound).toMatch(/audioLive \? copy\.soundOn : copy\.soundOff/);
+    expect(gallery).toMatch(/<SoundSwitch \/>/);
+    const head = /<div className="arcade-play__head">([\s\S]*?)<\/div>/.exec(game)?.[1] ?? "";
+    expect(head).toMatch(/<SoundSwitch returnFocus=\{\(\) => stageRef\.current\?\.focus\(/);
+  });
+
+  it("never takes focus off a running game's stage, so a held key cannot stick on the switch", () => {
+    const sound = code(read("components", "arcade", "SoundSwitch.tsx"));
+    expect(sound).toMatch(/onPointerDown=\{returnFocus \? \(e\) => e\.preventDefault\(\) : undefined\}/);
+    expect(sound).toMatch(/returnFocus\?\.\(\);/);
+  });
+
+  it("leaves through its own leave() when the nav asks, the same way Escape does", () => {
+    expect(room).toMatch(/useEffect\(\(\) => subscribeArcadeLeave\(leave\), \[leave\]\);/);
+  });
+
+  it("still leaves on Escape", () => {
+    expect(room).toMatch(/if \(e\.key === "Escape"\) \{\s*e\.preventDefault\(\);\s*leave\(\);/);
+  });
+});

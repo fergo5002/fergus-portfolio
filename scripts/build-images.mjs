@@ -161,6 +161,23 @@ async function presterly() {
   done("presterly.png", `${info.width}x${info.height} ${(info.size / 1024).toFixed(0)}KB`);
 }
 
+// ── 4b. Hatch105 ────────────────────────────────────────────────────────────
+// The accelerator's own cracked-egg wordmark, white lettering with the egg as
+// the zero, on the black it is drawn for. Provenance: assets/sources/hatch105-brand.md.
+// Rebuild with --hatch-only.
+async function hatch105() {
+  const src = join(SOURCES, "hatch105-cracked-logo.webp");
+  if (!existsSync(src)) throw new Error("Hatch105 card requires its vendored wordmark");
+  const mark = await sharp(src).trim().resize({ width: 760 }).png().toBuffer();
+  const info = await sharp({
+    create: { width: CARD_W, height: CARD_H, channels: 4, background: "#000000" },
+  })
+    .composite([{ input: mark, gravity: "centre" }])
+    .png({ compressionLevel: 9 })
+    .toFile(join(OUT, "hatch105.png"));
+  done("hatch105.png", `${info.width}x${info.height} ${(info.size / 1024).toFixed(0)}KB`);
+}
+
 // ── 5. Loira ────────────────────────────────────────────────────────────────
 // The Loira "L" swash mark, taken from loira.ai's own landing assets.
 async function loira() {
@@ -338,16 +355,20 @@ async function contrabot() {
 console.log("building public/img ...");
 const remandOnly = process.argv.includes("--remand-only");
 const tighOnly = process.argv.includes("--tigh-only");
-if (remandOnly && tighOnly) throw new Error("Choose either --remand-only or --tigh-only");
+const hatchOnly = process.argv.includes("--hatch-only");
+if ([remandOnly, tighOnly, hatchOnly].filter(Boolean).length > 1) throw new Error("Choose one of --remand-only, --tigh-only or --hatch-only");
 if (remandOnly) {
   await remand();
 } else if (tighOnly) {
   await tighSauna();
+} else if (hatchOnly) {
+  await hatch105();
 } else {
   await tighSauna();
   await portrait();
   await campanile();
   await presterly();
+  await hatch105();
   await loira();
   await remand();
   await contrabot();

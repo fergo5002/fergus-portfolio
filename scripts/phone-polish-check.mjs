@@ -115,7 +115,29 @@ async function run(name, engine, device) {
     await page.locator(".arcade-room").waitFor({ state: "detached" });
     assert.equal(await page.locator(".term__input").evaluate(el => document.activeElement === el), true);
     check("nav arcade entry from an open drawer and Escape restore the terminal");
+    // textContent counts the scrollback as written. The terminal renders none of it
+    // while it hosts a program, so the count is taken here, with the prompt back.
+    const exits = async () => (((await page.locator(".term__scroll").textContent()) ?? "").match(/arcade: back to the prompt\./g) ?? []).length;
+    const exitsSoFar = await exits();
     await press(page.locator(".shell__close"));
+
+    // The room has no header of its own, so the nav's door is also the way out,
+    // which is the only one a phone has without an Escape key (2026-09-28).
+    await page.locator(".nav__list").evaluate(el => { el.scrollLeft = el.scrollWidth; });
+    await press(door);
+    await page.locator(".arcade-room").waitFor();
+    await page.locator(".arcade-entrance").waitFor({ state: "detached", timeout: 12_000 });
+    assert.equal(await page.locator(".arcade-room header, .arcade-bar").count(), 0);
+    assert.equal(await door.getAttribute("aria-label"), "cd arcade, leave the arcade");
+    await press(door);
+    await page.locator(".arcade-room").waitFor({ state: "detached" });
+    // It leaves the way Escape does: the drawer's terminal comes back with one new exit line.
+    assert.equal(await page.locator(".shell").count(), 1);
+    assert.equal(await exits(), exitsSoFar + 1);
+    assert.equal(await page.locator(".term__input").evaluate(el => document.activeElement === el), true);
+    assert.equal(await door.getAttribute("aria-label"), null);
+    await press(page.locator(".shell__close"));
+    check("the room draws no header, and the nav's cd arcade leaves it the way Escape does");
 
     // Enter from a closed drawer, then use the ordinary nav after the power cycle.
     // Same-route departure matters: pathname effects cannot observe that click.

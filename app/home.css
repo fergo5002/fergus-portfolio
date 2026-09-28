@@ -18,11 +18,6 @@
 .work-preview__caption { display: block; padding: var(--sp-3); background: var(--bg-panel-2); }
 .work-preview__caption strong { display: block; font: 1.8rem/1.1 var(--font-screen); color: var(--amber); margin-bottom: 8px; }
 .work-preview__caption > span { font-size: .9rem; line-height: 1.5; }
-.work-preview__hatch { display: flex; flex-wrap: wrap; align-content: center; justify-content: center; align-items: baseline; gap: 4px; height: 180px; font: 4.5rem/1 var(--font-screen); color: var(--amber); background: var(--bg); }
-.work-preview__hatch > span:not(.work-preview__weeks) { color: var(--green-bright); }
-.work-preview__weeks { display: flex; justify-content: center; width: 100%; gap: 5px; margin-top: 24px; }
-.work-preview__weeks i { display: block; width: 17px; height: 10px; border: 1px solid var(--green); background: var(--green-line); }
-.work-preview__weeks i:last-child { background: var(--amber); border-color: var(--amber); }
 .work-preview__peek { display: none; }
 .about__routes { border-top: 1px solid var(--green-line); padding-top: var(--sp-3); margin-top: var(--sp-4); }
 .about__routes p { margin: 0 0 var(--sp-2); }
@@ -45,7 +40,5 @@
   .work-preview__panel { display: none; }
   .work-preview__peek { display: block; width: 64px; flex: none; margin-left: auto; }
   .work-preview__peek img { display: block; width: 64px; height: 40px; object-fit: cover; border: 1px solid var(--green-line); }
-  .work-preview__peek .work-preview__hatch { height: 40px; font-size: 1.1rem; border: 1px solid var(--green-line); }
-  .work-preview__peek .work-preview__weeks { display: none; }
   .work-preview__link { width: 100%; font-size: .95rem; }
 }
