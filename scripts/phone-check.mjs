@@ -858,8 +858,14 @@ async function checkRoute(browser, profile, url, outDir, label, readySelector = 
     // the node between finding it and scrolling to it.
     await page.evaluate(() => document.querySelector(".mcp-console")?.scrollIntoView({ block: "center" }));
     await page.locator(".mcp-console__lines li, .mcp-console__hint[role='alert']").first().waitFor({ state: "visible", timeout });
+    // A failed exchange is not a settled page: say so rather than audit it green.
+    if (await page.locator(".mcp-console__hint[role='alert']").isVisible()) {
+      throw new Error(`the MCP console's own question failed on ${url}, so the page never reached its settled state`);
+    }
+    // Only the console's own animations, so something looping elsewhere cannot hold this open.
     await page.waitForFunction(
-      () => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity),
+      () => (document.querySelector(".mcp-console")?.getAnimations({ subtree: true }) ?? [])
+        .every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity),
       null,
       { timeout },
     );

@@ -11,7 +11,9 @@ import { useSystem } from "@/components/system/SystemProvider";
  * `returnFocus` is for the running game. A click must not take focus off its
  * stage: a key held through the click would release on this button and stay
  * held in the game, and the next Space would toggle sound instead of playing.
- * So a pointer press never moves focus here, and the switch hands it back after.
+ * So a mouse press never moves focus here (cancelling `mousedown` is what
+ * reliably stops the focus move; cancelling `pointerdown` does not in every
+ * browser), and the switch hands focus back to the game after.
  */
 export default function SoundSwitch({ className = "", keyShortcut, returnFocus }: { className?: string; keyShortcut?: string; returnFocus?(): void }) {
   const { audioLive, setAudioEnabled } = useSystem();
@@ -21,7 +23,7 @@ export default function SoundSwitch({ className = "", keyShortcut, returnFocus }
       className={`arcade-btn arcade-sound${audioLive ? " is-on" : ""} ${className}`.trim()}
       aria-pressed={audioLive}
       aria-keyshortcuts={keyShortcut}
-      onPointerDown={returnFocus ? (e) => e.preventDefault() : undefined}
+      onMouseDown={returnFocus ? (e) => e.preventDefault() : undefined}
       onClick={() => {
         setAudioEnabled(!audioLive);
         returnFocus?.();

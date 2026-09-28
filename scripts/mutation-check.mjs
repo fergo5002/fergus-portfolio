@@ -1524,8 +1524,17 @@ const MUTATIONS = [
   {
     name: "arcade foundations: the nav's cd arcade no longer leaves an open arcade",
     file: "components/Nav.tsx",
-    pattern: /  if \(shellStore\.get\(\)\.arcade !== "closed"\) \{\r?\n    shellStore\.dispatch\(\{ type: "close" \}\);\r?\n    return;\r?\n  \}/,
+    pattern: /  if \(shellStore\.get\(\)\.arcade !== "closed"\) \{\r?\n    if \(!requestArcadeLeave\(\)\) shellStore\.dispatch\(\{ type: "close" \}\);\r?\n    return;\r?\n  \}/,
     replace: '  if (shellStore.get().arcade !== "closed") return;',
+    tests: "components/nav.test.ts",
+  },
+  {
+    // The regression the 2026-09-28 review caught: closing the shell takes the
+    // drawer with it, where Escape and the room's own leave() hand it back.
+    name: "arcade foundations: the nav's cd arcade closes the shell instead of leaving the way Escape does",
+    file: "components/Nav.tsx",
+    pattern: /    if \(!requestArcadeLeave\(\)\) shellStore\.dispatch\(\{ type: "close" \}\);/,
+    replace: '    shellStore.dispatch({ type: "close" });',
     tests: "components/nav.test.ts",
   },
   {
@@ -1636,7 +1645,7 @@ const MUTATIONS = [
   // ── Kernel Panic: chips never collide near the top ──
   ...[
     ["a chip spawns without checking for room", /    if \(!clearOf\(s, c, also\)\) continue;/, "", "lib/arcade/games/panic.test.ts"],
-    ["near the top a chip falls into the one below it", /      if \(p\.y < TOP_ZONE_END\) nudge\(s, p, p\.speed \* dt\);\n      else p\.y \+= p\.speed \* dt;/, "      p.y += p.speed * dt;", "lib/arcade/games/panic.test.ts"],
+    ["near the top a chip falls into the one below it", /      if \(p\.y < TOP_ZONE_END\) nudge\(s, p, p\.speed \* dt\);\r?\n      else p\.y \+= p\.speed \* dt;/, "      p.y += p.speed * dt;", "lib/arcade/games/panic.test.ts"],
     ["a nudge closes a gap completely (the rounding fix reverted)", / - 1e-6\)\)/g, "))", "lib/arcade/games/panic.test.ts"],
     ["a knock pushes a chip into its neighbour", /    nudge\(s, target, -KNOCK\);/, "    target.y -= KNOCK;", "lib/arcade/games/panic.test.ts"],
     ["a chip's box forgets its caption", /  const parts = \[chip, label, caption, mark\]/, "  const parts = [chip, label, mark]", "lib/arcade/games/panic.test.ts"],

@@ -347,7 +347,7 @@ export default function CanvasGame({ cabinet, seed, replay, theme, boards, onBac
       <h2 className="arcade-play__title">{cabinet.title}</h2>
       <div className="arcade-play__tools">
         <button type="button" className="arcade-btn arcade-tool arcade-tool--pause" onClick={() => pause(!paused)} aria-keyshortcuts="P" disabled={!!result || !!error}>{paused ? copy.resume : copy.pause}</button>
-        <SoundSwitch className="arcade-tool arcade-tool--sound" keyShortcut="M" returnFocus={() => stageRef.current?.focus({ preventScroll: true })} />
+        <SoundSwitch className="arcade-tool" keyShortcut="M" returnFocus={() => (typing ? focusType() : stageRef.current?.focus({ preventScroll: true }))} />
       </div>
     </div>
     <div className="arcade-frame window" style={{ "--stage-ratio": stage.w / stage.h } as CSSProperties}>

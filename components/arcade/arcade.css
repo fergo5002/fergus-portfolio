@@ -750,7 +750,6 @@ html.arcade-open .saver {
   font-size: 0.78rem;
   padding: 0 12px;
 }
-.arcade-tool.is-on,
 .arcade-sound.is-on {
   color: var(--amber);
   border-color: color-mix(in srgb, var(--amber) 40%, transparent);

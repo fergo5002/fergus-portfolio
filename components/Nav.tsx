@@ -29,7 +29,7 @@ function toggleArcade(): void {
     if (!requestArcadeLeave()) shellStore.dispatch({ type: "close" });
     return;
   }
-  requestCommand("cd arcade");
+  requestCommand(navDoor.command);
   shellStore.dispatch({ type: "open" });
 }
 
@@ -108,7 +108,7 @@ export default function Nav() {
               aria-current={arcadeOpen ? "location" : undefined}
               aria-label={arcadeOpen ? navDoor.leaveLabel : undefined}
             >
-              cd arcade
+              {navDoor.command}
             </button>
           </Magnetic>
         </li>
