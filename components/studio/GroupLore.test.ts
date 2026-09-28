@@ -156,6 +156,13 @@ describe("intake, the messages and the boundaries", () => {
     expect(jsx).toMatch(/\{!certain && \(?\s*<Segmented[\s\S]*?label=\{c\.dateOrder\}/);
   });
 
+  it("shows a chosen date order at once, not when the worker has re-read the file", () => {
+    // Bound to the chat alone, a click snapped back until the worker answered
+    // (seen in scripts/studio-check/group-lore.mjs, 2026-09-28).
+    expect(jsx).toMatch(/<Segmented[\s\S]*?value=\{asked \?\? chat\.order\}/);
+    expect(jsx).toMatch(/setAsked\(order\);\s*read\(source\.current, order\);/);
+  });
+
   it("takes a drop anywhere on the stage, and keeps the import, paste and example in one row", () => {
     expect(jsx).toMatch(/<div[^>]*\{\.\.\.intake\.stageProps\}/);
     const deck = jsx.slice(jsx.indexOf('className="lore__deck"'));
@@ -166,7 +173,9 @@ describe("intake, the messages and the boundaries", () => {
 
   it("reads files off the main thread, drops a stale answer and can be cancelled", () => {
     expect(tool).toContain('new URL("../../lib/studio/lore.worker.ts", import.meta.url)');
-    expect(tool).toMatch(/if \(token !== generation\.current\) return;/);
+    // In the worker's answer itself: upload() has the same line, which let a
+    // deleted check here pass on the strength of the one there.
+    expect(tool).toMatch(/w\.onmessage = [\s\S]{0,120}?w\.terminate\(\);\s*if \(token !== generation\.current\) return;/);
     expect(tool).toMatch(/worker\.current\?\.terminate\(\)/);
     expect(jsx).toContain("studioCopy.cancel");
   });
