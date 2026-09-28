@@ -33,3 +33,26 @@ export function subscribeRequests(listener: () => void): () => void {
     listeners.delete(listener);
   };
 }
+
+/**
+ * Leaving the arcade from outside it (2026-09-28). The room has no header of
+ * its own, so the nav's `cd arcade` is the way out on a screen with no Escape
+ * key, and it should leave the way Escape does: through the room's own
+ * `leave()`, which degausses, prints the exit line and hands the drawer's
+ * terminal back. Closing the shell instead would take the drawer with it.
+ */
+const leaveListeners = new Set<() => void>();
+
+/** Ask the running room to leave. False when no room is listening. */
+export function requestArcadeLeave(): boolean {
+  if (leaveListeners.size === 0) return false;
+  for (const listener of [...leaveListeners]) listener();
+  return true;
+}
+
+export function subscribeArcadeLeave(listener: () => void): () => void {
+  leaveListeners.add(listener);
+  return () => {
+    leaveListeners.delete(listener);
+  };
+}

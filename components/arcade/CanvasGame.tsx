@@ -10,6 +10,7 @@ import type { ArcadeTheme } from "@/lib/arcade/theme";
 import { pushImpact } from "@/lib/system";
 import { useSystem } from "@/components/system/SystemProvider";
 import ScoreBoard from "./ScoreBoard";
+import SoundSwitch from "./SoundSwitch";
 
 /**
  * One game, running. The simulation, the input routing and the network code
@@ -207,6 +208,7 @@ export default function CanvasGame({ cabinet, mode, seed, link, theme, boards, o
     <div className="arcade-play__head">
       <button type="button" className="arcade-btn arcade-back" onClick={onBack}>← {copy.back}</button>
       <h2 className="arcade-play__title">{cabinet.title}</h2>
+      <SoundSwitch returnFocus={() => stageRef.current?.focus({ preventScroll: true })} />
       <button type="button" className="arcade-btn" onClick={() => pause(!pausedRef.current)} disabled={!!result || !!error}>{paused ? copy.resume : copy.pause}</button>
     </div>
     <div className="arcade-frame window">

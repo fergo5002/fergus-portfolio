@@ -6,6 +6,7 @@ import type { GameId } from "@/lib/arcade/engine";
 import type { ArcadeTheme } from "@/lib/arcade/theme";
 import { useSystem } from "@/components/system/SystemProvider";
 import AttractScreen from "./AttractScreen";
+import SoundSwitch from "./SoundSwitch";
 
 /**
  * The room's front: six cabinets, each playing itself.
@@ -22,9 +23,10 @@ type Props = {
   theme: ArcadeTheme;
   live: boolean;
   onSelect(game: GameId): void;
+  onFame(): void;
 };
 
-export default function Gallery({ boards, theme, live, onSelect }: Props) {
+export default function Gallery({ boards, theme, live, onSelect, onFame }: Props) {
   const { audio } = useSystem();
   const boardFor = (id: GameId) => boards?.boards.find((b) => b.game === id) ?? null;
 
@@ -46,6 +48,12 @@ export default function Gallery({ boards, theme, live, onSelect }: Props) {
         <p className="arcade-marquee__hint" aria-hidden="true">
           ▸ {copy.hint}
         </p>
+        <div className="arcade-marquee__actions">
+          <button type="button" className="arcade-btn" onClick={onFame}>
+            {copy.fame}
+          </button>
+          <SoundSwitch />
+        </div>
       </div>
       <ul className="arcade-cabinets">
         {cabinets.map((c, i) => (

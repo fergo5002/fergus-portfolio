@@ -6,10 +6,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Magnetic from "@/components/motion/Magnetic";
 import { INITIAL_SHELL, shellStore } from "@/lib/shell";
-import { requestCommand } from "@/lib/shell-request";
+import { requestArcadeLeave, requestCommand } from "@/lib/shell-request";
 import { profile } from "@/content/profile";
 import { useSystem } from "@/components/system/SystemProvider";
-import { navItems as items } from "@/content/nav";
+import { navDoor, navItems as items } from "@/content/nav";
 
 const getServerShell = () => INITIAL_SHELL;
 
@@ -18,9 +18,17 @@ const getServerShell = () => INITIAL_SHELL;
  * is not a page. It is a program the terminal hosts, so this asks the shell to
  * run the door command and makes sure the drawer is there to hear it. `open` rather than
  * `toggle`, because a drawer that is already open must stay open to run it.
+ *
+ * Pressed while the arcade is up, it leaves the way Escape does (2026-09-28):
+ * the room has no header of its own, and a phone has no Escape key, so this is
+ * a touch screen's way out. Closing the shell is the fallback for a room that
+ * is not listening yet.
  */
-function openArcade(): void {
-  if (shellStore.get().arcade !== "closed") return;
+function toggleArcade(): void {
+  if (shellStore.get().arcade !== "closed") {
+    if (!requestArcadeLeave()) shellStore.dispatch({ type: "close" });
+    return;
+  }
   requestCommand("cd arcade");
   shellStore.dispatch({ type: "open" });
 }
@@ -96,8 +104,9 @@ export default function Nav() {
             <button
               type="button"
               className={`nav__link nav__link--cmd${arcadeOpen ? " is-active" : ""}`}
-              onClick={openArcade}
+              onClick={toggleArcade}
               aria-current={arcadeOpen ? "location" : undefined}
+              aria-label={arcadeOpen ? navDoor.leaveLabel : undefined}
             >
               cd arcade
             </button>

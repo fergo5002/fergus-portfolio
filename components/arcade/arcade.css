@@ -166,80 +166,6 @@ html.arcade-entering .nav {
   outline-offset: 2px;
 }
 
-/* ----- the bar: the room's own nav -------------------------------------- */
-.arcade-bar {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  min-height: 52px;
-  margin: 0 calc(-1 * var(--arcade-gutter));
-  padding: 4px var(--arcade-gutter);
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  border-bottom: 1px solid var(--green-line);
-  backdrop-filter: blur(2px);
-  font-size: 0.86rem;
-}
-.arcade-bar__home {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  min-height: 44px;
-  padding: 0 8px 0 0;
-  font: inherit;
-  font-size: 0.86rem;
-  color: var(--green);
-  background: transparent;
-  border: 0;
-  text-shadow: var(--glow);
-  cursor: pointer;
-  white-space: nowrap;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.arcade-bar__home:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-.arcade-bar__prompt::after {
-  content: ":";
-}
-.arcade-bar__path {
-  color: var(--amber);
-}
-.arcade-bar__path::after {
-  content: " $";
-  color: var(--green);
-}
-.arcade-bar__actions {
-  display: flex;
-  gap: var(--sp-2);
-  margin-left: auto;
-}
-.arcade-bar__actions .arcade-btn {
-  font-size: 0.78rem;
-  padding: 0 12px;
-}
-.arcade-bar__short {
-  display: none;
-}
-.arcade-bar__sound.is-on {
-  color: var(--amber);
-  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
-  background: var(--arcade-amber-wash);
-}
-.arcade-bar__exit {
-  color: var(--amber);
-}
-.arcade-bar__fame[aria-pressed="true"] {
-  color: var(--green-bright);
-  border-color: var(--green);
-}
-
 /* ----- the entrance ----------------------------------------------------- */
 .arcade-entrance {
   position: fixed;
@@ -325,6 +251,12 @@ html.arcade-entering .nav {
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   color: var(--amber);
+}
+.arcade-marquee__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
 }
 .arcade-cabinets {
   display: grid;
@@ -771,6 +703,11 @@ html.arcade-entering .nav {
   gap: var(--sp-3);
   margin-bottom: var(--sp-3);
 }
+.arcade-sound.is-on {
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
+  background: var(--arcade-amber-wash);
+}
 .arcade-play__title {
   flex: 1;
   min-width: 0;
@@ -1075,21 +1012,6 @@ html.arcade-entering .nav {
     grid-template-columns: 1fr;
     gap: var(--sp-3);
   }
-  .arcade-bar {
-    gap: var(--sp-2);
-  }
-  .arcade-bar__prompt {
-    display: none;
-  }
-  .arcade-bar__long {
-    display: none;
-  }
-  .arcade-bar__short {
-    display: inline;
-  }
-  .arcade-bar__actions .arcade-btn {
-    padding: 0 10px;
-  }
   .arcade-marquee {
     padding-top: var(--sp-4);
   }
@@ -1107,7 +1029,7 @@ html.arcade-entering .nav {
   .arcade-frame {
     width: 100%;
   }
-  /* The HUD gets the whole bar on a phone; the path is in the room's own bar already. */
+  /* The HUD gets the whole bar on a phone; the cabinet's name is in the play head above it. */
   .arcade-frame .window__title {
     display: none;
   }

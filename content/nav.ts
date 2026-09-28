@@ -27,4 +27,4 @@ export const navItems = [
  * terminal hosts, so the nav asks the shell to run this command rather than
  * linking anywhere (see `lib/shell-request.ts`).
  */
-export const navDoor = { label: "arcade", command: "cd arcade" } as const;
+export const navDoor = { label: "arcade", command: "cd arcade", leaveLabel: "cd arcade, leave the arcade" } as const;
