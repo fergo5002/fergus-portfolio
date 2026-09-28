@@ -12,6 +12,7 @@ import type { Link } from "@/lib/arcade/network";
 import { arcadeSession, markArcadeEntered, setArcadeBoards } from "@/lib/arcade/session";
 import { todaySeed } from "@/lib/arcade/attract";
 import { shellStore } from "@/lib/shell";
+import { subscribeArcadeLeave } from "@/lib/shell-request";
 import { useSystem } from "@/components/system/SystemProvider";
 import ArcadeEntrance from "./ArcadeEntrance";
 import ArcadeScreen from "./ArcadeScreen";
@@ -30,6 +31,10 @@ import "./arcade.css";
  * page read as a CRT reaches the arcade too. The page, drawer and status
  * strip are hidden while it is up. The regular navigation returns after the
  * entrance, and a normal link closes this room's host before changing route.
+ * There is no bar of its own: the site nav is the one header (Fergus,
+ * 2026-09-28). Escape leaves, the nav's `cd arcade` leaves the same way on a
+ * screen with no Escape key, each view carries its own way back, the gallery
+ * front opens the Hall of Fame, and a sound switch sits wherever sound happens.
  *
  * `data-lenis-prevent` is the scroll fix. Lenis is stopped for the document
  * behind the room, and a stopped Lenis cancels every wheel event it sees
@@ -49,7 +54,7 @@ type Props = { program: ProgramSpec; onExit(lines: string[]): void };
 function Room({ program, onExit }: Props) {
   const path = usePathname();
   const enteredPath = useRef(path);
-  const { reducedMotion, audioLive, setAudioEnabled, setScrollLocked, setEjected, setGravity, degauss, frame, audio } = useSystem();
+  const { reducedMotion, setScrollLocked, setEjected, setGravity, degauss, frame, audio } = useSystem();
   const theme = useArcadeTheme();
   const roomRef = useRef<HTMLElement>(null);
   const linkRef = useRef<Link | null>(null);
@@ -135,6 +140,8 @@ function Room({ program, onExit }: Props) {
     exitRef.current([arcadeCopy.left]);
   }, [degauss]);
 
+  useEffect(() => subscribeArcadeLeave(leave), [leave]);
+
   const start = (game: GameId, mode: GameMode, link: Link | null = null, netSeed?: number) => {
     linkRef.current = link;
     const seed = game === "under" ? todaySeed() : netSeed ?? (crypto.getRandomValues(new Uint32Array(1))[0] ?? 1) >>> 0;
@@ -189,26 +196,6 @@ function Room({ program, onExit }: Props) {
         />
       )}
       <div className={`arcade-room__inner${entering ? " is-entering" : ""}`} inert={entering || undefined}>
-        <header className="arcade-bar">
-          <button type="button" className="arcade-bar__home" onClick={back} aria-label={copy.back}>
-            <span className="arcade-bar__prompt">fergus@portfolio</span>
-            <span className="arcade-bar__path">~/arcade{cabinet ? `/${cabinet.id}` : screen.kind === "fame" ? "/fame" : ""}</span>
-          </button>
-          <div className="arcade-bar__actions">
-            {screen.kind !== "play" && (
-              <button type="button" className="arcade-btn arcade-bar__fame" onClick={() => setScreen(screen.kind === "fame" ? { kind: "gallery" } : { kind: "fame" })} aria-pressed={screen.kind === "fame"}>
-                <span className="arcade-bar__long">{copy.fame}</span>
-                <span className="arcade-bar__short">{copy.fameShort}</span>
-              </button>
-            )}
-            <button type="button" className={`arcade-btn arcade-bar__sound${audioLive ? " is-on" : ""}`} onClick={() => setAudioEnabled(!audioLive)} aria-pressed={audioLive}>
-              {audioLive ? copy.soundOn : copy.soundOff}
-            </button>
-            <button type="button" className="arcade-btn arcade-bar__exit" onClick={leave} aria-label={copy.exit}>
-              {copy.exitShort}
-            </button>
-          </div>
-        </header>
         {screen.kind === "play" && cabinet ? (
           <CanvasGame
             key={`${cabinet.id}-${screen.count}`}
@@ -234,7 +221,7 @@ function Room({ program, onExit }: Props) {
         ) : screen.kind === "fame" ? (
           <HallOfFame boards={boards} onBack={back} onSelect={(game) => setScreen({ kind: "detail", game })} />
         ) : (
-          <Gallery boards={boards} theme={theme} live={!entering} onSelect={(game) => setScreen({ kind: "detail", game })} />
+          <Gallery boards={boards} theme={theme} live={!entering} onSelect={(game) => setScreen({ kind: "detail", game })} onFame={() => setScreen({ kind: "fame" })} />
         )}
       </div>
     </section>,

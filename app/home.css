@@ -6,17 +6,18 @@
 .work-preview__link > svg { width: 15px; height: 15px; flex: none; fill: none; stroke: var(--amber); stroke-width: 1.6; }
 .work-preview__panel { position: absolute; width: 320px; max-width: calc(100vw - 48px); padding-top: 8px; top: 100%; left: 0; z-index: 10; visibility: hidden; opacity: 0; pointer-events: none; transform: translateY(8px); }
 .work-preview:hover > .work-preview__panel, .work-preview:focus-within > .work-preview__panel { visibility: visible; opacity: 1; pointer-events: auto; transform: translateY(0); }
+/* Flipped above its link when below would run under the status strip. The
+   padding is the hover bridge between link and card, so it moves sides too. */
+.work-preview.is-above > .work-preview__panel { top: auto; bottom: 100%; padding-top: 0; padding-bottom: 8px; transform: translateY(-8px); }
+.work-preview.is-above:hover > .work-preview__panel, .work-preview.is-above:focus-within > .work-preview__panel { transform: translateY(0); }
+.work-preview__screen { position: relative; display: block; overflow: clip; background: var(--bg); }
+.work-preview__screen::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; background: repeating-linear-gradient(0deg, color-mix(in srgb, var(--green-bright) 22%, transparent) 0 1px, transparent 1px 3px); }
 .work-preview__panel .tilt { background: var(--bg-panel-2); border: 1px solid var(--green); border-radius: var(--radius); box-shadow: 0 18px 36px #000a; }
 .work-preview__card { display: block; color: var(--green-bright); text-decoration: none; overflow: clip; border-radius: var(--radius); }
 .work-preview__card img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
 .work-preview__caption { display: block; padding: var(--sp-3); background: var(--bg-panel-2); }
 .work-preview__caption strong { display: block; font: 1.8rem/1.1 var(--font-screen); color: var(--amber); margin-bottom: 8px; }
 .work-preview__caption > span { font-size: .9rem; line-height: 1.5; }
-.work-preview__hatch { display: flex; flex-wrap: wrap; align-content: center; justify-content: center; align-items: baseline; gap: 4px; height: 180px; font: 4.5rem/1 var(--font-screen); color: var(--amber); background: var(--bg); }
-.work-preview__hatch > span:not(.work-preview__weeks) { color: var(--green-bright); }
-.work-preview__weeks { display: flex; justify-content: center; width: 100%; gap: 5px; margin-top: 24px; }
-.work-preview__weeks i { display: block; width: 17px; height: 10px; border: 1px solid var(--green); background: var(--green-line); }
-.work-preview__weeks i:last-child { background: var(--amber); border-color: var(--amber); }
 .work-preview__peek { display: none; }
 .about__routes { border-top: 1px solid var(--green-line); padding-top: var(--sp-3); margin-top: var(--sp-4); }
 .about__routes p { margin: 0 0 var(--sp-2); }
@@ -26,12 +27,18 @@
   .home-highlights .hl { flex-direction: column; align-items: stretch; gap: 4px; }
   .home-highlights .hl:last-child { flex-direction: row; align-items: center; }
 }
-@media (prefers-reduced-motion: no-preference) { .work-preview__panel { transition: opacity .16s, transform .22s; } }
+@media (prefers-reduced-motion: no-preference) {
+  .work-preview__panel { transition: opacity .16s, transform .22s; }
+  /* The card tunes in like a channel: the picture opens from a bright line,
+     the way the tube strikes, under a moment of scanline static. */
+  .work-preview:is(:hover, :focus-within) .work-preview__screen > * { animation: preview-tune .34s cubic-bezier(.2, .75, .2, 1) both; }
+  .work-preview:is(:hover, :focus-within) .work-preview__screen::after { animation: preview-static .34s steps(5, end) both; }
+  @keyframes preview-tune { 0% { transform: scaleY(.03); filter: brightness(2.6); } 45% { transform: scaleY(1.02); filter: brightness(1.5); } 100% { transform: none; filter: none; } }
+  @keyframes preview-static { 0% { opacity: .95; } 100% { opacity: 0; } }
+}
 @media (hover: none) {
   .work-preview__panel { display: none; }
   .work-preview__peek { display: block; width: 64px; flex: none; margin-left: auto; }
   .work-preview__peek img { display: block; width: 64px; height: 40px; object-fit: cover; border: 1px solid var(--green-line); }
-  .work-preview__peek .work-preview__hatch { height: 40px; font-size: 1.1rem; border: 1px solid var(--green-line); }
-  .work-preview__peek .work-preview__weeks { display: none; }
   .work-preview__link { width: 100%; font-size: .95rem; }
 }
