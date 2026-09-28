@@ -1932,6 +1932,7 @@ const MUTATIONS = [
     ["focusing a voice drops everyone else from the voices", /const voices = person \? analyseChat\(stretch\)\.participants : stats\.participants;/, "const voices = stats.participants;"],
     ["a WhatsApp file that only reads forwards day first is still called ambiguous", /  if \(mdyBroken && !dmyBroken\) return \{ order: "dmy", certain: true \};\r?\n/, ""],
     ["the arrow keys stop turning with the week on a phone", /return transposed \? days\(1\) : hours\(1\);/, "return hours(1);"],
+    ["an iPhone export's opening bracket is taken for JSON again", /const looksLikeJson = \(text: string\) => \/\^\\s\*\(\\\{\|\\\[\\s\*\[\{\\\]\]\)\/\.test\(text\);/, "const looksLikeJson = (text: string) => /^\\s*[{[]/.test(text);"],
   ].map(([name, pattern, replace]) => ({
     name: `group lore: ${name}`, file: "lib/studio/lore.ts", pattern, replace,
     tests: "lib/studio/lore-view.test.ts",

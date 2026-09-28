@@ -180,6 +180,20 @@ export default async function groupLore({ page, open, button, save, assert, repo
   await page.waitForFunction(() => document.querySelector(".inst-dates__readout")?.textContent?.includes("4 Mar 2026"));
   assert.equal(await page.getByRole("radio", { name: "Month / day / year" }).isChecked(), true, "the choice stays offered and holds");
 
+  // An iPhone export, dropped on the stage rather than picked: its lines open with a bracket, and it is not JSON.
+  const ios = "[01/06/2026, 07:00:00] Family: Messages and calls are end-to-end encrypted.\n[13/06/2026, 19:02:11] Orla: dinner at 7?\n[13/06/2026, 19:04:40] Tadhg: bringing chips\nand a coat\n[14/06/2026, 20:15:09] Orla: home in ten";
+  const transfer = await page.evaluateHandle((body) => {
+    const dt = new DataTransfer();
+    dt.items.add(new File([body], "WhatsApp Chat - Family.txt", { type: "text/plain" }));
+    return dt;
+  }, ios);
+  for (const type of ["dragenter", "dragover", "drop"]) await page.locator(".studio-lore").dispatchEvent(type, { dataTransfer: transfer });
+  // Four, not three: the shared parser (lib/lab/chat.ts) counts the group's own
+  // encryption line as a message from "Family". A known limit, not a promise.
+  await page.waitForFunction(() => /\b4\s+messages\b/.test(document.querySelector(".lore__figures")?.innerText ?? ""));
+  assert.equal(await page.locator(".lore__error").count(), 0, "no error line");
+  assert.match(await page.locator(".inst-dates__readout").innerText(), /1 Jun 2026[\s\S]*14 Jun 2026/);
+
   // Back to the example.
   await button("Explore an example").click();
   await page.waitForFunction((before) => document.querySelector(".lore__figures")?.textContent?.includes(before), exampleCount);

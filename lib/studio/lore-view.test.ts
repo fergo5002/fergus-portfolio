@@ -169,6 +169,25 @@ describe("the date order of a WhatsApp export", () => {
     expect(dateOrderOf("05/05/2026, 10:00 - A: a\n05/05/2026, 11:00 - B: b")).toEqual({ order: "dmy", certain: false });
   });
 
+  it("reads an iPhone export, whose every line opens with a bracket, as WhatsApp and not as JSON", () => {
+    // Found on 2026-09-28 by dropping an iOS-format export on the page: it was
+    // handed to JSON.parse and refused with "Unexpected number in JSON".
+    const ios = "[03/04/2026, 20:15:03] Alex: first\n[03/04/2026, 20:17:44] Bea: second\nand a second line\n[25/04/2026, 09:00:00] Alex: third";
+    const read = readChat(ios);
+    expect(read.messages.map((m) => m.sender)).toEqual(["Alex", "Bea", "Alex"]);
+    expect(read.messages[1].text).toBe("second\nand a second line");
+    expect(new Date(read.messages[2].at).getDate()).toBe(25);
+    expect(dateOrderOf(ios)).toEqual({ order: "dmy", certain: true });
+    // And one that could be read either way is asked about, like any other WhatsApp file.
+    expect(dateOrderOf("[03/04/2026, 20:15:03] Alex: a\n[03/04/2026, 20:17:44] Bea: b")).toEqual({ order: "dmy", certain: false });
+  });
+
+  it("still reads JSON that opens with whitespace or an empty array", () => {
+    expect(importChat('\n  [ {"sender":"A","text":"x","at":1} ]', "dmy")).toHaveLength(1);
+    expect(() => importChat("[]", "dmy")).toThrow(/No dated messages/);
+    expect(dateOrderOf(' \n[{"sender":"A","text":"x","at":1}]')).toEqual({ order: "dmy", certain: true });
+  });
+
   it("is certain about JSON, which carries its own dates", () => {
     expect(dateOrderOf('[{"sender":"A","text":"x","at":1}]')).toEqual({ order: "dmy", certain: true });
   });

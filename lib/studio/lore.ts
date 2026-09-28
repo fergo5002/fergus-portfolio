@@ -1,8 +1,17 @@
 import { parseChat, type ChatMessage, analyseChat } from "@/lib/lab/chat";
 import { addDays, daysBetween, isoDay, rangeIndices, type Span } from "@/lib/instrument/dates";
+
+/**
+ * JSON opens with an object, or with an array of objects (or none). An iPhone
+ * WhatsApp export opens every line with a bracket too, "[03/04/2026, 20:15:03]",
+ * so a bracket alone is not JSON: until 2026-09-28 every iOS export was handed
+ * to JSON.parse and refused.
+ */
+const looksLikeJson = (text: string) => /^\s*(\{|\[\s*[{\]])/.test(text);
+
 export function importChat(text: string, order: "dmy" | "mdy"): ChatMessage[] {
   if (text.length > 10_000_000) throw new Error("Chat limit: 10 MB.");
-  if (text.trimStart().startsWith("{") || text.trimStart().startsWith("[")) {
+  if (looksLikeJson(text)) {
     const data = JSON.parse(text),
       rows = Array.isArray(data) ? data : data.messages;
     if (!Array.isArray(rows))
@@ -213,8 +222,7 @@ function readAs(a: number, b: number, year: number, hour: number, minute: number
  * only time the page asks. JSON carries its own dates, so it is certain.
  */
 export function dateOrderOf(text: string): { order: Order; certain: boolean } {
-  const start = text.trimStart();
-  if (start.startsWith("{") || start.startsWith("[")) return { order: "dmy", certain: true };
+  if (looksLikeJson(text)) return { order: "dmy", certain: true };
   let dmyBroken = false;
   let mdyBroken = false;
   let lastDmy = -Infinity;
