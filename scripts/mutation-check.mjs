@@ -2040,6 +2040,55 @@ const MUTATIONS = [
     replace,
     tests: file.startsWith("lib/") ? file.replace(/\.ts$/, ".test.ts") : "components/studio/Atlas.test.ts",
   })),
+  // ── Group Lore: the week is the stage (2026-09-28) ──
+  // The browser halves (the week lit and whole on a WebKit phone, a tap that
+  // reads before it opens, a date order that holds) are in
+  // scripts/studio-boundaries/group-lore.mjs and scripts/studio-check/group-lore.mjs.
+  ...[
+    ["one message in a busy chat glows at 2% and reads as an empty hour", /export const HEAT_FLOOR = 0\.2;/, "export const HEAT_FLOOR = 0.02;"],
+    ["the heat rises linearly, so the quiet hours merge", /\(1 - HEAT_FLOOR\) \* Math\.sqrt\(n \/ max\);/, "(1 - HEAT_FLOOR) * (n / max);"],
+    ["the timeline lights every bar whatever the stretch", /lit: last >= from && first <= to/, "lit: true"],
+    ["focusing a voice drops everyone else from the voices", /const voices = person \? analyseChat\(stretch\)\.participants : stats\.participants;/, "const voices = stats.participants;"],
+    ["a WhatsApp file that only reads forwards day first is still called ambiguous", /  if \(mdyBroken && !dmyBroken\) return \{ order: "dmy", certain: true \};\r?\n/, ""],
+    ["the arrow keys stop turning with the week on a phone", /return transposed \? days\(1\) : hours\(1\);/, "return hours(1);"],
+    ["an iPhone export's opening bracket is taken for JSON again", /const looksLikeJson = \(text: string\) => \/\^\\s\*\(\\\{\|\\\[\\s\*\[\{\\\]\]\)\/\.test\(text\);/, "const looksLikeJson = (text: string) => /^\\s*[{[]/.test(text);"],
+  ].map(([name, pattern, replace]) => ({
+    name: `group lore: ${name}`, file: "lib/studio/lore.ts", pattern, replace,
+    tests: "lib/studio/lore-view.test.ts",
+  })),
+  {
+    name: "group lore: the anonymous summary names its voices",
+    file: "lib/studio/lore.ts",
+    pattern: /name: `Voice \$\{i \+ 1\}`,/,
+    replace: "name: p.name,",
+    tests: "lib/studio/lore.test.ts",
+  },
+  {
+    name: "group lore: the example writes into a spring-forward gap, so the server and a browser draw different weeks",
+    file: "lib/studio/lore-example.ts",
+    pattern: /  return \(month === 2 \|\| month === 3\) && weekday >= 4 && hour < 4;/,
+    replace: "  return false;",
+    tests: "lib/studio/lore-example.test.ts",
+  },
+  ...[
+    ["the page opens empty instead of on the example", "components/studio/GroupLore.tsx", /useState<Chat>\(\(\) => readChat\(exampleChat\(\)\)\)/, 'useState<Chat>(() => readChat(""))'],
+    ["a line of figures goes above the week", "components/studio/GroupLore.tsx", /      <div className="lore__screen">/, '      <p className="lore__figures">{c.counts}</p>\n      <div className="lore__screen">'],
+    ["pseudonyms are ranked on the stretch, so a label changes hands", "components/studio/GroupLore.tsx", /pseudonymsOf\(messages\)/, "pseudonymsOf(view.stretch)"],
+    ["the downloads describe the whole export, not the week on screen", "components/studio/GroupLore.tsx", /anonymousSummary\(view\.focus\)/, "anonymousSummary(messages)"],
+    ["the date order is asked even when the file settles it", "components/studio/GroupLore.tsx", /\{!certain && \(/, "{true && ("],
+    ["a chosen date order snaps back until the worker answers", "components/studio/GroupLore.tsx", /value=\{asked \?\? chat\.order\}/, "value={chat.order}"],
+    ["the stage stops taking a drop", "components/studio/GroupLore.tsx", / \{\.\.\.intake\.stageProps\}/, ""],
+    ["a stale read replaces the chat chosen after it", "components/studio/GroupLore.tsx", /      if \(token !== generation\.current\) return;\r?\n      setBusy\(false\);\r?\n      if \("error" in e\.data\)/, '      setBusy(false);\n      if ("error" in e.data)'],
+    ["a finger's first tap opens the messages and scrolls the week away", "components/studio/lore/Week.tsx", /if \(cell && \(!touch \|\| again\)\) onPick\(cell\);/, "if (cell) onPick(cell);"],
+    ["the privacy line leaves the messages", "components/studio/lore/Explorer.tsx", /<p className="lore__note">\{words\.privacy\}<\/p>/, ""],
+    ["the page goes back behind the studio host's loading line", "app/tools/group-lore/page.tsx", /<GroupLore \/>/, '<Studio slug="group-lore" />'],
+    ["the week keeps its hours across on a phone", "app/tools/group-lore/tool.css", /(\.lore__cells \{\r?\n    grid-template-columns: repeat\(7, minmax\(0, 1fr\)\);\r?\n    grid-template-rows: repeat\(24, 10px\);\r?\n)    grid-auto-flow: column;\r?\n/, "$1"],
+    ["the cells fade under reduced motion", "app/tools/group-lore/tool.css", /(\.lore__cell \{\r?\n  display: block;)/, "$1\n  transition: background-color 420ms ease-out;"],
+    ["the heat is painted in a colour of its own, not the theme's", "app/tools/group-lore/tool.css", /var\(--green\) calc\(var\(--heat\) \* 100%\)/, "#33ff66 calc(var(--heat) * 100%)"],
+  ].map(([name, file, pattern, replace]) => ({
+    name: `group lore: ${name}`, file, pattern, replace,
+    tests: "components/studio/GroupLore.test.ts",
+  })),
   // ── the room inside the tube (2026-09-05 overhaul) ──
   {
     name: "the arcade room loses data-lenis-prevent, so a stopped Lenis eats every wheel event",
