@@ -97,7 +97,7 @@ export const projects: Project[] = [
       "Team of 8, mentored by a Qualcomm graphics engineer.",
     ],
     stack: ["TypeScript", "Phaser 3", "GLSL", "WebGL"],
-    links: [],
+    links: [{ label: "live", href: "https://under-the-campanile.vercel.app" }],
     image: "/img/under-the-campanile.jpg",
     imageAlt: "Gameplay screenshot: Trinity College Front Square at night, the Campanile lit by a lamppost",
   },

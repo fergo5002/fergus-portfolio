@@ -1,3 +1,12 @@
+## 2026-10-03: Under the Campanile live link
+
+- [x] Add a `live` link to Under the Campanile's existing project card, pointing
+  to `https://under-the-campanile.vercel.app` on Fergus's personal Vercel workspace.
+
+The link uses the existing external project-link component. The game is deployed
+separately from the portfolio, using its own tested static build. Release checks
+and live verification are recorded in the shared Campanile handoff.
+
 ## 2026-09-28: the redesign, part three (the tools)
 
 Five shelf tools rebuilt on one instrument shell (`components/tools/ToolPage.tsx`,
