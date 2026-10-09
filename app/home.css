@@ -1,4 +1,4 @@
-.home-highlights { position: relative; z-index: 4; }
+.home-highlights { position: relative; z-index: 4; grid-template-columns: 1fr 2fr; }
 .home-highlights .hl { min-width: 0; }
 .home-highlights .hl__k { color: var(--green); }
 .work-preview { position: relative; }
@@ -25,7 +25,37 @@
 .about__routes a { display: inline-flex; align-items: center; min-height: 44px; color: var(--amber); text-underline-offset: 5px; }
 @media (max-width: 768px) {
   .home-highlights .hl { flex-direction: column; align-items: stretch; gap: 4px; }
-  .home-highlights .hl:last-child { flex-direction: row; align-items: center; }
+  .home-highlights { grid-template-columns: 1fr; }
+}
+
+/* A sealed transmission. The cipher is costume, so CSS draws it and the
+   document contains only the real label and disclosure. No hidden company name. */
+.stealth-preview > summary { cursor: pointer; list-style: none; }
+.stealth-preview > summary::-webkit-details-marker { display: none; }
+.stealth-preview > summary:focus-visible { outline: 2px solid var(--amber); outline-offset: 5px; }
+.stealth-preview[open] .work-preview__panel { visibility: visible; opacity: 1; pointer-events: auto; transform: none; }
+.work-preview--stealth.is-above .work-preview__panel { top: auto; bottom: 100%; padding-top: 0; padding-bottom: 8px; }
+.stealth-preview__card { overflow: clip; border: 1px solid var(--green); background: var(--bg-panel-2); box-shadow: 0 18px 36px #000a; border-radius: var(--radius); }
+.stealth-preview__card p { margin: 0; padding: var(--sp-3); color: var(--green-bright); font-size: .9rem; }
+.stealth-preview__cipher { position: relative; height: 148px; padding: 24px; overflow: hidden; background: var(--bg); color: var(--green); }
+.stealth-preview__cipher i { display: block; height: 28px; overflow: hidden; font: normal .9rem/28px var(--font-mono); white-space: nowrap; letter-spacing: .16em; opacity: .55; }
+.stealth-preview__cipher i::before { content: "7F A2 09 C8 3D E1 6B 04"; }
+.stealth-preview__cipher i:nth-child(2)::before { content: "C4 8E B0 1F 92 6A D3 57"; }
+.stealth-preview__cipher i:nth-child(3)::before { content: "0B F6 43 A9 E2 7C 18 D5"; }
+.stealth-preview__cipher > span { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, transparent 0 3px, var(--bg) 3px 4px); }
+.stealth-preview__cipher > span::before { content: ""; position: absolute; width: 88px; height: 30px; left: calc(50% - 44px); top: calc(50% - 15px); background: var(--bg); border-block: 1px solid var(--amber); box-shadow: 0 0 24px var(--bg); }
+@media (prefers-reduced-motion: no-preference) {
+  .stealth-preview[open] .stealth-preview__cipher i::before { animation: cipher-shift 1.8s steps(1, end) infinite; }
+  .stealth-preview[open] .stealth-preview__cipher i:nth-child(2)::before { animation-delay: -.6s; }
+  .stealth-preview[open] .stealth-preview__cipher i:nth-child(3)::before { animation-delay: -1.2s; }
+  @keyframes cipher-shift {
+    25% { content: "B8 2C F1 06 E9 4A 7D 30"; }
+    50% { content: "03 D7 5E A1 68 CF 24 9B"; }
+    75% { content: "E6 40 9A 3F B2 17 CD 85"; }
+  }
+}
+@media (hover: none) {
+  .stealth-preview[open] .work-preview__panel { display: block; position: static; width: 100%; max-width: none; padding: 8px 0 0; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .work-preview__panel { transition: opacity .16s, transform .22s; }

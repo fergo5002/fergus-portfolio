@@ -1540,3 +1540,22 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
     boot (no flash) → power-on → hero scramble; glyph-rain on all 3 routes; reduced-motion
     static fallbacks; 375px mobile; tab-switch pauses the canvas: was NOT run in a browser
     here (this machine tests on deployed prod). Do this on a Vercel preview before merging.
+## 2026-10-09: Stealth and homepage copy
+
+- [x] Use "building cool stuff", Fergus's new About copy and three Previous
+  entries: Tigh Sauna, Presterly and Hatch105. Remove the academic row and degree
+  line from the homepage.
+- [x] Set Current to Stealth, with a sealed cipher preview on hover, keyboard
+  activation or phone tap. Reduced motion keeps the cipher static. Decorative
+  cipher strings stay in CSS, with no private company details in the page.
+- [x] Align Tigh's Experience and Projects entries with "Ex-co-founder & CTO".
+  Experience now starts with Stealth, which also updates the generated MCP and
+  search profiles.
+- [x] TypeScript and 167 focused tests passed. The current-employer regression
+  was observed failing with the old Tigh entry before the content update.
+- [ ] CI and deployed browser verification. The existing revision check now
+  covers the new copy and disclosure at desktop, 390px and 320px, including
+  hover, keyboard, phone tap, reduced motion and the changing cipher.
+
+Decision: retain the existing CRT design and company previews; the Stealth
+preview adds no dependency and discloses no company identity.

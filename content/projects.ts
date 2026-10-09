@@ -31,8 +31,8 @@ export const projects: Project[] = [
     slug: "tigh-sauna",
     title: "Tigh Sauna",
     tagline: "Operations & Growth solutions for Saunas",
-    role: "Co-Founder, Engineering",
-    year: "2026 – Present",
+    role: "Ex-co-founder & CTO",
+    year: "2026",
     bullets: [
       "Every site and system is built bespoke in collaboration with saunas.",
       "Built to be the last software your sauna needs, helping you run the day-to-day and bring guests back.",
