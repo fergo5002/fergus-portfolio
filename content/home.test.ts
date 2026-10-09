@@ -8,7 +8,7 @@ import { profile } from "./profile";
 
 describe("the hero line", () => {
   it("is the line Fergus chose", () => {
-    expect(profile.tagline).toBe("I build things, and then I scale them");
+    expect(profile.tagline).toBe("building cool stuff");
   });
 });
 
