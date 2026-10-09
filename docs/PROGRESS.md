@@ -1551,11 +1551,15 @@ Plan: `docs/superpowers/plans/2026-06-02-retro-animations-and-boot-fix.md`
 - [x] Align Tigh's Experience and Projects entries with "Ex-co-founder & CTO".
   Experience now starts with Stealth, which also updates the generated MCP and
   search profiles.
-- [x] TypeScript and 167 focused tests passed. The current-employer regression
+- [x] TypeScript and 173 focused tests passed. The current-employer regression
   was observed failing with the old Tigh entry before the content update.
-- [ ] CI and deployed browser verification. The existing revision check now
-  covers the new copy and disclosure at desktop, 390px and 320px, including
-  hover, keyboard, phone tap, reduced motion and the changing cipher.
+- [x] Local browser verification passed at desktop, 390px and 320px, including
+  hover, keyboard, phone tap, reduced motion and the changing cipher. Screenshots
+  were inspected at desktop and 320px. Physical devices were not tested.
+
+Release checks and production verification are tracked in PR #33 and the shared
+personal-site handoff. The first CI run caught the old headline expectation in
+`content/home.test.ts`; its six tests passed after updating that expectation.
 
 Decision: retain the existing CRT design and company previews; the Stealth
 preview adds no dependency and discloses no company identity.
