@@ -31,7 +31,7 @@ const display = VT323({
   display: "swap",
 });
 
-const DESCRIPTION = `${profile.name}: ${profile.tagline}. Co-founder of Tigh Sauna, previously Presterly. CS & Business @ Trinity College Dublin.`;
+const DESCRIPTION = `${profile.name}: ${profile.tagline}. ${profile.bio[1]}`;
 
 export const metadata: Metadata = {
   // `metadataBase` is what makes every relative URL below resolve to an
@@ -48,9 +48,7 @@ export const metadata: Metadata = {
     // every search result carries the entity this site is about.
     template: `%s · ${profile.shortName}`,
   },
-  // Trinity is appended rather than left to the tagline: the tagline was
-  // shortened to fit one line in the hero, which is a pixel decision that should
-  // not quietly cost the page its strongest search keyword.
+  // Keep the share and search description aligned with the published bio.
   description: DESCRIPTION,
   applicationName: SITE_NAME,
   authors: [{ name: profile.name, url: SITE_URL }],
