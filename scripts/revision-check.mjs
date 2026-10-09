@@ -49,10 +49,21 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
   await page.screenshot({ path: `${out}/${width}-stealth.png`, fullPage: true });
   if (width > 500) {
     await page.emulateMedia({ reducedMotion: "no-preference" });
+    await trigger.hover();
     const cipher = stealth.locator("i").first();
+    await page.waitForFunction(() => {
+      const preview = document.querySelector(".stealth-preview");
+      const row = preview?.querySelector("i");
+      return preview?.open && row && getComputedStyle(row, "::before").animationName === "cipher-shift";
+    });
     const before = await cipher.evaluate(el => getComputedStyle(el, "::before").content);
-    await page.waitForTimeout(650);
-    assert.notEqual(await cipher.evaluate(el => getComputedStyle(el, "::before").content), before, "cipher changes with motion enabled");
+    // Media changes also mount the tube's WebGL machinery. Wait for an observed
+    // character change, rather than assuming the runner paints within 650ms.
+    await page.waitForFunction(previous => {
+      const preview = document.querySelector(".stealth-preview");
+      const row = preview?.querySelector("i");
+      return preview?.open && row && getComputedStyle(row, "::before").content !== previous;
+    }, before, { polling: 100, timeout: 5000 });
     await page.mouse.move(0, 0);
     assert.equal(await stealth.evaluate(el => el.open), false, "pointer leave closes the preview");
     await trigger.focus();
