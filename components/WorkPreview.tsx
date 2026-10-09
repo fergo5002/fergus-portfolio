@@ -17,8 +17,7 @@ import { previewPlacement } from "@/lib/preview-placement";
  * The server always renders the "below" state, which is what the first client
  * render assumes too, so placement never causes a hydration mismatch.
  */
-export default function WorkPreview({ name }: { name: keyof typeof homeCopy.previews }) {
-  const work = homeCopy.previews[name];
+export default function WorkPreview({ name }: { name: keyof typeof homeCopy.previews | "stealth" }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [side, setSide] = useState<"below" | "above">("below");
 
@@ -47,6 +46,43 @@ export default function WorkPreview({ name }: { name: keyof typeof homeCopy.prev
     );
   };
 
+  if (name === "stealth") {
+    return (
+      <div ref={rootRef} className={`work-preview work-preview--stealth is-${side}`}>
+        <details
+          className="stealth-preview"
+          onPointerEnter={(event) => {
+            if (event.pointerType !== "mouse") return;
+            event.currentTarget.open = true;
+            place();
+          }}
+          onPointerLeave={(event) => {
+            if (event.pointerType === "mouse") event.currentTarget.open = false;
+          }}
+          onToggle={(event) => { if (event.currentTarget.open) place(); }}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") event.currentTarget.open = false;
+          }}
+          onBlur={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) event.currentTarget.open = false;
+          }}
+        >
+          <summary className="work-preview__link">
+            {homeCopy.stealth.label}
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 10V7a4 4 0 0 1 8 0v3M6 10h12v11H6zM12 14v3" /></svg>
+          </summary>
+          <div className="work-preview__panel">
+            <div className="stealth-preview__card">
+              <div className="stealth-preview__cipher" aria-hidden="true"><i /><i /><i /><span /></div>
+              <p>{homeCopy.stealth.detail}</p>
+            </div>
+          </div>
+        </details>
+      </div>
+    );
+  }
+
+  const work = homeCopy.previews[name];
   return (
     <div ref={rootRef} className={`work-preview is-${side}`} onPointerEnter={place} onFocus={place}>
       <Link href={work.href} className="work-preview__link">

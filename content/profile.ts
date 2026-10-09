@@ -52,11 +52,7 @@ export const profile: Profile = {
   shortName: "Fergus O'Reilly",
   user: "fergus",
   host: "portfolio",
-  // One line on desktop with room to spare, and shorter than the version it
-  // replaced. "CS @ Trinity" used to sit in the middle segment and was cut, not
-  // lost: the education line renders directly beneath this and already says
-  // Trinity.
-  tagline: "I build things, and then I scale them",
+  tagline: "building cool stuff",
   location: "Dublin, Ireland",
   education: "BA Computer Science & Business @ Trinity College Dublin · 1.1",
   /**
@@ -68,9 +64,9 @@ export const profile: Profile = {
    * the two beneath it.
    */
   bio: [
-    "I build software that grows businesses. Right now that's Tigh Sauna: operations and growth solutions for saunas, built bespoke in collaboration with them.",
-    "Third year Computer Science and Business at Trinity, 1.1 so far, building full time alongside it. Before this: CTO at Presterly, founding engineer at Loira AI in Stockholm.",
-    "Otherwise: a tennis court, the mountains, or the sea.",
+    "I'm a 20-year-old from Ireland who loves building software and building businesses.",
+    "Before now, I was in Hatch105, where I was building Presterly, an ecom SaaS tool. Now I'm in stealth.",
+    "Otherwise, I'm going to a sauna, playing padel, or in the mountains.",
   ],
   /**
    * These links are the site's `sameAs` edges, which is to say they are the

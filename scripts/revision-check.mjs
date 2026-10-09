@@ -6,6 +6,7 @@ import { mkdir, readFile } from "node:fs/promises";
 const base = process.env.REVISION_BASE || "http://localhost:3210";
 const out = ".revision-check";
 const send = process.argv.includes("--send");
+const homeOnly = process.argv.includes("--home-only");
 await mkdir(out, { recursive: true });
 const probe = await readFile("C:/Users/oreil/.claude/scripts/instrument-check.js", "utf8").catch(() => null);
 for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) {
@@ -20,7 +21,11 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
   // for the probe so an unused subset cannot be confused with missing text.
   await page.evaluate(async () => { await Promise.all([...document.fonts].map(face => face.load().catch(() => null))); });
   if (probe) console.log(width, "instrument", await page.evaluate(probe));
-  assert.match(await page.locator(".hero__tagline").innerText(), /^I build things, and then I scale them$/);
+  assert.equal(await page.locator(".hero__tagline").innerText(), "building cool stuff");
+  assert.equal(await page.locator(".hero__edu").count(), 0);
+  assert.deepEqual(await page.locator(".hl__k").allTextContents(), ["current", "previously"]);
+  assert.deepEqual(await page.locator(".hl").nth(1).locator(".work-preview__link").allTextContents(), ["Ex-co-founder & CTO @ Tigh Sauna", "CTO @ Presterly", "Hatch105"]);
+  assert.equal(await page.locator(".about__p").first().innerText(), "I'm a 20-year-old from Ireland who loves building software and building businesses.");
   assert.equal(await page.locator("main .term--inline").count(), 1);
   assert.equal(await page.locator(".skills").count(), 0);
   assert.equal(await page.locator(".about__routes a").count(), 2);
@@ -29,8 +34,54 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
   await page.screenshot({ path: `${out}/${width}-home.png`, fullPage: true });
   if (width > 500) {
     await page.locator(".work-preview__link").filter({ hasText: "CTO @ Presterly" }).hover();
-    assert.equal(await page.locator(".work-preview__panel").nth(1).evaluate(el => getComputedStyle(el).visibility), "visible");
+    assert.equal(await page.locator(".work-preview").filter({ hasText: "CTO @ Presterly" }).locator(".work-preview__panel").evaluate(el => getComputedStyle(el).visibility), "visible");
     await page.screenshot({ path: `${out}/${width}-preview.png` });
+  }
+  const stealth = page.locator(".stealth-preview");
+  const trigger = stealth.locator("summary");
+  if (width > 500) await trigger.hover();
+  else await trigger.tap();
+  await stealth.locator(".stealth-preview__card").waitFor({ state: "visible" });
+  assert.ok(await stealth.evaluate(el => el.open), "Stealth opens on hover or tap");
+  assert.equal(await stealth.locator("i").first().evaluate(el => getComputedStyle(el, "::before").animationName), "none", "reduced motion leaves a static cipher");
+  const bounds = await stealth.locator(".stealth-preview__card").boundingBox();
+  assert.ok(bounds.x >= 0 && bounds.x + bounds.width <= width, "cipher stays inside the viewport");
+  await page.screenshot({ path: `${out}/${width}-stealth.png`, fullPage: true });
+  if (width > 500) {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await trigger.hover();
+    const cipher = stealth.locator("i").first();
+    await page.waitForFunction(() => {
+      const preview = document.querySelector(".stealth-preview");
+      const row = preview?.querySelector("i");
+      return preview?.open && row && getComputedStyle(row, "::before").animationName === "cipher-shift";
+    });
+    const before = await cipher.evaluate(el => getComputedStyle(el, "::before").content);
+    // Media changes also mount the tube's WebGL machinery. Wait for an observed
+    // character change, rather than assuming the runner paints within 650ms.
+    await page.waitForFunction(previous => {
+      const preview = document.querySelector(".stealth-preview");
+      const row = preview?.querySelector("i");
+      return preview?.open && row && getComputedStyle(row, "::before").content !== previous;
+    }, before, { polling: 100, timeout: 5000 });
+    await page.mouse.move(0, 0);
+    assert.equal(await stealth.evaluate(el => el.open), false, "pointer leave closes the preview");
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    assert.ok(await stealth.evaluate(el => el.open), "keyboard opens the preview");
+    await page.keyboard.press("Escape");
+    assert.equal(await stealth.evaluate(el => el.open), false, "Escape closes the preview");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+  } else {
+    await trigger.tap();
+    assert.equal(await stealth.evaluate(el => el.open), false, "second tap closes the preview");
+  }
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "home overflow after disclosure");
+  if (homeOnly) {
+    assert.deepEqual(errors, []);
+    await browser.close();
+    console.log(`${width}: copy, previous roles, Stealth interaction, motion and bounds passed`);
+    continue;
   }
   for (const kind of ["coffee", "call"]) {
     await page.goto(`${base}/contact?meet=${kind}`, { waitUntil: "networkidle" });
@@ -60,6 +111,8 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
   await browser.close();
   console.log(`${width}: home, previews, calendar selection, fields and bounds passed`);
 }
+
+if (homeOnly) process.exit(0);
 
 {
   const browser = await chromium.launch();

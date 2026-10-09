@@ -18,14 +18,22 @@ export type ExperienceEntry = {
 
 export const experience: ExperienceEntry[] = [
   {
+    id: "stealth",
+    org: "Stealth",
+    role: "Building in stealth",
+    dates: "Oct 2026 to Present",
+    location: "Ireland",
+    bullets: [],
+  },
+  {
     id: "tigh-sauna",
     org: "Tigh Sauna",
-    role: "Co-Founder, Engineering",
-    dates: "Aug 2026 – Present",
+    role: "Ex-co-founder & CTO",
+    dates: "Aug 2026 to Oct 2026",
     location: "Dublin, Ireland",
     summary: "Operations & Growth solutions for Saunas",
     bullets: [
-      "I own the backend and the platform: bookings, payments, customers, and the messaging that brings them back.",
+      "I built the backend and the platform: bookings, payments, customers, and the messaging that brings them back.",
       "Merged three codebases into one product, one database, one login.",
       "Every site and system is built bespoke in collaboration with saunas.",
     ],

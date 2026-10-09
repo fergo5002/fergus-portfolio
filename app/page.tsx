@@ -24,15 +24,13 @@ export default function Home() {
           <h1 className="hero__name"><HeroName text={profile.name} /></h1>
           <p className="hero__tagline">{profile.tagline}</p>
           <p className="hero__loc">{profile.location}</p>
-          <p className="hero__edu">{profile.education}</p>
         </div>
         <div className="hero__portrait"><ImageFrame src={profile.portrait || undefined} alt="Portrait of Fergus O'Reilly" label="portrait.jpg" plate="fergus-oreilly" ratio="4 / 5" /></div>
       </div>
     </Window>
     <ul className="highlights home-highlights" aria-label="Highlights">
-      <li className="hl"><span className="hl__k">{homeCopy.current}</span><WorkPreview name="tigh" /></li>
-      <li className="hl"><span className="hl__k">{homeCopy.previously}</span><WorkPreview name="presterly" /><WorkPreview name="hatch" /></li>
-      <li className="hl"><span className="hl__k">{homeCopy.academic}</span><span className="hl__v">{homeCopy.academicValue}</span></li>
+      <li className="hl"><span className="hl__k">{homeCopy.current}</span><WorkPreview name="stealth" /></li>
+      <li className="hl"><span className="hl__k">{homeCopy.previously}</span><WorkPreview name="tigh" /><WorkPreview name="presterly" /><WorkPreview name="hatch" /></li>
     </ul>
     <RasterReveal><Window title="~/about" className="about">
       <span id="about" className="anchor" />

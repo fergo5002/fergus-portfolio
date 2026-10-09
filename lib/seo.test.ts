@@ -136,7 +136,7 @@ describe("personSchema", () => {
 
   it("names the current employer, not a wound-down one", () => {
     const worksFor = person.worksFor as JsonLdObject;
-    expect(worksFor.name).toBe("Tigh Sauna");
+    expect(worksFor.name).toBe("Stealth");
   });
 
   it("declares subjects it can evidence", () => {
