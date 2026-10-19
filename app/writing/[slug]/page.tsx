@@ -85,7 +85,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
   const faq = faqPageSchema(article, questionPairs(article.body));
 
   return (
-    <article className="stack">
+    <article className="stack post">
       <JsonLd
         nodes={[
           blogPostingSchema(article, wordCount(article.body)),
@@ -147,13 +147,17 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         </nav>
       ) : null}
 
-      {article.slug === "the-timer-is-not-the-reservation" ? (
-        <>
-          <Markdown source={article.body.split("\n\n")[0]} />
-          <ReservationFigure />
-          <Markdown source={article.body.split("\n\n").slice(1).join("\n\n")} />
-        </>
-      ) : <Markdown source={article.body} />}
+      {/* One box for the body, so on a wide screen the contents can stand
+          beside it for exactly its height and stay in view while it scrolls. */}
+      <div className="post__body">
+        {article.slug === "the-timer-is-not-the-reservation" ? (
+          <>
+            <Markdown source={article.body.split("\n\n")[0]} />
+            <ReservationFigure />
+            <Markdown source={article.body.split("\n\n").slice(1).join("\n\n")} />
+          </>
+        ) : <Markdown source={article.body} />}
+      </div>
 
       <footer className="post__foot">
         {next ? (

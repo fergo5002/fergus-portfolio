@@ -13,6 +13,7 @@
     "indexnow": "node scripts/indexnow.mjs",
     "phone-check": "node scripts/phone-check.mjs",
     "phone-check:arcade": "node scripts/arcade-phone-check.mjs",
+    "wide-check": "node scripts/wide-check.mjs",
     "som:report": "node scripts/share-of-model/report.mjs",
     "som:publish": "node scripts/share-of-model/publish.mjs",
     "sv:fixture": "node scripts/second-visit/make-fixture.mjs",

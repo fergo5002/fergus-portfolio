@@ -45,7 +45,7 @@ export default async function ContactPage({ searchParams }: { searchParams: Prom
   const { meet } = await searchParams;
   const kind = meet === "coffee" || meet === "call" ? meet : null;
   return (
-    <div className="stack">
+    <div className={`stack contact-page${kind ? " contact-page--meet" : ""}`}>
       <JsonLd
         nodes={[
           contactPageSchema(),

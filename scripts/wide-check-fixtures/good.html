@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wide-check good fixture</title>
+<style>
+  /* The shape of the real page: a fill-and-cap column, one tiled layout of two
+     panes side by side, a name with room for one line, nothing sideways. */
+  body { margin: 0; font: 16px/1.6 monospace; }
+  main.screen { max-width: clamp(1040px, 80vw, 2700px); margin: 0 auto; padding: 24px; box-sizing: border-box; }
+  .home { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .home > section { min-height: 200px; border: 1px solid; }
+  .hero__name { font-size: 40px; line-height: 1.1; margin: 0; }
+  .wrapper { overflow-x: auto; }
+  pre.prose__pre { overflow-x: auto; width: 200px; }
+  .post { display: grid; grid-template-columns: 1fr 68ch 1fr; }
+  .post > * { grid-column: 2; }
+  .termrow .term__scroll { overflow-y: auto; min-height: 120px; contain: size; }
+  .termrow .term { display: flex; flex-direction: column; }
+</style>
+</head>
+<body>
+<main class="screen">
+  <div class="home">
+    <section id="pane-a"><h1 id="name" class="hero__name">Patrick Fergus O'Reilly</h1></section>
+    <section id="pane-b">about</section>
+  </div>
+  <!-- A scroller with nothing to scroll is not a finding. -->
+  <div class="wrapper">fits</div>
+  <!-- Code in prose may scroll: wrapping it changes what it says. -->
+  <pre class="prose__pre"><code>a line of code that is much longer than two hundred pixels and scrolls</code></pre>
+  <!-- A closed disclosure's contents are laid out by Chromium but not shown. -->
+  <details><summary>raw</summary><pre style="overflow-x: auto; width: 200px">{"a line that is much wider than two hundred pixels": "and is out of sight"}</pre></details>
+  <article class="post"><p>the measure, with its margins</p></article>
+  <!-- grows: a terminal tile whose scrollback is sized by its output. -->
+  <div class="home termrow">
+    <section class="about">about</section>
+    <div class="term"><div class="term__scroll"></div><input class="term__input" aria-label="command"></div>
+  </div>
+  <script>
+    document.querySelector(".term__input").addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      document.querySelector(".term__scroll").insertAdjacentHTML("beforeend", "<p>output</p>".repeat(40));
+    });
+  </script>
+</main>
+</body>
+</html>

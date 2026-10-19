@@ -45,6 +45,10 @@ Vercel account, it never moved to the Tigh Sauna team. Live host: `https://fergu
 - **A per-character or decorative text effect needs a plain contiguous copy in the server HTML**,
   or it's invisible to crawlers and answer engines. `aria-label`/`aria-hidden` do not substitute
   for this either direction.
+- **Wide-screen layout rules go at the end of the stylesheet that owns the route, inside a
+  `min-width` query of 1560px or more** (route CSS loads after `globals.css`, so an override
+  anywhere else loses). `npm run wide-check -- --base http://localhost:3000 --from-sitemap`
+  measures 1600 to 5120; `app/wide.test.ts` guards the floor. See AGENTS.md § Wide screens.
 - **PostHog is cookieless** (`cookieless_mode: "always"`, plus a PostHog-project-side toggle
   that isn't in its UI) — don't add cookies or local storage to analytics, and if pageviews go
   quiet while server events keep flowing, check the project-side toggle first.

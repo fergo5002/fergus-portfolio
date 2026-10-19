@@ -1,7 +1,7 @@
 # Three release gates. `check` covers types, tests and the production build.
 # `mutation` requires every part of the catalogue to pass in separate checkouts.
-# `phone` proves its instrument can fail, then checks sitemap routes, tools and arcade
-# layouts, actual workflows and downloads.
+# `phone` proves its instruments can fail, then checks sitemap routes, tools and arcade
+# layouts from a 320px phone to a 5120px ultrawide, actual workflows and downloads.
 #
 # The build needs no secrets. NEXT_PUBLIC_POSTHOG_KEY absent compiles
 # analytics to a no-op (see lib/analytics.ts), and RESEND_API_KEY is read at
@@ -108,6 +108,12 @@ jobs:
         run: node scripts/phone-check.mjs --self-test --out .phone-check
       - name: phone check on every sitemap route family
         run: node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap --routes '/contact?meet=coffee' --out .phone-check
+      # The other end of the range: five monitor sizes from 1600 to a 5120
+      # super-ultrawide, where the page fills and every route tiles.
+      - name: prove the wide-screen check can fail
+        run: node scripts/wide-check.mjs --self-test
+      - name: wide-screen check on every sitemap route family
+        run: node scripts/wide-check.mjs --base http://localhost:3000 --from-sitemap
       - name: phone and desktop shell interactions
         run: node scripts/phone-polish-check.mjs --base http://localhost:3000 --out .phone-check/polish
       - name: homepage and meeting request journeys

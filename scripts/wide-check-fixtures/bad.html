@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wide-check bad fixture</title>
+<style>
+  /* One planted fault per check, and nothing else. */
+  body { margin: 0; font: 16px/1.6 monospace; }
+  /* fill: the old fixed column, a strip down the middle of a big screen. */
+  main.screen { max-width: 600px; margin: 0 auto; padding: 24px; box-sizing: border-box; }
+  /* overlap: two panes placed in one cell. */
+  .home { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .home > section { grid-area: 1 / 1; min-height: 200px; border: 1px solid; }
+  /* name-wrap: a hero name with too little room. */
+  .hero__name { font-size: 64px; line-height: 1.1; margin: 0; width: 300px; }
+  /* scroller: a pane cut too narrow for its one line. */
+  #sideways { overflow-x: auto; width: 200px; white-space: nowrap; }
+  /* overflow: wider than any screen. */
+  #wide { width: 6000px; height: 10px; }
+  .termrow .term__scroll { overflow-y: auto; }
+</style>
+</head>
+<body>
+<main class="screen">
+  <div class="home">
+    <section id="pane-a">one</section>
+    <section id="pane-b">two</section>
+  </div>
+  <h1 id="name" class="hero__name">Patrick Fergus O'Reilly</h1>
+  <div id="sideways">claude mcp add --transport http fergus-oreilly https://fergusoreilly.dev/api/mcp</div>
+  <!-- untiled: an article that should have split into its margins. -->
+  <article id="stacked" class="post"><p>one column</p></article>
+  <div id="wide"></div>
+  <!-- grows: a terminal tile whose scrollback is sized by its output. -->
+  <div class="home termrow">
+    <section class="about">about</section>
+    <div class="term"><div class="term__scroll"></div><input class="term__input" aria-label="command"></div>
+  </div>
+  <script>
+    document.querySelector(".term__input").addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      document.querySelector(".term__scroll").insertAdjacentHTML("beforeend", "<p>output</p>".repeat(40));
+    });
+  </script>
+</main>
+</body>
+</html>

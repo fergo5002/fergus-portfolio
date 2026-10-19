@@ -229,6 +229,26 @@ Run `npm run lab` for development or `npm run build` then `npm run lab:start` fo
 production build. Both bind to `127.0.0.1:3106`; `LAB_PORT` can override the port. The public
 release process remains a separate decision after Fergus reviews the prototypes.
 
+## 2026-10-19: wide screens fill and tile
+
+Fergus asked for the site to fill a wide monitor, at least three quarters of it, and look good at
+every size. Forks settled with him up front: tiling panes, text stays its laptop size, cap about
+2700px. Branch `wide-screens` from `390db3f`; design and rules in AGENTS.md § Wide screens.
+
+- [x] Page width `clamp(1040px, 80vw, 2700px)`; every route's wide layout in a min-width block of
+      1560px or more at the end of the stylesheet that owns it.
+- [x] Home, experience, projects, writing, articles, contact and booking, tools index and all ten
+      tool pages, MCP and the 404 tiled; screenshots reviewed between 1600 and 5120 (not every
+      route at every width: the check covers the rest).
+- [x] `scripts/wide-check.mjs` (self-test plus sitemap run) in the `phone` job; `app/wide.test.ts`.
+- [x] Local: 3,630 existing tests plus 22 new pass, tsc and the production build clean, 105 of 105
+      route-widths clean on `next start`. The check fails on the old layout (live: fill and
+      untiled on every route tried), and three mutations of the new guards each went red.
+
+Not verified locally: the phone check, mutation shards and the rest of the `phone` job (CI runs
+them at the pushed commit); a physical ultrawide monitor; Safari and Firefox at wide sizes (the
+check drives Chromium only).
+
 ## 2026-09-05: public tools rebuild live
 
 Fergus requested an audit, redesign, implementation and production deployment of all five public
