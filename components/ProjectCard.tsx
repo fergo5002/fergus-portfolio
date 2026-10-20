@@ -35,6 +35,10 @@ export default function ProjectCard({ project, index = 0 }: { project: Project; 
             label={`${project.slug}.png`}
             plate={project.slug}
             ratio="16 / 9"
+            // A third of the wide page from 1560px, where projects run three
+            // across; the laptop card's width below. Too small a hint and a
+            // wide screen is sent a smaller file and stretches it.
+            sizes="(max-width: 768px) 100vw, (min-width: 1560px) calc((min(80vw, 2700px) - 96px) / 3), 460px"
           />
           <h2 className="project__title">
             <Scramble text={project.title} trigger="view" speed={22} />

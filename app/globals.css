@@ -2783,7 +2783,8 @@ html.is-gravity .statusbar {
 .post__body {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-5);
+  /* The stack's own gap, whatever a phone or a wide grid has made it. */
+  gap: inherit;
   min-width: 0;
 }
 
@@ -3889,21 +3890,25 @@ html.is-ejecting .shell {
   .exp__list {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
-    gap: var(--sp-5) var(--sp-4);
+    gap: var(--sp-6) var(--sp-4);
     align-items: start;
     border-left: 0;
     padding: var(--sp-5) 0 0;
   }
-  .exp__list::before {
+  /* Each commit carries its own length of the rule, half a gap past either
+     side, so a sixth commit that wraps to a second row still hangs from one. */
+  .exp__reveal::before {
     content: "";
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 11px;
+    left: calc(var(--sp-4) / -2);
+    right: calc(var(--sp-4) / -2);
+    top: calc(-1 * var(--sp-5) + 11px);
     height: 2px;
     background: linear-gradient(90deg, var(--green-bright), var(--green));
     box-shadow: 0 0 10px var(--green-faint);
   }
+  .exp__reveal:first-of-type::before { left: 0; }
+  .exp__reveal:last-child::before { right: 0; }
   /* The vertical spine draws itself down the page with scroll; across the
      screen there is nothing for it to follow, so the rule above stands in. */
   .exp__spine { display: none; }
@@ -3928,7 +3933,8 @@ html.is-ejecting .shell {
   .exp__meta { display: block; margin: var(--sp-2) 0; }
   .exp__meta .exp__dot { display: inline; }
   .exp__summary { margin: var(--sp-2) 0; }
-  .exp__bullets { margin-top: var(--sp-3); }
+  .exp__bullets,
+  .exp > .exp__bullets:nth-child(3) { margin-top: var(--sp-3); }
 }
 
 /* ----- projects: a third column, then each card turns on its side ---------- */
@@ -3962,7 +3968,9 @@ html.is-ejecting .shell {
 @media (min-width: 1560px) {
   .post {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 68ch) minmax(0, 1fr);
+    /* 72ch, not 68: the prose stops at its own 68ch, and the timer article's
+       figure is 72ch on a laptop and must not be narrower here. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 72ch) minmax(0, 1fr);
     column-gap: var(--sp-6);
     row-gap: var(--sp-5);
     align-items: start;

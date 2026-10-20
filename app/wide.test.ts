@@ -107,7 +107,8 @@ describe("the hooks the layouts hang on", () => {
   });
 
   it("keeps the body's parts on the stack's rhythm on every screen", () => {
-    expect(globals).toMatch(/\.post__body \{[^}]*display: flex;[^}]*flex-direction: column;[^}]*gap: var\(--sp-5\);/);
+    // `inherit`, so the phone's tighter stack gap reaches the parts too.
+    expect(globals).toMatch(/\.post__body \{[^}]*display: flex;[^}]*flex-direction: column;[^}]*gap: inherit;/);
   });
 
   it("tells the tools index how many tools share the one wide row", () => {
@@ -123,5 +124,29 @@ describe("the home terminal in its tile", () => {
     // Never less scrollback than the laptop terminal, whose cap is 230px.
     expect(home).toMatch(/\.home > \.term \.term__scroll \{[^}]*min-height: 230px;/);
     expect(globals).toMatch(/\.term__scroll \{\s*max-height: 230px;/);
+  });
+});
+
+describe("the wide check's tiers follow the stylesheets", () => {
+  it("measures every tier from a breakpoint a stylesheet actually uses", () => {
+    const check = read("scripts", "wide-check.mjs");
+    const start = check.indexOf("const TILES = [");
+    const tiles = check.slice(start, check.indexOf("];", start));
+    const used = new Set(
+      SHEETS.flatMap(([file]) => [...read(...file.split("/")).matchAll(/@media \(min-width: (\d+)px\)/g)].map((m) => Number(m[1]))),
+    );
+    const froms = [...tiles.matchAll(/from: (\d+)/g)].map((m) => Number(m[1]));
+    expect(froms.length).toBeGreaterThan(10);
+    for (const from of froms) expect(used.has(from), `wide-check tier from ${from}px has no stylesheet breakpoint`).toBe(true);
+  });
+});
+
+describe("the images the wide grid draws", () => {
+  it("asks for a third of the wide page on project cards, and the laptop size everywhere else", () => {
+    expect(read("components", "ProjectCard.tsx")).toMatch(
+      /sizes="\(max-width: 768px\) 100vw, \(min-width: 1560px\) calc\(\(min\(80vw, 2700px\) - 96px\) \/ 3\), 460px"/,
+    );
+    // The portrait is 240px wide at every size; it keeps the small hint.
+    expect(read("components", "ImageFrame.tsx")).toMatch(/sizes = "\(max-width: 768px\) 100vw, 460px"/);
   });
 });

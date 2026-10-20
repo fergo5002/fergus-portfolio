@@ -26,6 +26,8 @@
  *              the terminal, the about window beside it and the page by 2,460px.
  *   name-wrap  the hero name broke onto two lines. Every home tier was chosen so it
  *              does not, and the width it has is the first thing a new tier gets wrong.
+ *   timeout    one route at one width took longer than PAGE_DEADLINE_MS. A hung page
+ *              is a finding with a name, never a silent run that never ends.
  *   assets     a stylesheet, script or document came back 4xx or 5xx, so the page
  *              under the instrument is not the page. Reported alone, as in the phone
  *              check: every other finding would be a true fact about an unstyled
@@ -41,6 +43,10 @@
  *   node scripts/wide-check.mjs --self-test
  *   node scripts/wide-check.mjs --base http://localhost:3000 --from-sitemap
  *   node scripts/wide-check.mjs --base http://localhost:3000 --routes /,/projects --widths 1920,2560
+ *   node scripts/wide-check.mjs --routes /mcp --widths 2560 --inject ".mcp { display: block !important }"
+ *
+ * `--inject` adds a stylesheet to every page before measuring. It is the
+ * revert-to-confirm switch: undo one layout and the check must go red.
  *
  * `--self-test` serves two bundled fixtures and asserts that every planted fault
  * in `bad.html` is caught by name and that `good.html` is clean, so loosening a
@@ -89,32 +95,42 @@ const TILED = [
 ];
 
 /**
- * Where a layout must have split into at least two columns, from what screen
+ * Where a layout must have split, into how many columns, from what screen
  * width, and on which route it must exist at all: a renamed or deleted hook
- * class would otherwise leave nothing to measure and read as a pass. Each
- * mirrors the first wide block of the stylesheet that owns it.
+ * class would otherwise leave nothing to measure and read as a pass. `tracks`
+ * is the exact column count a tier draws; without it, two or more will do.
+ * Every `from` must be a breakpoint one of the stylesheets uses
+ * (app/wide.test.ts holds them in step).
  */
 const TILES = [
-  { sel: ".home", on: "^/$", from: 1560 },
+  { sel: ".home", on: "^/$", from: 1560, to: 1839, tracks: 2 },
+  { sel: ".home", on: "^/$", from: 1840, to: 2439, tracks: 3 },
+  { sel: ".home", on: "^/$", from: 2440, to: 2999, tracks: 2 },
+  { sel: ".home", on: "^/$", from: 3000, tracks: 3 },
   // A commit splits into who and what until the log turns on its side, when
   // the log itself is the grid and each card stacks again.
-  { sel: ".exp", on: "^/experience$", from: 1560, to: 2299 },
+  { sel: ".exp", on: "^/experience$", from: 1560, to: 2299, tracks: 2 },
   { sel: ".exp__list", on: "^/experience$", from: 2300 },
-  { sel: ".proj__grid", on: "^/projects$", from: 1560 },
-  { sel: ".writing__list--figured", on: "^/writing$", from: 1560 },
-  { sel: ".post", on: "^/writing/.+", from: 1560 },
-  { sel: ".contact-page:not(.contact-page--meet)", on: "^/contact$", from: 1560 },
-  { sel: ".meeting", on: "^/contact\?meet=", from: 1560 },
-  { sel: ".mcp", on: "^/mcp$", from: 1840 },
-  { sel: ".tool-workbench", on: "^/tools/.+", from: 2000 },
-  { sel: ".nosignal", on: "^/wide-check-no-such-page$", from: 1560 },
+  { sel: ".proj__grid", on: "^/projects$", from: 1560, tracks: 3 },
+  { sel: ".project .window__body", on: "^/projects$", from: 3000, tracks: 2 },
+  { sel: ".writing__list--figured", on: "^/writing$", from: 1560, to: 2299, tracks: 2 },
+  { sel: ".writing__list--figured", on: "^/writing$", from: 2300, tracks: 3 },
+  { sel: ".post", on: "^/writing/.+", from: 1560, tracks: 3 },
+  { sel: ".contact-page:not(.contact-page--meet)", on: "^/contact$", from: 1560, tracks: 2 },
+  // String.raw: in a plain string "\?" is just "?", and the pattern then
+  // never matched the booking page it exists for (code review, 2026-10-19).
+  { sel: ".meeting", on: String.raw`^/contact\?meet=`, from: 1560, tracks: 2 },
+  { sel: ".bench-grid", on: "^/tools$", from: 2300, tracks: "children" },
+  { sel: ".mcp", on: "^/mcp$", from: 1840, tracks: 2 },
+  { sel: ".tool-workbench", on: "^/tools/.+", from: 2000, tracks: 2 },
+  { sel: ".nosignal", on: "^/wide-check-no-such-page$", from: 1560, tracks: 2 },
 ];
 
 /** Sideways scrolling that is somebody else's decision. */
 const SCROLLER_EXEMPT = [".prose__pre", ".bench-stage"];
 
 function parseArgs(argv) {
-  const out = { base: "http://localhost:3000", routes: [], fromSitemap: false, selfTest: false, widths: null };
+  const out = { base: "http://localhost:3000", routes: [], fromSitemap: false, selfTest: false, widths: null, inject: "" };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--base") out.base = argv[++i];
@@ -122,6 +138,7 @@ function parseArgs(argv) {
     else if (a === "--from-sitemap") out.fromSitemap = true;
     else if (a === "--self-test") out.selfTest = true;
     else if (a === "--widths") out.widths = argv[++i].split(",").map(Number);
+    else if (a === "--inject") out.inject = argv[++i];
     else throw new Error(`unknown argument ${a}`);
   }
   return out;
@@ -182,7 +199,7 @@ function measure({ tiled, tiles, exempt, fill, cap, minFill }) {
   }
 
   const here = location.pathname + location.search;
-  for (const { sel, on, from, to = Infinity } of tiles) {
+  for (const { sel, on, from, to = Infinity, tracks: want } of tiles) {
     if (vw < from || vw > to) continue;
     if (on && !new RegExp(on).test(here)) continue;
     const els = document.querySelectorAll(sel);
@@ -190,7 +207,10 @@ function measure({ tiled, tiles, exempt, fill, cap, minFill }) {
     for (const el of els) {
       const cs = getComputedStyle(el);
       const tracks = cs.display === "grid" ? cs.gridTemplateColumns.split(" ").filter(Boolean).length : 1;
-      if (tracks < 2) findings.push({ check: "untiled", el: name(el), detail: `one column at ${vw}px, should tile from ${from}px` });
+      const expected = want === "children" ? el.children.length : want;
+      if (expected ? tracks !== expected : tracks < 2) {
+        findings.push({ check: "untiled", el: name(el), detail: `${tracks} column${tracks === 1 ? "" : "s"} at ${vw}px, the tier from ${from}px draws ${expected || "two or more"}` });
+      }
     }
   }
 
@@ -235,42 +255,81 @@ async function terminalGrowth(page, width) {
     : [];
 }
 
-async function runAll(targets, screens, { allowDocument404 = () => false, tiles = TILES } = {}) {
+/**
+ * How long one route at one width may take before it is a finding. On
+ * 2026-10-19 a run hung on its first page for fifteen hours, with nothing
+ * printed, while the laptop slept under it; in CI that would have held the
+ * phone job until GitHub killed it, and said nothing about why.
+ */
+const PAGE_DEADLINE_MS = 90_000;
+
+function deadline(ms, label) {
+  let timer;
+  const promise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`no answer from ${label} within ${ms / 1000}s`)), ms);
+  });
+  return { promise, clear: () => clearTimeout(timer) };
+}
+
+async function measurePage(page, t, s, { allowDocument404, tiles, inject }) {
+  const broken = [];
+  // The phone check's rule: a stylesheet or document counts wherever it
+  // came from, a script only under `/_next/`. `/_vercel/insights/script.js`
+  // 404s on `next start` and on every real deploy's pretty path while
+  // analytics works (AGENTS.md), and a checker that cries wolf about a
+  // documented non-problem is worse than none.
+  const onResponse = (res) => {
+    const type = res.request().resourceType();
+    const path = new URL(res.url()).pathname;
+    if (res.status() < 400) return;
+    const counts = type === "stylesheet" || type === "document" || (type === "script" && path.startsWith("/_next/"));
+    if (!counts) return;
+    if (type === "document" && allowDocument404(t)) return;
+    broken.push(`${res.status()} ${type} ${path}`);
+  };
+  page.on("response", onResponse);
+  try {
+    await page.goto(t.url, { waitUntil: "load" });
+    // A tool may hold a connection open; idle is a courtesy, not a gate.
+    await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
+    // The boot owns `booting` until it lets go; under reduce it lets go at
+    // once, and this waits for that rather than for a guessed delay.
+    await page.waitForFunction(() => !document.documentElement.classList.contains("booting"), null, { timeout: 15000 }).catch(() => {});
+    await page.evaluate(() => document.fonts && document.fonts.ready);
+    if (inject) await page.addStyleTag({ content: inject });
+  } finally {
+    page.off("response", onResponse);
+  }
+  if (broken.length) return broken.map((b) => ({ check: "assets", el: b, detail: "the page under the instrument is not the page" }));
+  const failures = await page.evaluate(measure, { tiled: TILED, tiles, exempt: SCROLLER_EXEMPT, fill: FILL, cap: CAP, minFill: MIN_FILL });
+  failures.push(...(await terminalGrowth(page, s.width)));
+  return failures;
+}
+
+async function runAll(
+  targets,
+  screens,
+  { allowDocument404 = () => false, tiles = TILES, inject = "", pageDeadline = PAGE_DEADLINE_MS } = {},
+) {
   const browser = await chromium.launch();
   const results = [];
   try {
     for (const s of screens) {
       const context = await browser.newContext({ viewport: s, reducedMotion: "reduce" });
-      const page = await context.newPage();
+      let page = await context.newPage();
       for (const t of targets) {
-        const broken = [];
-        // The phone check's rule: a stylesheet or document counts wherever it
-        // came from, a script only under `/_next/`. `/_vercel/insights/script.js`
-        // 404s on `next start` and on every real deploy's pretty path while
-        // analytics works (AGENTS.md), and a checker that cries wolf about a
-        // documented non-problem is worse than none.
-        const onResponse = (res) => {
-          const type = res.request().resourceType();
-          const path = new URL(res.url()).pathname;
-          if (res.status() < 400) return;
-          const counts = type === "stylesheet" || type === "document" || (type === "script" && path.startsWith("/_next/"));
-          if (!counts) return;
-          if (type === "document" && allowDocument404(t)) return;
-          broken.push(`${res.status()} ${type} ${path}`);
-        };
-        page.on("response", onResponse);
-        await page.goto(t.url, { waitUntil: "load" });
-        // A tool may hold a connection open; idle is a courtesy, not a gate.
-        await page.waitForLoadState("networkidle", { timeout: 10000 }).catch(() => {});
-        // The boot owns `booting` until it lets go; under reduce it lets go at
-        // once, and this waits for that rather than for a guessed delay.
-        await page.waitForFunction(() => !document.documentElement.classList.contains("booting"), null, { timeout: 15000 }).catch(() => {});
-        await page.evaluate(() => document.fonts && document.fonts.ready);
-        page.off("response", onResponse);
-        const failures = broken.length
-          ? broken.map((b) => ({ check: "assets", el: b, detail: "the page under the instrument is not the page" }))
-          : await page.evaluate(measure, { tiled: TILED, tiles, exempt: SCROLLER_EXEMPT, fill: FILL, cap: CAP, minFill: MIN_FILL });
-        if (!broken.length) failures.push(...(await terminalGrowth(page, s.width)));
+        const limit = deadline(pageDeadline, t.label);
+        let failures;
+        try {
+          failures = await Promise.race([measurePage(page, t, s, { allowDocument404, tiles, inject }), limit.promise]);
+        } catch (err) {
+          failures = [{ check: "timeout", el: t.label, detail: err.message }];
+          // The stuck page may never answer again; the next route gets a new one.
+          await page.close().catch(() => {});
+          page = await context.newPage();
+        } finally {
+          limit.clear();
+        }
         results.push({ label: t.label, width: s.width, failures });
       }
       await context.close();
@@ -308,6 +367,8 @@ async function routesFromSitemap(base) {
 async function selfTest() {
   const PAGES = { "/good": "good.html", "/bad": "bad.html" };
   const server = createServer((req, res) => {
+    // Never answered: the self-test's hung page.
+    if (req.url === "/hang") return;
     const file = PAGES[req.url];
     if (!file) {
       res.writeHead(404);
@@ -325,6 +386,7 @@ async function selfTest() {
       [
         { label: "bad", url: `${base}/bad` },
         { label: "good", url: `${base}/good` },
+        { label: "hang", url: `${base}/hang` },
       ],
       screens,
       // The fixtures carry no route of the real site, so two expectations are
@@ -336,6 +398,7 @@ async function selfTest() {
           { sel: ".post", on: "^/(good|bad)$", from: 1560 },
           { sel: ".exp", on: "^/bad$", from: 1560 },
         ],
+        pageDeadline: 5000,
       },
     );
     report(results);
@@ -358,6 +421,8 @@ async function selfTest() {
     // that has started reading something else.
     if (bad.failures.length !== 8) problems.push(`bad fixture: expected 8 findings, got ${bad.failures.length}`);
     if (good.failures.length) problems.push(`good fixture: expected none, got ${good.failures.map((f) => f.check).join(", ")}`);
+    const hang = results.find((r) => r.label === "hang");
+    if (!(hang.failures.length === 1 && hang.failures[0].check === "timeout")) problems.push("hang fixture: a page that never answered was not reported as a timeout");
     if (problems.length) {
       for (const p of problems) console.error(`self-test: ${p}`);
       process.exitCode = 1;
@@ -378,9 +443,18 @@ async function main() {
   const MISSING = "/wide-check-no-such-page";
   if (args.fromSitemap) routes.push(MISSING);
   if (routes.length === 0) throw new Error("no routes: pass --routes a,b or --from-sitemap");
-  const screens = args.widths ? SCREENS.filter((s) => args.widths.includes(s.width)) : SCREENS;
+  // Any width can be asked for, so a breakpoint's edges can be probed; the
+  // height follows the nearest real monitor at or under it.
+  const screens = args.widths
+    ? args.widths.map((width) => {
+        if (!Number.isFinite(width) || width < 320) throw new Error(`--widths: ${width} is not a screen width`);
+        const near = [...SCREENS].reverse().find((s) => s.width <= width) || SCREENS[0];
+        return { width, height: near.height };
+      })
+    : SCREENS;
   const targets = [...new Set(routes)].map((r) => ({ label: r, url: new URL(r, args.base).href }));
-  const results = await runAll(targets, screens, { allowDocument404: (t) => t.label === MISSING });
+  const results = await runAll(targets, screens, { allowDocument404: (t) => t.label === MISSING, inject: args.inject });
+  if (results.length === 0) throw new Error("nothing was measured");
   const bad = report(results);
   console.log(`\n${results.length - bad} of ${results.length} route-widths clean`);
   if (bad) process.exitCode = 1;

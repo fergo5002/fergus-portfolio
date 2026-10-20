@@ -81,8 +81,12 @@
 
      1560  whoami / highlights / about | terminal
      1840  whoami | highlights / about | terminal          (1920 monitors)
-     2300  whoami | about / highlights | terminal          (2560)
-     3000  whoami | about | terminal, highlights under whoami  (ultrawide) */
+     2440  whoami | about / highlights | terminal          (2560)
+     3000  whoami | about | terminal, highlights under whoami  (ultrawide)
+
+   The 2x2 waits for 2440 because whoami needs a 921px pane for the name, the
+   portrait and their padding on one line; a half of the page reaches that at
+   about 2420 (the breakpoint sweep caught it wrapping at 2300). */
 @media (min-width: 1560px) {
   .home {
     display: grid;
@@ -132,7 +136,7 @@
   }
   .home > .home-highlights { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
 }
-@media (min-width: 2300px) {
+@media (min-width: 2440px) {
   .home {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
