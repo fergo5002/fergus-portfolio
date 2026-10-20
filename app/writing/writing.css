@@ -77,3 +77,18 @@
   .writing__list--figured .writing__item { grid-template-columns: minmax(0, 1fr); }
   .writing__figure { width: 100%; height: auto; aspect-ratio: 16 / 10; }
 }
+
+/* ----- wide screens -------------------------------------------------------
+   The index becomes a grid of the same rows, two then three across, rather than
+   one list with its right half empty. The rows keep their figure and their
+   measure; only how many sit side by side changes. */
+@media (min-width: 1560px) {
+  .writing__list--figured {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-5) calc(var(--sp-5) + var(--sp-3) * 2);
+  }
+}
+@media (min-width: 2300px) {
+  .writing__list--figured { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

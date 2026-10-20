@@ -72,3 +72,86 @@
   .work-preview__peek img { display: block; width: 64px; height: 40px; object-fit: cover; border: 1px solid var(--green-line); }
   .work-preview__link { width: 100%; font-size: .95rem; }
 }
+
+/* ----- wide screens -------------------------------------------------------
+   More screen, more panes, like a tiling window manager: the same windows,
+   opened side by side instead of stacked. Text stays its laptop size; only the
+   arrangement changes, in four steps chosen so the name never wraps and no
+   pane is much wider than what is in it. Under 1560px nothing here applies.
+
+     1560  whoami / highlights / about | terminal
+     1840  whoami | highlights / about | terminal          (1920 monitors)
+     2440  whoami | about / highlights | terminal          (2560)
+     3000  whoami | about | terminal, highlights under whoami  (ultrawide)
+
+   The 2x2 waits for 2440 because whoami needs a 921px pane for the name, the
+   portrait and their padding on one line; a half of the page reaches that at
+   about 2420 (the breakpoint sweep caught it wrapping at 2300). */
+@media (min-width: 1560px) {
+  .home {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-areas:
+      "hero  hero"
+      "hl    hl"
+      "about term"
+      "talk  talk";
+    gap: var(--sp-4);
+    align-items: stretch;
+  }
+  .home > .hero { grid-area: hero; }
+  .home > .home-highlights { grid-area: hl; }
+  .home > .home__about { grid-area: about; }
+  .home > .term { grid-area: term; }
+  .home > .home__talk { grid-area: talk; }
+  /* Every window fills its tile, so panes on a row share a bottom edge, and
+     whatever is spare collects above a window's last block rather than under
+     it: the about window's way onward sits on its bottom edge. */
+  .home__about,
+  .home__about > .window { height: 100%; }
+  .home__about > .window { display: flex; flex-direction: column; }
+  .home__about .window__body { flex: 1 1 auto; display: flex; flex-direction: column; }
+  .home__about .about__routes { margin-top: auto; }
+  .home__about .about__p:last-of-type { margin-bottom: var(--sp-4); }
+  /* A terminal is mostly empty until you use it, and in a tile that is what it
+     should look like: the scrollback takes the height, the prompt stays at the
+     bottom. */
+  .home > .term { display: flex; flex-direction: column; min-height: 0; }
+  /* Size-contained, so the scrollback asks the row for nothing but its floor:
+     the panes beside it set the row's height and the scrollback fills it, then
+     scrolls. Sized by its content, three commands grew the pane, the about
+     window beside it and the page by 2,460px at 1600 wide (measured
+     2026-10-19); a zero flex basis did not stop it, containment did. The floor
+     is the laptop terminal's own height, so a tile never shows less. */
+  .home > .term .term__scroll { flex: 1 1 auto; min-height: 230px; max-height: none; contain: size; }
+  .home > .home__talk > .contact-invitation { margin-top: var(--sp-2); }
+}
+@media (min-width: 1840px) {
+  .home {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 3fr) minmax(0, 4fr);
+    grid-template-areas:
+      "hero  hero  hl"
+      "about term  term"
+      "talk  talk  talk";
+  }
+  .home > .home-highlights { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; }
+}
+@media (min-width: 2440px) {
+  .home {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "hero  about"
+      "hl    term"
+      "talk  talk";
+  }
+  .home > .home-highlights { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); grid-template-rows: none; }
+}
+@media (min-width: 3000px) {
+  .home {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 4fr) minmax(0, 3fr);
+    grid-template-areas:
+      "hero  about term"
+      "hl    about term"
+      "talk  talk  talk";
+  }
+}

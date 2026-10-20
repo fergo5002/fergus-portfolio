@@ -116,3 +116,33 @@
   .mcp-install__panel { flex-direction: column; }
   .mcp-tools__item { flex-direction: column; gap: 2px; }
 }
+
+/* ----- wide screens --------------------------------------------------------
+   Two panes a row: what it is beside where it is and how to add it, then the
+   console across the page, then the tools beside why it exists. It waits
+   until the install command fits its pane on one line. */
+@media (min-width: 1840px) {
+  .mcp {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    /* The tools list is the tallest thing on its row; the spare goes to an
+       empty last track rather than opening a gap between why and details. */
+    grid-template-rows: repeat(7, auto) 1fr auto;
+    column-gap: var(--sp-5);
+    row-gap: var(--sp-4);
+    align-items: start;
+  }
+  .mcp > * { grid-column: 1 / -1; min-width: 0; }
+  .mcp > .contact-invitation { grid-row: 9; }
+  .mcp > .page__lede { grid-column: 1; grid-row: 3 / span 2; margin: 0; }
+  .mcp > .mcp-endpoint { grid-column: 2; grid-row: 3; }
+  .mcp > .mcp-install { grid-column: 2; grid-row: 4; }
+  .mcp > .mcp-tools { grid-column: 1; grid-row: 6 / 9; }
+  .mcp > .mcp-why { grid-column: 2; grid-row: 6; }
+  .mcp > .mcp-details { grid-column: 2; grid-row: 7; }
+  .mcp-tools__list { grid-template-columns: minmax(0, 1fr); }
+}
+@media (min-width: 2300px) {
+  .mcp { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .mcp-tools__list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

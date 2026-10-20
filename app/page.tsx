@@ -15,7 +15,7 @@ import { profilePageSchema } from "@/lib/seo";
 import "./home.css";
 
 export default function Home() {
-  return <BootSequence><div className="stack">
+  return <BootSequence><div className="stack home">
     <JsonLd nodes={[profilePageSchema()]} />
     <Window title="~/whoami" className="hero">
       <div className="hero__grid">
@@ -32,13 +32,13 @@ export default function Home() {
       <li className="hl"><span className="hl__k">{homeCopy.current}</span><WorkPreview name="stealth" /></li>
       <li className="hl"><span className="hl__k">{homeCopy.previously}</span><WorkPreview name="tigh" /><WorkPreview name="presterly" /><WorkPreview name="hatch" /></li>
     </ul>
-    <RasterReveal><Window title="~/about" className="about">
+    <RasterReveal className="home__about"><Window title="~/about" className="about">
       <span id="about" className="anchor" />
       <PromptLine command="cat about.txt" />
       {profile.bio.map((p, i) => <p key={i} className="about__p">{p}</p>)}
       <div className="about__routes"><p>{homeCopy.aboutLinks}</p><div><Link href="/projects">{homeCopy.projects}</Link><Link href="/experience">{homeCopy.experience}</Link></div></div>
     </Window></RasterReveal>
     <Terminal />
-    <RasterReveal><Talk /></RasterReveal>
+    <RasterReveal className="home__talk"><Talk /></RasterReveal>
   </div></BootSequence>;
 }

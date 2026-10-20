@@ -229,6 +229,38 @@ Run `npm run lab` for development or `npm run build` then `npm run lab:start` fo
 production build. Both bind to `127.0.0.1:3106`; `LAB_PORT` can override the port. The public
 release process remains a separate decision after Fergus reviews the prototypes.
 
+## 2026-10-19: wide screens fill and tile
+
+Fergus asked for the site to fill a wide monitor, at least three quarters of it, and look good at
+every size. Forks settled with him up front: tiling panes, text stays its laptop size, cap about
+2700px. Branch `wide-screens` from `390db3f`; design and rules in AGENTS.md § Wide screens.
+
+- [x] Page width `clamp(1040px, 80vw, 2700px)`; every route's wide layout in a min-width block of
+      1560px or more at the end of the stylesheet that owns it.
+- [x] Home, experience, projects, writing, articles, contact and booking, tools index and all ten
+      tool pages, MCP and the 404 tiled; screenshots reviewed between 1600 and 5120 (not every
+      route at every width: the check covers the rest).
+- [x] `scripts/wide-check.mjs` (self-test plus sitemap run) in the `phone` job; `app/wide.test.ts`.
+- [x] Local: 3,630 existing tests plus 22 new pass, tsc and the production build clean, 105 of 105
+      route-widths clean on `next start`. The check fails on the old layout (live: fill and
+      untiled on every route tried), and three mutations of the new guards each went red.
+
+- [x] High-effort code review: nine findings, eight fixed (the booking tile check could never
+      match its route, the article body's phone gap, a margin at 2300, a wrapped timeline losing
+      its rule, `--widths` passing on nothing, tiers the check did not pin, a project image hint
+      too small for three columns, the timer figure narrower than on a laptop). The ninth, preview
+      panels overflowing at 1840, was a guess and measures clean. A breakpoint-edge sweep then
+      caught the hero name wrapping at exactly 2300, so the home 2x2 tier moved to 2440.
+- [x] A local run hung for fifteen hours on its first page with nothing printed (the laptop
+      slept under it, a guess). Every route-width now has a 90-second deadline that reports a
+      `timeout` finding; the self-test serves a page that never answers to prove it.
+- [x] Final build: 105 of 105 at the five monitors, 294 of 294 at the breakpoint edges (1300 to
+      3000, each tier and the pixel either side), 25 wide guards, tsc clean.
+
+Not verified locally: the phone check, mutation shards and the rest of the `phone` job (CI runs
+them at the pushed commit); a physical ultrawide monitor; Safari and Firefox at wide sizes (the
+check drives Chromium only).
+
 ## 2026-09-05: public tools rebuild live
 
 Fergus requested an audit, redesign, implementation and production deployment of all five public

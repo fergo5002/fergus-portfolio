@@ -88,3 +88,23 @@
     100% { transform: translate(0, 0); }
   }
 }
+
+/* Wide screens: the test card is the screen. It grows to most of the page,
+   the way a set shows bars edge to edge, and the words stand beside it. */
+@media (min-width: 1560px) {
+  .nosignal {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-rows: 1fr auto auto auto auto 1fr;
+    column-gap: var(--sp-6);
+    row-gap: var(--sp-4);
+  }
+  .nosignal > * { grid-column: 2; min-width: 0; }
+  /* By class, not position: the missing path is written after mount, so it
+     is not a child on the server's first paint. */
+  .nosignal > .nosignal__missing { grid-row: 2; }
+  .nosignal > .nosignal__title { grid-row: 3; }
+  .nosignal > .nosignal__line { grid-row: 4; }
+  .nosignal > .nosignal__links { grid-row: 5; }
+  .nosignal > .nosignal__card { grid-column: 1; grid-row: 1 / -1; width: 100%; max-height: calc(100dvh - var(--nav-h) - var(--status-h) - var(--sp-6) * 2); }
+}

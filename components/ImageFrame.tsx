@@ -17,6 +17,7 @@ export default function ImageFrame({
   label,
   plate,
   ratio = "1 / 1",
+  sizes = "(max-width: 768px) 100vw, 460px",
 }: {
   src?: string;
   alt: string;
@@ -25,6 +26,8 @@ export default function ImageFrame({
   /** Seed for the procedural plate: normally the project slug. */
   plate?: string;
   ratio?: string;
+  /** The `sizes` hint for the responsive image: how wide this frame is drawn. */
+  sizes?: string;
 }) {
   return (
     <div className="imgframe" style={{ aspectRatio: ratio }}>
@@ -33,7 +36,7 @@ export default function ImageFrame({
           src={src}
           alt={alt}
           fill
-          sizes="(max-width: 768px) 100vw, 460px"
+          sizes={sizes}
           className="imgframe__img"
         />
       ) : (

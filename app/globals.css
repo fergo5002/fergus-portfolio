@@ -32,7 +32,17 @@
 
   --nav-h: 44px;
   --status-h: 48px;
+  /* The page's width. 1040px is the laptop measure every layout was drawn at;
+     past about 1300px the page grows with the screen to four fifths of it, up
+     to a cap, so a big monitor fills rather than framing a strip down the
+     middle. Text never grows with it (Fergus, 2026-10-19): the extra room goes
+     to more panes and more columns, set out under "wide screens" at the end of
+     each stylesheet. Those blocks are keyed on viewport width, which is safe
+     because the page width is a pure function of it:
+       viewport 1560 -> content 1200, 1840 -> 1424, 2300 -> 1792. */
   --maxw: 1040px;
+  --maxw-fill: 80vw;
+  --maxw-cap: 2700px;
   --radius: 6px;
   --glow: 0 0 2px rgba(51, 255, 102, 0.7), 0 0 7px rgba(51, 255, 102, 0.35);
 
@@ -313,7 +323,7 @@ html.crt-off body {
 
 /* ----- layout ------------------------------------------------------------ */
 .screen {
-  max-width: var(--maxw);
+  max-width: clamp(var(--maxw), var(--maxw-fill), var(--maxw-cap));
   margin: 0 auto;
   padding: calc(var(--nav-h) + var(--sp-5)) var(--sp-4) calc(var(--sp-6) + var(--status-h));
 }
@@ -2602,8 +2612,10 @@ html.is-gravity .statusbar {
       readout of ten words and it is genuinely tiring across a two thousand word
       article. `.prose` cancels it and gives the glow back to headings only,
       where it still reads as phosphor and there is not enough of it to hurt.
-   2. A CONSTRAINED MEASURE. The rest of the site runs to `--maxw` (1040px),
-      which at this font size is roughly 120 characters a line. Prose gets ~68.
+   2. A CONSTRAINED MEASURE. The rest of the site runs to `--maxw` (1040px)
+      and past it on a big screen, roughly 120 characters a line at 1040.
+      Prose gets ~68 at every width; the wide blocks below give the margins
+      the contents and the way on instead of widening the text.
 
    Both are deliberate departures from the house style rather than oversights.
    The tube is the frame; the article inside it has to be readable. */
@@ -2764,6 +2776,16 @@ html.is-gravity .statusbar {
 .post__toc a:focus-visible {
   color: var(--amber);
   text-decoration: underline;
+}
+
+/* The body is one box (so a wide screen can put the contents beside it), and
+   its parts keep the stack's rhythm, which is what they had as its children. */
+.post__body {
+  display: flex;
+  flex-direction: column;
+  /* The stack's own gap, whatever a phone or a wide grid has made it. */
+  gap: inherit;
+  min-width: 0;
 }
 
 .post__foot {
@@ -3824,4 +3846,167 @@ html.is-ejecting .shell {
 }
 @media (max-width: 560px) and (prefers-reduced-motion: reduce) {
   .statusbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* ============================================================================
+   Wide screens (2026-10-19)
+   The page grows past 1040px with the screen (see --maxw-fill at the top) and
+   the routes owned by this stylesheet open into more panes and columns rather
+   than stretching what they have. Text sizes do not change. Every block below
+   is a min-width query, so nothing under 1560px is touched, and the phone and
+   laptop layouts above are the source of truth for everything they set.
+   Route-owned stylesheets (home.css, writing.css, workbench.css, mcp.css)
+   carry their own blocks, so each override sits after the rule it overrides.
+   ========================================================================== */
+
+/* ----- experience: the log reads like a CV, then runs across the screen ---- */
+@media (min-width: 1560px) {
+  /* Each commit splits into who and when on the left and what on the right,
+     so the bullets keep their 78ch measure in a wider card. */
+  .exp {
+    display: grid;
+    grid-template-columns: minmax(17rem, 3fr) minmax(0, 7fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: var(--sp-6);
+    align-items: start;
+  }
+  .exp__head,
+  .exp__meta,
+  .exp__link { grid-column: 1; }
+  .exp__head { grid-row: 1; flex-direction: column; align-items: flex-start; gap: var(--sp-1); }
+  .exp__meta { grid-row: 2; display: grid; gap: 2px; margin: var(--sp-2) 0 0; }
+  .exp__meta .exp__dot { display: none; }
+  .exp__link { grid-row: 3; }
+  .exp__summary { grid-column: 2; grid-row: 1; margin-top: 0; }
+  .exp__bullets { grid-column: 2; grid-row: 2 / -1; margin-top: var(--sp-2); }
+  /* No summary: the bullets start level with the name. */
+  .exp > .exp__bullets:nth-child(3) { grid-row: 1 / -1; margin-top: 0; }
+}
+
+/* Wide enough for every commit at once: the timeline turns on its side and
+   runs left to right, newest first, each commit hanging from its own point on
+   one rule. The cards go back to their stacked layout, a column each. */
+@media (min-width: 2300px) {
+  .exp__list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    gap: var(--sp-6) var(--sp-4);
+    align-items: start;
+    border-left: 0;
+    padding: var(--sp-5) 0 0;
+  }
+  /* Each commit carries its own length of the rule, half a gap past either
+     side, so a sixth commit that wraps to a second row still hangs from one. */
+  .exp__reveal::before {
+    content: "";
+    position: absolute;
+    left: calc(var(--sp-4) / -2);
+    right: calc(var(--sp-4) / -2);
+    top: calc(-1 * var(--sp-5) + 11px);
+    height: 2px;
+    background: linear-gradient(90deg, var(--green-bright), var(--green));
+    box-shadow: 0 0 10px var(--green-faint);
+  }
+  .exp__reveal:first-of-type::before { left: 0; }
+  .exp__reveal:last-child::before { right: 0; }
+  /* The vertical spine draws itself down the page with scroll; across the
+     screen there is nothing for it to follow, so the rule above stands in. */
+  .exp__spine { display: none; }
+  .exp {
+    display: block;
+  }
+  .exp::before {
+    left: calc(var(--sp-4) - 4px);
+    top: calc(-1 * var(--sp-5) + 7px);
+  }
+  /* Each card drops a short line from its point on the rule. */
+  .exp::after {
+    content: "";
+    position: absolute;
+    left: var(--sp-4);
+    top: calc(-1 * var(--sp-5) + 16px);
+    height: calc(var(--sp-5) - 16px);
+    width: 1px;
+    background: var(--green-line);
+  }
+  .exp__head { flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: var(--sp-1) var(--sp-3); }
+  .exp__meta { display: block; margin: var(--sp-2) 0; }
+  .exp__meta .exp__dot { display: inline; }
+  .exp__summary { margin: var(--sp-2) 0; }
+  .exp__bullets,
+  .exp > .exp__bullets:nth-child(3) { margin-top: var(--sp-3); }
+}
+
+/* ----- projects: a third column, then each card turns on its side ---------- */
+@media (min-width: 1560px) {
+  .proj__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* On an ultrawide a stacked card in a third of the page is a poster: the
+   picture would be 870px across at a 960px source. The picture takes the left
+   of the card instead, at about the size it has on a laptop, and the words
+   take the right. */
+@media (min-width: 3000px) {
+  .project .window__body {
+    display: grid;
+    grid-template-columns: minmax(0, 9fr) minmax(0, 11fr);
+    /* Six rows for the six blocks of words; the last takes whatever the
+       picture needs beyond them. */
+    grid-template-rows: repeat(5, min-content) 1fr;
+    column-gap: var(--sp-4);
+    row-gap: var(--sp-2);
+  }
+  .project .window__body > * { grid-column: 2; }
+  .project .window__body > .imgframe { grid-column: 1; grid-row: 1 / 7; align-self: start; }
+  .project .window__body > .anchor { grid-column: 1; grid-row: 1; }
+  .project__title { margin-top: 0; }
+}
+
+/* ----- articles: the measure stays, the margins go to work ----------------
+   Prose keeps its 68ch however wide the screen. The room either side becomes
+   two margins: the contents on the left, held in view beside the body as it
+   scrolls, and the way on (next piece, all writing) on the right. */
+@media (min-width: 1560px) {
+  .post {
+    display: grid;
+    /* 72ch, not 68: the prose stops at its own 68ch, and the timer article's
+       figure is 72ch on a laptop and must not be narrower here. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 72ch) minmax(0, 1fr);
+    column-gap: var(--sp-6);
+    row-gap: var(--sp-5);
+    align-items: start;
+  }
+  .post > * { grid-column: 2; min-width: 0; }
+  .post > .post__head { margin-bottom: 0; }
+  /* A long slug would wrap the prompt at 68ch; it is one line on a laptop. */
+  .post > .promptline { grid-column: 2 / 4; }
+  .post > .post__body { grid-row: 3; }
+  .post > .post__toc,
+  .post > .post__foot {
+    grid-row: 3;
+    align-self: start;
+    position: sticky;
+    top: calc(var(--nav-h) + var(--sp-5));
+    margin: 0;
+    max-width: 26rem;
+  }
+  /* Both margins lean in towards the text they belong to. */
+  .post > .post__toc { grid-column: 1; justify-self: end; }
+  .post > .post__foot { grid-column: 3; justify-self: start; border-top: 0; padding-top: 0; }
+  .post > .post__foot > :first-child { margin-top: 0; }
+}
+
+/* ----- contact: the form and the other ways in, side by side --------------- */
+@media (min-width: 1560px) {
+  .contact-page:not(.contact-page--meet) {
+    display: grid;
+    grid-template-columns: minmax(0, 62ch) minmax(0, 1fr);
+    grid-template-rows: auto auto auto 1fr;
+    column-gap: var(--sp-6);
+    row-gap: var(--sp-5);
+    align-items: start;
+  }
+  .contact-page:not(.contact-page--meet) > * { grid-column: 1 / -1; }
+  .contact-page:not(.contact-page--meet) > .cform { grid-column: 1; grid-row: 3 / span 2; }
+  .contact-page:not(.contact-page--meet) > .contact-meetings { grid-column: 2; grid-row: 3; }
+  .contact-page:not(.contact-page--meet) > .cdirect { grid-column: 2; grid-row: 4; margin-top: 0; }
 }

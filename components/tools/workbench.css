@@ -265,3 +265,31 @@
   .bench-disclosure__body { padding-left: 0; }
   .bench-actions > button { flex: 1 1 auto; }
 }
+
+/* ── wide screens ────────────────────────────────────────────────────────
+   The index puts every tool on one row once there is room for them all. A
+   tool's page keeps one column until the stage would be wider beside a side
+   panel than it is on a laptop, then the name, the sentence and the notes
+   move to a panel on the left and the instrument takes the rest. */
+@media (min-width: 2300px) {
+  .bench-grid { grid-template-columns: repeat(var(--bench-count, 5), minmax(0, 1fr)); }
+  .bench-card,
+  .bench-card:nth-child(n + 4) { grid-column: auto; }
+}
+@media (min-width: 2000px) {
+  .tool-workbench {
+    display: grid;
+    grid-template-columns: minmax(20rem, 26rem) minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto auto 1fr auto;
+    column-gap: var(--sp-6);
+    row-gap: 20px;
+    align-items: start;
+  }
+  .tool-workbench > * { grid-column: 1 / -1; }
+  .tool-workbench > .bench-back { grid-column: 1; grid-row: 2; }
+  .tool-workbench > .bench-head { grid-column: 1; grid-row: 3; }
+  .tool-workbench > .tool__privacy { grid-column: 1; grid-row: 4; margin: 0; }
+  .tool-workbench > .bench-disclosure { grid-column: 1; grid-row: 5; }
+  .tool-workbench > .bench-stage { grid-column: 2; grid-row: 2 / 7; }
+  .tool-workbench > .bench-disclosure .bench-disclosure__body { padding-left: 0; }
+}

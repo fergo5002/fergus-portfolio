@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
@@ -66,7 +67,7 @@ export default function ToolsPage() {
         <h1 className="page__title">{workbenchCopy.indexTitle}</h1>
         <p className="page__lede">{workbenchCopy.noAccount}</p>
       </header>
-      <ul className="bench-grid">
+      <ul className="bench-grid" style={{ "--bench-count": rows.length } as CSSProperties}>
         {rows.map((row) => (
           <li key={row.slug} className="bench-card">
             {row.href ? (
