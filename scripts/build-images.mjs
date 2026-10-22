@@ -47,7 +47,7 @@ const skip = (name, why) => console.warn(`  --  ${name.padEnd(28)} skipped: ${wh
 
 // ── 1. Hero portrait ────────────────────────────────────────────────────────
 // Shot in the Dolomites. Cropped to 4:5 around Fergus so the mountains still
-// read behind him, which ties the hero to the "in the mountains" line in his bio.
+// read behind him.
 async function portrait() {
   if (!existsSync(HERO_HEIC)) return skip("portrait.jpg", `no photo at ${HERO_HEIC}`);
 

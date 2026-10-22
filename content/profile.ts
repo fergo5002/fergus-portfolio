@@ -56,17 +56,19 @@ export const profile: Profile = {
   location: "Dublin, Ireland",
   education: "BA Computer Science & Business @ Trinity College Dublin · 1.1",
   /**
-   * Three short paragraphs, cut from five long ones on 2026-09-13 because
-   * Fergus read the old version and said it was too much to read. The first
-   * one is load bearing twice over: `lib/seo.ts` publishes it as the Person
-   * node's `description` and it is the first thing under `cat about.txt`, so
-   * it has to survive being read on its own, at about 150 characters, without
-   * the two beneath it.
+   * Short paragraphs, cut from five long ones on 2026-09-13 because Fergus
+   * read the old version and said it was too much to read. The first one is
+   * load bearing twice over: `lib/seo.ts` publishes it as the Person node's
+   * `description` and it is the first thing under `cat about.txt`, so it has
+   * to survive being read on its own, at about 150 characters, without the
+   * ones beneath it. The second is the page's meta description in
+   * `app/layout.tsx`, so it carries what he is doing now.
    */
   bio: [
-    "I'm a 20-year-old from Ireland who loves building software and building businesses.",
-    "Before now, I was in Hatch105, where I was building Presterly, an ecom SaaS tool. Now I'm in stealth.",
-    "Otherwise, I'm going to a sauna, playing padel, or in the mountains.",
+    "I'm a 20-year-old from Ireland who loves building software and businesses.",
+    "I'm currently in stealth, revolutionising the way consumer brands get access to working capital.",
+    "Before this I was in Hatch105, building Presterly, an ecom SaaS tool. I was also the co-founder of Tigh Sauna, the operating and growth layer for saunas.",
+    "Otherwise I love playing tennis, playing poker, or building random side projects.",
   ],
   /**
    * These links are the site's `sameAs` edges, which is to say they are the
