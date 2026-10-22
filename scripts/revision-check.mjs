@@ -25,7 +25,7 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
   assert.equal(await page.locator(".hero__edu").count(), 0);
   assert.deepEqual(await page.locator(".hl__k").allTextContents(), ["current", "previously"]);
   assert.deepEqual(await page.locator(".hl").nth(1).locator(".work-preview__link").allTextContents(), ["Ex-co-founder & CTO @ Tigh Sauna", "CTO @ Presterly", "Hatch105"]);
-  assert.equal(await page.locator(".about__p").first().innerText(), "I'm a 20-year-old from Ireland who loves building software and building businesses.");
+  assert.equal(await page.locator(".about__p").first().innerText(), "I'm a 20-year-old from Ireland who loves building software and businesses.");
   assert.equal(await page.locator("main .term--inline").count(), 1);
   assert.equal(await page.locator(".skills").count(), 0);
   assert.equal(await page.locator(".about__routes a").count(), 2);
