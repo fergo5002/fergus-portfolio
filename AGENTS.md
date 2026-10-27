@@ -806,6 +806,8 @@ clone still builds everything else.
   decoder; it reads the metadata then fails on the pixels), so the script shells out to `ffmpeg`
   to decode to PNG first and crops from that. ffmpeg on PATH is needed for this step only.
 - `presterly.png`, `loira.png`: brand marks composited onto 16:9 cards.
+- `remand.png`: Remand's R, traced from the nybblers.vercel.app app icon and vendored as
+  `assets/sources/remand-r.svg` (provenance in `remand-brand.md`). Rebuild with `--remand-only`.
 - `tigh-sauna.png`: the approved Tigh wordmark beside the brass ribbon sculpture
   from the current tighsauna.com website, on evergreen `#0B3028`. The outlined
   wordmark and transparent brass still are vendored in `assets/sources/`; provenance
@@ -814,7 +816,7 @@ clone still builds everything else.
   The old teal house SVG is historical and is no longer used by the builder.
   Firespark, Hearth and Sauna OS are retired public names; the outbound link guard
   in `content/links.test.ts` still protects the current Tigh Sauna domain.
-- `remand.png`, `contrabot.png`: authored SVG, rasterised. Deliberately not stock screenshots.
+- `contrabot.png`: authored SVG, rasterised. Deliberately not stock screenshots.
   In `contrabot`, **all geometry is in screen coordinates where a smaller y is a higher price**,
   getting that backwards once produced a rising chart captioned as a profitable short.
 - `under-the-campanile.jpg`: real gameplay, cropped to drop the browser scrollbars. JPEG, not

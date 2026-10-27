@@ -84,7 +84,7 @@ export const projects: Project[] = [
     stack: ["Next.js", "React 19", "FastAPI", "Supabase", "pgvector", "OpenAI", "Anthropic"],
     links: [{ label: "live", href: "https://nybblers.vercel.app" }],
     image: "/img/remand.png",
-    imageAlt: "Remand illustration: an idea is pushed through four Reddit threads about the same problem and comes out as a rising demand signal",
+    imageAlt: "The Remand logo mark, an orange letter R",
   },
   {
     slug: "under-the-campanile",
