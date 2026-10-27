@@ -34,8 +34,8 @@ Editable copy lives in `content/`:
 
 Images in `public/img/` are built by `scripts/build-images.mjs`. Change the recipe,
 not the derived image. Use `--tigh-only` or `--remand-only` to rebuild one card.
-The Remand card is an authored illustration (an idea pushed through Reddit threads
-comes out as a demand signal), not a product screenshot or measured data.
+The Remand card is Remand's own R mark, traced from its app icon
+(provenance in `assets/sources/remand-brand.md`).
 
 ## Meeting requests
 

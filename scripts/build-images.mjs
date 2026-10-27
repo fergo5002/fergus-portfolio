@@ -16,7 +16,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -198,91 +198,36 @@ async function loira() {
 }
 
 // ── 6. Remand ───────────────────────────────────────────────────────────────
-// What the project did, left to right: an idea goes in, is pushed through the
-// Reddit threads where people already describe the problem, and comes out as a
-// demand signal. An authored concept illustration, not Reddit UI or measured
-// results: the idea and threads are illustrative, and the signal is a shape
-// with no invented counts or percentages on it (Fergus, 2026-09-26, replacing
-// the earlier "questions become a positioning line" card, which read the
-// project backwards). Rebuild with --remand-only.
+// Remand's own "R", from the app icon on nybblers.vercel.app. The icon fades the
+// letter out towards its foot; here it keeps the icon's yellow-to-orange run all
+// the way down, on a warm near-black. Replaces the drawn idea, reddit, signal
+// diagram (Fergus, 2026-10-27). Provenance: assets/sources/remand-brand.md.
+// Rebuild with --remand-only.
 async function remand() {
-  const ORANGE = "#ff4500", WARM = "#ff6a35", INK = "#f4f7ef", DIM = "#b7c5bb";
-  const PANEL = "#1a211e", LINE = "#48564d";
-  const threads = [
-    ["r/freelance", "clients never read", "my updates"],
-    ["r/agency", "how do you hand", "work over?"],
-    ["r/smallbusiness", "lost the client", "notes again"],
-    ["r/projectmanagement", "chasing status", "every friday"],
-  ];
-  const cardY = (i) => 164 + i * 78;
-  const cards = threads
-    .map(([sub, a, b], i) => `
-    <g transform="translate(330 ${cardY(i)})">
-      <rect width="272" height="66" fill="${PANEL}" stroke="${LINE}"/>
-      <path d="M16 38 L27 25 L38 38 H31 V50 H23 V38 Z" fill="${ORANGE}"/>
-      <text x="52" y="22" fill="${DIM}" font-size="13">${sub}</text>
-      <text x="52" y="42" fill="${INK}" font-size="18">${a}</text>
-      <text x="52" y="59" fill="${INK}" font-size="18">${b}</text>
-    </g>`)
-    .join("");
+  const src = join(SOURCES, "remand-r.svg");
+  if (!existsSync(src)) throw new Error("Remand card requires its vendored R mark");
+  const path = readFileSync(src, "utf8").match(/ d="([^"]+)"/)[1];
 
-  // The idea arrives as one beam, fans into every thread, and each thread it
-  // matches feeds the signal: the fan-in lands on the chart's left edge.
-  const beamY = 314;
-  const fanOut = threads
-    .map((_, i) => `M318 ${beamY} C324 ${beamY} 324 ${cardY(i) + 33} 330 ${cardY(i) + 33}`)
-    .join(" ");
-  const fanIn = threads
-    .map((_, i) => {
-      const y = cardY(i) + 33;
-      return `<path d="M602 ${y} C632 ${y} 632 ${beamY} 658 ${beamY}" fill="none" stroke="${ORANGE}" stroke-width="2.5" opacity="${(0.55 + i * 0.12).toFixed(2)}"/>
-    <circle cx="602" cy="${y}" r="5" fill="${ORANGE}"/>`;
-    })
-    .join("");
-
-  // Noise resolving into a rising trace. Deterministic, so a rebuild is
-  // byte-stable, and deliberately unlabelled beyond what the axis measures.
-  const trace = [];
-  for (let i = 0; i <= 44; i++) {
-    const t = i / 44;
-    const trend = 430 - Math.pow(t, 2.1) * 176;
-    const noise = Math.sin(i * 2.7) * (14 * (1 - t) + 3) + Math.sin(i * 1.3) * 5 * (1 - t);
-    trace.push([684 + i * 4.5, trend + noise]);
-  }
-  const [endX, endY] = trace[trace.length - 1];
-
+  // The traced R spans x 264-751 and y 244-747 on the icon's 1024 grid, so this
+  // centres it on the card at 340px tall, the same weight as the Loira mark.
+  const scale = 340 / 503;
   const markup = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${CARD_W}" height="${CARD_H}" viewBox="0 0 ${CARD_W} ${CARD_H}">
-  <rect width="${CARD_W}" height="${CARD_H}" fill="#0c1210"/>
-  <g font-family="'Courier New', monospace">
-    <text x="50" y="104" font-size="66" font-weight="700" letter-spacing="-4" fill="${INK}">idea</text>
-    <path d="M232 81 H300 M284 65 L300 81 L284 97" fill="none" stroke="${ORANGE}" stroke-width="6"/>
-    <text x="324" y="104" font-size="66" font-weight="700" letter-spacing="-4" fill="${WARM}">reddit</text>
-    <path d="M592 81 H660 M644 65 L660 81 L644 97" fill="none" stroke="${ORANGE}" stroke-width="6"/>
-    <text x="684" y="104" font-size="66" font-weight="700" letter-spacing="-4" fill="${INK}">signal</text>
-
-    <g transform="translate(50 222)">
-      <rect width="236" height="184" fill="${PANEL}" stroke="${WARM}" stroke-width="2"/>
-      <text x="20" y="38" fill="${WARM}" font-size="17">&gt; test an idea</text>
-      <text x="20" y="84" fill="${INK}" font-size="23" font-weight="700">a handover log</text>
-      <text x="20" y="116" fill="${INK}" font-size="23" font-weight="700">that chases</text>
-      <text x="20" y="148" fill="${INK}" font-size="23" font-weight="700">updates for you</text>
-    </g>
-    <path d="M286 ${beamY} H318" stroke="${ORANGE}" stroke-width="3"/>
-    <path d="${fanOut}" fill="none" stroke="${ORANGE}" stroke-width="2"/>
-    ${cards}
-    ${fanIn}
-
-    <rect x="658" y="164" width="252" height="300" fill="${PANEL}" stroke="${LINE}"/>
-    <text x="676" y="194" fill="${WARM}" font-size="17">demand signal</text>
-    <g stroke="${LINE}" stroke-width="1" opacity="0.7">
-      <path d="M684 262 H886 M684 322 H886 M684 382 H886"/>
-      <path d="M734 210 V436 M784 210 V436 M834 210 V436"/>
-    </g>
-    <polyline points="${trace.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ")}" fill="none" stroke="${ORANGE}" stroke-width="3" stroke-linejoin="round"/>
-    <circle cx="${endX.toFixed(1)}" cy="${endY.toFixed(1)}" r="6" fill="${WARM}"/>
-    <text x="676" y="454" fill="${DIM}" font-size="14">mentions, week by week</text>
-    <text x="50" y="507" font-size="16" fill="${DIM}">Remand / illustrative idea, threads and signal</text>
+  <defs>
+    <linearGradient id="fill" gradientUnits="userSpaceOnUse" x1="0" y1="244" x2="0" y2="747">
+      <stop offset="0" stop-color="#FFC32F"/>
+      <stop offset="0.5" stop-color="#FF7A00"/>
+      <stop offset="1" stop-color="#F23D00"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="52%" r="46%">
+      <stop offset="0" stop-color="#FF7A1A" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#FF7A1A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="${CARD_W}" height="${CARD_H}" fill="#140D09"/>
+  <rect width="${CARD_W}" height="${CARD_H}" fill="url(#glow)"/>
+  <g transform="translate(${CARD_W / 2} ${CARD_H / 2}) scale(${scale.toFixed(4)}) translate(-507.5 -495.5)">
+    <path d="${path}" fill="url(#fill)"/>
   </g>
 </svg>`;
   const info = await sharp(svg(markup)).png({ compressionLevel: 9 }).toFile(join(OUT, "remand.png"));
