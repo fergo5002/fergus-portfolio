@@ -22,6 +22,8 @@ export const RETIRED_ARTICLES = [
   "split-text-audit-2026",
   "the-test-passed-because-the-uuids-agreed",
   "a-qualcomm-overlay-appeared-in-our-dungeon",
+  // Retired 2026-10-27 at Fergus's request.
+  "the-timer-is-not-the-reservation",
 ] as const;
 
 const nextConfig: NextConfig = {
@@ -46,7 +48,7 @@ const nextConfig: NextConfig = {
   },
 
   /**
-   * The seven articles retired on 2026-09-13.
+   * The articles retired on 2026-09-13, plus one on 2026-10-27.
    *
    * They were published, linked from each other and indexed, so deleting the
    * files is only half the job: the other half is deciding what the URLs do

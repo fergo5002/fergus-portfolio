@@ -11,7 +11,7 @@ describe("Next.js workspace root", () => {
 });
 
 /**
- * The retired articles from 2026-09-13.
+ * The retired articles from 2026-09-13 and 2026-10-27.
  *
  * Two ways this list can rot, and one test each. It can lose a redirect, which
  * turns a published URL back into a 404. Or a slug can be reused by a new

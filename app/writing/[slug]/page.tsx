@@ -5,7 +5,6 @@ import PromptLine from "@/components/PromptLine";
 import Markdown from "@/components/Markdown";
 import JsonLd from "@/components/JsonLd";
 import Talk from "@/components/Talk";
-import ReservationFigure from "../ReservationFigure";
 import { articles, articleBySlug, readingMinutes, wordCount } from "@/content/articles";
 import { profile } from "@/content/profile";
 import { tableOfContents } from "@/lib/markdown";
@@ -150,13 +149,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
       {/* One box for the body, so on a wide screen the contents can stand
           beside it for exactly its height and stay in view while it scrolls. */}
       <div className="post__body">
-        {article.slug === "the-timer-is-not-the-reservation" ? (
-          <>
-            <Markdown source={article.body.split("\n\n")[0]} />
-            <ReservationFigure />
-            <Markdown source={article.body.split("\n\n").slice(1).join("\n\n")} />
-          </>
-        ) : <Markdown source={article.body} />}
+        <Markdown source={article.body} />
       </div>
 
       <footer className="post__foot">

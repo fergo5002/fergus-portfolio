@@ -30,17 +30,6 @@ const arrow = (x1: number, y1: number, x2: number, y2: number): string => {
 };
 
 export const articleFigures: Record<string, FigurePart[]> = {
-  // A countdown makes the promise; short renewals keep it, never past the deadline.
-  "the-timer-is-not-the-reservation": [
-    { kind: "circle", cx: 28, cy: 30, r: 14, tone: "dim" },
-    { kind: "path", d: "M28 16 A14 14 0 1 1 14 30", tone: "ink", draw: true },
-    { kind: "path", d: "M12 72 H148", tone: "dim" },
-    ...[12, 36, 60, 84].map((x, i): FigurePart => ({ kind: "rect", x, y: 66, w: 22, h: 12, tone: "ink", fill: true, delay: 120 + i * 140 })),
-    { kind: "rect", x: 108, y: 66, w: 12, h: 12, tone: "ink", fill: true, delay: 680 },
-    { kind: "path", d: "M120 48 V88", tone: "accent", dashed: true },
-    { kind: "circle", cx: 136, cy: 72, r: 3, tone: "dim" },
-  ],
-
   // Two rhythms. A fixed thirty-day line judges both wrongly; each customer's
   // own gap puts the alarm in the right place for them.
   "when-is-a-customer-actually-gone": [
