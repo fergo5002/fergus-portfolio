@@ -49,7 +49,8 @@ import { customerGone } from "./articles/when-is-a-customer-actually-gone";
  * Cut from eleven to five on 2026-09-13. Fergus kept the four he wanted to be
  * read and commissioned the fifth; the seven that came down are redirected to
  * this index in `next.config.ts` rather than left to 404, because they were
- * published, linked and indexed.
+ * published, linked and indexed. "The timer is not the reservation" followed
+ * them on 2026-10-27, the same way.
  */
 export const articles: Article[] = [
   customerGone,
