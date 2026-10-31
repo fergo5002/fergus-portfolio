@@ -1,0 +1,85 @@
+# Developing FergusOS
+
+Next.js 15, React 19, TypeScript and hand-written CSS. The contact and meeting forms send through Resend; the arcade and other server routes have their own bounded storage contracts in `AGENTS.md`, which is the full guide. This is the short version.
+
+## Run it
+
+```sh
+npm ci
+npm run dev
+npm test
+npm run build
+npm start
+```
+
+The homepage also has an interactive terminal directly below About. It shares
+history with the drawer, which opens from the bottom bar on every route. Escape,
+the close button or clicking outside dismisses the drawer. History lasts for the tab.
+The arcade keeps its power-cycle entrance and restores the regular top nav.
+Only the drawer hosts arcade programs, including commands typed in the inline shell.
+
+## Content
+
+Editable copy lives in `content/`:
+
+- `profile.ts`, `home.ts`: identity, introduction and linked work previews.
+- `experience.ts`: Tigh Sauna, Hatch105, Presterly and Loira AI.
+- `projects.ts`: projects and honest image descriptions.
+- `articles/`: writing, including the short interactive reservation note.
+- `tools/index.ts`: all tool routes and the five featured tools on the index.
+- `meeting.ts`: coffee/call request copy. `machine.ts`: bottom-bar controls.
+
+Images in `public/img/` are built by `scripts/build-images.mjs`. Change the recipe,
+not the derived image. Use `--tigh-only` or `--remand-only` to rebuild one card.
+The Remand card is Remand's own R mark, traced from its app icon
+(provenance in `assets/sources/remand-brand.md`).
+
+## Meeting requests
+
+Main pages link to Contact with a single Get in touch button. Contact alone holds
+the coffee and call cards, with a pixel-art mug and telephone drawn as 28 by 20
+sprites in the tube's phosphor (`components/pixel/`, `lib/pixel.ts`).
+
+`/contact?meet=coffee` and `/contact?meet=call` offer 30-minute weekday windows
+between 10:00 and 17:00 in Europe/Dublin, at least 24 hours ahead, for 28 days.
+A stable date-based selection limits offered slots. They are not a live calendar,
+confirmed appointments or reserved inventory. Fergus confirms each request by email.
+No visitor data or selected time is persisted. The server revalidates the offer
+before sending through the existing contact pipeline and inbox.
+
+The form works without JavaScript. Delayed hydration retains an existing selection.
+Provider errors preserve the visitor's words and give an email fallback.
+`RESEND_API_KEY` is required for delivery; sender/destination overrides and their
+restrictions are documented in `lib/contact.ts` and `.env.example`.
+
+## Design and verification
+
+`app/globals.css` owns the CRT, phosphor themes and machine chrome. The homepage,
+meeting controls and article figure have scoped styles. Keep the existing fonts,
+one frame clock, glass layers and reduced-motion behaviour.
+
+```sh
+node scripts/revision-check.mjs
+node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap
+node scripts/phone-polish-check.mjs --base http://localhost:3000
+REVISION_BASE=http://localhost:3000 node scripts/boot-check.mjs
+REVISION_BASE=http://localhost:3000 node scripts/saver-check.mjs
+node scripts/mutation-check.mjs
+docker build -f Dockerfile.parity -t fergus-portfolio-parity .
+```
+
+The boot types a BIOS that reads the visitor's own machine and has the beam trace
+the site's mark in one stroke; left idle, the beam draws an oscilloscope figure.
+`boot-check` proves the boot's privacy only against a build with a PostHog key
+(any value); CI runs it with `--no-ingest --no-beam --no-shots`.
+
+`revision-check` defaults to port 3210; set `REVISION_BASE` for another server.
+It sends no live email unless explicitly run with `--send`. A local server with
+no Resend key exercises visible failure and no-JavaScript field preservation.
+
+## Deploy
+
+The public GitHub repository deploys `main` to the personal Vercel project
+`fergus-portfolio` in scope `larry-pm`. Use `VERCEL_TOKEN_PERSONAL`, never the
+Tigh or retired account token. Changes go through a PR and the repository gates.
+Verify the exact deployed commit and changed journeys on `fergusoreilly.dev`.

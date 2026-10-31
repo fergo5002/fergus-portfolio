@@ -1,88 +1,41 @@
-# FergusOS Terminal
+# FergusOS
 
-Fergus O'Reilly's portfolio and browser tools, built as a physical CRT machine.
-Next.js 15, React 19, TypeScript and hand-written CSS. The contact and meeting
-forms send through Resend; the arcade and other server routes have their own
-bounded storage contracts in AGENTS.md.
+My website, built as a cathode ray tube that boots. Live at **[fergusoreilly.dev](https://fergusoreilly.dev)**.
+
+<a href="https://fergusoreilly.dev"><img src=".github/readme/boot.gif" alt="FergusOS booting: a green phosphor BIOS lists the visitor's own CPU, memory, display and locale, runs a few joke checks, the beam draws a prompt, and the homepage comes up" width="880"></a>
+
+<sub>Recorded on the live site. The BIOS is reading the machine that's looking at it, which here was a headless browser.</sub>
+
+It's a portfolio, but it's also a machine you can play with:
+
+- **It boots.** The BIOS reads your own CPU cores, memory, display and locale, then the beam traces the site's mark in one stroke. Leave it idle and the beam draws an oscilloscope figure.
+- **There's a real terminal.** Open it from the bar at the bottom of any page, or use the one under About. `cd`, `ls` and `cat` take you round the site. Then try `neofetch`, `degauss`, `matrix` or `sudo`.
+- **There are useful tools.** No account, no install. Atlas maps a folder or a public GitHub repo. Pocket Redact covers what's private in a PDF or image. Group Lore works out when a group chat talks and who talks most. Relief turns a year of activity into a landscape. Resonance is a four-voice synth with a sixteen-step sequencer.
+- **There's an arcade behind the glass.** Three cabinets, free play, high scores: Dead Signal, Circuit Poker and Kernel Panic.
+- **It's an MCP server.** Point an agent at `https://fergusoreilly.dev/api/mcp` and it can read the writing, projects and experience as data instead of scraping a page pretending to be a TV.
+- **You can ask me for a coffee.** The Contact page offers 30-minute weekday windows, I confirm by email, and the form works with JavaScript turned off.
+
+<table>
+<tr>
+<td><a href="https://fergusoreilly.dev/tools"><img src=".github/readme/tools.jpg" alt="The tools page: cards for Atlas, Pocket Redact and Group Lore drawn in green phosphor"></a></td>
+<td><img src=".github/readme/arcade.jpg" alt="The FergusOS arcade: three cabinets, Dead Signal, Circuit Poker and Kernel Panic"></td>
+</tr>
+</table>
 
 ## Run it
 
 ```sh
 npm ci
 npm run dev
-npm test
-npm run build
-npm start
 ```
 
-The homepage also has an interactive terminal directly below About. It shares
-history with the drawer, which opens from the bottom bar on every route. Escape,
-the close button or clicking outside dismisses the drawer. History lasts for the tab.
-The arcade keeps its power-cycle entrance and restores the regular top nav.
-Only the drawer hosts arcade programs, including commands typed in the inline shell.
+Next.js 15, React 19, TypeScript and hand-written CSS, with no CSS framework. The phosphor themes, the glass and the machine chrome all live in `app/globals.css`, and it respects reduced motion.
 
-## Content
-
-Editable copy lives in `content/`:
-
-- `profile.ts`, `home.ts`: identity, introduction and linked work previews.
-- `experience.ts`: Tigh Sauna, Hatch105, Presterly and Loira AI.
-- `projects.ts`: projects and honest image descriptions.
-- `articles/`: writing, including the short interactive reservation note.
-- `tools/index.ts`: all tool routes and the five featured tools on the index.
-- `meeting.ts`: coffee/call request copy. `machine.ts`: bottom-bar controls.
-
-Images in `public/img/` are built by `scripts/build-images.mjs`. Change the recipe,
-not the derived image. Use `--tigh-only` or `--remand-only` to rebuild one card.
-The Remand card is Remand's own R mark, traced from its app icon
-(provenance in `assets/sources/remand-brand.md`).
-
-## Meeting requests
-
-Main pages link to Contact with a single Get in touch button. Contact alone holds
-the coffee and call cards, with a pixel-art mug and telephone drawn as 28 by 20
-sprites in the tube's phosphor (`components/pixel/`, `lib/pixel.ts`).
-
-`/contact?meet=coffee` and `/contact?meet=call` offer 30-minute weekday windows
-between 10:00 and 17:00 in Europe/Dublin, at least 24 hours ahead, for 28 days.
-A stable date-based selection limits offered slots. They are not a live calendar,
-confirmed appointments or reserved inventory. Fergus confirms each request by email.
-No visitor data or selected time is persisted. The server revalidates the offer
-before sending through the existing contact pipeline and inbox.
-
-The form works without JavaScript. Delayed hydration retains an existing selection.
-Provider errors preserve the visitor's words and give an email fallback.
-`RESEND_API_KEY` is required for delivery; sender/destination overrides and their
-restrictions are documented in `lib/contact.ts` and `.env.example`.
-
-## Design and verification
-
-`app/globals.css` owns the CRT, phosphor themes and machine chrome. The homepage,
-meeting controls and article figure have scoped styles. Keep the existing fonts,
-one frame clock, glass layers and reduced-motion behaviour.
+The words are in `content/`, the images are built by `scripts/build-images.mjs`, and the house rules are in [`AGENTS.md`](AGENTS.md). Tests, the verification scripts, the meeting form and deploying are in [`docs/DEVELOPING.md`](docs/DEVELOPING.md).
 
 ```sh
-node scripts/revision-check.mjs
-node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap
-node scripts/phone-polish-check.mjs --base http://localhost:3000
-REVISION_BASE=http://localhost:3000 node scripts/boot-check.mjs
-REVISION_BASE=http://localhost:3000 node scripts/saver-check.mjs
-node scripts/mutation-check.mjs
-docker build -f Dockerfile.parity -t fergus-portfolio-parity .
+npm test
+npm run build
 ```
 
-The boot types a BIOS that reads the visitor's own machine and has the beam trace
-the site's mark in one stroke; left idle, the beam draws an oscilloscope figure.
-`boot-check` proves the boot's privacy only against a build with a PostHog key
-(any value); CI runs it with `--no-ingest --no-beam --no-shots`.
-
-`revision-check` defaults to port 3210; set `REVISION_BASE` for another server.
-It sends no live email unless explicitly run with `--send`. A local server with
-no Resend key exercises visible failure and no-JavaScript field preservation.
-
-## Deploy
-
-The public GitHub repository deploys `main` to the personal Vercel project
-`fergus-portfolio` in scope `larry-pm`. Use `VERCEL_TOKEN_PERSONAL`, never the
-Tigh or retired account token. Changes go through a PR and the repository gates.
-Verify the exact deployed commit and changed journeys on `fergusoreilly.dev`.
+Changes go through a pull request. `main` deploys to fergusoreilly.dev.
