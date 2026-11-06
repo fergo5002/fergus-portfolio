@@ -530,3 +530,35 @@ describe("the article template under the phone instrument (2026-09-06)", () => {
     expect(css).toMatch(/\.post__dot::before\s*\{[^}]*content:\s*" · "/);
   });
 });
+
+describe("secondary text and small controls on the phone composite (2026-09-06)", () => {
+  // The first every-route run of the phone instrument read every --green-dim
+  // line on the home page at 3.5 to 3.9:1: the 7px glow fills the rect of a
+  // 13px word and reads as green ground, which is what a person sees too.
+  // On touch the dim token is lifted and the glow comes off small secondary
+  // text. The terminal's chips, label and input, and the contact list's links,
+  // were 24 to 32px tall.
+  const touch = mediaBlocks("(hover: none)");
+
+  it("lifts --green-dim on touch, for every phosphor", () => {
+    expect(touch).toMatch(/:root\s*\{[^}]*--green-dim:\s*#[0-9a-f]{6}/);
+    expect(touch).toMatch(/html\[data-theme="amber"\]\s*\{[^}]*--green-dim:/);
+    expect(touch).toMatch(/html\[data-theme="ice"\]\s*\{[^}]*--green-dim:/);
+  });
+
+  it("lifts it far enough to clear 4.5:1 on the page on the green phosphor", () => {
+    const lifted = /:root\s*\{[^}]*--green-dim:\s*(#[0-9a-f]{6})/.exec(touch)?.[1];
+    expect(lifted).toBeDefined();
+    expect(ratio(hex(lifted!), hex(tokens(":root")["--bg"]))).toBeGreaterThanOrEqual(6);
+  });
+
+  it("takes the glow off small secondary text on touch", () => {
+    expect(touch).toMatch(/\.hero__loc,[^{]*\.hl__k[^{]*\{[^}]*text-shadow: none/);
+  });
+
+  it("gives the terminal chips, its prompt and the contact links a thumb's height", () => {
+    expect(touch).toMatch(/\.term__hint[^{]*\{[^}]*min-height: 44px/);
+    expect(touch).toMatch(/\.term__input[^{]*\{[^}]*min-height: 44px/);
+    expect(touch).toMatch(/\.contact__row a[^{]*\{[^}]*min-height: 44px/);
+  });
+});

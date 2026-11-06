@@ -45,6 +45,9 @@ Vercel account, it never moved to the Tigh Sauna team. Live host: `https://fergu
 - **A per-character or decorative text effect needs a plain contiguous copy in the server HTML**,
   or it's invisible to crawlers and answer engines. `aria-label`/`aria-hidden` do not substitute
   for this either direction.
+- **A hidden Chrome tab throttles timers to one a second and stops rAF.** Screenshots from it
+  are fine; timings are not. Read `document.visibilityState` before believing a frame rate or an
+  animation timeline, and use a headed browser for those.
 - **PostHog is cookieless** (`cookieless_mode: "always"`, plus a PostHog-project-side toggle
   that isn't in its UI) — don't add cookies or local storage to analytics, and if pageviews go
   quiet while server events keep flowing, check the project-side toggle first.
