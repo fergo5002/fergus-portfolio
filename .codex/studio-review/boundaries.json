@@ -1,0 +1,42 @@
+{
+  "results": [
+    {
+      "name": "resonance-face-fits-one-desktop-screen",
+      "ok": true,
+      "stage": 772,
+      "face": 684,
+      "room": 808,
+      "first": "reso__screen",
+      "host": true
+    },
+    {
+      "name": "resonance-scope-dark-at-rest-live-while-playing",
+      "ok": true,
+      "rest": 0,
+      "live": 7478,
+      "span": 17,
+      "x1": "translate3d(506.177px, 0px, 0px)",
+      "x2": "translate3d(772.26px, 0px, 0px)",
+      "after": 0
+    },
+    {
+      "name": "resonance-pad-trail-fades-to-nothing",
+      "ok": true,
+      "drawn": {
+        "fill": 120,
+        "stroke": 72,
+        "clear": 48,
+        "peak": 0.9985719387755103
+      },
+      "gone": 0,
+      "clears": 51
+    },
+    {
+      "name": "resonance-reduced-motion-draws-a-still",
+      "ok": true,
+      "lit": 5836,
+      "still": true
+    }
+  ],
+  "errors": []
+}

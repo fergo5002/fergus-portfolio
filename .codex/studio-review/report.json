@@ -1,0 +1,14 @@
+{
+  "report": [
+    {
+      "name": "wav-pixels",
+      "bytes": 3351644,
+      "peak": 5301
+    },
+    {
+      "name": "resonance",
+      "ok": true
+    }
+  ],
+  "errors": []
+}
