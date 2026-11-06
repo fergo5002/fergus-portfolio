@@ -1,0 +1,41 @@
+{
+  "results": [
+    {
+      "name": "phosphor-only-while-seen",
+      "ok": true,
+      "ghostPixels": 617
+    },
+    {
+      "name": "a-scroll-passes-the-map-until-it-is-chosen",
+      "ok": true
+    },
+    {
+      "name": "pointing-and-dragging",
+      "ok": true,
+      "trailPixels": 10706
+    },
+    {
+      "name": "document-formats-and-media",
+      "ok": true,
+      "formats": 7,
+      "unexpectedRequests": 0
+    },
+    {
+      "name": "one-thousand-file-map",
+      "ok": true,
+      "files": 1000,
+      "importMs": 2052
+    },
+    {
+      "name": "archive-limit-preserves-current-map",
+      "ok": true
+    },
+    {
+      "name": "public-github",
+      "ok": true,
+      "repository": "octocat/Hello-World",
+      "files": 1
+    }
+  ],
+  "errors": []
+}
