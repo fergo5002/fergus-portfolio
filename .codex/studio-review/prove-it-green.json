@@ -1,0 +1,16 @@
+{
+  "format": "prove-it-v2",
+  "case": "438 green tests. One broken button.",
+  "history": [
+    {
+      "test": "post",
+      "choice": 1,
+      "confidence": 50,
+      "prediction": "A provider rejection on both requests would change my mind."
+    }
+  ],
+  "conclusion": "A timing filter silently discards fast submissions",
+  "confidence": 90,
+  "score": 91,
+  "lesson": "A green suite only describes the paths it exercises. Vary the suspected trigger and observe the external effect."
+}

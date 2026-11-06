@@ -1,0 +1,146 @@
+{
+  "results": [
+    {
+      "name": "document-formats-and-media",
+      "ok": true,
+      "formats": 7,
+      "unexpectedRequests": 0
+    },
+    {
+      "name": "one-thousand-file-map",
+      "ok": true,
+      "files": 1000,
+      "importMs": 2124
+    },
+    {
+      "name": "archive-limit-preserves-current-map",
+      "ok": true
+    },
+    {
+      "name": "public-github",
+      "ok": true,
+      "repository": "octocat/Hello-World",
+      "files": 1
+    },
+    {
+      "name": "large-chat-filtering",
+      "ok": true,
+      "messages": 25000,
+      "importMs": 2091,
+      "renderedRows": 50
+    },
+    {
+      "name": "cancelled-chat-read-stays-cancelled",
+      "ok": true
+    },
+    {
+      "name": "the-week-in-the-server-html",
+      "ok": true,
+      "lit": 129,
+      "reading": "Friday 20:00 · 51 messages"
+    },
+    {
+      "name": "the-week-on-a-390-phone",
+      "ok": true,
+      "layout": {
+        "cells": 168,
+        "offScreen": 0,
+        "above": [],
+        "overflow": 0,
+        "top": 418,
+        "bottom": 721,
+        "viewport": 844,
+        "cell": {
+          "width": 38.515625,
+          "height": 10
+        }
+      },
+      "pixels": {
+        "lit": 129,
+        "dimmest": 2.33,
+        "median": 5.95,
+        "peak": 14.71,
+        "emptiest": 1.02
+      }
+    },
+    {
+      "name": "the-week-on-a-320-phone",
+      "ok": true,
+      "layout": {
+        "cells": 168,
+        "offScreen": 0,
+        "above": [],
+        "overflow": 0,
+        "top": 465,
+        "bottom": 768,
+        "viewport": 844,
+        "cell": {
+          "width": 28.515625,
+          "height": 10
+        }
+      },
+      "pixels": {
+        "lit": 129,
+        "dimmest": 2.31,
+        "median": 5.92,
+        "peak": 14.64,
+        "emptiest": 1.02
+      }
+    },
+    {
+      "name": "redacted-pixels-and-moving-mask",
+      "ok": true,
+      "black": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "white": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "reading": "2 masks solid black · text found 7 → 0"
+    },
+    {
+      "name": "resonance-face-fits-one-desktop-screen",
+      "ok": true,
+      "stage": 772,
+      "face": 684,
+      "room": 808,
+      "first": "reso__screen",
+      "host": true
+    },
+    {
+      "name": "resonance-scope-dark-at-rest-live-while-playing",
+      "ok": true,
+      "rest": 0,
+      "live": 9003,
+      "span": 39,
+      "x1": "translate3d(547.092px, 0px, 0px)",
+      "x2": "translate3d(830.059px, 0px, 0px)",
+      "after": 0
+    },
+    {
+      "name": "resonance-pad-trail-fades-to-nothing",
+      "ok": true,
+      "drawn": {
+        "fill": 119,
+        "stroke": 60,
+        "clear": 59,
+        "peak": 0.9985719387755103
+      },
+      "gone": 0,
+      "clears": 62
+    },
+    {
+      "name": "resonance-reduced-motion-draws-a-still",
+      "ok": true,
+      "lit": 5836,
+      "still": true
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,76 @@
+{
+  "report": [
+    {
+      "name": "atlas",
+      "ok": true
+    },
+    {
+      "name": "lore-stretch",
+      "from": "8 May 2026",
+      "to": "29 May 2026",
+      "figures": "An invented chat. 465 messages 5 voices 22 active days 110 conversations Counts describe this export, not relationships."
+    },
+    {
+      "name": "group-lore",
+      "ok": true
+    },
+    {
+      "name": "prove-it",
+      "ok": true
+    },
+    {
+      "name": "wav-pixels",
+      "bytes": 3351644,
+      "peak": 5301
+    },
+    {
+      "name": "resonance",
+      "ok": true
+    },
+    {
+      "name": "pocket-redact",
+      "ok": true
+    },
+    {
+      "name": "atlas-chromium-mobile",
+      "ok": true
+    },
+    {
+      "name": "group-lore-chromium-mobile",
+      "ok": true
+    },
+    {
+      "name": "prove-it-chromium-mobile",
+      "ok": true
+    },
+    {
+      "name": "resonance-chromium-mobile",
+      "ok": true
+    },
+    {
+      "name": "pocket-redact-chromium-mobile",
+      "ok": true
+    },
+    {
+      "name": "atlas-webkit-mobile",
+      "ok": true
+    },
+    {
+      "name": "group-lore-webkit-mobile",
+      "ok": true
+    },
+    {
+      "name": "prove-it-webkit-mobile",
+      "ok": true
+    },
+    {
+      "name": "resonance-webkit-mobile",
+      "ok": true
+    },
+    {
+      "name": "pocket-redact-webkit-mobile",
+      "ok": true
+    }
+  ],
+  "errors": []
+}
