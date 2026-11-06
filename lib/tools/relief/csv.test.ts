@@ -162,4 +162,11 @@ describe("eventsFromCsv", () => {
   it("returns an empty reading for an empty file rather than throwing", () => {
     expect(eventsFromCsv([], 0)).toEqual({ events: [], read: 0, skipped: 0, endMs: 0 });
   });
+
+  it("reads all 200,000 allowed rows without spreading them onto the call stack", () => {
+    const rows = Array.from({ length: 200_000 }, () => at("2026-06-05T12:00:00Z"));
+    const reading = eventsFromCsv(rows, 0);
+    expect(reading.read).toBe(200_000);
+    expect(reading.skipped).toBe(0);
+  });
 });

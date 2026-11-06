@@ -7,6 +7,7 @@ import {
   PAGE_SIZE,
   ReliefAuthError,
   ReliefInputError,
+  ReliefPermissionError,
   ReliefRateLimitError,
   SEARCH_INTERVAL_MS,
   SECONDARY_BACKOFF_MS,
@@ -26,7 +27,9 @@ const END = Date.UTC(2026, 8, 3);
 type Recorded = { url: string; headers: Record<string, string>; body: unknown };
 
 /** A recording fetch. Answers `items` commits per page and logs every request. */
-function stubFetch(pages: (unknown[] | { status: number; headers?: Record<string, string> })[]) {
+function stubFetch(
+  pages: (unknown[] | { status: number; headers?: Record<string, string>; message?: string })[],
+) {
   const calls: Recorded[] = [];
   let i = 0;
   const impl = (async (input: string | URL, init?: RequestInit) => {
@@ -49,7 +52,7 @@ function stubFetch(pages: (unknown[] | { status: number; headers?: Record<string
       ok: false,
       status: page.status,
       headers: new Headers(page.headers ?? {}),
-      json: async () => ({ message: "no" }),
+      json: async () => ({ message: page.message ?? "no" }),
     } as unknown as Response;
   }) as unknown as typeof fetch;
   return { impl, calls };
@@ -209,7 +212,9 @@ describe("fetchCommitEvents", () => {
 
   it("backs off once on a rate limit and gives up saying so", async () => {
     const waits: number[] = [];
-    const { calls, promise } = run([{ status: 403 }], {
+    const { calls, promise } = run([
+      { status: 403, message: "You have exceeded a secondary rate limit." },
+    ], {
       sleep: async (ms: number) => void waits.push(ms),
     });
     await expect(promise).rejects.toBeInstanceOf(ReliefRateLimitError);
@@ -227,7 +232,10 @@ describe("fetchCommitEvents", () => {
   it("waits and recovers from one secondary limit", async () => {
     const waits: number[] = [];
     const backoffs: number[] = [];
-    const { calls, promise } = run([{ status: 403 }, []], {
+    const { calls, promise } = run([
+      { status: 403, message: "You have exceeded a secondary rate limit." },
+      [],
+    ], {
       sleep: async (ms: number) => void waits.push(ms),
       onBackoff: (ms: number) => void backoffs.push(ms),
     });
@@ -240,13 +248,29 @@ describe("fetchCommitEvents", () => {
   it("backs off only once for the whole run, so repeated limits cannot hold the tab for minutes", async () => {
     const waits: number[] = [];
     const backoffs: number[] = [];
-    const { promise } = run([{ status: 403 }, [], { status: 403 }], {
+    const limited = { status: 403, message: "You have exceeded a secondary rate limit." };
+    const { promise } = run([limited, [], limited], {
       sleep: async (ms: number) => void waits.push(ms),
       onBackoff: (ms: number) => void backoffs.push(ms),
     });
     await expect(promise).rejects.toBeInstanceOf(ReliefRateLimitError);
     expect(waits.filter((ms) => ms === SECONDARY_BACKOFF_MS)).toHaveLength(1);
     expect(backoffs).toEqual([SECONDARY_BACKOFF_MS]);
+  });
+
+  it("does not call an evidenced permission failure a rate limit or wait a minute", async () => {
+    const waits: number[] = [];
+    const backoffs: number[] = [];
+    const { calls, promise } = run([
+      { status: 403, message: "Resource not accessible by personal access token" },
+    ], {
+      sleep: async (ms: number) => void waits.push(ms),
+      onBackoff: (ms: number) => void backoffs.push(ms),
+    });
+    await expect(promise).rejects.toBeInstanceOf(ReliefPermissionError);
+    expect(calls).toHaveLength(1);
+    expect(waits).toEqual([]);
+    expect(backoffs).toEqual([]);
   });
 
   it("keeps commit search below the hidden ten-a-minute secondary limit seen live", async () => {

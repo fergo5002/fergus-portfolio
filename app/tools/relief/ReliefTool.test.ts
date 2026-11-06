@@ -89,6 +89,10 @@ describe("the token's rules, read off the source", () => {
     expect(tool).toMatch(/useEffect\(\(\) => \(\) => runRef\.current\?\.abort\(\), \[\]\)/);
   });
 
+  it("aborts a live request before changing input panels", () => {
+    expect(tool).toContain("abortForSourceChange(runRef.current, source, next)");
+  });
+
   it("refuses an oversized CSV before File.text allocates it", () => {
     const body = tool.match(/async function onFile\([\s\S]*?\n {2}\}/)?.[0] ?? "";
     expect(body.indexOf("csvFileAllowed(chosen.size)")).toBeGreaterThan(0);
@@ -99,6 +103,11 @@ describe("the token's rules, read off the source", () => {
 });
 
 describe("the exports", () => {
+  it("names a file for the sheet that was accepted, not the panel that is open", () => {
+    expect(tool).toContain("plateFilename(drawnSource,");
+    expect(tool).not.toContain("plateFilename(source,");
+  });
+
   it("saves all three through the tested module", () => {
     for (const call of ["canvasBlob(", "svgBlob(", "stlBlob(", "saveBlob(", "plateFilename("]) {
       expect(tool, call).toContain(call);
