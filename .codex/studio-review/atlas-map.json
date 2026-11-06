@@ -1,0 +1,12 @@
+{
+  "format": "atlas-v1",
+  "files": [
+    {
+      "path": "README",
+      "size": 13,
+      "text": "Hello World!\n",
+      "kind": "readme",
+      "status": "read"
+    }
+  ]
+}

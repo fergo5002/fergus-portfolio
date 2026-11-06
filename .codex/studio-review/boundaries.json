@@ -1,0 +1,54 @@
+{
+  "results": [
+    {
+      "name": "document-formats-and-media",
+      "ok": true,
+      "formats": 7,
+      "unexpectedRequests": 0
+    },
+    {
+      "name": "one-thousand-file-map",
+      "ok": true,
+      "files": 1000,
+      "importMs": 2577
+    },
+    {
+      "name": "archive-limit-preserves-current-map",
+      "ok": true
+    },
+    {
+      "name": "public-github",
+      "ok": true,
+      "repository": "octocat/Hello-World",
+      "files": 1
+    },
+    {
+      "name": "large-chat-filtering",
+      "ok": true,
+      "messages": 25000,
+      "importMs": 3077,
+      "renderedRows": 50
+    },
+    {
+      "name": "cancelled-chat-read-stays-cancelled",
+      "ok": true
+    },
+    {
+      "name": "redacted-pixels-and-moving-mask",
+      "ok": true,
+      "black": [
+        0,
+        0,
+        0,
+        255
+      ],
+      "white": [
+        255,
+        255,
+        255,
+        255
+      ]
+    }
+  ],
+  "errors": []
+}
