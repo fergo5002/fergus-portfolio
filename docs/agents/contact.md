@@ -41,7 +41,7 @@ native validation and the no-JavaScript form; it does not introduce a second sub
 
 Sending goes through Resend over plain `fetch`, no SDK. `RESEND_API_KEY` is the only required
 variable and it **is set** on the Vercel project (production, preview and development), with a copy
-in the DPAPI vault. `CONTACT_TO_EMAIL` and `CONTACT_FROM_EMAIL` are optional overrides and neither
+in the Mac Keychain (`auth get RESEND_API_KEY`). `CONTACT_TO_EMAIL` and `CONTACT_FROM_EMAIL` are optional overrides and neither
 is set.
 
 **Do not move the destination without reading the `DEFAULT_FROM` docblock in `lib/contact.ts`

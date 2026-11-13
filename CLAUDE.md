@@ -6,5 +6,5 @@
 
 Claude only:
 
-- `cc portfolio` (or `cc personal`) from anywhere roots a shell and Claude session here.
+- `cc site` (or `cc portfolio`) from anywhere roots a shell and Claude session here.
 - `.claude/settings.json` pre-approves the routine local dev loop (`npm`, `npx vitest`, `npx playwright`, `node`) so it doesn't re-prompt every session.
