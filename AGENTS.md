@@ -44,7 +44,7 @@ npm test           # vitest unit tests (must stay green)
 npm start          # serve the production build
 ```
 
-Other npm scripts cover analytics, IndexNow, the phone and arcade phone checks, the wide check and share-of-model reporting: see `package.json`. `node scripts/build-images.mjs` rebuilds everything under `public/img/`. `npm run wide-check -- --base http://localhost:3000 --from-sitemap` measures 1600 to 5120. The verification scripts and the Docker parity build are listed in `docs/DEVELOPING.md`.
+Other npm scripts cover the lab, IndexNow, the phone and arcade phone checks, the wide check, share-of-model reporting and the Second Visit fixtures: see `package.json`. `node scripts/build-images.mjs` rebuilds everything under `public/img/`. `npm run wide-check -- --base http://localhost:3000 --from-sitemap` measures 1600 to 5120. The verification scripts and the Docker parity build are listed in `docs/DEVELOPING.md`.
 
 ## Deploy
 
