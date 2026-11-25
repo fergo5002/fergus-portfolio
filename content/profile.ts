@@ -65,10 +65,10 @@ export const profile: Profile = {
    * `app/layout.tsx`, so it carries what he is doing now.
    */
   bio: [
-    "I'm a 20-year-old from Ireland who loves building software and businesses.",
-    "I'm currently in stealth, revolutionising the way consumer brands get access to working capital.",
-    "Before this I was in Hatch105, building Presterly, an ecom SaaS tool. I was also the co-founder of Tigh Sauna, the operating and growth layer for saunas.",
-    "Otherwise I love playing tennis, playing poker, or building random side projects.",
+    "I am 20 years old from Ireland and I love building businesses.",
+    "I am currently in stealth, working on disrupting the credit space for consumer brands.",
+    "Previously I was in Hatch105, which really sparked my love for entrepreneurship, and I built Presterly, an ecom SaaS tool. I also co-founded Tigh Sauna, which is an operating and growth layer for saunas.",
+    "Otherwise, I love tennis, playing poker or building random side projects.",
   ],
   /**
    * These links are the site's `sameAs` edges, which is to say they are the

@@ -12,7 +12,7 @@ const page = await context.newPage(); const errors = []; page.on("pageerror", e 
 const phase = (name) => page.waitForFunction((n) => document.querySelector(".arcade-play")?.dataset.phase === n, name, { timeout: 30000 });
 try {
   await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
-  await page.locator(".statusbar__prompt").click();
+  await page.locator(".term-handle").click();
   await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
   await page.locator(".arcade-entrance").waitFor();
   await page.screenshot({ path: resolve(out, "01-arrival.png") });

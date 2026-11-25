@@ -53,7 +53,7 @@ describe("isIngestPath", () => {
 describe("trailingSlashTarget", () => {
   it("strips a trailing slash from a real route", () => {
     expect(trailingSlashTarget("/writing/")).toBe("/writing");
-    expect(trailingSlashTarget("/writing/why-presterly-wound-down/")).toBe("/writing/why-presterly-wound-down");
+    expect(trailingSlashTarget("/writing/multi-tenant-shopify-apps/")).toBe("/writing/multi-tenant-shopify-apps");
   });
 
   it("leaves the root alone", () => {
@@ -139,7 +139,7 @@ describe("shouldCaptureCrawlerVisit", () => {
 describe("crawlerVisitProperties", () => {
   const props = crawlerVisitProperties({
     crawler: { name: "ChatGPT-User", token: "ChatGPT-User", vendor: "openai", purpose: "user-fetch" },
-    pathname: "/writing/why-presterly-wound-down",
+    pathname: "/writing/multi-tenant-shopify-apps",
     search: "?utm_source=x",
     host: "fergusoreilly.dev",
     userAgent: "Mozilla/5.0 (compatible; ChatGPT-User/1.0; +https://openai.com/bot)",
@@ -149,13 +149,13 @@ describe("crawlerVisitProperties", () => {
     expect(props.crawler).toBe("ChatGPT-User");
     expect(props.vendor).toBe("openai");
     expect(props.purpose).toBe("user-fetch");
-    expect(props.path).toBe("/writing/why-presterly-wound-down");
+    expect(props.path).toBe("/writing/multi-tenant-shopify-apps");
   });
 
   it("sets $current_url so PostHog's own path reports work", () => {
     // Without this the events exist but land outside every built-in insight,
     // which is the kind of thing that reads as "no data" for a month.
-    expect(props.$current_url).toBe("https://fergusoreilly.dev/writing/why-presterly-wound-down");
+    expect(props.$current_url).toBe("https://fergusoreilly.dev/writing/multi-tenant-shopify-apps");
   });
 
   /**

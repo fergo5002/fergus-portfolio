@@ -31,7 +31,9 @@
   --sp-6: 48px;
 
   --nav-h: 44px;
-  --status-h: 48px;
+  /* Room left under the last thing on a page so the terminal's handle, which
+     floats in the bottom right, never sits on top of it. */
+  --dock-clear: 80px;
   /* The page's width. 1040px is the laptop measure every layout was drawn at;
      past about 1300px the page grows with the screen to four fifths of it, up
      to a cap, so a big monitor fills rather than framing a strip down the
@@ -44,13 +46,17 @@
   --maxw-fill: 80vw;
   --maxw-cap: 2700px;
   --radius: 6px;
-  --glow: 0 0 2px rgba(51, 255, 102, 0.7), 0 0 7px rgba(51, 255, 102, 0.35);
+  --glow: 0 0 2px rgba(51, 255, 102, 0.525), 0 0 7px rgba(51, 255, 102, 0.26);
 
   /* Live values published by the system frame loop. Declared here so every rule
      that reads them has a sane value before the first frame lands. */
   --scroll-v: 0; /* 0..1 absolute scroll speed */
   --scroll-p: 0; /* 0..1 progress through the document */
   --scanline-intensity: 0.55;
+  /* EFFECT_STRENGTH in lib/system.ts, for the layers CSS draws: the scanlines,
+     the text glow, the flicker, the vignette and the glass. Fergus asked for
+     them a quarter quieter on 2026-11-25. Change both together. */
+  --fx: 0.75;
   /* Rotates the sepia base of the image duotone onto each phosphor. Sepia is
      already amber, hence 0deg for that theme. */
   --duotone-hue: 70deg;
@@ -71,7 +77,7 @@ html[data-theme="amber"] {
   --green-line: rgba(255, 179, 64, 0.24);
   --amber: #9fe8ff;
   --amber-bright: #d6f5ff;
-  --glow: 0 0 2px rgba(255, 179, 64, 0.7), 0 0 7px rgba(255, 179, 64, 0.35);
+  --glow: 0 0 2px rgba(255, 179, 64, 0.525), 0 0 7px rgba(255, 179, 64, 0.26);
   --duotone-hue: 0deg;
 }
 
@@ -86,7 +92,7 @@ html[data-theme="ice"] {
   --green-line: rgba(143, 220, 255, 0.24);
   --amber: #ffcf70;
   --amber-bright: #ffe3a8;
-  --glow: 0 0 2px rgba(143, 220, 255, 0.7), 0 0 7px rgba(143, 220, 255, 0.35);
+  --glow: 0 0 2px rgba(143, 220, 255, 0.525), 0 0 7px rgba(143, 220, 255, 0.26);
   --duotone-hue: 165deg;
 }
 
@@ -251,18 +257,18 @@ ul {
     rgba(0, 0, 0, 0.28) 3px
   );
   background-size: 100% 3px;
-  opacity: var(--scanline-intensity);
+  opacity: calc(var(--scanline-intensity) * var(--fx));
   /* Promote to its own layer so the drift below is a compositor transform rather
      than a full-viewport repaint. See `scan-drift`. */
   will-change: transform;
 }
 .crt__vignette {
   background:
-    radial-gradient(120% 120% at 50% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 100%),
-    radial-gradient(100% 60% at 50% 0%, rgba(51, 255, 102, 0.06), rgba(0, 0, 0, 0) 70%);
+    radial-gradient(120% 120% at 50% 50%, rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, calc(0.55 * var(--fx))) 100%),
+    radial-gradient(100% 60% at 50% 0%, rgba(51, 255, 102, calc(0.06 * var(--fx))), rgba(0, 0, 0, 0) 70%);
 }
 .crt__flicker {
-  background: rgba(51, 255, 102, 0.03);
+  background: rgba(51, 255, 102, calc(0.03 * var(--fx)));
   opacity: 0;
   z-index: 8999;
 }
@@ -305,7 +311,7 @@ ul {
   background: linear-gradient(
     calc(104deg + var(--scroll-v) * 8deg),
     rgba(255, 255, 255, 0) 38%,
-    rgba(255, 255, 255, calc(0.012 + var(--scroll-v) * 0.02)) 47%,
+    rgba(255, 255, 255, calc((0.012 + var(--scroll-v) * 0.02) * var(--fx))) 47%,
     rgba(255, 255, 255, 0) 56%
   );
 }
@@ -325,7 +331,7 @@ html.crt-off body {
 .screen {
   max-width: clamp(var(--maxw), var(--maxw-fill), var(--maxw-cap));
   margin: 0 auto;
-  padding: calc(var(--nav-h) + var(--sp-5)) var(--sp-4) calc(var(--sp-6) + var(--status-h));
+  padding: calc(var(--nav-h) + var(--sp-5)) var(--sp-4) calc(var(--sp-6) + var(--dock-clear));
 }
 .screen:focus {
   outline: none;
@@ -379,7 +385,27 @@ html.crt-off body {
 .nav__prompt {
   --nav-user: "fergus@portfolio";
   --nav-path: "~";
+  --hold-ms: 3000ms;
   color: var(--green-dim);
+  /* The arcade's hidden door is a press and hold on this, so a long press on
+     a phone must not select the text or raise the callout menu instead. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  cursor: default;
+  /* The fill that sweeps the name while it is held. It rests off to the right
+     and is drawn as a background, so it costs nothing until a hold starts. */
+  background: linear-gradient(to right, color-mix(in srgb, var(--amber) 30%, transparent) 50%, transparent 50%) 100% 0 / 200% 100% no-repeat;
+  border-radius: 2px;
+}
+.nav__prompt.is-holding {
+  background-position: 0 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .nav__prompt.is-holding {
+    transition: background-position var(--hold-ms) linear;
+  }
 }
 .nav__user {
   color: var(--green);
@@ -709,7 +735,8 @@ html.crt-off body {
    that animation invisible and left the sequence playing over flat black. */
 .booting .screen,
 .booting .nav,
-.booting .statusbar {
+.booting .term-dock,
+.booting .shell {
   visibility: hidden;
 }
 
@@ -719,17 +746,24 @@ html.crt-off body {
   border-radius: var(--radius);
   background: #070b07;
   box-shadow: inset 0 0 30px rgba(51, 255, 102, 0.05);
-  padding: var(--sp-3);
+  overflow: hidden;
   cursor: text;
 }
+.term__body {
+  padding: var(--sp-3);
+}
 .term__scroll {
-  max-height: 230px;
+  max-height: 260px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   font-size: 0.88rem;
+  line-height: 1.5;
   margin-bottom: var(--sp-2);
+  scrollbar-width: thin;
+  scrollbar-color: var(--green-line) transparent;
 }
 .term__entry {
-  margin-bottom: var(--sp-2);
+  margin-bottom: var(--sp-3);
 }
 .term__entry .promptline {
   margin-bottom: var(--sp-1);
@@ -738,7 +772,49 @@ html.crt-off body {
   margin: 0;
   color: var(--green);
   white-space: pre-wrap;
-  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+/* A blank line in the output is a real gap. Empty paragraphs collapsed to
+   nothing, so `resume` and `help` ran their sections together. */
+.term__out:empty {
+  min-height: 1.5em;
+}
+.term__out a {
+  color: var(--amber);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--amber) 45%, transparent);
+  text-underline-offset: 3px;
+}
+.term__out a:hover {
+  color: var(--amber-bright);
+  text-decoration-color: currentColor;
+}
+/* On a phone the whole prompt left about ten characters to type in. The path
+   and the dollar are what matter; the name is on the line above every echo. */
+@media (max-width: 560px) {
+  .term__label .promptline__user,
+  .term__label .promptline__sep {
+    display: none;
+  }
+  /* "~ $" alone is 29px wide; the label focuses the input, so it keeps a thumb. */
+  .term__label {
+    min-width: 44px;
+  }
+}
+/* What Tab could become, when it could become more than one thing. */
+.term__options {
+  margin: var(--sp-1) 0 0;
+  font-size: 0.8rem;
+  color: var(--green-dim);
+  white-space: pre-wrap;
+}
+/* Gravity and eject refuse under reduced motion, so their chips go too. Scoped
+   to the hint row so it outranks `.magnetic { display: inline-block }`, which
+   comes later in this file and won on source order the first time. */
+@media (prefers-reduced-motion: reduce) {
+  .term__hints .term__hint-wrap--motion {
+    display: none;
+  }
 }
 .term__form {
   display: flex;
@@ -1471,130 +1547,6 @@ html.js .exp__spine {
   transform: scaleY(0);
 }
 
-/* ----- status bar --------------------------------------------------------- */
-.statusbar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: var(--status-h);
-  z-index: 9100;
-  display: flex;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: 0 var(--sp-3);
-  background: var(--bg-panel);
-  border-top: 1px solid var(--green-line);
-  font-size: 0.72rem;
-  color: var(--green);
-  white-space: nowrap;
-  overflow: hidden;
-  font-variant-numeric: tabular-nums;
-  text-shadow: none;
-}
-.statusbar__brand {
-  color: var(--green);
-  padding-right: var(--sp-3);
-  border-right: 1px solid var(--green-line);
-}
-.statusbar__pwd {
-  color: var(--amber);
-}
-.statusbar__pwd-short {
-  display: none;
-}
-/* The readouts. Every value is written by StatusBar into its own `--ro` and
-   drawn here, so none of it is text in the document (components/statusbar.test.ts
-   guards that). Minimum widths are set in `ch` so the strip does not shuffle
-   when the values first arrive after hydration. */
-.statusbar__ro::after {
-  content: var(--ro, "");
-}
-.statusbar__ro--up { min-width: 11ch; }
-.statusbar__ro--up::before { content: "up "; opacity: 0.7; }
-.statusbar__ro--mem { min-width: 10ch; letter-spacing: 0.02em; }
-.statusbar__ro--fps { min-width: 6ch; }
-.statusbar__ro--fps::after { content: var(--ro, "") " fps"; }
-.statusbar__ro--pos { min-width: 7ch; opacity: 0.8; }
-.statusbar__ro--clock { min-width: 8ch; color: var(--green-bright); }
-.statusbar__ro--theme { opacity: 0.8; }
-/* The drive light: dark at rest, flickering amber while the machine works. */
-.statusbar__lamp {
-  flex: none;
-  width: 6px;
-  height: 6px;
-  background: var(--green-line);
-}
-.statusbar__lamp[data-on="1"] {
-  background: var(--amber);
-  box-shadow: 0 0 6px var(--amber);
-}
-/* They give way in order as the strip narrows: pointer and phosphor first,
-   then memory and frame rate. The location and the clock stay longest. */
-@media (max-width: 1199px) {
-  .statusbar__ro--pos,
-  .statusbar__ro--theme { display: none; }
-}
-@media (max-width: 999px) {
-  .statusbar__ro--mem,
-  .statusbar__ro--fps { display: none; }
-}
-@media (max-width: 768px) {
-  .statusbar__ro--up,
-  .statusbar__ro--clock,
-  .statusbar__lamp { display: none; }
-}
-
-/* ----- screensaver -------------------------------------------------------- */
-.saver {
-  position: fixed;
-  inset: 0;
-  z-index: 9400;
-  background: #000;
-}
-.saver__plate {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
-  background: rgba(10, 14, 10, 0.75);
-}
-.saver__title {
-  font-family: var(--font-screen);
-  font-size: 2.1rem;
-  line-height: 1;
-  color: var(--green-bright);
-}
-.saver__sub {
-  font-size: 0.68rem;
-  color: var(--green-dim);
-}
-/* The beam draws the saver on the tube itself (lib/lissajous.ts), so the page
-   steps aside the way it does for the boot and the phosphor shows through. */
-.is-saving .screen,
-.is-saving .nav,
-.is-saving .statusbar {
-  visibility: hidden;
-}
-.saver--beam {
-  background: transparent;
-  pointer-events: none;
-}
-.saver__wake {
-  position: absolute;
-  left: 50%;
-  bottom: var(--sp-5);
-  transform: translateX(-50%);
-  font-size: 0.68rem;
-  color: var(--green-dim);
-}
-
 /* ----- channel change ----------------------------------------------------- */
 .channel {
   position: fixed;
@@ -1912,7 +1864,7 @@ html.js .exp__spine {
   .crt__scanlines {
     animation: none;
     bottom: 0;
-    opacity: calc(var(--scanline-intensity) * 0.5);
+    opacity: calc(var(--scanline-intensity) * 0.5 * var(--fx));
   }
   html.webgl-ok .crt__scanlines {
     display: none;
@@ -1928,14 +1880,13 @@ html.js .exp__spine {
     background: linear-gradient(
       104deg,
       rgba(255, 255, 255, 0) 38%,
-      rgba(255, 255, 255, 0.016) 47%,
+      rgba(255, 255, 255, calc(0.016 * var(--fx))) 47%,
       rgba(255, 255, 255, 0) 56%
     );
   }
   /* backdrop-filter on a fixed bar is one of the reliable mobile killers: it
      re-samples what is behind it every frame the page moves. */
-  .nav,
-  .statusbar {
+  .nav {
     backdrop-filter: none;
     background: rgba(8, 12, 8, 0.97);
   }
@@ -1971,12 +1922,7 @@ html.js .exp__spine {
     --sp-5: 24px;
     --sp-6: 32px;
     --nav-h: 44px;
-    --status-h: 44px;
-  }
-
-  .statusbar {
-    font-size: 0.62rem;
-    gap: var(--sp-2);
+    --dock-clear: 72px;
   }
 
   /* Body copy down from 16px. A monospace face at 16px on a 390px screen fits
@@ -1989,7 +1935,7 @@ html.js .exp__spine {
   }
 
   .screen {
-    padding: calc(var(--nav-h) + var(--sp-4)) var(--sp-3) calc(var(--sp-5) + var(--status-h));
+    padding: calc(var(--nav-h) + var(--sp-4)) var(--sp-3) calc(var(--sp-5) + var(--dock-clear));
   }
   .window__body {
     padding: var(--sp-3);
@@ -2024,11 +1970,23 @@ html.js .exp__spine {
     justify-content: flex-start;
     overflow: hidden;
   }
+  /* Back since 2026-11-25, as the user half only: it is the arcade's hidden
+     door (press and hold), and with mcp and arcade gone from the bar there is
+     room for it. 44px tall so the hold has a real target. */
   .nav__prompt {
+    display: flex;
+    align-items: center;
+    flex: none;
+    min-height: 44px;
+    padding: 0 var(--sp-1) 0 var(--sp-2);
+  }
+  .nav__path {
     display: none;
   }
   .nav__list {
     display: flex;
+    flex: 1;
+    min-width: 0;
     width: 100%;
     gap: var(--sp-1);
     padding: 0 32px 0 var(--sp-2);
@@ -2269,7 +2227,6 @@ html.is-ejecting .crt__scanlines,
 html.is-ejecting .crt__vignette,
 html.is-ejecting .crt__glass,
 html.is-ejecting .crt__flicker,
-html.is-ejecting .statusbar,
 html.is-ejecting .nav {
   position: absolute;
 }
@@ -2283,11 +2240,6 @@ html.is-ejecting .crt__flicker {
 }
 html.is-ejecting .nav {
   top: 0;
-  left: 0;
-  right: 0;
-}
-html.is-ejecting .statusbar {
-  bottom: 0;
   left: 0;
   right: 0;
 }
@@ -2326,8 +2278,8 @@ html.scroll-locked body {
   inset: 0;
   z-index: 8500;
   /* Pointer events are handled on `window` by the stage, so the layer itself
-     must never intercept them: otherwise the status-bar controls (including
-     the one that turns gravity off) would stop responding. */
+     must never intercept them: otherwise the terminal's dock (including the
+     button that turns gravity off) would stop responding. */
   pointer-events: none;
   contain: strict;
 }
@@ -2365,152 +2317,14 @@ html.is-gravity .crt__screen,
 html.is-gravity .gravity {
   cursor: grab;
 }
-html.is-gravity .statusbar {
-  /* The way out has to stay lit and clickable while everything else is on the
-     floor. */
-  z-index: 8600;
-}
 
-/* ----- machine controls --------------------------------------------------- */
-.statusbar__readouts {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.machine {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-  margin-left: auto;
-  flex: none;
-}
-
-.machine__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 32px;
-  padding: 4px 10px;
-  font: inherit;
-  font-size: 11px;
-  line-height: 1;
-  color: var(--green);
-  background: var(--bg-panel-2);
-  border: 1px solid var(--green-line);
-  border-radius: 2px;
-  cursor: pointer;
-  transition:
-    color 140ms ease,
-    border-color 140ms ease,
-    background-color 140ms ease;
-}
-@media (hover: hover) {
-  .machine__btn:hover {
-    color: var(--green-bright);
-    border-color: var(--green-line);
-    background: rgba(255, 255, 255, 0.03);
-  }
-}
-.machine__btn:focus-visible {
-  outline: 1px solid var(--green);
-  outline-offset: 1px;
-  color: var(--green-bright);
-}
-.machine__btn.is-on {
-  color: var(--amber);
-  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
-  text-shadow: 0 0 6px color-mix(in srgb, var(--amber) 55%, transparent);
-}
-.machine__glyph {
-  font-size: 10px;
-}
-
-/* The invitation. A speaker that is quietly asking to be pressed: this is the
-   only affordance on the page for a feature nobody expects a website to have,
-   so it is allowed to draw a little attention to itself. */
-@media (prefers-reduced-motion: no-preference) {
-  .machine__btn--audio.is-inviting .machine__glyph {
-    animation: machine-pulse 2.6s ease-in-out infinite;
-  }
-}
-@keyframes machine-pulse {
-  0%,
-  72%,
-  100% {
-    opacity: 0.55;
-    text-shadow: none;
-  }
-  84% {
-    opacity: 1;
-    text-shadow: 0 0 8px var(--green);
-  }
-}
-
-@media (max-width: 560px) {
-  /* The words explain the controls. Spare glyphs go before their labels do. */
-  .machine__glyph { display: none; }
-  .machine__btn {
-    padding: 0 4px;
-  }
-}
-
-/* Under `reduce`, gravity and eject are never offered (see MachineControls) and
-   the stage never mounts, so there is nothing here to disable. */
-
-/* Gravity and the pull-back are hidden under `reduce` rather than removed from
-   the tree. Branching JSX on a client-only media query is a hydration mismatch
-   for exactly the visitors the preference protects; `display: none` also takes
-   them out of the focus order, which visual hiding would not. */
-.machine__motion {
-  display: contents;
-}
-/* After the rule above, never before it. Same specificity, so the later one
-   wins, and until 2026-09-03 the `contents` rule came second: gravity and
-   eject were offered under `reduce` after all, in a 21 by 16 box. The phone
-   check, which drives every route under `reduce`, is what found them. */
-@media (prefers-reduced-motion: reduce) {
-  .machine__motion {
-    display: none;
-  }
-}
-
-/* ── touch: the bar is a touch bar ────────────────────────────────────────
-   Found by scripts/phone-check.mjs on its first run, 2026-09-03. On a phone
-   the machine controls were 21 by 16, and the readouts pushed the last of
-   them past the right edge of a 390px bar. 44px is the floor Apple and WCAG
-   2.2 both land on. `--status-h` is the one token the page padding and the
-   shader's bezel both read, so the change stays coherent. The skip link and
-   the call to action are the two shell links the same run found three pixels
-   short.
-
-   The fix was one `(hover: none)` block, and review split it, because it was
-   two findings wearing one media query. A thumb is 44px wide on any screen, so
-   the floors below follow from the input and belong on `(hover: none)` like
-   the rest of this file. Running out of room in the bar does not: that was a
-   390px bar, and a touchscreen till or a 27" all-in-one has a metre of it. In
-   one block, those machines lost the memory readout and had the working
-   directory truncated for space they were not short of. */
+/* ── touch: real thumb targets ─────────────────────────────────────────────
+   Found by scripts/phone-check.mjs on its first run, 2026-09-03. 44px is the
+   floor Apple and WCAG 2.2 both land on. A thumb is 44px wide on any screen,
+   so these floors follow from the input, `(hover: none)`, and not from the
+   width. The skip link and the call to action were the two shell links that
+   run found three pixels short. */
 @media (hover: none) {
-  :root {
-    --status-h: 44px;
-  }
-  .machine__btn {
-    min-width: 44px;
-    min-height: 44px;
-    justify-content: center;
-    padding: 0;
-  }
-  /* The drawer's handle is a thumb target on any touchscreen, wide or narrow.
-     Its layout in a narrow bar (stretched, centred) is the narrow block's job
-     at the end of this file. */
-  .statusbar__prompt {
-    min-width: 44px;
-    min-height: 44px;
-  }
   .skiplink,
   .talk__cta {
     min-height: 44px;
@@ -2592,13 +2406,6 @@ html.is-gravity .statusbar {
   }
 }
 
-/* On a narrow touch screen the controls take only their own space. */
-@media (hover: none) and (max-width: 768px) {
-  .machine {
-    flex: none;
-    gap: 0;
-  }
-}
 
 /* ════════════════════════════════════════════════════════════════════════════
    WRITING SURFACE
@@ -3264,185 +3071,10 @@ h4.prose__h {
   text-shadow: var(--glow);
 }
 
-/* ── contact form (/contact) ───────────────────────────────────────────────
-   The page that replaced the dead `mailto:` button.
+/* ── the meeting form's honeypot and button (/contact) ─────────────────────
+   What is left of the message form, which went on 2026-11-25. The meeting
+   form on `/contact?meet=...` still uses its honeypot and its button. */
 
-   Deliberately plainer than the rest of the site. Everywhere else the terminal
-   premise wins; this is the one surface a visitor has to type into, so the
-   inputs get a real border, a real focus ring and no glow, rather than the
-   invisible prompt treatment `.term__input` uses. An affordance you have to
-   guess at is fine on a toy shell and not fine on a form. */
-
-.cform {
-  max-width: 62ch;
-}
-
-/* Left in the DOM even when empty, because it is the `aria-live` region: a
-   region inserted at the same moment as its content is not reliably announced.
-   It has no height when empty, so only the gap needs suppressing. */
-.cform__result:not(:empty) {
-  margin-bottom: var(--sp-4);
-}
-
-.cform__panel {
-  border: 1px solid var(--green-line);
-  border-left: 3px solid var(--amber);
-  background: var(--bg-panel-2);
-  padding: var(--sp-3) var(--sp-4);
-}
-
-.cform__panel.is-sent {
-  border-left-color: var(--green);
-}
-
-.cform__panel.is-failed {
-  border-left-color: var(--red);
-}
-
-.cform__panel-title {
-  font-family: var(--font-screen);
-  font-size: 1.05rem;
-  color: var(--amber);
-  margin: 0 0 var(--sp-2);
-}
-
-.cform__panel.is-sent .cform__panel-title {
-  color: var(--green-bright);
-}
-
-.cform__panel.is-failed .cform__panel-title {
-  color: var(--red);
-}
-
-.cform__panel-body {
-  color: var(--green);
-  text-shadow: none;
-  margin: 0 0 var(--sp-3);
-}
-
-.cform__panel-body:last-child {
-  margin-bottom: 0;
-}
-
-.cform__panel-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sp-2);
-  margin: 0;
-}
-
-/* The escape hatches on a failed send. A link and a button that have to read as
-   equals, because either one of them may be the one that works. */
-.cform__alt {
-  display: inline-block;
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--green-bright);
-  font: inherit;
-  padding: var(--sp-2) var(--sp-3);
-  text-decoration: none;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-}
-
-.cform__alt:hover,
-.cform__alt:focus-visible {
-  background: var(--green-bright);
-  border-color: var(--green-bright);
-  color: var(--bg);
-  text-shadow: none;
-}
-
-.cform__form {
-  display: grid;
-  gap: var(--sp-3);
-}
-
-.cform__row {
-  display: grid;
-  gap: var(--sp-1);
-}
-
-/* `--green`, not `--green-dim`. A form label is the accessible name of its
-   field, so it is the last thing on the page that may be borderline, and the
-   dim token is borderline: 4.67 on green, 4.45 on amber, 4.46 on ice. It passes
-   on the one theme a developer is looking at and fails on the two a visitor can
-   reach by typing four characters at the terminal. Computed per theme in
-   app/globals.test.ts; do not quietly dim this back. */
-.cform__label {
-  color: var(--green);
-  font-size: 0.82rem;
-}
-
-.cform__input {
-  width: 100%;
-  min-width: 0;
-  /* Native validation scrolls the first invalid field to the top of the
-     viewport, which is under a fixed 44px bar here. Seen live on 2026-09-06:
-     the "fill out this field" bubble pointed at a field the nav covered. */
-  scroll-margin-top: calc(var(--nav-h) + var(--sp-3));
-  background: var(--bg-panel);
-  border: 1px solid var(--green-line);
-  border-radius: var(--radius);
-  color: var(--green-bright);
-  caret-color: var(--green-bright);
-  font: inherit;
-  padding: var(--sp-2) var(--sp-3);
-  text-shadow: none;
-}
-
-.cform__input::placeholder {
-  color: var(--green-dim);
-}
-
-.cform__input:focus-visible {
-  outline: 2px solid var(--amber);
-  outline-offset: 2px;
-  border-color: var(--amber);
-}
-
-.cform__input[aria-invalid="true"] {
-  border-color: var(--red);
-}
-
-textarea.cform__input {
-  resize: vertical;
-  min-height: 9rem;
-  line-height: 1.6;
-}
-
-/* Keep this after the base font shorthand: an earlier 16px rule was reset to
-   15px by `font: inherit`, making iOS zoom the form on focus. */
-@media (hover: none) {
-  .cform__input {
-    font-size: 16px;
-    min-height: 44px;
-  }
-  .cform__label {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
-  }
-}
-
-.cform__error {
-  color: var(--red);
-  font-size: 0.82rem;
-  text-shadow: none;
-  margin: 0;
-}
-
-/* The honeypot. Off-screen rather than `display: none`, because a field that is
-   not rendered at all is one a bot can see is not worth filling.
-
-   Positioned rather than clipped on purpose: `clip-path` is banned elsewhere in
-   this file for hiding things, since IntersectionObserver folds an element's
-   own clip into its intersection rect. Nothing observes this element, but a
-   second exception is a second thing to remember. */
 .cform__hp {
   position: absolute;
   left: -9999px;
@@ -3475,23 +3107,6 @@ textarea.cform__input {
 .cform__submit:disabled {
   opacity: 0.65;
   cursor: progress;
-}
-
-/* The address, printed under the form rather than hidden behind it. Somebody
-   who would rather not type into a stranger's form should not have to, and if
-   the send fails the thing they need is already on screen. */
-.cdirect {
-  margin-top: var(--sp-6);
-  border-top: 1px solid var(--green-line);
-  padding-top: var(--sp-4);
-  max-width: 62ch;
-}
-
-.cdirect__title {
-  font-family: var(--font-screen);
-  font-size: 1rem;
-  color: var(--amber);
-  margin: 0 0 var(--sp-3);
 }
 
 /* ============================================================================
@@ -3632,220 +3247,356 @@ textarea.cform__input {
 }
 
 /* ==========================================================================
-   THE SHELL DRAWER
-   The terminal on every route that does not host it inline. Bottom-anchored
-   on the status bar. Mounted beside the bar in CrtShell, so while docked its
-   z-index counts in the root stacking context: above the glass layers (9000)
-   and below the status bar and nav (9100), so the prompt that opens it stays
-   clickable. Ejected, the assembly becomes the stacking context and the same
-   numbers hold inside it. Opened by the backtick, the status bar prompt, or a
-   tap on that prompt; closed by Escape or the esc button. `lib/shell.ts` owns
-   whether it is open, `lib/history.ts` what it shows, so it unmounts when
-   closed and loses nothing.
+   THE TERMINAL DOCK (2026-11-25)
+   The status bar along the bottom is gone. Its job now belongs to one handle
+   in the bottom right (components/TermDock.tsx): press it, or the backtick,
+   and the terminal grows out of it as a window; minimise it and it shrinks
+   back in, a genie drawn with a transform and a clip-path. Gravity and eject
+   each put a button beside the handle while they are on, because a phone has
+   no Escape key. The dock sits outside the tube's assembly, so it stays put
+   while the display is ejected or on the floor.
+
+   Stacking: above the glass (9000) and the nav (9100), below the boot (9500).
    ========================================================================== */
-.shell {
+.term-dock {
+  --dock-edge: max(var(--sp-4), env(safe-area-inset-right));
+  --dock-foot: max(var(--sp-4), env(safe-area-inset-bottom));
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: var(--status-h);
-  z-index: 9050;
-  display: flex;
-  flex-direction: column;
-  max-height: min(60vh, 520px);
-  background: rgba(7, 11, 7, 0.97);
-  border-top: 1px solid var(--green-line);
-  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
-}
-.shell__bar {
+  right: var(--dock-edge);
+  bottom: var(--dock-foot);
+  z-index: 9150;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  min-height: 28px;
+  gap: var(--sp-2);
+}
+.term-handle,
+.dock-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--green);
+  background: rgba(7, 11, 7, 0.94);
+  border: 1px solid var(--green-line);
+  border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5), inset 0 0 14px rgba(51, 255, 102, 0.05);
+  text-shadow: var(--glow);
+  cursor: pointer;
+}
+.term-handle {
+  position: relative;
+  min-width: 48px;
+  padding: 0 14px;
+}
+/* The prompt glyph is costume, drawn rather than written, like every other
+   `$` on the site. */
+.term-handle::before {
+  content: "$_";
+  font-weight: 600;
+}
+/* The word slides out on hover and focus, so the handle says what it is the
+   moment anyone goes near it. It is in the document all along (it is part of
+   the button's name), just folded to nothing at rest. */
+.term-handle__label {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+}
+.term-handle:hover,
+.term-handle:focus-visible,
+.term-handle[aria-expanded="true"] {
+  color: var(--amber-bright);
+  border-color: color-mix(in srgb, var(--amber) 55%, transparent);
+  background: color-mix(in srgb, var(--amber) 9%, rgba(7, 11, 7, 0.96));
+}
+.term-handle:hover .term-handle__label,
+.term-handle:focus-visible .term-handle__label {
+  max-width: 9ch;
+  margin-left: 0.7ch;
+  opacity: 1;
+}
+.term-handle:focus-visible,
+.dock-pill:focus-visible {
+  outline: 1px solid var(--green-bright);
+  outline-offset: 2px;
+}
+/* A dock's running light: the window is up. */
+.term-handle[aria-expanded="true"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: var(--amber);
+  box-shadow: 0 0 6px var(--amber);
+}
+.dock-pill {
   padding: 0 var(--sp-3);
-  font-size: 0.7rem;
-  color: var(--green-dim);
+  color: var(--amber);
+  border-color: color-mix(in srgb, var(--amber) 45%, transparent);
+}
+.dock-pill:hover {
+  color: var(--amber-bright);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .term-handle,
+  .term-handle__label {
+    transition:
+      max-width 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      margin 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 160ms ease,
+      color 140ms ease,
+      border-color 140ms ease,
+      background-color 140ms ease;
+  }
+}
+
+/* ----- the window --------------------------------------------------------- */
+.shell {
+  --shell-edge: max(var(--sp-4), env(safe-area-inset-right));
+  --shell-foot: calc(max(var(--sp-4), env(safe-area-inset-bottom)) + 62px);
+  position: fixed;
+  right: var(--shell-edge);
+  bottom: var(--shell-foot);
+  z-index: 9140;
+  display: flex;
+  flex-direction: column;
+  width: min(700px, calc(100vw - 2 * var(--sp-4)));
+  height: min(500px, calc(100dvh - var(--nav-h) - 110px));
+  background: rgba(7, 11, 7, 0.97);
+  border: 1px solid var(--green-line);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.65),
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    inset 0 0 40px rgba(51, 255, 102, 0.04);
+  /* The genie's pivot is the middle of the handle: 24px in from the window's
+     right edge and 38px below its bottom (62 above the dock's foot, minus half
+     the 48px handle). */
+  transform-origin: calc(100% - 24px) calc(100% + 38px);
+}
+.shell.is-zoomed {
+  width: min(1180px, calc(100vw - 2 * var(--sp-4)));
+  height: calc(100dvh - var(--nav-h) - 110px);
+}
+.shell.is-closing {
+  pointer-events: none;
+}
+.shell__bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: none;
+  height: 38px;
+  padding: 0 var(--sp-3);
+  background: rgba(14, 21, 14, 0.96);
   border-bottom: 1px solid var(--green-line);
 }
 .shell__title {
-  color: var(--green);
-}
-.shell__close {
-  font: inherit;
-  font-size: 0.7rem;
-  line-height: 1;
+  position: absolute;
+  left: 92px;
+  right: 92px;
+  text-align: center;
+  font-size: 0.74rem;
   color: var(--green-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  text-shadow: none;
+}
+.shell__title::before {
+  content: var(--shell-title, "fergus@portfolio: ~");
+}
+/* Three lights, as on a Mac. They wear the phosphor at rest and take on their
+   real colours when the pointer reaches them, the same move as the social
+   buttons on the home page. Close and minimise both send it back into the
+   handle; the third makes it bigger. */
+.shell__lights {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+}
+.shell__light {
+  position: relative;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--green-dim);
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  padding: 4px 10px;
   cursor: pointer;
 }
-.shell__close:hover {
-  color: var(--green-bright);
-  border-color: var(--green-line);
+/* A bigger target than the dot: the lights are 13px, a finger is not. */
+.shell__light::after {
+  content: "";
+  position: absolute;
+  inset: -6px -4px;
 }
-.shell__close:focus-visible {
-  outline: 1px solid var(--green);
-  outline-offset: 1px;
-  color: var(--green-bright);
+.shell__light::before {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 700;
+  color: rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  text-shadow: none;
 }
-/* The same Terminal, without the framed card look: the drawer is the frame. */
+.shell__light--close::before { content: "×"; }
+.shell__light--min::before { content: "−"; }
+.shell__light--zoom::before { content: "+"; }
+.shell__light--zoom[aria-pressed="true"]::before { content: "−"; }
+.shell__lights:hover .shell__light,
+.shell__light:focus-visible {
+  border-color: transparent;
+}
+.shell__lights:hover .shell__light--close,
+.shell__light--close:focus-visible { background: #ff5f57; }
+.shell__lights:hover .shell__light--min,
+.shell__light--min:focus-visible { background: #febc2e; }
+.shell__lights:hover .shell__light--zoom,
+.shell__light--zoom:focus-visible { background: #28c840; }
+.shell__lights:hover .shell__light::before,
+.shell__light:focus-visible::before {
+  opacity: 1;
+}
+.shell__light:focus-visible {
+  outline: 1px solid var(--green-bright);
+  outline-offset: 2px;
+}
+/* The same Terminal as the home page, without its card: the window is the
+   frame, and the scrollback takes whatever height the window has. */
 .shell .term {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
   border: none;
   border-radius: 0;
   box-shadow: none;
+  background: transparent;
+}
+.shell .term__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
 }
 .shell .term__scroll {
-  max-height: 38vh;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+/* A running game gets the whole window, at a height it can measure. */
+.shell:has(.term--program) {
+  --shell-program-h: min(80vh, 620px);
+  height: var(--shell-program-h);
+}
+.shell .term--program {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.shell .term--program .arcade {
+  /* Definite, and not `auto`: an `auto` arcade wraps an empty `<pre>`,
+     measures a box a few pixels tall, and refuses a screen that is really
+     there. 55px is the window's bar plus this terminal's padding. */
+  height: calc(var(--shell-program-h, min(60vh, 520px)) - 55px);
 }
 
-/* Slide only for people who have not asked for stillness. Closing is an
-   unmount, so it is instant for everyone. */
-@keyframes shell-rise {
-  from {
-    transform: translateY(14px);
-    opacity: 0;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
-}
+/* The genie. Growing out of the handle, the window is pinched towards its
+   bottom right corner (where the handle is) and fills out as it rises; going
+   back in, the bottom goes first. Only the transform, the clip and the opacity
+   move, so it is all composited. Under `reduce` there is no animation and the
+   window simply appears and goes (lib/dock.ts skips the two moving phases). */
 @media (prefers-reduced-motion: no-preference) {
-  .shell {
-    animation: shell-rise 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  .shell.is-opening {
+    animation: genie-in 420ms cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  }
+  .shell.is-closing {
+    animation: genie-out 320ms cubic-bezier(0.55, 0, 0.8, 0.3) both;
+  }
+}
+@keyframes genie-in {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.07, 0.09);
+    clip-path: polygon(46% 0, 100% 0, 100% 100%, 97% 100%);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(0.62, 0.84);
+    clip-path: polygon(14% 0, 100% 0, 100% 100%, 66% 100%);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
+}
+@keyframes genie-out {
+  0% {
+    opacity: 1;
+    transform: none;
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.62, 0.84);
+    clip-path: polygon(14% 0, 100% 0, 100% 100%, 66% 100%);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.07, 0.09);
+    clip-path: polygon(46% 0, 100% 0, 100% 100%, 97% 100%);
   }
 }
 
-/* Ejected, the drawer is part of the display and shrinks with it. */
-html.is-ejecting .shell {
-  position: absolute;
-}
-
-/* ----- the status bar prompt ----------------------------------------------
-   A real button in the status strip: the drawer's handle on every route. */
-.statusbar__prompt {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 32px;
-  padding: 4px 12px;
-  font: inherit;
-  font-size: 11px;
-  line-height: 1;
-  color: var(--amber);
-  background: color-mix(in srgb, var(--amber) 7%, var(--bg-panel));
-  border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent);
-  border-radius: 2px;
-  cursor: pointer;
-}
-/* The glyph is costume, so it is drawn rather than written. Same rule as
-   `.promptline__dollar::before` above, and for the same measured reason: a
-   text extractor reads the document, not `aria-hidden`. It is a flex item
-   like the span it replaces, so the gap and the alignment are unchanged. */
-.statusbar__prompt::before {
-  content: "$";
-}
-.statusbar__prompt:hover,
-.statusbar__prompt[aria-expanded="true"] {
-  color: var(--green-bright);
-  border-color: var(--green-line);
-}
-.statusbar__prompt:focus-visible {
-  outline: 1px solid var(--green);
-  outline-offset: 1px;
-  color: var(--green-bright);
-}
-
-@media (max-width: 768px) {
-  /* A shortened location shares the strip with the controls at tablet sizes.
-     Phones below 560px give the full strip to the four labelled controls. */
-  .statusbar {
-    gap: var(--sp-2);
-    padding: 0 var(--sp-2) 0 var(--sp-3);
-    overflow: hidden;
-  }
-  .statusbar__readouts {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-  }
-  .statusbar__pwd {
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .statusbar__pwd-full {
-    display: none;
-  }
-  .statusbar__pwd-short {
-    display: inline;
-  }
-  .machine {
-    flex: none;
-    margin-left: 0;
-  }
-  .statusbar__prompt {
-    flex: none;
-    align-self: stretch;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    padding: 0 10px;
-  }
-  .shell {
-    max-height: 70vh;
-  }
-  .shell .term__scroll {
-    max-height: 30vh;
-  }
-  .shell__close {
-    min-width: 44px;
-    min-height: 44px;
-  }
-}
-
-@media (max-width: 360px) {
-  /* The last thing to go, after the uptime and the long path: the brand is
-     identity, the path is information, and at 320px there is room for one. */
-  .statusbar__brand {
-    display: none;
-  }
-}
-
-/* Four labelled controls fit a phone. The current path is already in its nav;
-   hide the duplicate readout before sacrificing an action's meaning. */
+/* ----- phones ------------------------------------------------------------- */
 @media (max-width: 560px) {
-  .statusbar {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
-    padding: 0 6px;
+  .term-dock {
+    --dock-edge: max(12px, env(safe-area-inset-right));
+    --dock-foot: max(12px, env(safe-area-inset-bottom));
   }
-  .statusbar__readouts { display: none; }
-  .machine { display: contents; }
-  .machine__btn,
-  .statusbar__prompt {
-    min-width: 44px;
-    width: 100%;
-    height: 100%;
-    padding: 0 3px;
-    justify-content: center;
-    border-top: 0;
-    border-bottom: 0;
-    border-radius: 0;
+  .shell {
+    --shell-edge: max(8px, env(safe-area-inset-right));
+    --shell-foot: calc(max(12px, env(safe-area-inset-bottom)) + 58px);
+    left: max(8px, env(safe-area-inset-left));
+    width: auto;
+    height: min(64svh, 540px);
+    /* The handle's middle: 12px dock edge plus half of 48, less the window's
+       8px edge; and 58 minus 24 below the window. */
+    transform-origin: calc(100% - 28px) calc(100% + 34px);
   }
-  .statusbar__prompt::before { display: none; }
-}
-@media (max-width: 560px) and (prefers-reduced-motion: reduce) {
-  .statusbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .shell.is-zoomed {
+    width: auto;
+    height: calc(100svh - var(--nav-h) - 82px);
+  }
+  .shell__title {
+    left: 96px;
+    right: var(--sp-3);
+    text-align: right;
+  }
+  .shell__lights {
+    gap: 14px;
+  }
+  .shell__light::after {
+    inset: -15px -7px;
+  }
 }
 
 /* ============================================================================
@@ -3995,18 +3746,17 @@ html.is-ejecting .shell {
   .post > .post__foot > :first-child { margin-top: 0; }
 }
 
-/* ----- contact: the form and the other ways in, side by side --------------- */
+/* ----- contact: the two meetings, and the three ways in beside them -------- */
 @media (min-width: 1560px) {
   .contact-page:not(.contact-page--meet) {
     display: grid;
-    grid-template-columns: minmax(0, 62ch) minmax(0, 1fr);
-    grid-template-rows: auto auto auto 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
     column-gap: var(--sp-6);
     row-gap: var(--sp-5);
     align-items: start;
   }
   .contact-page:not(.contact-page--meet) > * { grid-column: 1 / -1; }
-  .contact-page:not(.contact-page--meet) > .cform { grid-column: 1; grid-row: 3 / span 2; }
-  .contact-page:not(.contact-page--meet) > .contact-meetings { grid-column: 2; grid-row: 3; }
-  .contact-page:not(.contact-page--meet) > .cdirect { grid-column: 2; grid-row: 4; margin-top: 0; }
+  .contact-page:not(.contact-page--meet) > .contact-meetings { grid-column: 1; grid-row: 3; }
+  .contact-page:not(.contact-page--meet) > .social--boxes { grid-column: 2; grid-row: 3; grid-template-columns: minmax(0, 1fr); margin-top: 0; }
 }
+

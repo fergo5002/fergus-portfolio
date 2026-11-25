@@ -1,6 +1,6 @@
 # The arcade and the terminal
 
-Read this before touching `components/arcade/`, `lib/arcade/`, the boards, `lib/commands*`, `Terminal.tsx`, the shell drawer or the inline homepage terminal.
+Read this before touching `components/arcade/`, `lib/arcade/`, the boards, `lib/commands*`, `Terminal.tsx`, the terminal's dock and window, the nav's hidden arcade door or the inline homepage terminal.
 
 ## The arcade room sits inside the tube (2026-09-05)
 
@@ -8,11 +8,11 @@ Read this before touching `components/arcade/`, `lib/arcade/`, the boards, `lib/
 portals a fixed panel to `<body>` at `z-index: 8990`: above the page, below the flicker (8999),
 the glass sheen (8997) and the scanlines (9000), so every glass layer falls across the arcade the
 way it falls across a page. While it is up, `html.arcade-open` hides `.crt__screen`, the
-drawer and the status strip. The regular nav hides only during the entrance, then returns above
+terminal window and its dock. The regular nav hides only during the entrance, then returns above
 the room. It lives beside `.crt__screen` in `CrtShell`, so the hidden page cannot hide it too.
 Normal nav links close the arcade host before changing route, including same-route links.
-The drawer and strip sit above 9000 and would draw over the room, and the
-strip's prompt button toggles the drawer that hosts the terminal the room was launched from, so
+The window and dock sit above 9000 and would draw over the room, and the
+handle toggles the window that hosts the terminal the room was launched from, so
 leaving it clickable would unmount the arcade from underneath itself. Nothing in
 `components/arcade/arcade.css` may go above 9000; `components/arcade/arcade.test.ts` checks.
 
@@ -105,7 +105,7 @@ restart. Keyboard input is paired by physical key. The logical key chosen on key
 released on keyup even if modifiers or focus changed, and blur, visibility loss, program hand-off
 and exit release every held key before disposal. New games must preserve both contracts.
 
-**The drawer sizes itself to its content, so a program must state a height.** `.shell` is
+**The window sizes itself to its content, so a program must state a height.** `.shell` is
 `position: fixed` with a `max-height` and no height, and an arcade set to `height: auto` inside it
 wraps an empty `<pre>`, measures a box a few pixels tall and refuses a screen that is really there.
 `.shell:has(.term--program)` sets `--shell-program-h` and the arcade's height is arithmetic on it.
@@ -122,14 +122,30 @@ add a `defineCommand` to the right module (or a new module with its registration
 beside it. Run `node scripts/mutation-check.mjs` if you touch a guard: the reduced-motion
 refusals, the scanlines range, the theme check, the hidden flag and the door are all mutated by it.
 
-The homepage has an inline terminal directly below About, alongside the drawer on every route.
-Only the drawer subscribes to external shell requests and hosts arcade programs. An inline
-program command is forwarded before recording history, so it is recorded once by its drawer host.
-`components/ShellDrawer.tsx`, mounted once in `components/CrtShell.tsx` beside the status bar,
-hosts the same component in a drawer opened by the backtick (when focus is not in a field), by the
-terminal button in the status bar, or by a tap on that button on a phone, and closed by Escape
-or a click outside. Outside dismissal excludes the arcade portal and the toggle that owns it.
+The homepage has an inline terminal directly below About, alongside the window on every route.
+Only the window subscribes to external shell requests and hosts arcade programs. An inline
+program command is forwarded before recording history, so it is recorded once by its window host.
+`components/TermDock.tsx`, mounted once in `components/CrtShell.tsx` outside the tube's assembly,
+hosts the same component in a window opened by the backtick (when focus is not in a field) or by
+the handle in the bottom right, and minimised by Escape, the red or yellow light, `exit`, or a
+click outside. Outside dismissal excludes the arcade portal, the nav and the dock.
 There is one scrollback and one recall list, in `lib/history.ts`, module-level and never persisted,
-so closing and reopening the drawer preserves history. `lib/shell.ts` is
-the drawer's state machine, pure and tested. `forget` returns an effect like every other command that touches the machine; the
+so closing and reopening the window preserves history. `lib/shell.ts` is
+the open/closed state machine and `lib/dock.ts` the animation phases, both pure and tested.
+
+**The terminal clean-up (2026-11-25).** Fergus called it "quite buggy and the output isnt good".
+Nothing was removed; what changed: the prompt shows the real route; links, emails and the site's
+routes in output are clickable (`lib/linkify.ts`); columns stack when the terminal is narrow
+(`columns` and `flow` in `lib/commands/shared.ts`); an ambiguous Tab lists the candidates; a click
+in the output no longer steals a text selection; blank lines survive. New: `exit`, `book
+coffee|call`, `status`, `open github|linkedin|email`, `cd ..`. Fixed: help said 5.0, `cat` with no
+file, `ls` listing a section that does not exist, neofetch counting jobs as posts, two help keys a
+column out (now an assertion in `lib/commands/dispatch.test.ts`).
+
+**The arcade's door is a three-second hold on `fergus@portfolio`** (Fergus, 2026-11-25: "hide cd
+arcade and cd mcp from the top bar ... hold it for 3 seconds"). A press, not a hover, so it works
+on a phone too; letting go, sliding off or a cancelled gesture stops it, and an amber fill shows
+the hold so it never reads as dead. When it completes it asks the shell for `cd arcade` exactly as
+the old nav button did. While the room is up the nav shows `cd ..` to leave. `/mcp` left the nav
+too and is linked from `/tools` and the eject dial. `forget` returns an effect like every other command that touches the machine; the
 Terminal removes the keys.

@@ -139,10 +139,6 @@ jobs:
         run: node scripts/boot-check.mjs --no-ingest --no-beam --no-shots
         env:
           REVISION_BASE: http://localhost:3000
-      - name: the screensaver draws with the beam and wakes clean
-        run: node scripts/saver-check.mjs
-        env:
-          REVISION_BASE: http://localhost:3000
       - name: eject's hardware works, fits a phone and agrees with the bezel
         run: node scripts/eject-check.mjs --no-shots
         env:

@@ -3,6 +3,19 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { killOneProcess, statusPoints } from "./arcade-panic-smoke.mjs";
 import { moveUntilScored } from "./arcade-signal-smoke.mjs";
+
+/**
+ * The arcade's door since 2026-11-25: hold fergus@portfolio for three seconds.
+ * Pointer events are dispatched rather than a real press, so a touch emulation
+ * and a mouse both reach React's handlers the same way.
+ */
+async function holdDoor(page) {
+  const prompt = page.locator(".nav__prompt");
+  const init = { pointerType: "mouse", isPrimary: true, button: 0, pointerId: 1 };
+  await prompt.dispatchEvent("pointerdown", init);
+  await page.waitForTimeout(3300);
+  await prompt.dispatchEvent("pointerup", init);
+}
 const args = process.argv.slice(2);
 const option = (name, fallback) => args.includes(name) ? args[args.indexOf(name) + 1] : fallback;
 const base = option("--base", "http://localhost:3000"), out = resolve(option("--out", ".phone-check/arcade"));
@@ -29,7 +42,7 @@ for (const profile of [{ name: "webkit-390", engine: webkit, device: "iPhone 12"
     : route.continue());
   try {
     await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
-    await page.locator(".statusbar__prompt").tap(); await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
+    await page.locator(".term-handle").tap(); await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
     await page.locator(".arcade-room").waitFor();
     await page.locator(".arcade-entrance").waitFor({ state: "hidden", timeout: 12000 });
     check(await page.locator(".arcade-cabinet").count() === games.length, `The gallery must have ${games.length} live cabinets`);
@@ -114,18 +127,17 @@ for (const profile of [{ name: "webkit-390", engine: webkit, device: "iPhone 12"
     check(await page.locator(".term__input").evaluate(el => el === document.activeElement), "Escape did not restore prompt focus");
     check((await page.locator(".term__scroll").textContent()).includes("cd arcade"), "Escape lost scrollback");
     check(await page.locator("#shell-drawer").isVisible(), "Escape closed the drawer as well as the arcade");
-    // A touch screen has no Escape key: the nav's cd arcade opens the room and, pressed again, leaves it.
-    await page.locator(".shell__close").tap();
-    await page.locator(".nav__list").evaluate(el => { el.scrollLeft = el.scrollWidth; });
-    await page.locator(".nav__link--cmd").tap();
+    // A touch screen has no Escape key: holding fergus@portfolio opens the room and the nav's cd .. leaves it.
+    await page.locator(".shell__light--close").tap();
+    await holdDoor(page);
     await page.locator(".arcade-room").waitFor();
     await page.locator(".arcade-entrance").waitFor({ state: "detached", timeout: 12000 });
     await page.locator(".nav__link--cmd").tap();
-    await page.locator(".arcade-room").waitFor({ state: "detached", timeout: 5000 }).catch(() => { throw new Error("The nav's cd arcade did not leave an open arcade"); });
+    await page.locator(".arcade-room").waitFor({ state: "detached", timeout: 5000 }).catch(() => { throw new Error("The nav's cd .. did not leave an open arcade"); });
     check(!errors.length, `Browser errors: ${errors.join("; ")}`);
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.reload({ waitUntil: "networkidle" });
-    await page.locator(".statusbar__prompt").tap(); await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
+    await page.locator(".term-handle").tap(); await page.locator(".term__input").fill("cd arcade"); await page.locator(".term__input").press("Enter");
     await page.waitForFunction(() => document.querySelector(".term__scroll")?.textContent.includes("reduced motion"));
     check(await page.locator(".arcade-room").count() === 0, "Reduced motion opened the arcade");
     check((await page.locator(".term__scroll").textContent()).includes("reduced motion"), "Reduced motion did not explain the refusal");

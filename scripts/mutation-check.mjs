@@ -44,8 +44,93 @@ const MUTATIONS = [
   {
     name: "meeting requests accept an unoffered slot",
     file: "lib/meeting-server.ts",
-    pattern: /if \(!validMeetingSlot\(fields.slot, deps.now \?\? new Date\(\)\)\)/,
+    pattern: /if \(!validMeetingSlot\(fields\.slot, now, busy\)\)/,
     replace: "if (false)",
+    tests: "lib/meeting.test.ts",
+  },
+  // ── the calendar booking (2026-11-25) ──
+  {
+    name: "calendar: production with no calendar offers made-up times",
+    file: "lib/calendar.ts",
+    pattern: /return env\.VERCEL_ENV === "production" \? \{ mode: "down" \} : \{ mode: "demo", busy: demoBusy\(now\) \};/,
+    replace: 'return { mode: "demo", busy: demoBusy(now) };',
+    tests: "lib/calendar.test.ts",
+  },
+  {
+    name: "calendar: a booking stops emailing the visitor their invite",
+    file: "lib/calendar.ts",
+    pattern: /sendUpdates: "all"/,
+    replace: 'sendUpdates: "none"',
+    tests: "lib/calendar.test.ts",
+  },
+  {
+    name: "calendar: a call is booked with no Meet link",
+    file: "lib/calendar.ts",
+    pattern: /conferenceSolutionKey: \{ type: "hangoutsMeet" \}/,
+    replace: 'conferenceSolutionKey: { type: "eventHangout" }',
+    tests: "lib/calendar.test.ts",
+  },
+  {
+    name: "calendar: a busy time stops closing its slot",
+    file: "lib/meeting.ts",
+    pattern: /return busy\.some\(\(\[from, to\]\) => from < end && to > start\);/,
+    replace: "return busy.some(([from, to]) => from < start && to > end);",
+    tests: "lib/meeting.test.ts",
+  },
+  {
+    name: "terminal: cd treats inherited names as sections",
+    file: "lib/commands/nav.ts",
+    pattern: /if \(Object\.hasOwn\(SECTION_PATHS, dest\)\)/,
+    replace: "if (dest in SECTION_PATHS)",
+    tests: "lib/commands/nav.test.ts",
+  },
+  {
+    name: "booking: the upcoming cap stops counting",
+    file: "lib/meeting-server.ts",
+    pattern: /if \(bookings\.length >= BOOKING_LIMITS\.upcoming\) return false;/,
+    replace: "",
+    tests: "lib/meeting.test.ts",
+  },
+  {
+    name: "booking: a link in the note books itself",
+    file: "lib/meeting-server.ts",
+    pattern: /return !LINKISH\.test\(fields\.name\) && !LINKISH\.test\(fields\.note\);/,
+    replace: "return true;",
+    tests: "lib/meeting.test.ts",
+  },
+  {
+    name: "booking: the page is sent the raw busy times",
+    file: "app/contact/page.tsx",
+    pattern: /takenSlots\(now, calendar\.busy\)/,
+    replace: "calendar.busy",
+    tests: "lib/contact.test.ts",
+  },
+  {
+    name: "booking: the daily cap stops counting",
+    file: "lib/meeting-server.ts",
+    pattern: /if \(recent\.length >= BOOKING_LIMITS\.perDay\) return false;/,
+    replace: "",
+    tests: "lib/meeting.test.ts",
+  },
+  {
+    name: "booking: events stop carrying the tag the caps count by",
+    file: "lib/calendar.ts",
+    pattern: /    extendedProperties: \{ private: \{ source: BOOKING_TAG, visitor: booking\.email\.toLowerCase\(\) \} \},\n/,
+    replace: "",
+    tests: "lib/calendar.test.ts",
+  },
+  {
+    name: "booking: a post with no timing field books itself",
+    file: "lib/meeting-server.ts",
+    pattern: /  if \(typeof elapsed !== "string" \|\| elapsed\.trim\(\) === ""\) return false;\n/,
+    replace: "",
+    tests: "lib/meeting.test.ts",
+  },
+  {
+    name: "booking: the bot timer no longer stops an instant submission booking",
+    file: "lib/meeting-server.ts",
+    pattern: /  if \(filledImplausiblyFast\(\{ elapsed \}\)\) return false;\n/,
+    replace: "",
     tests: "lib/meeting.test.ts",
   },
   {
@@ -63,9 +148,6 @@ const MUTATIONS = [
     tests: "components/arcade/arcade.test.ts",
   },
   ...[
-    ["contact font invites iOS zoom", /(\.cform__input\s*\{\s*font-size:) 16px/, "$1 15px"],
-    ["contact inputs lose their tap height", /(\.cform__input\s*\{\s*font-size: 16px;\s*min-height:) 44px/, "$1 32px"],
-    ["contact labels lose their tap height", /(\.cform__label\s*\{\s*display: flex;\s*align-items: center;\s*min-height:) 44px/, "$1 20px"],
     ["the RSS link loses its tap height", /  \.writing__feed a,\r?\n/, ""],
   ].map(([name, pattern, replace]) => ({
     name: `phone polish: ${name}`, file: "app/globals.css", pattern, replace,
@@ -227,36 +309,6 @@ const MUTATIONS = [
   },
 
   // ── the form's fragile tricks, none of which look load-bearing ──
-  {
-    name: "inputs stop re-keying, so a rejected submission wipes the form",
-    file: "components/ContactForm.tsx",
-    pattern: /key=\{`\$\{field\.name\}-\$\{state\.seq\}`\}/,
-    replace: "key={field.name}",
-  },
-  {
-    name: "client errors seeded as {} instead of null (hydration mismatch)",
-    file: "components/ContactForm.tsx",
-    pattern: /useState<FieldErrors \| null>\(null\)/,
-    replace: "useState<FieldErrors | null>({})",
-  },
-  {
-    name: "copy button rendered whether or not the clipboard API exists",
-    file: "components/ContactForm.tsx",
-    pattern: /\{canCopy && \(/,
-    replace: "{true && (",
-  },
-  {
-    name: "field errors lose the role a screen reader acts on",
-    file: "components/ContactForm.tsx",
-    pattern: /(<p className="cform__error" id=\{errorId\}) role="alert"(>)/,
-    replace: "$1$2",
-  },
-  {
-    name: "elapsed stamped as a timestamp rather than a duration",
-    file: "components/ContactForm.tsx",
-    pattern: /String\(Date\.now\(\) - startedAt\.current\)/,
-    replace: "String(Date.now())",
-  },
 
   // ── what actually gets posted ──
   {
@@ -291,12 +343,6 @@ const MUTATIONS = [
   },
 
   // ── the surfaces around it ──
-  {
-    name: "form labels dimmed back below the contrast floor",
-    file: "app/globals.css",
-    pattern: /(\.cform__label \{\r?\n  color: var\()--green(\);)/,
-    replace: "$1--green-dim$2",
-  },
   {
     name: "/contact dropped from the sitemap",
     file: "app/sitemap.ts",
@@ -336,8 +382,8 @@ const MUTATIONS = [
   {
     name: "the pointer halo brightens in the present pass only",
     file: "components/system/PhosphorScreen.tsx",
-    pattern: /glow \+= exp\(-d \* 5\.0\) \* 0\.025 \* uPointerActive;/,
-    replace: "glow += exp(-d * 5.0) * 0.05 * uPointerActive;",
+    pattern: /glow \+= exp\(-d \* 5\.0\) \* 0\.025 \* FX \* uPointerActive;/,
+    replace: "glow += exp(-d * 5.0) * 0.05 * FX * uPointerActive;",
   },
   {
     name: "the pointer halo brightens in the persistence buffer only",
@@ -370,35 +416,6 @@ const MUTATIONS = [
     file: "components/system/PhosphorScreen.tsx",
     pattern: /burn \*= 1\.0 - clamp\(dgDrag \* 3\.5, 0\.0, 1\.0\);/,
     replace: "burn *= 1.0 - clamp(dgDrag * 1.75, 0.0, 1.0);",
-  },
-  {
-    name: "the contact form goes silent again",
-    file: "components/ContactForm.tsx",
-    pattern: /            onKeyDown: onKey,\r?\n/,
-    replace: "",
-  },
-  {
-    // The one a review had to catch by hand: the original assertion was a bare
-    // `audio.key()` against the whole file, and the docblock above the handler
-    // says `audio.key()` too, so emptying the handler stayed green.
-    name: "the key handler is emptied but its docblock stays",
-    file: "components/ContactForm.tsx",
-    pattern: /      audio\.key\(\);\r?\n/,
-    replace: "",
-  },
-  {
-    name: "the form's key filter drifts away from the shell's",
-    file: "components/ContactForm.tsx",
-    pattern: /e\.key === "Backspace" \|\| e\.key === "Tab"/,
-    replace: 'e.key === "Backspace"',
-  },
-  {
-    // The absence test that used to pass by slicing three characters. Moving the
-    // handler onto the form is the change it exists to stop.
-    name: "the key handler is hoisted onto the form, so the submit button clicks",
-    file: "components/ContactForm.tsx",
-    pattern: /(<form\r?\n        className="cform__form")/,
-    replace: "$1\n        onKeyDown={onKey}",
   },
 
   // ── the frame-rate normalisation a second review had to catch ──
@@ -434,8 +451,8 @@ const MUTATIONS = [
   {
     name: "the pointer's deflection ripple is dimmed along with its light",
     file: "components/system/PhosphorScreen.tsx",
-    pattern: /\* ripple \* 0\.0045 \* uPointerActive;/,
-    replace: "* ripple * 0.00225 * uPointerActive;",
+    pattern: /\* ripple \* 0\.0045 \* FX \* uPointerActive;/,
+    replace: "* ripple * 0.00225 * FX * uPointerActive;",
   },
   {
     name: "the degauss stops dragging the persistence buffer",
@@ -690,26 +707,57 @@ const MUTATIONS = [
     pattern: /if \(isDefaultSettings\(settings\)\) target\.removeItem\(SETTINGS_KEY\);/,
     replace: "if (false) target.removeItem(SETTINGS_KEY);",
   },
-  {
-    name: "the phone tap target shrinks back under 44px",
-    file: "app/globals.css",
-    pattern: /(?<lead>\.statusbar__prompt \{\r?\n    min-width: 44px;\r?\n    min-height: )44px;/,
-    replace: "$<lead>22px;",
-  },
 
   // ── what the review of F2 found ──
+  // ── the dock, the hold door and the quieter effects (2026-11-25) ──
   {
-    name: "clicking outside the drawer stops dismissing it",
-    file: "components/ShellDrawer.tsx",
+    name: "dock: clicking outside the window stops minimising it",
+    file: "components/TermDock.tsx",
     pattern: /    document\.addEventListener\("pointerdown", onPointerDown\);/,
     replace: "",
     tests: "components/chrome-interactions.test.ts",
   },
   {
-    name: "the status bar writes its dollar into the document again",
-    file: "components/system/StatusBar.tsx",
-    pattern: /(<span className="statusbar__prompt-label">\{copy\.terminal\}<\/span>)/,
-    replace: '<span aria-hidden="true">$ </span>\r\n        $1',
+    name: "dock: the handle writes its prompt glyph into the document",
+    file: "components/TermDock.tsx",
+    pattern: /(<span className="term-handle__label">\{copy\.terminal\}<\/span>)/,
+    replace: '<span aria-hidden="true">$_ </span>$1',
+    tests: "components/chrome.test.ts",
+  },
+  {
+    name: "dock: the genie plays for people who asked for stillness",
+    file: "app/globals.css",
+    pattern: /@keyframes genie-in/,
+    replace: ".shell.is-opening { animation: genie-in 420ms; }\n@keyframes genie-in",
+    tests: "app/globals.test.ts",
+  },
+  {
+    name: "nav: the arcade opens on a short press",
+    file: "content/nav.ts",
+    pattern: /export const ARCADE_HOLD_MS = 3000;/,
+    replace: "export const ARCADE_HOLD_MS = 300;",
+    tests: "components/nav.test.ts",
+  },
+  {
+    name: "nav: letting go no longer cancels the hold",
+    file: "components/Nav.tsx",
+    pattern: /onPointerUp=\{cancelHold\}/,
+    replace: "onPointerUp={undefined}",
+    tests: "components/nav.test.ts",
+  },
+  {
+    name: "effects: back to full strength",
+    file: "lib/system.ts",
+    pattern: /export const EFFECT_STRENGTH = 0\.75;/,
+    replace: "export const EFFECT_STRENGTH = 1;",
+    tests: "components/system/PhosphorScreen.test.ts",
+  },
+  {
+    name: "terminal: a help key drifts a column",
+    file: "lib/commands/effects.ts",
+    pattern: /help: "crt on\|off        toggle the tube",/,
+    replace: 'help: "crt on|off         toggle the tube",',
+    tests: "lib/commands/dispatch.test.ts",
   },
   {
     name: "smooth scrolling escapes the reduced-motion gate",
@@ -2570,20 +2618,6 @@ const MUTATIONS = [
     tests: "lib/boot.test.ts",
   },
   {
-    name: "saver: a stall draws one stroke across the figure again",
-    file: "lib/lissajous.ts",
-    pattern: /Math\.max\(joinFrom\(w\.theta, fig, env\.aspect\), target - SAVER_MAX_STROKE\)/,
-    replace: "joinFrom(w.theta, fig, env.aspect)",
-    tests: "lib/lissajous.test.ts",
-  },
-  {
-    name: "saver: the figure runs on real time and creeps brighter on a slow machine",
-    file: "components/system/Screensaver.tsx",
-    pattern: /elapsedMs: tube,/,
-    replace: "elapsedMs: performance.now(),",
-    tests: "lib/lissajous.test.ts",
-  },
-  {
     name: "system: live eases per frame again, so the boot's picture comes up at the monitor's rate",
     file: "components/system/SystemProvider.tsx",
     pattern: /\* easeFactor\(0\.05, dt\);/,
@@ -2603,34 +2637,6 @@ const MUTATIONS = [
     pattern: /useEffect\(\(\) => \{\r?\n\s*sendRef\.current = send;\r?\n\s*\}\);/,
     replace: "sendRef.current = send;",
     tests: "lib/mcp-console.test.ts",
-  },
-  {
-    name: "status: the path segment stops remounting, so a 404 keeps the prerendered ~/_not-found",
-    file: "components/system/StatusBar.tsx",
-    pattern: /key=\{mounted \? "client" : "server"\}/,
-    replace: 'key="pwd"',
-    tests: "components/statusbar.test.ts",
-  },
-  {
-    name: "saver: idle listeners go back to bubbling, so a keyboard player in the arcade counts as idle",
-    file: "components/system/Screensaver.tsx",
-    pattern: /const options = \{ passive: true, capture: true \} as const;/,
-    replace: "const options = { passive: true } as const;",
-    tests: "lib/lissajous.test.ts",
-  },
-  {
-    name: "saver: waking leaves the beam's last stroke on the tube",
-    file: "components/system/Screensaver.tsx",
-    pattern: /unsubscribe\(\);\r?\n(\s*)clearBeam\(frame\.current\);/,
-    replace: "unsubscribe();",
-    tests: "lib/lissajous.test.ts",
-  },
-  {
-    name: "saver: strokes meet end to end again and bead at every frame",
-    file: "lib/lissajous.ts",
-    pattern: /export const SAVER_JOIN = 1\.67 \* BEAM_RADIUS;/,
-    replace: "export const SAVER_JOIN = 0;",
-    tests: "lib/lissajous.test.ts",
   },
   {
     name: "boot: finish() leaves the frame callback running, so a skip mid-trace keeps drawing the mark",

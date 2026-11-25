@@ -31,7 +31,7 @@ export default function WorkPreview({ name }: { name: keyof typeof homeCopy.prev
     // height is real before it is shown. Its padding is the hover bridge to
     // the link, so the gap is already inside this height.
     const panelHeight = panel.getBoundingClientRect().height;
-    const strip = document.querySelector(".statusbar")?.getBoundingClientRect();
+    const strip = document.querySelector(".term-dock")?.getBoundingClientRect();
     const nav = document.querySelector(".nav")?.getBoundingClientRect();
     setSide(
       previewPlacement({

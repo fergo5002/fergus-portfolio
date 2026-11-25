@@ -25,7 +25,8 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
   assert.equal(await page.locator(".hero__edu").count(), 0);
   assert.deepEqual(await page.locator(".hl__k").allTextContents(), ["current", "previously"]);
   assert.deepEqual(await page.locator(".hl").nth(1).locator(".work-preview__link").allTextContents(), ["Ex-co-founder & CTO @ Tigh Sauna", "CTO @ Presterly", "Hatch105"]);
-  assert.equal(await page.locator(".about__p").first().innerText(), "I'm a 20-year-old from Ireland who loves building software and businesses.");
+  assert.equal(await page.locator(".about__p").first().innerText(), "I am 20 years old from Ireland and I love building businesses.");
+  assert.deepEqual(await page.locator(".home__talk .social__name").allTextContents(), ["LinkedIn", "GitHub"]);
   assert.equal(await page.locator("main .term--inline").count(), 1);
   assert.equal(await page.locator(".skills").count(), 0);
   assert.equal(await page.locator(".about__routes a").count(), 2);
@@ -98,8 +99,10 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
     await page.screenshot({ path: `${out}/${width}-${kind}.png`, fullPage: true });
     if (send && width === 1440 && kind === "coffee") {
       await page.locator(".meeting__submit button").click();
-      await page.getByRole("heading", { name: "Request sent." }).waitFor();
-      console.log("Provider accepted the live meeting request. Mailbox receipt not checked here.");
+      // Live, a pick books straight into the calendar and Google emails the
+      // invite; past the booking caps it falls back to an emailed request.
+      await page.getByRole("heading", { name: /^(Booked\.|Request sent\.)$/ }).waitFor();
+      console.log("The live meeting request was accepted. Calendar and mailbox not checked here.");
     } else if (!base.startsWith("https://")) {
       await page.locator(".meeting__submit button").click();
       await page.getByText("That didn't send. Your details are still here.", { exact: false }).waitFor();

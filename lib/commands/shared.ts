@@ -19,12 +19,18 @@ export type SystemEffect =
   | { kind: "eject"; on: boolean }
   | { kind: "sound"; on: boolean }
   | { kind: "reboot" }
+  /** Put the terminal away: minimise the window, or say why the inline one stays. */
+  | { kind: "exit" }
   /** Remove these keys from local storage. `Terminal` re-checks ownership before touching any. */
   | { kind: "forget"; keys: string[] };
 
 export type CommandResult =
   | { type: "output"; lines: string[] }
-  | { type: "navigate"; href: string }
+  /**
+   * Go somewhere. An internal path is a client navigation; an `https:` link
+   * (`open github`) opens in a new tab and the terminal stays where it is.
+   */
+  | { type: "navigate"; href: string; lines?: string[] }
   | { type: "clear" }
   | { type: "effect"; effect: SystemEffect; lines: string[] }
   /**
@@ -71,17 +77,46 @@ export type CommandContext = {
    * through the door and nothing at all to anyone else.
    */
   arcade?: ArcadeSession;
+  /** The route the visitor is on, for the prompt, `pwd`, `cd ..` and `status`. */
+  path?: string;
+  /** What the machine is doing, for `status` and the bare toggles (`sound`). */
+  fps?: number;
+  audio?: boolean;
+  crt?: boolean;
+  scanlines?: number;
+  gravity?: boolean;
+  ejected?: boolean;
 };
 
-/** Sections reachable from the terminal. */
-export const SECTIONS = [
-  "about",
-  "skills",
-  "experience",
-  "projects",
-  "writing",
-  "contact",
-] as const;
+/**
+ * Sections reachable from the terminal, and where each one lives. `skills`
+ * went with the home page's skills block; `tools` and `contact` became pages.
+ * `mcp` is reachable but not listed, like it is in the top bar.
+ */
+export const SECTION_PATHS = {
+  about: "/#about",
+  experience: "/experience",
+  projects: "/projects",
+  writing: "/writing",
+  tools: "/tools",
+  contact: "/contact",
+} as const;
+
+export const SECTIONS = Object.keys(SECTION_PATHS) as (keyof typeof SECTION_PATHS)[];
+
+/** Routes `cd` reaches that `ls` does not list. */
+export const UNLISTED_PATHS: Record<string, string> = {
+  mcp: "/mcp",
+  blog: "/writing",
+  posts: "/writing",
+  home: "/",
+};
+
+/** The prompt's idea of where you are: `~` for home, `~/projects` and so on. */
+export function promptPath(path: string | undefined): string {
+  if (!path || path === "/") return "~";
+  return `~${path.replace(/\/+$/, "")}`;
+}
 
 export const ok = (lines: string[]): CommandResult => ({ type: "output", lines });
 
@@ -91,3 +126,33 @@ export const ok = (lines: string[]): CommandResult => ({ type: "output", lines }
  * (`echo`, `cat`'s error line) read `args` directly.
  */
 export const argOf = (args: string[]): string => args.join(" ").toLowerCase();
+
+/**
+ * Two columns that survive a narrow terminal. Laid out side by side when the
+ * widest row fits in `cols`; otherwise each row stacks, the key on its own line
+ * and the value indented under it, so a phone never wraps a padded row into
+ * the next one's column (2026-11-25: `resume` on a 390px phone read as a heap).
+ */
+export function columns(rows: [string, string][], cols = 80, indent = 2): string[] {
+  if (rows.length === 0) return [];
+  const pad = " ".repeat(indent);
+  const keyWidth = Math.max(...rows.map(([k]) => k.length)) + 2;
+  const widest = Math.max(...rows.map(([, v]) => v.length));
+  if (indent + keyWidth + widest <= cols) return rows.map(([k, v]) => `${pad}${k.padEnd(keyWidth)}${v}`.trimEnd());
+  return rows.flatMap(([k, v]) => [`${pad}${k}`, `${pad}    ${v}`]);
+}
+
+/** Words laid out like `ls`: as many to a line as fit in `cols`. */
+export function flow(words: string[], cols = 80, gap = 3): string[] {
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    const next = line ? `${line}${" ".repeat(gap)}${word}` : word;
+    if (line && next.length > cols) {
+      lines.push(line);
+      line = word;
+    } else line = next;
+  }
+  if (line) lines.push(line);
+  return lines;
+}

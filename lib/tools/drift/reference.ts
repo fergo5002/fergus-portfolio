@@ -23,7 +23,7 @@ import { words } from "./text";
  * of novels. Ten pasted pieces is not that: past roughly the hundredth rank the
  * words stop being function words and start being subject words, and a subject
  * word measures what a text is about rather than how it is written. The cap
- * also means a visitor with ten short pieces and this site's five articles
+ * also means a visitor with ten short pieces and this site's four articles
  * are scored on lists of the same length. A choice, not a measurement.
  */
 export const MARKER_COUNT = 100;
@@ -36,7 +36,7 @@ export const MARKER_COUNT = 100;
  * A share rather than a count, because the visitor decides how many pieces they
  * paste and a count written for one corpus size is nonsense at another.
  * `Math.ceil(n * 0.5)` is six on eleven documents, which is what an earlier
- * draft of this tool hard-coded, and three on five.
+ * draft of this tool hard-coded, three on five and two on four.
  */
 export const MIN_DOCUMENT_SHARE = 0.5;
 
@@ -49,15 +49,17 @@ export const MIN_DOCUMENT_SHARE = 0.5;
  * with three of them one unusual piece sets the scale for everything else, so
  * the distance would be printed in units of that accident.
  *
- * Five, because `Math.ceil(5 * MIN_DOCUMENT_SHARE)` is 3, strictly more than
- * half of five, while the same sum on four documents is 2, exactly half, which
- * filters nothing: five is the smallest count where the document rule above
- * does any work. It also leaves five leave-one-out folds behind the self-spread
- * instead of four. Guessed, not measured, and the report says the number out
- * loud when it refuses. The refusal itself lives in `report.ts`, because that
- * is where a caller reads a status.
+ * Four, since 2026-11-25. It was five, because `Math.ceil(5 * MIN_DOCUMENT_SHARE)`
+ * is 3, a strict majority, where on four documents it is 2, exactly half. When
+ * the site went from five articles to four, Fergus chose to lower the floor
+ * rather than lose the worked example on `/tools/drift`, knowing it applies to
+ * visitors too. The cost is real and small: on exactly four documents a marker
+ * needs two of them rather than a majority, and the self-spread has four
+ * leave-one-out folds. Guessed, not measured, and the report says the number
+ * out loud when it refuses. The refusal itself lives in `report.ts`, because
+ * that is where a caller reads a status.
  */
-export const MIN_REFERENCE_DOCUMENTS = 5;
+export const MIN_REFERENCE_DOCUMENTS = 4;
 
 export type Reference = {
   /** Marker words, most frequent first. Length is at most `MARKER_COUNT`. */

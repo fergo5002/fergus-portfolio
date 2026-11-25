@@ -45,8 +45,7 @@ guards were decoration.
 app/            layout (fonts, metadata, CRT shell) + the routes + globals.css + icon.svg
 components/
   system/       SystemProvider (frame clock + settings + synth), PhosphorScreen (WebGL tube:
-                persistence sim + present + room), StatusBar, MachineControls,
-                Screensaver, RouteTransition, EjectRig
+                persistence sim + present + room), RouteTransition, EjectRig
   physics/      GravityStage (measures the page, drops it, puts it back)
   motion/       RasterReveal (the house reveal), HeroName, TiltCard, Magnetic, TimelineSpine
   *.tsx         CrtShell, Nav, BootSequence, Terminal, Window, ImageFrame,

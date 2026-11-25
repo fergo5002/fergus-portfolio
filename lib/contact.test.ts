@@ -309,151 +309,6 @@ describe("mailtoFallback", () => {
 });
 
 /**
- * Source-level coupling checks on `components/ContactForm.tsx`.
- *
- * **What these cannot do.** Vitest runs in a `node` environment here, so
- * nothing can mount the component, and none of this proves any of it works.
- * They are greps. `lib/boot.test.ts` carries the same kind of block for the
- * same reason, and `AGENTS.md` records why: the inline boot script was the one
- * part of the app nothing could assert on, and that is how a two and a half
- * second error in it shipped.
- *
- * **Why they earn their place anyway.** The form leans on three tricks that are
- * each one line, each non-obvious, and each silently catastrophic to remove.
- * Nothing else in the suite would notice, and "verified by hand once" is not a
- * guard. If any of these ever needs changing, delete the assertion deliberately
- * rather than working around it.
- */
-describe("ContactForm is wired the way the no-JS path needs", () => {
-  // Normalised to LF: on a Windows checkout with autocrlf the file is CRLF on
-  // disk and every indexOf of a bare newline below returns -1, which made this
-  // test red at baseline on this machine while green in CI. Same fragility
-  // class as the CRLF anchors in scripts/mutation-check.mjs.
-  const src = readFileSync(join(process.cwd(), "components", "ContactForm.tsx"), "utf8").replace(
-    /\r\n/g,
-    "\n",
-  );
-
-  it("was actually read", () => {
-    expect(src).toContain("export default function ContactForm");
-  });
-
-  /**
-   * React resets a form's uncontrolled fields after an action resolves. Without
-   * a key that changes per answer, a rejected submission comes back with every
-   * field wiped, which is a visitor losing their message to a typo in their own
-   * email address.
-   */
-  it("re-keys its inputs on the answer counter", () => {
-    const keyed = [...src.matchAll(/key=\{`\$\{field\.name\}-\$\{state\.seq\}`\}/g)];
-    // One on the textarea branch, one on the input branch.
-    expect(keyed.length).toBe(2);
-  });
-
-  /**
-   * `null` rather than `{}`, so the server-rendered markup and the first client
-   * render are identical. Seeding it with an object would make the client
-   * render no errors where the server rendered some, which is a hydration
-   * mismatch on the exact path that has no JavaScript to recover with.
-   */
-  it("starts client-side errors as null, not as an empty object", () => {
-    expect(src).toMatch(/useState<FieldErrors \| null>\(null\)/);
-    expect(src).toMatch(/clientErrors \?\? \(state\.status === "invalid"/);
-  });
-
-  /**
-   * The copy button is the second escape hatch on a failed send, and rendering
-   * one that cannot work would be the original bug again.
-   */
-  it("renders the copy button only once the clipboard API is known to exist", () => {
-    expect(src).toMatch(/navigator\.clipboard\?\.writeText/);
-    expect(src).toMatch(/\{canCopy && \(/);
-  });
-
-  /** Announced, not merely coloured. */
-  it("gives field errors a role that a screen reader acts on", () => {
-    expect(src).toMatch(/className="cform__error"[\s\S]{0,80}role="alert"/);
-  });
-
-  /**
-   * Fail-open. If this ever becomes `String(Date.now())` or similar, a visitor
-   * with no JavaScript starts sending a timestamp measured against the wrong
-   * clock, and the marker stops meaning anything.
-   */
-  it("stamps elapsed time rather than a timestamp, and only at submit", () => {
-    expect(src).toMatch(/elapsed\.current\.value = String\(Date\.now\(\) - startedAt\.current\)/);
-    expect(src).toMatch(/onSubmit=\{stamp\}/);
-  });
-
-  /**
-   * The membrane click.
-   *
-   * Every other text surface on this site clicks when you type in it, and the
-   * contact form was the one that did not, which made the newest page the only
-   * place the machine goes quiet. `audio.key()` is inert until sound has been
-   * turned on and a gesture has started the AudioContext, so this cannot make a
-   * page make noise unasked.
-   *
-   * The filter is asserted against `Terminal.tsx` rather than restated, because
-   * two copies of a rule that agree today is how the shell and the form end up
-   * sounding different. Modifiers on their own stay silent: a real keyboard's
-   * shift key does not click either.
-   */
-  it("clicks on exactly the keys the shell clicks on", () => {
-    const filter =
-      /e\.key\.length === 1 \|\| e\.key === "Enter" \|\| e\.key === "Backspace" \|\| e\.key === "Tab"/;
-    const terminal = readFileSync(join(process.cwd(), "components", "Terminal.tsx"), "utf8");
-
-    expect(src).toMatch(filter);
-    expect(terminal).toMatch(filter);
-  });
-
-  /**
-   * Anchored to the handler's body, not to the file.
-   *
-   * The first version of this asserted a bare `audio.key()` against the whole
-   * source, and `audio.key()` also appears in the docblock above the handler
-   * explaining what it does. Deleting the actual call left the suite fully
-   * green: the one line this change exists for had a test that could never
-   * fail. A review caught it. `scripts/mutation-check.mjs` now empties the
-   * handler as a mutation, so the guard has been shown to bite.
-   */
-  it("actually calls the synth from inside the handler", () => {
-    const body = /const onKey = \([^)]*\) => \{([\s\S]*?)\n  \};/.exec(src)?.[1];
-    expect(body, "onKey handler not found").toBeTruthy();
-    expect(body).toContain("audio.key();");
-  });
-
-  it("puts the click on the fields themselves, not on the form", () => {
-    // On the form it would also fire for Enter on the submit button, which is a
-    // click for a keystroke that is not typing. `shared` is spread into both the
-    // input and the textarea, so one line covers all three fields.
-    expect(src).toMatch(/onKeyDown: onKey,/);
-
-    // Sliced rather than measured by distance. The first version allowed 400
-    // characters between `<form` and `onKeyDown`, which passed with about 400 to
-    // spare and would have failed on correct code the moment anything between
-    // them got shorter.
-    //
-    // Ended on the tag's own closing line rather than the next `>`. A `>` inside
-    // an attribute, which is all it takes to write `onSubmit={(e) => stamp(e)}`,
-    // would truncate the slice to a few characters and leave this passing for
-    // ever afterwards, including on the day somebody hoists the handler onto the
-    // form. That is an absence test quietly going green, which this repo has been
-    // caught by before.
-    const open = src.indexOf("<form\n");
-    const close = src.indexOf("\n      >", open);
-    expect(open, "opening <form tag not found").toBeGreaterThan(-1);
-    expect(close, "closing bracket of the <form tag not found").toBeGreaterThan(open);
-    const tag = src.slice(open, close);
-    // Prove the slice really is the whole tag, so it cannot pass by being empty.
-    expect(tag).toContain("action={action}");
-    expect(tag).toContain("onSubmit={stamp}");
-    expect(tag).not.toContain("onKeyDown");
-  });
-});
-
-/**
  * The button this whole change exists for.
  *
  * `components/Talk.tsx` renders the call to action at the bottom of every page.
@@ -494,6 +349,14 @@ describe("the call to action goes to a page", () => {
     expect(src).toContain("meetingCopy.getInTouch");
     expect(readFileSync(join(process.cwd(), "app/contact/page.tsx"), "utf8")).toContain("<MeetingCards />");
     expect(src).not.toContain("profile.booking");
+  });
+
+  it("sends the calendar picker which slots are taken, never the calendars' busy times", () => {
+    // The busy times are Fergus's personal, Draft and family calendars at
+    // minute precision; a client prop is readable by anyone (2026-11-25 review).
+    const page = readFileSync(join(process.cwd(), "app/contact/page.tsx"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(page).toMatch(/busy=\{calendar\.mode === "down" \? null : takenSlots\(now, calendar\.busy\)\}/);
+    expect(page).not.toMatch(/busy=\{[^}]*calendar\.busy\}(?!\))/);
   });
 });
 

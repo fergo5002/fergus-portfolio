@@ -1,4 +1,5 @@
 import type { CommandContext, CommandResult } from "./shared";
+import { SYSTEM_VERSION } from "@/content/machine";
 
 /**
  * The command registry.
@@ -75,11 +76,11 @@ export function findCommand(word: string): CommandDef | undefined {
   return byName.get(word) ?? byAlias.get(word);
 }
 
-export const HELP_HEAD: string[] = ["FergusOS 5.0 · command reference", ""];
+export const HELP_HEAD: string[] = [`FergusOS ${SYSTEM_VERSION} · command reference`, ""];
 
 /** The two lines that describe the shell itself. They sit under "shell" and are not commands. */
 export const HELP_FOOT: string[] = [
-  "    history · echo · date · pwd · clear · help",
+  "    history · echo · date · pwd · clear · exit · help",
   "    tab completes · up/down recalls · ctrl+L clears",
 ];
 

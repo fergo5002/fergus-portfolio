@@ -63,7 +63,7 @@ describe("shortPwd", () => {
   });
 
   it("keeps only the last segment of a deeper path, and says so", () => {
-    expect(shortPwd("/writing/why-presterly-wound-down")).toBe("~/…/why-presterly-wound-down");
+    expect(shortPwd("/writing/multi-tenant-shopify-apps")).toBe("~/…/multi-tenant-shopify-apps");
     expect(shortPwd("/tools/drift")).toBe("~/…/drift");
   });
 

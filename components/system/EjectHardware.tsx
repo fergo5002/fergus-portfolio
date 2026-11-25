@@ -284,7 +284,7 @@ export default function EjectHardware() {
       const hadFocus = rootRef.current?.contains(document.activeElement) ?? false;
       setEjected(false);
       // The hardware goes inert, so focus goes to the control that brings it back.
-      if (hadFocus) document.querySelector<HTMLElement>(".machine__motion .machine__btn:last-child")?.focus();
+      if (hadFocus) document.querySelector<HTMLElement>(".term-handle")?.focus();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

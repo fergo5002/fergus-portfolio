@@ -69,47 +69,61 @@ describe("derived lists", () => {
     expect(runCommand("help")).toEqual({ type: "output", lines: HELP_LINES });
   });
 
-  it("HELP_LINES is, line for line, the text the site printed before the registry existed", () => {
-    // The parity oracle. Sections, their order and the order within them were
-    // hand-curated in the old hard-coded array; the registry reproduces them
-    // from `group` and `rank`. A new command with a help line must pick a
-    // section and a rank, and this list must grow with it.
+  it("HELP_LINES is, line for line, the reference the site prints", () => {
+    // The parity oracle. Sections, their order and the order within them come
+    // from each command's `group` and `rank`. A new command with a help line
+    // must pick a section and a rank, and this list must grow with it.
+    // Rewritten on 2026-11-25 with the terminal clean-up: book, status and
+    // exit joined, and the keys lost their angle brackets.
     expect(HELP_LINES).toEqual([
-      "FergusOS 5.0 · command reference",
+      "FergusOS 6.0 · command reference",
       "",
       "  navigate",
       "    whoami            who is this",
-      "    ls                list sections",
-      "    cd <section>      jump to a section",
-      "    open <project>    open a project by name",
+      "    ls                what's here",
+      "    cd <section>      go to a page",
+      "    open <name>       a project, or github · linkedin · email",
       "    cat about.txt     read the bio",
       "    resume            print the short CV",
       "    contact           show contact details",
+      "    book coffee|call  pick a time in my calendar",
       "",
       "  system",
       "    neofetch          system summary",
+      "    status            what the machine is doing",
       "    uptime            session uptime",
       "    top               running processes",
       "    theme <name>      green · amber · ice",
-      "    crt <on|off>      toggle the tube",
-      "    scanlines <0-100> set mask intensity",
+      "    crt on|off        toggle the tube",
+      "    scanlines 0-100   how strong the lines are",
       "    matrix            let it rain",
       "    degauss           thump the magnets",
       "",
       "  physical",
       "    gravity           drop the page. drag it. throw it.",
       "    eject / dock      pull the camera back off the glass",
-      "    sound <on|off>    the tube has a voice",
+      "    sound on|off      the tube has a voice",
       "",
       "  shell",
       "    forget            wipe what this site saved on your machine",
       "    who               who else is on the tube",
-      "    history · echo · date · pwd · clear · help",
+      "    history · echo · date · pwd · clear · exit · help",
       "    tab completes · up/down recalls · ctrl+L clears",
       "",
       "  and one more thing",
       "    sudo hire-me      ;)",
     ]);
+  });
+
+  it("lines every description up in one column", () => {
+    // The 2026-11-25 rewrite shipped two lines a space out, and only printing
+    // the list showed it. Every key is padded to 18 characters.
+    const keyed = HELP_LINES.filter((l) => /^    \S/.test(l) && /\S\s{2,}\S/.test(l.slice(4)));
+    expect(keyed.length).toBeGreaterThan(15);
+    for (const line of keyed) {
+      const m = /^    (.+?)\s{2,}(\S.*)$/.exec(line);
+      expect(m ? line.length - m[2].length : -1, line).toBe(22);
+    }
   });
 });
 

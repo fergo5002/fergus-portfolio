@@ -3,6 +3,19 @@
 import assert from "node:assert/strict";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+
+/**
+ * The arcade's door since 2026-11-25: hold fergus@portfolio for three seconds.
+ * Pointer events are dispatched rather than a real press, so a touch emulation
+ * and a mouse both reach React's handlers the same way.
+ */
+async function holdDoor(page) {
+  const prompt = page.locator(".nav__prompt");
+  const init = { pointerType: "mouse", isPrimary: true, button: 0, pointerId: 1 };
+  await prompt.dispatchEvent("pointerdown", init);
+  await page.waitForTimeout(3300);
+  await prompt.dispatchEvent("pointerup", init);
+}
 import { chromium, webkit, devices } from "playwright";
 
 const args = process.argv.slice(2);
@@ -77,13 +90,14 @@ async function run(name, engine, device) {
       return { before, width: el.clientWidth, scrollWidth: el.scrollWidth };
     });
     await page.waitForTimeout(250);
+    const last = page.locator(".nav__list a").last();
+    const box = await last.boundingBox();
     const door = page.locator(".nav__link--cmd");
-    const box = await door.boundingBox();
     assert(box && box.x >= -1 && box.x + box.width <= device.viewport.width + 1);
     assert.equal(await page.evaluate(() => window.scrollY), nav.before);
     check("the final nav control is reachable without moving the page", { nav, box });
 
-    await press(page.locator(".statusbar__prompt"));
+    await press(page.locator(".term-handle"));
     await page.locator(".shell .term__input").waitFor();
     assert.equal(await page.locator(".term__input").evaluate(el => document.activeElement === el), true);
     await command("help");
@@ -95,20 +109,20 @@ async function run(name, engine, device) {
 
     await press(page.locator(".term__input"));
     assert.equal(await page.locator(".shell").count(), 1);
-    await press(page.locator(".statusbar__prompt"));
+    await press(page.locator(".term-handle"));
     await page.locator(".shell").waitFor({ state: "detached" });
-    await press(page.locator(".statusbar__prompt"));
+    await press(page.locator(".term-handle"));
     assert.match(await page.locator(".term__scroll").innerText(), /gravity/);
     // A real outside click must dismiss without requiring a second press.
     await press(page.locator(".page__title"));
     await page.locator(".shell").waitFor({ state: "detached" });
-    await press(page.locator(".statusbar__prompt"));
+    await press(page.locator(".term-handle"));
     assert.match(await page.locator(".term__scroll").innerText(), /gravity/);
     check("inside clicks preserve the drawer; handle and outside clicks dismiss it without losing history");
 
     // The already-open drawer must remain mounted when its terminal receives
     // the nav request. A toggle here used to risk removing the arcade host.
-    await press(door);
+    await holdDoor(page);
     await page.locator(".arcade-room").waitFor();
     assert.equal(await page.locator(".arcade-room").count(), 1);
     await page.keyboard.press("Escape");
@@ -119,35 +133,33 @@ async function run(name, engine, device) {
     // while it hosts a program, so the count is taken here, with the prompt back.
     const exits = async () => (((await page.locator(".term__scroll").textContent()) ?? "").match(/arcade: back to the prompt\./g) ?? []).length;
     const exitsSoFar = await exits();
-    await press(page.locator(".shell__close"));
+    await press(page.locator(".shell__light--close"));
 
-    // The room has no header of its own, so the nav's door is also the way out,
+    // The room has no header of its own, so the nav's cd .. is the way out,
     // which is the only one a phone has without an Escape key (2026-09-28).
-    await page.locator(".nav__list").evaluate(el => { el.scrollLeft = el.scrollWidth; });
-    await press(door);
+    await holdDoor(page);
     await page.locator(".arcade-room").waitFor();
     await page.locator(".arcade-entrance").waitFor({ state: "detached", timeout: 12_000 });
     assert.equal(await page.locator(".arcade-room header, .arcade-bar").count(), 0);
-    assert.equal(await door.getAttribute("aria-label"), "cd arcade, leave the arcade");
+    assert.equal(await door.getAttribute("aria-label"), "cd .., leave the arcade");
     await press(door);
     await page.locator(".arcade-room").waitFor({ state: "detached" });
     // It leaves the way Escape does: the drawer's terminal comes back with one new exit line.
     assert.equal(await page.locator(".shell").count(), 1);
     assert.equal(await exits(), exitsSoFar + 1);
     assert.equal(await page.locator(".term__input").evaluate(el => document.activeElement === el), true);
-    assert.equal(await door.getAttribute("aria-label"), null);
-    await press(page.locator(".shell__close"));
-    check("the room draws no header, and the nav's cd arcade leaves it the way Escape does");
+    assert.equal(await door.count(), 0);
+    await press(page.locator(".shell__light--close"));
+    check("the room draws no header, and the nav's cd .. leaves it the way Escape does");
 
     // Enter from a closed drawer, then use the ordinary nav after the power cycle.
     // Same-route departure matters: pathname effects cannot observe that click.
     for (const destination of ["/projects", "/experience"]) {
-      await page.locator(".nav__list").evaluate(el => { el.scrollLeft = el.scrollWidth; });
-      await press(door);
+      await holdDoor(page);
       await page.locator(".arcade-room").waitFor();
       await page.locator(".arcade-entrance").waitFor({ state: "detached", timeout: 12_000 });
       assert.equal(await page.locator(".nav").isVisible(), true);
-      assert.equal(await door.getAttribute("aria-current"), "location");
+      assert.equal(await door.count(), 1);
       assert.equal(await page.locator(".arcade-room").getAttribute("aria-modal"), null);
       const roomTop = await page.locator(".arcade-room").evaluate(el => el.getBoundingClientRect().top);
       const navBottom = await page.locator(".nav").evaluate(el => el.getBoundingClientRect().bottom);
@@ -165,8 +177,7 @@ async function run(name, engine, device) {
       assert.equal(await page.locator("main").isVisible(), true);
       check("ordinary navigation exits the arcade and releases its host", { destination });
     }
-    await page.locator(".nav__list").evaluate(el => { el.scrollLeft = el.scrollWidth; });
-    await press(door);
+    await holdDoor(page);
     await page.locator(".arcade-room").waitFor();
     await page.goBack();
     await page.waitForURL(`${base}/projects`);
@@ -180,8 +191,7 @@ async function run(name, engine, device) {
     await page.evaluate(() => window.history.pushState(window.history.state, "", "?chrome-history=1"));
     await page.waitForURL(`${base}/projects?chrome-history=1`);
     for (const direction of ["back", "forward"]) {
-      await page.locator(".nav__list").evaluate(el => { el.scrollLeft = el.scrollWidth; });
-      await press(door);
+      await holdDoor(page);
       await page.locator(".arcade-room").waitFor();
       if (direction === "back") await page.goBack();
       else await page.goForward();
@@ -192,73 +202,64 @@ async function run(name, engine, device) {
       check("query-only history exits the arcade and releases scroll", { direction });
     }
     // A listener left behind by the room would close an ordinary drawer now.
-    await press(page.locator(".statusbar__prompt"));
+    await press(page.locator(".term-handle"));
     await page.locator(".shell .term__input").waitFor();
     await page.goBack();
     await page.waitForURL(`${base}/projects`);
     assert.equal(await page.locator(".shell").count(), 1);
-    await press(page.locator(".shell__close"));
+    await press(page.locator(".shell__light--close"));
     check("leaving the room removes its history listener");
 
-    const geometry = await page.evaluate(() => {
-      const rect = selector => { const r = document.querySelector(selector).getBoundingClientRect(); return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height }; };
-      const controls = [...document.querySelectorAll(".machine__btn, .statusbar__prompt")].map(el => {
-        const r = el.getBoundingClientRect();
-        const label = el.querySelector(".machine__label, .statusbar__prompt-label");
-        const l = label.getBoundingClientRect();
-        return { text: label.textContent, x: r.x, right: r.right, width: r.width, height: r.height, labelWidth: l.width, labelHeight: l.height };
-      });
-      return { bar: rect(".statusbar"), prompt: rect(".statusbar__prompt"), controls, width: innerWidth, height: innerHeight };
+    // The status bar went on 2026-11-25; one handle in the bottom right
+    // replaced it. It must be a thumb's size and sit wholly on the screen.
+    const handle = await page.evaluate(() => {
+      const r = document.querySelector(".term-handle").getBoundingClientRect();
+      return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height, vw: innerWidth, vh: innerHeight };
     });
-    if (device.hasTouch) {
-      assert(geometry.prompt.width >= 44 && geometry.prompt.height >= 44);
-      assert(geometry.controls.every(c => c.width >= 44 && c.height >= 44));
-      assert(geometry.prompt.bottom <= geometry.height + 1);
-    }
-    assert(geometry.controls.every(c => c.x >= 0 && c.right <= geometry.width && c.labelWidth > 10 && c.labelHeight > 10));
-    for (let i = 1; i < geometry.controls.length; i++) assert(geometry.controls[i - 1].right <= geometry.controls[i].x + 1);
-    check("status controls keep visible labels and fit without overlap", geometry);
+    assert(handle.width >= 44 && handle.height >= 44, JSON.stringify(handle));
+    assert(handle.x >= 0 && handle.y >= 0 && handle.right <= handle.vw + 1 && handle.bottom <= handle.vh + 1, JSON.stringify(handle));
+    check("the terminal handle is a thumb's size and inside the screen", handle);
 
+    // /contact is two meeting cards and three boxes since 2026-11-25. Every one
+    // is a thumb's height, inside the width, and nothing overlaps.
     await page.goto(`${base}/contact`, { waitUntil: "networkidle" });
-    await press(page.locator(".cform__submit"));
-    // WebKit pans towards the invalid field asynchronously after focusing it.
-    // Wait for that native movement, without scrolling or focusing it ourselves.
-    await page.waitForTimeout(1200);
-    const invalid = await page.evaluate(() => {
-      const field = document.querySelector(".cform__input:invalid");
-      const r = field?.getBoundingClientRect();
-      return { top: r?.top, navBottom: document.querySelector(".nav").getBoundingClientRect().bottom, invalid: !!field };
-    });
-    assert(invalid.invalid && invalid.top >= invalid.navBottom, JSON.stringify(invalid));
-    if (device.hasTouch) {
-      const fields = await page.locator(".cform__input, .cform__label").evaluateAll(els => els.map(el => ({
-        tag: el.tagName, height: el.getBoundingClientRect().height, font: parseFloat(getComputedStyle(el).fontSize),
-      })));
-      assert(fields.every(el => el.height >= 44 && (el.tag === "LABEL" || el.font >= 16)), JSON.stringify(fields));
-      check("contact fields resist iOS zoom and fields/labels have a thumb's height", fields);
+    const boxes = await page.locator(".meeting-card__link, .social--boxes .social__link").evaluateAll(els => els.map(el => {
+      const r = el.getBoundingClientRect();
+      return { cls: el.className, x: r.x, y: r.y, right: r.right, bottom: r.bottom, height: r.height, vw: innerWidth };
+    }));
+    assert.equal(boxes.length, 5, JSON.stringify(boxes));
+    assert(boxes.every(b => b.height >= 44 && b.x >= 0 && b.right <= b.vw + 1), JSON.stringify(boxes));
+    for (let i = 0; i < boxes.length; i++) for (let j = i + 1; j < boxes.length; j++) {
+      const p = boxes[i], q = boxes[j];
+      const overlap = p.x < q.right - 1 && q.x < p.right - 1 && p.y < q.bottom - 1 && q.y < p.bottom - 1;
+      assert(!overlap, `overlap: ${JSON.stringify([p, q])}`);
     }
-    check("native validation leaves the invalid field below the fixed nav", invalid);
+    check("contact's two cards and three boxes fit, a thumb high, with no overlap", boxes.map(b => Math.round(b.height)));
     await page.screenshot({ path: join(out, `${name}-contact.png`) });
-    await press(page.locator(".statusbar__prompt"));
-    const outsideField = page.locator('.cform__input[name="name"]');
-    await press(outsideField);
+    await press(page.locator(".term-handle"));
+    await page.locator(".shell .term__input").waitFor();
+    await press(page.locator(".page__title"));
     await page.locator(".shell").waitFor({ state: "detached" });
-    assert.equal(await outsideField.evaluate(el => document.activeElement === el), true);
-    check("outside dismissal lets the clicked contact field keep focus");
+    check("a press outside the window minimises it");
 
     // No mail is sent. Reduced motion also gives an instant home load so the
     // browser proof does not conflate timer throttling with the boot profile.
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto(`${base}/`, { waitUntil: "networkidle" });
-    await press(page.locator(".statusbar__prompt"));
+    await press(page.locator(".term-handle"));
+    // The window mounts on the commit after the press, not inside it.
+    await page.locator(".shell .term__input").waitFor();
     assert.equal(await page.locator(".shell").count(), 1);
     assert.equal(await page.locator(".term--inline").count(), 1);
     assert.equal(await page.locator(".shell .term").count(), 1);
     assert.equal(await page.locator(".shell .term__input").evaluate(el => document.activeElement === el), true);
     if (device.hasTouch) {
-      const targets = await page.locator(".term__input, .term__label, .term__hint, .contact__row a").evaluateAll(els => els.map(el => ({ tag: el.className || el.tagName, height: el.getBoundingClientRect().height })));
+      const targets = await page.locator(".term__input, .term__label, .term__hint, .social__link").evaluateAll(els => els
+        // Hidden on purpose (the gravity and eject chips under reduced motion) is not a target.
+        .filter(el => el.getClientRects().length > 0)
+        .map(el => ({ tag: el.className || el.tagName, height: el.getBoundingClientRect().height })));
       assert(targets.every(el => el.height >= 44), JSON.stringify(targets));
-      check("home terminal and contact targets have a thumb's height", targets);
+      check("home terminal and social button targets have a thumb's height", targets);
     }
     await command("cd arcade");
     assert.equal(await page.locator(".arcade-room").count(), 0);

@@ -222,16 +222,12 @@ describe("the room sits inside the tube", () => {
   });
 
   it("hides the page and terminal chrome, and hides the nav only for the entrance", () => {
-    expect(css).toMatch(/html\.arcade-open \.crt__screen,\s*html\.arcade-open \.shell,\s*html\.arcade-open \.statusbar\s*\{\s*visibility:\s*hidden;/);
+    expect(css).toMatch(/html\.arcade-open \.crt__screen,\s*html\.arcade-open \.shell,\s*html\.arcade-open \.term-dock\s*\{\s*visibility:\s*hidden;/);
     expect(css).toMatch(/html\.arcade-entering \.nav\s*\{\s*visibility:\s*hidden;/);
     expect(css).not.toMatch(/html\.arcade-open \.nav/);
     expect(css).toMatch(/\.arcade-room\s*\{[^}]*inset:\s*var\(--nav-h\) 0 0;/);
     expect(room).toMatch(/classList\.add\("arcade-open"\)/);
     expect(room).toMatch(/classList\.remove\("arcade-open"\)/);
-  });
-
-  it("keeps the screensaver off a room that is always moving, since it cannot hear the room's keys", () => {
-    expect(css).toMatch(/html\.arcade-open \.saver \{\s*visibility: hidden;\s*\}/);
   });
 
   it("puts focus on the stage when a game starts, never on the back button", () => {

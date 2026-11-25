@@ -50,8 +50,8 @@
     {
       "id": "ent-04",
       "band": "entity",
-      "text": "What was Presterly and why did it shut down?",
-      "why": "A wound-down company with a published post-mortem. Nobody else has a reason to write this, so if the site does not win it the problem is discovery, not competition.",
+      "text": "What was Presterly?",
+      "why": "A past company the site describes on /experience and /projects. Nobody else has a reason to write about it, so if the site does not win it the problem is discovery, not competition. The post-mortem that used to answer why it shut was retired on 2026-11-25.",
       "expect": "cited"
     },
     {
@@ -83,14 +83,6 @@
       "text": "What is a startup accelerator actually for, and what can it not fix?",
       "why": "Written from inside a programme by someone whose company still wound down, which is a rarer position than the question's volume suggests.",
       "source": "what-an-accelerator-is-for",
-      "expect": "cited"
-    },
-    {
-      "id": "top-09",
-      "band": "topic",
-      "text": "What is founder-product fit and how does it end a startup that has traction?",
-      "why": "The named cause in the Presterly post-mortem, and the term the article argues is under-treated.",
-      "source": "why-presterly-wound-down",
       "expect": "cited"
     },
     {

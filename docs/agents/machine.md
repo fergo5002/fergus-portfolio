@@ -1,6 +1,6 @@
 # The machine: boot, motion, phosphor and the redesign surfaces
 
-Read this before touching the boot, any animation or reveal, the shader, gravity, eject, the screensaver, the status strip, hover previews, the pixel sprites, the writing figures, the `/mcp` console or the 404 card.
+Read this before touching the boot, any animation or reveal, the shader, the effect strength, gravity, eject, the terminal's dock, hover previews, the pixel sprites, the writing figures, the `/mcp` console or the 404 card.
 
 ## The CRT premise (v4, "Phosphor")
 
@@ -45,7 +45,7 @@ From "Stack & conventions".
   IntersectionObserver, because a one-shot reveal gains nothing from a runtime. `motion` is
   used only for `Magnetic`, where a spring settle is genuinely hard to hand-roll.
 - **One frame clock.** `SystemProvider` owns the single `requestAnimationFrame` loop; Lenis,
-  the shader, the cursor trail and the status bar all subscribe via `onFrame`. Never start
+  the shader and the cursor trail all subscribe via `onFrame`. Never start
   another rAF loop, and never `setState` from inside a frame callback: per-frame values are
   mutated on the `frame` ref and published as CSS variables (`--scroll-v`, `--scroll-p`).
 
@@ -109,16 +109,12 @@ If you change the boot path, delete your fix and confirm the suite goes red befo
 Fergus asked for the site to be more novel while staying understated. The rules each change
 brought with it:
 
-- **The status strip's readouts are back, drawn rather than written.** Uptime, scroll as a hex
-  memory address, fps, pointer, clock and phosphor, plus a drive lamp that flickers while the
-  machine is busy. `StatusBar` writes each value into a `--ro` custom property on its own span
-  and `globals.css` draws it with `content`, so none of it reaches the server HTML or a text
-  extractor, and each write restyles one small span rather than repainting type. Values come
-  from the pure `lib/readouts.ts`. Readouts give way as the strip narrows, and below 560px the
-  phone bar is still the four labelled controls. `components/statusbar.test.ts` guards this.
+- **The status strip and its readouts went on 2026-11-25** (Fergus: "get rid of the bottom bar
+  altogether, keeping just the terminal"). What it showed is the `status` command now, and its
+  controls are terminal commands with chips on the home terminal. See "The dock" below.
 - **Hover previews choose a side when they open** (`lib/preview-placement.ts`): below unless
-  that runs under the status strip, above unless that runs under the nav, otherwise the side
-  with more room. The strip is the floor, not the viewport edge.
+  that runs into the terminal's handle, above unless that runs under the nav, otherwise the side
+  with more room. The handle's top is the floor, not the viewport edge.
 - **Gravity skips `.vh` text.** A `Range` reports a clipped word's full layout box, so
   HeroName's hidden copy of the name used to fall as whole words on top of its own letters.
   `scripts/gravity-check.mjs` drives the real switch and runs in the phone job.
@@ -169,14 +165,32 @@ brought with it:
   and moves a light, so CSS and the shader never need to share a homography.
   `html.is-ejecting .crt__assembly` uses `overflow: clip`, not `hidden`: `hidden` makes it a
   scroll container, and a channel change's scroll-to-top then scrolled the assembly out from
-  under the glass. `EjectRig` re-measures the scroll spacer whenever the page changes height. At
-  phone scale the status strip's `enter` is 32.6px tall because the whole screen is scaled; the
+  under the glass. `EjectRig` re-measures the scroll spacer whenever the page changes height. The
+  way back in is the dock's "back in" pill, outside the scaled assembly, so it stays 48px; the
   chin's own controls are 44px.
-- **The screensaver is an oscilloscope** (`lib/lissajous.ts`). After 45 idle seconds the page
-  steps aside (`html.is-saving`, like `.booting`) and the beam retraces a slowly retuning
-  Lissajous figure; with no WebGL or the CRT off, the old plate bounces instead. Its idle
-  listeners are capture-phase, because the arcade stops keydown bubbling, and it never starts
-  while the arcade is open. `scripts/saver-check.mjs` skips the wait with Playwright's fake clock.
+- **There is no screensaver and no idle animation of any kind** (Fergus, 2026-11-25: "i dont want
+  any idle animation at all, or any idle screen"). `Screensaver.tsx`, `lib/lissajous.ts` and
+  `scripts/saver-check.mjs` are gone. Burn-in under static content is the phosphor's memory, not
+  an idle state, and stays.
 - **The experience log's marker, short hash and `(HEAD -> main)` are drawn by CSS**
   (`lib/commit-hash.ts` feeds a `--hash` property). The old `● commit` was a text node in front
   of every entry.
+
+## Quieter by a quarter, and the dock (2026-11-25)
+
+**Every ambient effect runs at 75% (`EFFECT_STRENGTH` in `lib/system.ts`, `--fx` in
+`globals.css`).** Fergus found them hard on the eyes and asked for them toned down by 25%. One
+number, read in both places: the shader bakes it in as `FX` and scales the pointer glow and
+ripple, the hum, the chromatic split, the scanlines and the rain by it; the stylesheet multiplies
+the glow, scanlines, vignette, flicker and glass alphas by `--fx`. Change both together. It scales
+strength, not geometry or timing, so nothing moves differently, it just shows less.
+
+**The status bar became a dock.** `components/TermDock.tsx` is one 48px handle in the bottom
+right (`$_` drawn in CSS, the word "terminal" sliding out on hover) that grows the terminal out
+of itself as a Mac-style window: a genie of `transform` plus `clip-path` from the handle's centre,
+420ms in and 320ms out, under `no-preference` only. `lib/dock.ts` is the pure phase machine
+(closed, opening, open, closing), so the window stays mounted through its closing animation and
+is `inert` while it plays. The traffic lights are hollow phosphor at rest and Mac colours on hover:
+close and minimise both minimise, zoom fills the screen. While gravity or eject is on, a pill
+beside the handle offers the way back ("restore page", "back in"), and nowhere else does.
+`.screen` keeps `--dock-clear` at the bottom so the last line of every page clears the handle.

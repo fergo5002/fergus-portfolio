@@ -20,6 +20,18 @@ export function isTheme(value: string): value is Theme {
 }
 
 /**
+ * How strong the always-on screen effects are, as a fraction of the levels they
+ * were tuned at in v4 and v5: the scanlines, the rain behind the page, the
+ * mains hum band, the pointer's ripple, the chromatic split, the text glow, the
+ * flicker, the vignette and the glass sheen. Fergus asked for all of them a
+ * quarter quieter on 2026-11-25 ("a little distracting on the eyes and can make
+ * it hard to read"). One number, read by the shader here and mirrored by `--fx`
+ * in globals.css, so the next adjustment is one line in each. Things a visitor
+ * sets off on purpose (degauss, a tap, gravity, eject, the boot) are not scaled.
+ */
+export const EFFECT_STRENGTH = 0.75;
+
+/**
  * Phosphor colour per theme, as linear-ish 0..1 RGB for the shader. Kept in sync
  * with the `html[data-theme]` blocks in globals.css by eye: these feed the WebGL
  * layer, those feed the DOM.

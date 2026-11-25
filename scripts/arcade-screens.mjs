@@ -20,7 +20,7 @@ await mkdir(out, { recursive: true });
 async function enter(page, tap = false) {
   // The prompt toggles the drawer: open it only if the input is not already there.
   if (!(await page.locator(".term__input").count())) {
-    const prompt = page.locator(".statusbar__prompt");
+    const prompt = page.locator(".term-handle");
     if (tap) await prompt.tap(); else await prompt.click();
   }
   await page.locator(".term__input").fill("cd arcade");
@@ -38,7 +38,7 @@ async function desktop(theme) {
   try {
     await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
     if (theme !== "green") {
-      await page.locator(".statusbar__prompt").click();
+      await page.locator(".term-handle").click();
       await page.locator(".term__input").fill(`theme ${theme}`);
       await page.locator(".term__input").press("Enter");
       await page.waitForTimeout(600);

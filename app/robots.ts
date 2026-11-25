@@ -57,7 +57,7 @@ export default function robots(): MetadataRoute.Robots {
         //
         //   1. The inline pre-paint script in `app/layout.tsx` is inline, so it
         //      always runs, and on "/" it adds `booting` to <html>.
-        //   2. `.booting .screen/.nav/.statusbar` are `visibility: hidden`.
+        //   2. `.booting .screen/.nav/.term-dock` are `visibility: hidden`.
         //   3. The code that clears `booting` properly is `BootSequence`, which
         //      ships in a chunk under `/_next/static/chunks/`.
         //

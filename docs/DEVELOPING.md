@@ -1,6 +1,6 @@
 # Developing FergusOS
 
-Next.js 15, React 19, TypeScript and hand-written CSS. The contact and meeting forms send through Resend; the arcade and other server routes have their own bounded storage contracts in `AGENTS.md`, which is the full guide. This is the short version.
+Next.js 15, React 19, TypeScript and hand-written CSS. The meeting form books into Google Calendar and falls back to Resend; the arcade and other server routes have their own bounded storage contracts in `AGENTS.md`, which is the full guide. This is the short version.
 
 ## Run it
 
@@ -13,10 +13,12 @@ npm start
 ```
 
 The homepage also has an interactive terminal directly below About. It shares
-history with the drawer, which opens from the bottom bar on every route. Escape,
-the close button or clicking outside dismisses the drawer. History lasts for the tab.
-The arcade keeps its power-cycle entrance and restores the regular top nav.
-Only the drawer hosts arcade programs, including commands typed in the inline shell.
+history with the terminal window, which grows out of the handle in the bottom right
+on every route. Escape, the red light, `exit` or clicking outside minimises it.
+History lasts for the tab. The arcade keeps its power-cycle entrance and restores
+the regular top nav. Only the window hosts arcade programs, including commands
+typed in the inline shell. Hold `fergus@portfolio` in the top bar for three seconds
+to open the arcade.
 
 ## Content
 
@@ -63,13 +65,12 @@ node scripts/revision-check.mjs
 node scripts/phone-check.mjs --base http://localhost:3000 --from-sitemap
 node scripts/phone-polish-check.mjs --base http://localhost:3000
 REVISION_BASE=http://localhost:3000 node scripts/boot-check.mjs
-REVISION_BASE=http://localhost:3000 node scripts/saver-check.mjs
 node scripts/mutation-check.mjs
 docker build -f Dockerfile.parity -t fergus-portfolio-parity .
 ```
 
 The boot types a BIOS that reads the visitor's own machine and has the beam trace
-the site's mark in one stroke; left idle, the beam draws an oscilloscope figure.
+the site's mark in one stroke. There is no idle animation.
 `boot-check` proves the boot's privacy only against a build with a PostHog key
 (any value); CI runs it with `--no-ingest --no-beam --no-shots`.
 

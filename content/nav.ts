@@ -23,8 +23,26 @@ export const navItems = [
 ] as const;
 
 /**
- * The one entry in the nav that is not a page. The arcade is a program the
- * terminal hosts, so the nav asks the shell to run this command rather than
- * linking anywhere (see `lib/shell-request.ts`).
+ * The routes the top bar shows. `/mcp` stays a channel on the ejected
+ * monitor's dial and a `cd mcp` in the terminal, and `/tools` links to it, but
+ * Fergus took it out of the top bar on 2026-11-25 along with `cd arcade`.
  */
-export const navDoor = { label: "arcade", command: "cd arcade", leaveLabel: "cd arcade, leave the arcade" } as const;
+export const navShown = navItems.filter((item) => item.href !== "/mcp");
+
+/**
+ * The arcade is a program the terminal hosts, not a page, so nothing links to
+ * it: the shell runs this command (see `lib/shell-request.ts`). Since
+ * 2026-11-25 the top bar has no `cd arcade`. The way in is `cd arcade` in the
+ * terminal, or pressing and holding `fergus@portfolio` in the top left for
+ * `ARCADE_HOLD_MS`. Nothing on the page says so; `top` still lists the arcade
+ * as a running process. While the room is up the top bar shows `leave`, because
+ * a phone has no Escape key.
+ */
+export const navDoor = {
+  label: "arcade",
+  command: "cd arcade",
+  leave: "cd ..",
+  leaveLabel: "cd .., leave the arcade",
+} as const;
+
+export const ARCADE_HOLD_MS = 3000;

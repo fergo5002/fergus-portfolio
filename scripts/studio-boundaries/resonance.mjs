@@ -63,7 +63,7 @@ export default [
           return {
             stage: Math.round(stage.height),
             face: Math.round(face.getBoundingClientRect().height),
-            room: innerHeight - px("--nav-h") - px("--status-h"),
+            room: innerHeight - px("--nav-h") - px("--dock-clear"),
             first: face.firstElementChild.className,
             host: document.querySelector(".bench-stage").firstElementChild.firstElementChild.classList.contains("reso"),
           };

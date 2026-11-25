@@ -355,7 +355,7 @@ async function coldBoot(engine) {
         overlay: !!document.querySelector(".boot"),
         screen: getComputedStyle(document.querySelector(".screen")).visibility,
         nav: getComputedStyle(document.querySelector(".nav")).visibility,
-        status: getComputedStyle(document.querySelector(".statusbar")).visibility,
+        status: getComputedStyle(document.querySelector(".term-dock")).visibility,
         powerOn: !!document.querySelector(".power-on"),
         origin: document.querySelector(".screen").style.transformOrigin,
         marker: sessionStorage.getItem("fergusos_booted"),
@@ -415,7 +415,7 @@ async function skipPartWay(engine) {
       // The positive control: a click autocapture should record, on a real
       // button, so "nothing leaked" cannot come from autocapture being off.
       await page.waitForTimeout(600);
-      const prompt = page.locator(".statusbar__prompt");
+      const prompt = page.locator(".term-handle");
       await (engine === "webkit" ? prompt.tap() : prompt.click());
       // Give PostHog its batch flush, then leave the page, which flushes again.
       await page.waitForTimeout(5000);
@@ -508,7 +508,7 @@ function judgeIngest(engine, captured) {
     // autocapture recorded the click on the terminal button.
     assert.ok(withBody.some((b) => b.text.includes("$pageview")), "PostHog sent no $pageview: it is not capturing, so silence proves nothing");
     assert.ok(
-      withBody.some((b) => b.text.includes("$autocapture") && /statusbar__prompt/.test(b.text)),
+      withBody.some((b) => b.text.includes("$autocapture") && /term-handle/.test(b.text)),
       "autocapture did not record the control click on the terminal button, so it was not armed and silence proves nothing",
     );
     let nativeZone = 0;

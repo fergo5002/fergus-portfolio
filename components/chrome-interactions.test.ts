@@ -11,10 +11,10 @@ it("keeps the one nav outside the screen hidden by the arcade", () => {
   expect(shell.indexOf("<Nav />")).toBeGreaterThan(shell.indexOf('<div className="crt__screen">{children}</div>'));
 });
 it("dismisses outside pointer presses but protects the portaled arcade and toggles", () => {
-  const drawer = read("components/ShellDrawer.tsx");
+  const drawer = read("components/TermDock.tsx");
   expect(drawer).toContain('document.addEventListener("pointerdown", onPointerDown)');
   expect(drawer).toContain('document.removeEventListener("pointerdown", onPointerDown)');
-  expect(drawer).toContain('.shell, .statusbar__prompt, .nav, .arcade-room');
+  expect(drawer).toContain('.shell, .term-dock, .nav, .arcade-room');
 });
 it("exits the host before a normal nav link, including its current route", () => {
   const nav = read("components/Nav.tsx");

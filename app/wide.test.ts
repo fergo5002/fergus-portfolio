@@ -121,9 +121,9 @@ describe("the home terminal in its tile", () => {
   it("contains the scrollback, so output scrolls instead of growing the row", () => {
     const home = read("app", "home.css");
     expect(home).toMatch(/\.home > \.term \.term__scroll \{[^}]*contain: size;/);
-    // Never less scrollback than the laptop terminal, whose cap is 230px.
-    expect(home).toMatch(/\.home > \.term \.term__scroll \{[^}]*min-height: 230px;/);
-    expect(globals).toMatch(/\.term__scroll \{\s*max-height: 230px;/);
+    // Never less scrollback than the laptop terminal, whose cap is 260px.
+    expect(home).toMatch(/\.home > \.term \.term__scroll \{[^}]*min-height: 260px;/);
+    expect(globals).toMatch(/\.term__scroll \{\s*max-height: 260px;/);
   });
 });
 

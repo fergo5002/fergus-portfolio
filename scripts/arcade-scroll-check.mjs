@@ -47,7 +47,7 @@ try {
   out.controlScrollY = settled;
   if (out.controlScrollY < 100) throw new Error(`instrument: a wheel on the page moved it ${out.controlScrollY}px, so nothing below is evidence`);
 
-  await page.locator(".statusbar__prompt").click();
+  await page.locator(".term-handle").click();
   await page.locator(".term__input").fill("cd arcade");
   await page.locator(".term__input").press("Enter");
   await page.locator(".arcade-room").waitFor();

@@ -5,8 +5,9 @@ import { articles } from "@/content/articles";
 import { arcadeCopy, GAME_TITLES } from "@/content/arcade";
 import { formatBoards } from "@/lib/arcade/board";
 import { formatUptime } from "@/lib/system";
+import { SYSTEM_VERSION } from "@/content/machine";
 import { defineCommand } from "./registry";
-import { ok } from "./shared";
+import { columns, ok, promptPath } from "./shared";
 import type { CommandContext } from "./shared";
 
 function neofetch(ctx: CommandContext): string[] {
@@ -23,20 +24,23 @@ function neofetch(ctx: CommandContext): string[] {
   const info = [
     `${profile.user}@${profile.host}`,
     "─────────────────────────",
-    `OS       FergusOS 5.0 "Mass"`,
-    `Host     Trinity College Dublin`,
+    `OS       FergusOS ${SYSTEM_VERSION}`,
+    `Host     ${profile.location}`,
     `Kernel   next-15 · react-19 · webgl · webaudio`,
     `Uptime   ${formatUptime(ctx.uptimeMs ?? 0)}`,
-    `Shell    fsh 4.0`,
+    `Shell    fsh ${SYSTEM_VERSION}`,
     `Display  ${ctx.theme ?? "green"} phosphor · 4:3`,
     // Derived, not typed: this line said "Co-Founder & CTO, Presterly" for a
     // month after that stopped being true.
     `Role     ${experience[0] ? `${experience[0].role} · ${experience[0].org}` : profile.jobTitle}`,
-    `Repos    ${projects.length} shipped · ${experience.length} posts`,
+    `Work     ${projects.length} projects · ${articles.length} posts`,
     // By label, not by index: `contact` has grown before and index 0 only
     // happens to be the email.
     `Contact  ${profile.contact.find((c) => c.label === "email")?.value ?? ""}`,
   ];
+  // The logo and the facts side by side need about 70 columns. A phone gets
+  // the facts alone rather than a logo with every line wrapped through it.
+  if ((ctx.cols ?? 80) < 70) return [...info, ...arcadeBlock(ctx)];
   const rows = Math.max(art.length, info.length);
   const out: string[] = [];
   for (let i = 0; i < rows; i++) {
@@ -59,10 +63,10 @@ function arcadeBlock(ctx: CommandContext): string[] {
 
 function top(): string[] {
   const rows = [
-    ["1", "fergus", "38.2", "12.4", "tigh-retention"],
-    ["7", "fergus", "22.9", "18.1", "booking-worker"],
-    ["12", "fergus", "11.4", "6.2", "presterly-archive"],
-    ["19", "fergus", "8.7", "4.0", "trinity-coursework"],
+    ["1", "fergus", "71.4", "38.0", "stealth"],
+    ["7", "fergus", "9.8", "6.2", "side-projects"],
+    ["12", "fergus", "6.1", "3.4", "tennis"],
+    ["19", "fergus", "4.7", "2.9", "poker"],
     ["24", "root", "4.1", "2.2", "phosphor-shader"],
     // The one hint that `cd arcade` exists. Not in help, not in completion,
     // not in ls: a process in the table is all a visitor is given.
@@ -80,21 +84,67 @@ function top(): string[] {
   ];
 }
 
-function resume(): string[] {
-  const out: string[] = [`${profile.name} · ${profile.tagline}`, profile.education, ""];
-  for (const item of experience) {
-    out.push(`${item.dates.padEnd(22)}${item.org} · ${item.role}`);
-  }
-  out.push("", "projects/");
-  for (const p of projects) {
-    out.push(`  ${p.slug.padEnd(22)}${p.tagline}`);
-  }
-  out.push("", "writing/");
-  for (const a of articles) {
-    out.push(`  ${a.date.padEnd(22)}${a.title}`);
-  }
-  out.push("", `contact: ${profile.contact.map((c) => c.value).join("  ·  ")}`);
-  return out;
+function resume(cols?: number): string[] {
+  return [
+    `${profile.name} · ${profile.tagline}`,
+    profile.education,
+    "",
+    "experience/",
+    ...columns(experience.map((item) => [item.dates, `${item.org} · ${item.role}`]), cols),
+    "",
+    "projects/",
+    ...columns(projects.map((p) => [p.slug, p.tagline]), cols),
+    "",
+    "writing/",
+    ...columns(articles.map((a) => [a.date, a.title]), cols),
+    "",
+    "contact/",
+    ...columns(profile.contact.map((c) => [c.label, c.value]), cols),
+  ];
+}
+
+/**
+ * What the status bar along the bottom used to show all the time, on request
+ * (2026-11-25): where you are, how long the machine has been up, the frame
+ * rate, the phosphor and the switches.
+ */
+function status(ctx: CommandContext): string[] {
+  const on = (v: boolean | undefined) => (v ? "on" : "off");
+  return [
+    `FergusOS ${SYSTEM_VERSION} · up ${formatUptime(ctx.uptimeMs ?? 0)}`,
+    "",
+    ...columns(
+      [
+        ["where", promptPath(ctx.path)],
+        ["phosphor", ctx.theme ?? "green"],
+        ["crt", `${on(ctx.crt ?? true)} · scanlines ${Math.round((ctx.scanlines ?? 0.55) * 100)}`],
+        ["sound", on(ctx.audio)],
+        ["gravity", on(ctx.gravity)],
+        ["eject", on(ctx.ejected)],
+        ["frames", ctx.fps ? `${Math.round(ctx.fps)} fps` : "still"],
+      ],
+      ctx.cols,
+      0,
+    ),
+  ];
+}
+
+/** The date the way a person in Dublin would say it, not the engine's toString. */
+function dublinDate(now: Date): string {
+  const day = new Intl.DateTimeFormat("en-IE", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Europe/Dublin",
+  }).format(now);
+  const time = new Intl.DateTimeFormat("en-IE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone: "Europe/Dublin",
+  }).format(now);
+  return `${day}, ${time} Irish time`;
 }
 
 /** Things the machine can tell you about itself and its owner. */
@@ -104,7 +154,7 @@ export const info = [
     help: "contact           show contact details",
     group: "navigate",
     rank: 7,
-    run: () => ok(profile.contact.map((c) => `${c.label}: ${c.value}`)),
+    run: (_args, ctx) => ok([...columns(profile.contact.map((c) => [c.label, c.value]), ctx.cols, 0), "", "or book a time: book coffee · book call"]),
   }),
 
   defineCommand({
@@ -113,7 +163,7 @@ export const info = [
     help: "resume            print the short CV",
     group: "navigate",
     rank: 6,
-    run: () => ok(resume()),
+    run: (_args, ctx) => ok(resume(ctx.cols)),
   }),
 
   defineCommand({
@@ -122,6 +172,15 @@ export const info = [
     group: "system",
     rank: 1,
     run: (_args, ctx) => ok(neofetch(ctx)),
+  }),
+
+  defineCommand({
+    name: "status",
+    aliases: ["stat"],
+    help: "status            what the machine is doing",
+    group: "system",
+    rank: 2,
+    run: (_args, ctx) => ok(status(ctx)),
   }),
 
   defineCommand({
@@ -157,6 +216,6 @@ export const info = [
 
   defineCommand({
     name: "date",
-    run: (_args, ctx) => ok([(ctx.now ?? new Date()).toString()]),
+    run: (_args, ctx) => ok([dublinDate(ctx.now ?? new Date())]),
   }),
 ];

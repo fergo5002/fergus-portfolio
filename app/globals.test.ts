@@ -127,32 +127,12 @@ describe("the prose rules use the token that passes", () => {
     ".writing__desc",
     ".talk__line",
     ".page__lede",
-    ".cform__panel-body",
-    ".cform__input",
     ".tools__blurb",
     ".tools__meta",
     ".tool__cantsee-item",
     ".tool__privacy",
   ])("%s does not use --green-faint for body text", (selector) => {
     expect(rule(selector)).not.toMatch(/color:\s*var\(--green-faint\)/);
-  });
-
-  /**
-   * A form label is the accessible name of its field, so it is the last thing
-   * on the site that may be borderline. The terminal chrome uses `--green-dim`
-   * freely, and it must not spread to a label.
-   *
-   * Measured from the tokens rather than eyeballed, because the numbers are the
-   * whole trap. `--green-dim` on `--bg` is **4.67 on green, 4.45 on amber and
-   * 4.46 on ice**: it passes on the one theme a developer is looking at and
-   * fails on the two a visitor can reach with four characters at the terminal.
-   * The assertions below name each theme separately for exactly that reason. A
-   * loop asserting one loose bound across all three would have been green
-   * whether or not the claim above it was true.
-   */
-  it("labels the contact fields with the token that passes on every theme", () => {
-    expect(rule(".cform__label")).toMatch(/color:\s*var\(--green\)/);
-    expect(rule(".cform__label")).not.toMatch(/color:\s*var\(--green-dim\)/);
   });
 
   it("records why --green-dim cannot be a label, theme by theme", () => {
@@ -167,22 +147,6 @@ describe("the prose rules use the token that passes", () => {
     // And fails on both of the others, which is why it cannot be used.
     expect(dim('html[data-theme="amber"]')).toBeLessThan(4.5);
     expect(dim('html[data-theme="ice"]')).toBeLessThan(4.5);
-  });
-
-  /**
-   * The error messages under a rejected field. Red on near-black is not close
-   * to the floor on any theme, but it is the one colour on the form a visitor
-   * is required to read in order to fix something, so it gets checked rather
-   * than assumed.
-   */
-  it("keeps the field error text readable on every theme", () => {
-    expect(rule(".cform__error")).toMatch(/color:\s*var\(--red\)/);
-    for (const [name, vars] of THEMES) {
-      // `--red` is defined once on :root and deliberately not re-themed, so
-      // every theme reads the same literal against its own background.
-      const red = vars["--red"] ?? tokens(":root")["--red"];
-      expect(ratio(hex(red), hex(vars["--bg"])), name).toBeGreaterThanOrEqual(4.5);
-    }
   });
 
   /**
@@ -337,20 +301,6 @@ describe("prose tables clear 4.5:1 on every theme", () => {
   });
 });
 
-/**
- * The touch bar's two halves stay apart.
- *
- * `scripts/phone-check.mjs` found the machine controls at 21 by 16 on a phone
- * and the readouts pushing them off a 390px bar, and the fix was one
- * `@media (hover: none)` block holding both answers. Review split it, because a
- * thumb is 44px wide on any screen and a bar only runs out of room on a narrow
- * one: in one block, a touchscreen till or a 27" all-in-one lost the memory
- * readout and had its working directory truncated for space it was not short
- * of.
- *
- * The phone check cannot catch this coming back. It drives 320 and 390 only, so
- * the merged version passes it perfectly. This is the guard instead.
- */
 /** Every block with exactly this prelude, matched by counting braces. */
 function mediaBlocks(prelude: string): string {
   const needle = `@media ${prelude} {`;
@@ -421,50 +371,46 @@ describe("the boot text fits a phone", () => {
   });
 });
 
-describe("the touch bar separates thumb size from screen space", () => {
-  const touch = mediaBlocks("(hover: none)");
-  const touchAndNarrow = mediaBlocks("(hover: none) and (max-width: 768px)");
+/**
+ * The status bar went on 2026-11-25. Its job is one handle in the bottom right
+ * that grows the terminal out of itself like a Mac window (components/TermDock.tsx),
+ * plus a way back from gravity and eject while either is on. These hold the
+ * parts a screenshot would not show coming back wrong.
+ */
+describe("the terminal's dock", () => {
+  const ruleBody = (selector: string) => {
+    const at = css.indexOf(`\n${selector} {`);
+    if (at < 0) return "";
+    return css.slice(at, css.indexOf("}", at));
+  };
 
-  it("keeps the 44px floors on the input, so a wide touchscreen gets them too", () => {
-    expect(touch).toContain("--status-h: 44px");
-    expect(touch).toContain(".machine__btn");
-    expect(touch).toContain(".skiplink");
+  it("leaves nothing of the status bar behind", () => {
+    expect(css).not.toMatch(/\.statusbar|\.machine__|--status-h/);
   });
 
-  it("changes the control row's spacing for room rather than for thumbs", () => {
-    expect(touchAndNarrow).toContain(".machine");
-    expect(touchAndNarrow).toContain("flex: none");
-    expect(touch).not.toContain(".statusbar__pwd");
+  it("gives the handle and the ways back a thumb-sized target on every screen", () => {
+    expect(ruleBody(".term-handle,\n.dock-pill")).toContain("height: 48px");
+    expect(ruleBody(".term-handle")).toContain("min-width: 48px");
   });
 
-  it("truncates the working directory for room rather than for thumbs", () => {
-    expect(narrow).toContain(".statusbar__pwd");
-    expect(touch).not.toContain(".statusbar__pwd");
+  it("keeps the last thing on every page clear of the handle", () => {
+    expect(ruleBody(".screen")).toContain("var(--dock-clear)");
   });
 
-  // Measured live on 2026-09-06 at 390px: the prompt's `$` sat on the bar's
-  // bottom edge while every other readout was centred, the working directory
-  // was 11px wide and read "~…", and on tool routes the readouts ran under the
-  // sound button. The rules below were written for a 22px bar with a mouse;
-  // on touch the bar is 44px and the prompt has to be centred in it like the
-  // controls beside it.
-  const narrow = mediaBlocks("(max-width: 768px)");
-  const narrowPrompt = /\.statusbar__prompt\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? "";
-  const narrowPwd = /\.statusbar__pwd\s*\{([^}]*)\}/.exec(narrow)?.[1] ?? "";
-
-  it("centres the prompt in the bar rather than hanging it off the bottom edge", () => {
-    expect(narrowPrompt).not.toContain("flex-end");
-    expect(narrowPrompt).toContain("align-items: center");
-    expect(narrowPrompt).toContain("min-width: 44px");
+  it("animates the genie only for people who have not asked for stillness", () => {
+    const motion = mediaBlocks("(prefers-reduced-motion: no-preference)");
+    expect(motion).toMatch(/\.shell\.is-opening\s*\{[^}]*genie-in/);
+    expect(motion).toMatch(/\.shell\.is-closing\s*\{[^}]*genie-out/);
+    const outside = css.replace(/@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*?\n\}/g, "");
+    expect(outside).not.toMatch(/animation:\s*genie/);
   });
 
-  it("gives the working directory the slack and lets it ellipsise", () => {
-    expect(narrowPwd).toContain("flex: 1 1 auto");
-    expect(narrowPwd).toContain("text-overflow: ellipsis");
+  it("grows the window out of the middle of the handle", () => {
+    expect(ruleBody(".shell")).toContain("transform-origin: calc(100% - 24px) calc(100% + 38px)");
   });
 
-  it("reserves a full control row even on a narrow screen with a mouse", () => {
-    expect(narrow).toContain("--status-h: 44px");
+  it("hides the dock under the boot and inside the arcade", () => {
+    expect(css).toMatch(/\.booting \.term-dock,\s*\.booting \.shell\s*\{\s*visibility: hidden;/);
   });
 });
 
@@ -548,11 +494,10 @@ describe("small phone fixes (2026-09-06)", () => {
     return new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? "";
   };
 
-  it("keeps an invalid contact field out from under the fixed nav", () => {
+  it("keeps the terminal's prompt out from under the fixed nav", () => {
     // Native validation scrolls the first invalid field to the top of the
     // viewport, which on this site is under a 44px fixed bar: seen live, the
     // "fill out this field" bubble pointed at a field the nav was covering.
-    expect(rule(".cform__input")).toMatch(/scroll-margin-top:\s*calc\(var\(--nav-h\)/);
     expect(rule(".term__input")).toMatch(/scroll-margin-top:\s*calc\(var\(--nav-h\)/);
   });
 
@@ -631,15 +576,7 @@ it("reserves the fixed nav in the document's native validation scrollport", () =
   expect(css).toMatch(/html\s*\{[^}]*scroll-padding-top:\s*calc\(var\(--nav-h\) \+ var\(--sp-3\)\)/);
 });
 
-describe("contact fields and the feed link on touch", () => {
-  it("sizes contact inputs after their base font shorthand, so the cascade preserves 16px", () => {
-    const baseEnd = css.indexOf(".cform__input::placeholder");
-    const lateTouch = css.slice(baseEnd);
-    expect(lateTouch).toMatch(/@media \(hover: none\)\s*\{\s*\.cform__input\s*\{[^}]*font-size: 16px/);
-    expect(lateTouch).toMatch(/\.cform__input\s*\{[^}]*min-height: 44px/);
-    expect(lateTouch).toMatch(/\.cform__label\s*\{[^}]*min-height: 44px/);
-  });
-
+describe("the feed link on touch", () => {
   it("gives the standalone RSS link a thumb's height", () => {
     expect(mediaBlocks("(hover: none)")).toMatch(/\.writing__feed a[^{]*\{[^}]*min-height: 44px/);
   });

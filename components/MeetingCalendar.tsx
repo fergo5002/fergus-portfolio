@@ -6,7 +6,7 @@ import { meetingAction } from "@/app/contact/meeting-action";
 import { meetingCopy as copy } from "@/content/meeting";
 import { contactCopy } from "@/content/contact";
 import { CONTACT_LIMITS, ELAPSED_FIELD, HONEYPOT_FIELD, publishedEmail } from "@/lib/contact";
-import { INITIAL_MEETING_STATE, meetingDays, meetingSlots, meetingSummary, validMeetingSlot, type MeetingKind } from "@/lib/meeting";
+import { INITIAL_MEETING_STATE, meetingDays, meetingSlots, meetingSummary, validMeetingSlot, type BusyTimes, type MeetingKind } from "@/lib/meeting";
 import "./meeting.css";
 
 const dayLabel = (day: string) => new Date(`${day}T12:00Z`).toLocaleDateString("en-IE", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
@@ -23,9 +23,34 @@ function monthDays(month: string) {
     .map((date) => date.toISOString().slice(0, 10));
 }
 
-export default function MeetingCalendar({ kind, now: nowISO }: { kind: MeetingKind; now: string }) {
+/**
+ * The calendar on `/contact?meet=...`. `busy` is what Fergus's Google calendars
+ * said on the server; `null` means they could not be read, and then there is
+ * nothing honest to offer, so it says so and gives the email address.
+ */
+export default function MeetingCalendar({ kind, now: nowISO, busy }: { kind: MeetingKind; now: string; busy: BusyTimes | null }) {
+  if (!busy) {
+    return <div className="meeting-success meeting-down" role="status">
+      <h2>{copy.down}</h2>
+      <p><a href={`mailto:${publishedEmail()}`} className="prose__link">{publishedEmail()}</a></p>
+      <Link href="/contact" className="prose__link">{copy.back}</Link>
+    </div>;
+  }
+  // A full four weeks (a busy month, or the booking caps) would otherwise draw
+  // an empty grid with "Invalid Date" headings and a button that never wakes.
+  if (meetingDays(new Date(nowISO), busy).length === 0) {
+    return <div className="meeting-success meeting-down" role="status">
+      <h2>{copy.full}</h2>
+      <p><a href={`mailto:${publishedEmail()}`} className="prose__link">{publishedEmail()}</a></p>
+      <Link href="/contact" className="prose__link">{copy.back}</Link>
+    </div>;
+  }
+  return <MeetingPicker kind={kind} nowISO={nowISO} busy={busy} />;
+}
+
+function MeetingPicker({ kind, nowISO, busy }: { kind: MeetingKind; nowISO: string; busy: BusyTimes }) {
   const now = new Date(nowISO);
-  const days = meetingDays(now);
+  const days = meetingDays(now, busy);
   const months = [...new Set(days.map((day) => day.slice(0, 7)))];
   const [month, setMonth] = useState(months[0]);
   const [day, setDay] = useState(days[0]);
@@ -39,7 +64,7 @@ export default function MeetingCalendar({ kind, now: nowISO }: { kind: MeetingKi
   useEffect(() => {
     // A person may have already chosen before the JavaScript arrived.
     const chosen = fallback.current?.value;
-    if (chosen && validMeetingSlot(chosen, now)) {
+    if (chosen && validMeetingSlot(chosen, now, busy)) {
       setSlot(chosen);
       const chosenDay = chosen.slice(0, 10);
       setDay(chosenDay); setMonth(chosenDay.slice(0, 7));
@@ -53,11 +78,11 @@ export default function MeetingCalendar({ kind, now: nowISO }: { kind: MeetingKi
     if (!next) return;
     setMonth(next); setDay(days.find((value) => value.startsWith(next))!); setSlot("");
   };
-  if (state.status === "sent") return <div className="meeting-success" ref={result} tabIndex={-1} role="status">
+  if (state.status === "sent" || state.status === "booked") return <div className="meeting-success" ref={result} tabIndex={-1} role="status">
     <svg viewBox="0 0 80 80" aria-hidden="true"><rect x="6" y="6" width="68" height="68" rx="4" /><path d="m23 40 12 12 24-26" /></svg>
-    <h2>{copy.sent}</h2>
+    <h2>{state.status === "booked" ? copy.booked : copy.sent}</h2>
     {state.summary && <p>{state.summary}</p>}
-    <p>{copy.sentBody}</p>
+    <p>{state.status === "booked" ? (kind === "call" ? copy.bookedCall : copy.bookedCoffee) : copy.sentBody}</p>
     <Link href="/contact" className="prose__link">{copy.back}</Link>
   </div>;
 
@@ -89,13 +114,13 @@ export default function MeetingCalendar({ kind, now: nowISO }: { kind: MeetingKi
       <section className="meeting__times" aria-labelledby="meeting-time-heading">
         <h2 id="meeting-time-heading">{dayLabel(day)}</h2>
         <div className="meeting__slots" role="group" aria-label={copy.time}>
-          {meetingSlots(day, now).map((time) => <button key={time.id} type="button" disabled={!time.available} aria-pressed={slot === time.id} aria-label={`${time.label}${time.available ? "" : `, ${copy.unavailable}`}`} onClick={() => setSlot(time.id)}>{time.label}</button>)}
+          {meetingSlots(day, now, busy).map((time) => <button key={time.id} type="button" disabled={!time.available} aria-pressed={slot === time.id} aria-label={`${time.label}${time.available ? "" : `, ${copy.unavailable}`}`} onClick={() => setSlot(time.id)}>{time.label}</button>)}
         </div>
         <div className="meeting__legend"><span>{copy.available}</span><span>{copy.unavailable}</span></div>
       </section>
       <input type="hidden" name={ready ? "slot" : undefined} value={slot} />
     </div>
-    {!ready && <label className="meeting__fallback">{copy.noScript}<select ref={fallback} name="slot" required defaultValue={fields?.slot || ""}><option value="" disabled>{copy.selectTime}</option>{days.flatMap((value) => meetingSlots(value, now).filter((time) => time.available).map((time) => <option key={time.id} value={time.id}>{dayLabel(value)} · {time.label}</option>))}</select></label>}
+    {!ready && <label className="meeting__fallback">{copy.noScript}<select ref={fallback} name="slot" required defaultValue={fields?.slot || ""}><option value="" disabled>{copy.selectTime}</option>{days.flatMap((value) => meetingSlots(value, now, busy).filter((time) => time.available).map((time) => <option key={time.id} value={time.id}>{dayLabel(value)} · {time.label}</option>))}</select></label>}
     </div>
 
     <div className="meeting__summary" aria-live="polite">{slot ? meetingSummary(kind, slot) : copy.selectTime}</div>
@@ -108,6 +133,6 @@ export default function MeetingCalendar({ kind, now: nowISO }: { kind: MeetingKi
       <label htmlFor="meeting-email">{copy.email}<input key={`email-${state.seq}`} id="meeting-email" name="email" type="email" autoComplete="email" required maxLength={CONTACT_LIMITS.email} defaultValue={fields?.email} aria-invalid={Boolean(state.errors?.email)} /></label>
       <label className="meeting__note" htmlFor="meeting-note">{copy.note}<textarea key={`note-${state.seq}`} id="meeting-note" name="note" rows={2} maxLength={2000} placeholder={copy.optional} defaultValue={fields?.note} aria-invalid={Boolean(state.errors?.note)} /></label>
     </div>
-    <div className="meeting__submit"><button className="cform__submit" type="submit" disabled={pending || (ready && !slot)}>{pending ? copy.sending : copy.submit}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button><Link href="/contact">{copy.message}</Link></div>
+    <div className="meeting__submit"><button className="cform__submit" type="submit" disabled={pending || (ready && !slot)}>{pending ? copy.sending : copy.submit}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></button><span className="meeting__write">{copy.message} <a href={`mailto:${publishedEmail()}`}>{publishedEmail()}</a></span></div>
   </form>;
 }

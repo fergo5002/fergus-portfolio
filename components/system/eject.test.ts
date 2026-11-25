@@ -180,7 +180,6 @@ describe("real controls, with real names", () => {
 describe("the eject block in globals.css", () => {
   it("still takes the chrome inside the display while ejected", () => {
     expect(globals).toMatch(/html\.is-ejecting \.crt__assembly \{/);
-    expect(globals).toMatch(/html\.is-ejecting \.statusbar \{/);
   });
 
   it("cannot be scrolled from inside by scrollIntoView, because it is not a scroll container", () => {

@@ -349,7 +349,7 @@ describe("the module that holds the key stays off the client", () => {
   });
 
   /**
-   * The client-safe half must stay client-safe, because `ContactForm` imports
+   * The client-safe half must stay client-safe, because `MeetingCalendar` imports
    * it for the field limits and the shared validator. A `process.env` read
    * landing in there is how a secret gets one import closer to the browser.
    *

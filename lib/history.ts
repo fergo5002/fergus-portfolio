@@ -1,5 +1,6 @@
 import { createStore } from "./external-store";
 import type { Store } from "./external-store";
+import { SYSTEM_VERSION } from "@/content/machine";
 
 /**
  * The terminal's memory: the scrollback and the recall list.
@@ -8,7 +9,12 @@ import type { Store } from "./external-store";
  * `history` typed on the home page agree. Never persisted: a reload is a
  * fresh session, and nothing a visitor typed is written anywhere.
  */
-export type Entry = { cmd: string; lines: string[] };
+export type Entry = {
+  cmd: string;
+  lines: string[];
+  /** Where the command was typed, so its echoed prompt says `~/projects` and not always `~`. */
+  path?: string;
+};
 
 export type HistoryState = {
   /** What is on screen. `cmd` is "" for lines the machine printed unprompted. */
@@ -19,12 +25,11 @@ export type HistoryState = {
 
 export type HistoryEvent =
   | { type: "typed"; cmd: string }
-  | { type: "print"; cmd: string; lines: string[] }
+  | { type: "print"; cmd: string; lines: string[]; path?: string }
   | { type: "clear" };
 
 export const WELCOME: string[] = [
-  "FergusOS 5.0 'Mass' · interactive shell ready.",
-  "tab completes · up/down recalls · try 'help', or 'gravity' if you are brave.",
+  `FergusOS ${SYSTEM_VERSION}. type 'help' to see what's in here, or 'gravity' if you're feeling brave.`,
 ];
 
 /** Scrollback kept. A drawer open all afternoon must not grow without limit. */
@@ -47,7 +52,7 @@ export function historyReduce(state: HistoryState, event: HistoryEvent): History
     case "print":
       return {
         ...state,
-        entries: [...state.entries, { cmd: event.cmd, lines: event.lines }].slice(-ENTRY_CAP),
+        entries: [...state.entries, { cmd: event.cmd, lines: event.lines, path: event.path }].slice(-ENTRY_CAP),
       };
     case "clear":
       return state.entries.length === 0 ? state : { ...state, entries: [] };

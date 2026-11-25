@@ -106,5 +106,5 @@
   .nosignal > .nosignal__title { grid-row: 3; }
   .nosignal > .nosignal__line { grid-row: 4; }
   .nosignal > .nosignal__links { grid-row: 5; }
-  .nosignal > .nosignal__card { grid-column: 1; grid-row: 1 / -1; width: 100%; max-height: calc(100dvh - var(--nav-h) - var(--status-h) - var(--sp-6) * 2); }
+  .nosignal > .nosignal__card { grid-column: 1; grid-row: 1 / -1; width: 100%; max-height: calc(100dvh - var(--nav-h) - var(--dock-clear) - var(--sp-6) * 2); }
 }

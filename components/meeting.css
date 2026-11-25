@@ -1,4 +1,5 @@
-.contact-invitation { margin-top: var(--sp-5); border-top: 1px solid var(--green-line); padding-top: var(--sp-5); }
+.contact-invitation { margin-top: var(--sp-5); border-top: 1px solid var(--green-line); padding-top: var(--sp-5); display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); }
+.contact-invitation .talk__cta { min-height: 48px; }
 .contact-invitation__head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); margin-bottom: var(--sp-4); }
 .contact-invitation__head h2 { font: 2rem/1.1 var(--font-screen); color: var(--green-bright); margin: 0; }
 .contact-invitation .talk__cta { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; font-size: 1rem; }

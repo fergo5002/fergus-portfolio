@@ -146,8 +146,23 @@ const shot = async (page, file) => {
   return path;
 };
 
-/** The eject control in the status strip. */
-const ejectControl = (page) => page.locator(".machine__motion .machine__btn").last();
+/**
+ * Since 2026-11-25 eject is a terminal command, and while the monitor is out
+ * the dock offers "back in" beside the handle. The window is minimised again
+ * after the command so it never sits over the pixels this script reads.
+ */
+const backIn = (page) => page.locator(".dock-pill", { hasText: "back in" });
+async function ejectFromTerminal(page, touch = false) {
+  const press = (loc) => (touch ? loc.tap() : loc.click());
+  await press(page.locator(".term-handle"));
+  const input = page.locator(".shell .term__input");
+  await input.waitFor();
+  await input.fill("eject");
+  await input.press("Enter");
+  await backIn(page).waitFor({ timeout: 10_000 });
+  await press(page.locator(".shell__light--close"));
+  await page.locator(".shell").waitFor({ state: "detached" });
+}
 
 /** Waits for the camera to be off the glass and the monitor to stop moving. */
 async function settle(page, label, timeout = 40_000) {
@@ -232,9 +247,7 @@ async function desktop() {
     });
 
     await step("desktop", "eject pulls back to a monitor with its hardware in the chin", async () => {
-      const control = ejectControl(page);
-      assert.equal((await control.locator(".machine__label").innerText()).trim(), "eject");
-      await control.click();
+      await ejectFromTerminal(page);
       await page.mouse.move(...REST);
       // The first pull-back also mounts the hardware and warms the shader. On
       // CI's software renderer it took about 40 seconds (2026-09-27: the next
@@ -243,7 +256,7 @@ async function desktop() {
       await settle(page, "first eject", 90_000);
       const box = await page.locator(".ejhw").boundingBox();
       assert.ok(box && box.width > 300, "the hardware is laid out");
-      assert.equal(await control.getAttribute("aria-pressed"), "true");
+      assert.ok(await backIn(page).isVisible(), "the dock offers the way back in");
       return { hardware: box };
     });
     await shot(page, "desktop-green.png");
@@ -283,7 +296,7 @@ async function desktop() {
       await page.waitForURL(base + "/experience");
       await page.waitForFunction(() => document.querySelector(".page__title")?.textContent === "experience", null, { timeout: 20_000 });
       assert.ok(await page.evaluate(() => document.documentElement.classList.contains("is-ejecting")), "still ejected");
-      assert.equal(await ejectControl(page).getAttribute("aria-pressed"), "true");
+      assert.ok(await backIn(page).isVisible(), "the way back in survives the route change");
       assert.ok(await page.evaluate(() => document.activeElement?.closest(".ejhw__ctl--channel") !== null), "the dial keeps focus");
       return page.url();
     });
@@ -397,10 +410,10 @@ async function desktop() {
       await page.keyboard.press("Escape");
       // The decision is immediate; the camera move is not. It eases per frame,
       // and SwiftShader at 1440x900 draws a handful of frames a second.
-      await page.waitForFunction(() => document.querySelector(".machine__motion .machine__btn:last-child")?.getAttribute("aria-pressed") === "false", null, { timeout: 5_000 });
+      await backIn(page).waitFor({ state: "detached", timeout: 5_000 });
       await docked(page, 120_000);
       await page.waitForFunction(() => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--boot-open")) === 1, null, { timeout: 15_000 });
-      assert.equal(await ejectControl(page).getAttribute("aria-pressed"), "false");
+      assert.equal(await backIn(page).count(), 0);
       assert.equal(await page.locator(".ejhw").isVisible(), false);
       return "docked, power on";
     });
@@ -422,9 +435,8 @@ async function phone(name, device) {
       return page.viewportSize();
     });
 
-    await step(name, "eject is offered in the phone bar and pulls back", async () => {
-      const control = ejectControl(page);
-      await control.tap();
+    await step(name, "eject from the terminal pulls back on a phone", async () => {
+      await ejectFromTerminal(page, true);
       await settle(page, "phone eject", 60_000);
       return await page.evaluate(() => document.querySelector(".crt__assembly").style.transform);
     });
@@ -455,7 +467,7 @@ async function phone(name, device) {
     });
 
     await step(name, "the way back in: the enter control's size, reported rather than judged", async () => {
-      const r = await ejectControl(page).boundingBox();
+      const r = await backIn(page).boundingBox();
       return { enter: r && { w: +r.width.toFixed(1), h: +r.height.toFixed(1) } };
     });
 
@@ -488,13 +500,12 @@ async function reduced() {
   const run = await open("chromium", "reduced", { viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
   const { page, browser, errors } = run;
   try {
-    await step("reduced", "the eject control is not offered under reduced motion", async () => {
-      const shown = await page.evaluate(() => {
-        const m = document.querySelector(".machine__motion");
-        return m ? getComputedStyle(m).display : "absent";
-      });
-      assert.ok(shown === "none" || shown === "absent", shown);
-      assert.equal(await ejectControl(page).isVisible(), false);
+    await step("reduced", "the eject chip is not offered under reduced motion", async () => {
+      const shown = await page.evaluate(() =>
+        [...document.querySelectorAll(".term__hint-wrap--motion")].map((m) => getComputedStyle(m).display),
+      );
+      assert.ok(shown.every((d) => d === "none"), JSON.stringify(shown));
+      assert.equal(await backIn(page).count(), 0);
       return shown;
     });
 

@@ -32,9 +32,9 @@ read, it must not be in the document competing with the prose. Measured against 
 on 2026-08-21, a plain HTML-to-text extraction of any article opened like this:
 
 ```
-fergus @ portfolio : /writing/why-presterly-wound-down $ cd ~ cd experience cd projects
-cd writing fergus @ portfolio : ~/writing $ cat ./writing/why-presterly-wound-down.md
-Why we wound Presterly down
+fergus @ portfolio : /writing/multi-tenant-shopify-apps $ cd ~ cd experience cd projects
+cd writing fergus @ portfolio : ~/writing $ cat ./writing/multi-tenant-shopify-apps.md
+What I'd get right first in a multi-tenant Shopify app
 ```
 
 Roughly 150 characters of terminal costume in front of the first real word, in the part of the
@@ -56,8 +56,8 @@ stylesheet was already drawing them, so the live home page read `fergus@portfoli
 which put a `$` in front of every page's words on every route. A one-character string still feels
 too small to be content, and that instinct is the bug. The test for it: if the string is there to
 set a mood, it goes in `content`, whatever its length, and whether or not it is server-rendered
-decides only how much it costs. Client-only costume is fine as text, which is why `.shell__title`
-("fsh") stays: the drawer renders nothing until somebody opens it.
+decides only how much it costs. The terminal's handle that replaced the status bar on 2026-11-25
+draws its `$_` in CSS for the same reason, and its window's title comes from a custom property.
 
 ## The nav is the deliberate exception
 

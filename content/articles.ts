@@ -38,7 +38,6 @@ export type Article = {
 };
 
 import { multiTenantShopify } from "./articles/multi-tenant-shopify-apps";
-import { presterlyPostMortem } from "./articles/why-presterly-wound-down";
 import { acceleratorWorth } from "./articles/what-an-accelerator-is-for";
 import { crtThatBehaves } from "./articles/a-crt-that-behaves-like-a-crt";
 import { customerGone } from "./articles/when-is-a-customer-actually-gone";
@@ -56,7 +55,6 @@ export const articles: Article[] = [
   customerGone,
   acceleratorWorth,
   multiTenantShopify,
-  presterlyPostMortem,
   crtThatBehaves,
 ].sort((a, b) => b.date.localeCompare(a.date));
 

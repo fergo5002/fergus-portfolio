@@ -123,7 +123,8 @@
      window beside it and the page by 2,460px at 1600 wide (measured
      2026-10-19); a zero flex basis did not stop it, containment did. The floor
      is the laptop terminal's own height, so a tile never shows less. */
-  .home > .term .term__scroll { flex: 1 1 auto; min-height: 230px; max-height: none; contain: size; }
+  .home > .term > .term__body { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+  .home > .term .term__scroll { flex: 1 1 auto; min-height: 260px; max-height: none; contain: size; }
   .home > .home__talk > .contact-invitation { margin-top: var(--sp-2); }
 }
 @media (min-width: 1840px) {

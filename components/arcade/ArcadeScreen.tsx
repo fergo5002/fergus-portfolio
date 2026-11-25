@@ -46,8 +46,8 @@ import { useSystem } from "@/components/system/SystemProvider";
  *    "One frame clock". The grid is written with `textContent`, and only when
  *    the text has actually changed.
  *  - **The arcade owns every key that reaches it.** One `stopPropagation` on
- *    keydown, and the drawer's window listener never sees Escape or a backtick
- *    while a game is running. Neither `lib/shell.ts` nor `ShellDrawer.tsx`
+ *    keydown, and the dock's window listener never sees Escape or a backtick
+ *    while a game is running. Neither `lib/shell.ts` nor `TermDock.tsx`
  *    needs to know this component exists.
  *  - **Escape is taken before the program is asked.** A program cannot hold on
  *    to it, so there is exactly one way out of everything, and the exit button

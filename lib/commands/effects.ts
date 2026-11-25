@@ -37,7 +37,7 @@ function ejectOrDock(mode: "eject" | "dock"): CommandDef["run"] {
     return {
       type: "effect",
       effect: { kind: "eject", on },
-      lines: on ? ["stepping back from the glass..."] : ["back against the tube."],
+      lines: on ? ["stepping back from the glass... esc or 'back in' to return"] : ["back against the tube."],
     };
   };
 }
@@ -59,7 +59,7 @@ export const effects = [
 
   defineCommand({
     name: "crt",
-    help: "crt <on|off>      toggle the tube",
+    help: "crt on|off        toggle the tube",
     group: "system",
     rank: 5,
     argPool: ["on", "off"],
@@ -76,7 +76,7 @@ export const effects = [
 
   defineCommand({
     name: "scanlines",
-    help: "scanlines <0-100> set mask intensity",
+    help: "scanlines 0-100   how strong the lines are",
     group: "system",
     rank: 6,
     run: (args) => {
@@ -125,7 +125,7 @@ export const effects = [
         type: "effect",
         effect: { kind: "gravity", on },
         lines: on
-          ? ["gravity: 9.81 m/s² restored.", "drag a word · space shakes the tube · esc puts it back"]
+          ? ["gravity: 9.81 m/s² restored.", "drag a word · space shakes the tube · esc or 'restore page' puts it back"]
           : ["gravity: released. reassembling."],
       };
     },
@@ -146,14 +146,16 @@ export const effects = [
 
   defineCommand({
     name: "sound",
-    help: "sound <on|off>    the tube has a voice",
+    help: "sound on|off      the tube has a voice",
     group: "physical",
     rank: 3,
     argPool: ["on", "off"],
-    run: (args) => {
+    run: (args, ctx) => {
       const arg = argOf(args);
-      if (arg !== "on" && arg !== "off") return ok(["usage: sound on|off"]);
-      const on = arg === "on";
+      if (arg && arg !== "on" && arg !== "off") return ok(["usage: sound on|off"]);
+      // Bare `sound` flips it, which is what the old status bar button did.
+      if (!arg && ctx.audio === undefined) return ok(["usage: sound on|off"]);
+      const on = arg ? arg === "on" : !ctx.audio;
       return {
         type: "effect",
         effect: { kind: "sound", on },

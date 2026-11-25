@@ -18,7 +18,7 @@ const lines = (name: string, args: string[] = [], ctx = {}): string[] => {
 describe("the info module", () => {
   it("carries exactly the informational commands", () => {
     expect(info.map((c) => c.name).sort()).toEqual([
-      "contact", "date", "echo", "history", "neofetch", "resume", "top", "uptime",
+      "contact", "date", "echo", "history", "neofetch", "resume", "status", "top", "uptime",
     ]);
     expect(def("resume").aliases).toEqual(["cv"]);
     expect(def("top").aliases).toEqual(["ps"]);
@@ -41,8 +41,10 @@ describe("the info module", () => {
   });
 
   it("date uses the injected clock", () => {
+    // Irish time, written the way a person writes it, whatever the server's zone.
     const now = new Date("2026-09-03T09:00:00Z");
-    expect(lines("date", [], { now })[0]).toBe(now.toString());
+    expect(lines("date", [], { now })[0]).toBe("Thu 3 Sept 2026, 10:00 Irish time");
+    expect(lines("date", [], { now: new Date("2026-12-01T09:00:00Z") })[0]).toBe("Tue 1 Dec 2026, 09:00 Irish time");
   });
 
   it("history numbers prior commands and says when there are none", () => {
@@ -59,6 +61,7 @@ describe("the info module", () => {
     const cv = lines("resume").join("\n");
     for (const p of projects) expect(cv).toContain(p.slug);
     const contact = lines("contact").join("\n");
-    for (const c of profile.contact) expect(contact).toContain(`${c.label}: ${c.value}`);
+    for (const c of profile.contact) expect(contact).toMatch(new RegExp(`${c.label}\\s+${c.value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+    expect(contact).toContain("book coffee");
   });
 });

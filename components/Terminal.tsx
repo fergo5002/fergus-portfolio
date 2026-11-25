@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import type { FormEvent, KeyboardEvent } from "react";
-import { useRouter } from "next/navigation";
+import type { CSSProperties, FormEvent, KeyboardEvent, MouseEvent } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { complete, runCommand } from "@/lib/commands";
+import { candidates, complete, runCommand } from "@/lib/commands";
+import { promptPath } from "@/lib/commands/shared";
+import { linkify } from "@/lib/linkify";
 import type { SystemEffect } from "@/lib/commands";
 import { historyStore, initialHistory } from "@/lib/history";
 import { requestCommand, subscribeRequests, takeRequest } from "@/lib/shell-request";
@@ -17,7 +19,25 @@ import { profile } from "@/content/profile";
 import Magnetic from "@/components/motion/Magnetic";
 import { useSystem } from "@/components/system/SystemProvider";
 
-const HINTS = ["gravity", "eject", "sound on", "neofetch", "sudo hire-me"];
+/**
+ * The chips under the prompt. Since the status bar went (2026-11-25) these are
+ * where a visitor who never types finds the sound, gravity and eject, so they
+ * say what pressing them will do now: `sound on` becomes `sound off` once the
+ * tube is speaking. Gravity and eject carry `motion` so CSS can take them away
+ * under reduced motion, where both refuse; branching the markup on that
+ * preference would be a hydration mismatch for exactly those visitors.
+ */
+type Hint = { cmd: string; motion?: boolean };
+function hintsFor(audio: boolean, gravity: boolean, ejected: boolean): Hint[] {
+  return [
+    { cmd: "help" },
+    { cmd: audio ? "sound off" : "sound on" },
+    { cmd: gravity ? "gravity off" : "gravity", motion: true },
+    { cmd: ejected ? "dock" : "eject", motion: true },
+    { cmd: "neofetch" },
+    { cmd: "sudo hire-me" },
+  ];
+}
 const ArcadeScreen = dynamic(() => import("@/components/arcade/ArcadeExperience"), { ssr: false });
 
 /**
@@ -27,6 +47,13 @@ const ArcadeScreen = dynamic(() => import("@/components/arcade/ArcadeExperience"
  */
 const SERVER_HISTORY = initialHistory();
 const getServerHistory = () => SERVER_HISTORY;
+
+/** The hanging indent for an output line: as deep as its own leading spaces. */
+function hangFor(line: string): CSSProperties | undefined {
+  const indent = /^ */.exec(line)?.[0].length ?? 0;
+  if (indent === 0) return undefined;
+  return { paddingLeft: `${indent}ch`, textIndent: `-${indent}ch` };
+}
 
 /** Never throws: a browser that refuses storage reads as an empty store. */
 function readStorageKeys(): string[] {
@@ -65,6 +92,7 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
   const programCmd = useRef("");
 
   const router = useRouter();
+  const path = usePathname();
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -74,8 +102,12 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
   const inputId = `term-input-${uid}`;
   const helpId = `term-help-${uid}`;
 
+  // Focus on every device. Skipping it on a coarse pointer was tried on
+  // 2026-11-25 and broke the phone contract in scripts/phone-polish-check.mjs:
+  // somebody who taps the terminal open came to type.
   useEffect(() => {
-    if (autoFocus) inputRef.current?.focus();
+    if (!autoFocus) return;
+    inputRef.current?.focus();
   }, [autoFocus]);
 
   useEffect(() => {
@@ -100,6 +132,9 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
     degauss,
     burstRain,
     audio,
+    audioLive,
+    gravityOn,
+    ejected,
     reducedMotion,
   } = useSystem();
 
@@ -141,6 +176,14 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
           extra.push("storage refused the change. nothing was removed.");
         }
         break;
+      case "exit":
+        if (variant === "drawer") {
+          shellStore.dispatch({ type: "close" });
+          document.querySelector<HTMLElement>(".term-handle")?.focus();
+        } else {
+          extra.push("nothing to exit. this one lives on the page.");
+        }
+        break;
       case "reboot":
         degauss();
         setWiping(true);
@@ -171,7 +214,10 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
     probe.textContent = "0".repeat(20);
     probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;font:inherit";
     scroll.appendChild(probe);
-    const ch = probe.getBoundingClientRect().width / 20;
+    // offsetWidth, not getBoundingClientRect: the window grows out of the
+    // handle with a scale transform, and a scaled probe mid-animation made a
+    // phone's terminal measure hundreds of columns (2026-11-25).
+    const ch = probe.offsetWidth / 20;
     scroll.removeChild(probe);
     if (!ch) return undefined;
     return Math.floor(scroll.clientWidth / ch);
@@ -190,6 +236,13 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
       storageKeys: readStorageKeys,
       presence,
       arcade: arcadeSession(),
+      path,
+      fps: reducedMotion ? 0 : frame.current.fps,
+      audio: audioLive,
+      crt: settings.crtEnabled,
+      scanlines: settings.scanlines,
+      gravity: gravityOn,
+      ejected,
     });
 
     // The drawer is the single program host, so nav and outside dismissal can
@@ -202,7 +255,13 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
     historyStore.dispatch({ type: "typed", cmd: raw });
 
     if (res.type === "navigate") {
-      historyStore.dispatch({ type: "print", cmd: raw, lines: [`-> ${res.href}`] });
+      if (/^https?:/.test(res.href)) {
+        // Somewhere else on the internet: a new tab, and the terminal stays.
+        window.open(res.href, "_blank", "noopener,noreferrer");
+        historyStore.dispatch({ type: "print", cmd: raw, lines: res.lines ?? [res.href], path });
+        return;
+      }
+      historyStore.dispatch({ type: "print", cmd: raw, lines: [...(res.lines ?? []), `-> ${res.href}`], path });
       router.push(res.href);
       return;
     }
@@ -217,11 +276,16 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
       return;
     }
     const extra = res.type === "effect" ? applyEffect(res.effect) : [];
-    historyStore.dispatch({ type: "print", cmd: raw, lines: [...res.lines, ...extra] });
-    requestAnimationFrame(() => {
-      if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    });
+    historyStore.dispatch({ type: "print", cmd: raw, lines: [...res.lines, ...extra], path });
   };
+
+  // Keep the newest output in view, whichever terminal printed it: both share
+  // one scrollback, and a command typed in the window should not leave the
+  // home page's copy scrolled to the middle.
+  useEffect(() => {
+    const scroll = scrollRef.current;
+    if (scroll) scroll.scrollTop = scroll.scrollHeight;
+  }, [entries]);
 
   // A command asked for from outside the terminal (the nav's `cd arcade`).
   // Drained once on mount, which is how the drawer runs a request that opened
@@ -304,6 +368,22 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
     }
   };
 
+  // What Tab could still become, when it is more than one thing.
+  const options = useMemo(() => candidates(value), [value]);
+
+  // A click on the output puts the caret back in the prompt, unless it was on
+  // a link or a button, or the visitor was selecting text to copy: focusing
+  // the input then would throw their selection away (and on a phone, pop the
+  // keyboard over the link they tapped).
+  const onTermClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target instanceof Element && event.target.closest("a, button")) return;
+    if (window.getSelection()?.toString()) return;
+    inputRef.current?.focus();
+  };
+
+  const here = promptPath(path);
+  const hints = hintsFor(audioLive, gravityOn, ejected);
+
   // Inline ghost text showing what Tab would complete to.
   const ghost = useMemo(() => {
     if (!value.trim()) return "";
@@ -329,7 +409,7 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
   return (
     <div
       className={`term term--${variant}${program ? " term--program" : ""}${wiping ? " is-wiping" : ""}`}
-      onClick={() => inputRef.current?.focus()}
+      onClick={onTermClick}
     >
       {program ? (
         <ArcadeScreen
@@ -341,6 +421,15 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
         />
       ) : (
         <>
+          {variant === "inline" && (
+            // The same bar as every other window on the page. The floating
+            // terminal has its own, with the lights that put it away.
+            <header className="window__bar term__bar">
+              <span className="window__title">~/terminal</span>
+              <span className="window__btns" aria-hidden="true" />
+            </header>
+          )}
+          <div className="term__body">
           <div className="term__scroll" ref={scrollRef}>
             {entries.map((entry, i) => (
               <div key={i} className="term__entry">
@@ -350,14 +439,32 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
                       {profile.user}@{profile.host}
                     </span>
                     <span className="promptline__sep" />
-                    <span className="promptline__path">~</span>
+                    <span className="promptline__path">{promptPath(entry.path)}</span>
                     <span className="promptline__dollar" />
                     <span className="promptline__cmd">{entry.cmd}</span>
                   </p>
                 )}
                 {entry.lines.map((line, j) => (
-                  <p key={j} className="term__out">
-                    {line}
+                  <p
+                    key={j}
+                    className="term__out"
+                    // A line that starts indented keeps its indent when a narrow
+                    // window wraps it, instead of falling back to the left edge.
+                    style={hangFor(line)}
+                  >
+                    {linkify(line).map((piece, k) =>
+                      piece.href ? (
+                        <a
+                          key={k}
+                          href={piece.href}
+                          {...(piece.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                        >
+                          {piece.text}
+                        </a>
+                      ) : (
+                        piece.text
+                      ),
+                    )}
                   </p>
                 ))}
               </div>
@@ -370,7 +477,7 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
                 {profile.user}@{profile.host}
               </span>
               <span className="promptline__sep" />
-              <span className="promptline__path">~</span>
+              <span className="promptline__path">{here}</span>
               <span className="promptline__dollar" />
             </label>
             <span className="term__field">
@@ -397,19 +504,22 @@ export default function Terminal({ variant = "inline", autoFocus = false }: Prop
             </span>
           </form>
 
+          {options.length > 0 && <p className="term__options">{options.join("   ")}</p>}
+
           <p id={helpId} className="term__srhint">
             Press Tab to complete a command, Up and Down arrows to recall previous commands, and
             Control plus L to clear the screen.
           </p>
 
           <div className="term__hints" aria-label="Command shortcuts">
-            {HINTS.map((h) => (
-              <Magnetic key={h} pull={0.3}>
-                <button type="button" className="term__hint" onClick={() => run(h)}>
-                  {h}
+            {hints.map((h) => (
+              <Magnetic key={h.motion ? h.cmd.split(" ")[0] : h.cmd} pull={0.3} className={h.motion ? "term__hint-wrap--motion" : undefined}>
+                <button type="button" className="term__hint" onClick={() => run(h.cmd)}>
+                  {h.cmd}
                 </button>
               </Magnetic>
             ))}
+          </div>
           </div>
         </>
       )}
