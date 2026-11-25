@@ -74,7 +74,9 @@ jobs:
 
   phone:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    # 34.5 minutes on main by 2026-11-13; the dock, hold door and contact checks
+    # added on 2026-11-25 took it past 40, cancelled partway through, not failed.
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

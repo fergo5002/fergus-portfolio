@@ -21,6 +21,13 @@ const crtShell = code(read("components", "CrtShell.tsx"));
 const dock = code(read("components", "TermDock.tsx"));
 const css = read("app", "globals.css");
 
+describe("Vercel Analytics", () => {
+  it("mounts on Vercel and only there, where the script it loads exists", () => {
+    // Vercel sets VERCEL=1 at build and run time. Off Vercel the script 404s.
+    expect(layout).toMatch(/\{process\.env\.VERCEL \? <Analytics \/> : null\}/);
+  });
+});
+
 describe("the crt shell mounts the dock", () => {
   it("renders it outside the tube's assembly, so an ejected or fallen page keeps its way out", () => {
     expect(crtShell).toMatch(/import TermDock from "\.\/TermDock";/);

@@ -72,7 +72,15 @@ export async function stillScoresNothing(page, { settle = 3000, watch = 5000, st
   await page.waitForTimeout(watch);
   const after = await statusPoints(page);
   if (before === null || after === null) throw new Error("signal smoke: the status line has no points to read");
-  if (!(await inPlay())) throw new Error("signal smoke: the run ended or paused during the still watch, so it proves nothing");
+  if (!(await inPlay())) {
+    const seen = await page.evaluate(() => ({
+      phase: document.querySelector(".arcade-play")?.dataset.phase ?? null,
+      paused: !!document.querySelector(".arcade-pause"),
+      status: document.querySelector(".arcade-play [role=status], .arcade-play [aria-live]")?.textContent?.trim() ?? null,
+      focus: document.activeElement ? `${document.activeElement.tagName}.${document.activeElement.className}` : null,
+    }));
+    throw new Error(`signal smoke: the run ended or paused during the still watch, so it proves nothing (${JSON.stringify(seen)})`);
+  }
   if (after !== before) throw new Error(`signal smoke: standing still scored (${before} to ${after}), so the beam fired without a move`);
   return after;
 }

@@ -438,6 +438,9 @@ html.crt-off body {
   color: var(--green);
   border-bottom: 1px solid transparent;
   text-shadow: var(--glow);
+  /* 24px to the pointer (WCAG 2.5.8) without moving the line: vertical
+     padding on an inline box grows what you can hit, not the row. */
+  padding-block: 3px;
 }
 .nav__link:hover {
   color: var(--green-bright);
@@ -1219,6 +1222,10 @@ html.crt-off body {
 }
 .exp__link {
   margin: var(--sp-3) 0 0;
+}
+/* The same 24px reach as the nav, the same way. */
+.exp__link a {
+  padding-block: 2px;
 }
 
 /* ----- projects ---------------------------------------------------------- */
@@ -3371,7 +3378,8 @@ h4.prose__h {
   flex-direction: column;
   width: min(700px, calc(100vw - 2 * var(--sp-4)));
   height: min(500px, calc(100dvh - var(--nav-h) - 110px));
-  background: rgba(7, 11, 7, 0.97);
+  /* Opaque. At 0.97 the page's glowing text read through it (critic, 2026-11-25). */
+  background: rgb(7, 11, 7);
   border: 1px solid var(--green-line);
   border-radius: 12px;
   overflow: hidden;

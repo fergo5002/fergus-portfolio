@@ -160,7 +160,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           a real browser, never by curling that path: it 404s while analytics is
           working perfectly, and that has cost a day before.
         */}
-        <Analytics />
+        {/* Only on Vercel, which serves the script. Anywhere else (next start,
+            the Docker parity build) it is a 404 in the console on every page. */}
+        {process.env.VERCEL ? <Analytics /> : null}
         {/*
           PostHog, cookieless. Kept alongside Vercel Analytics rather than
           replacing it: two independent instruments measuring the same thing is

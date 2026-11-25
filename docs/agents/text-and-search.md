@@ -78,7 +78,9 @@ rather than removing it. It is not a licence to block scripts.
 - **Analytics:** `@vercel/analytics` renders `<Analytics />` at the end of `<body>` in
   `app/layout.tsx`. It returns null and appends its script to `<head>`, so the placement is
   about staying mounted, not about the DOM. Development loads Vercel's debug script and
-  reports nothing, so local work never lands in the numbers.
+  reports nothing, so local work never lands in the numbers. It mounts only when
+  `process.env.VERCEL` is set (Vercel sets it at build and run time), because anywhere else
+  (`next start`, the Docker parity build) the script 404s in the console on every page.
   **Never verify a deploy by curling `/_vercel/insights/script.js`.** That is only the
   package's fallback string; a real deployment serves the loader and the view beacon from a
   per-deploy hashed path, so the pretty path 404s while analytics works fine. Check the

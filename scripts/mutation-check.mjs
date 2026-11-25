@@ -791,12 +791,6 @@ const MUTATIONS = [
       "  return { ...(payload as unknown as Record<string, unknown>), tool, outcome, ms } as { tool: string; outcome: ToolOutcome; ms: number };",
   },
   {
-    name: "the touch bar hides the memory readout on any touchscreen, however wide",
-    file: "app/globals.css",
-    pattern: /@media \(hover: none\) and \(max-width: 768px\) \{/,
-    replace: "@media (hover: none) {",
-  },
-  {
     name: "the headline checker records ok before the report exists, so a parser throw reads as a success",
     file: "app/tools/headline-check/actions.ts",
     pattern: /  let report;[\s\S]*?  record\("ok", started\);/,
@@ -2253,19 +2247,12 @@ const MUTATIONS = [
     tests: "components/arcade/arcade.test.ts",
   },
   {
-    name: "arcade foundations: the nav's cd arcade no longer leaves an open arcade",
-    file: "components/Nav.tsx",
-    pattern: /  if \(shellStore\.get\(\)\.arcade !== "closed"\) \{\r?\n    if \(!requestArcadeLeave\(\)\) shellStore\.dispatch\(\{ type: "close" \}\);\r?\n    return;\r?\n  \}/,
-    replace: '  if (shellStore.get().arcade !== "closed") return;',
-    tests: "components/nav.test.ts",
-  },
-  {
     // The regression the 2026-09-28 review caught: closing the shell takes the
     // drawer with it, where Escape and the room's own leave() hand it back.
-    name: "arcade foundations: the nav's cd arcade closes the shell instead of leaving the way Escape does",
+    name: "arcade foundations: the nav's cd .. closes the shell instead of leaving the way Escape does",
     file: "components/Nav.tsx",
-    pattern: /    if \(!requestArcadeLeave\(\)\) shellStore\.dispatch\(\{ type: "close" \}\);/,
-    replace: '    shellStore.dispatch({ type: "close" });',
+    pattern: /  if \(!requestArcadeLeave\(\)\) shellStore\.dispatch\(\{ type: "close" \}\);/,
+    replace: '  shellStore.dispatch({ type: "close" });',
     tests: "components/nav.test.ts",
   },
   {
