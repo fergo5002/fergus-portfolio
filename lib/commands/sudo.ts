@@ -28,7 +28,8 @@ export const sudo = [
             "kernel panic. nothing left to delete.",
           ],
         };
-      return ok([`sudo: ${arg || "command"}: no permission theatrics needed here`]);
+      if (!arg) return ok(["usage: sudo <command>", "try: sudo hire-me"]);
+      return ok([`sudo: ${arg}: no permission theatrics needed here`]);
     },
   }),
 ];

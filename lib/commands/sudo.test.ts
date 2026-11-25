@@ -32,6 +32,6 @@ describe("sudo", () => {
       type: "output",
       lines: ["sudo: make tea: no permission theatrics needed here"],
     });
-    expect(run()).toEqual({ type: "output", lines: ["sudo: command: no permission theatrics needed here"] });
+    expect(run()).toEqual({ type: "output", lines: ["usage: sudo <command>", "try: sudo hire-me"] });
   });
 });

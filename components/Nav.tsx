@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
-import type { CSSProperties } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Magnetic from "@/components/motion/Magnetic";
@@ -9,28 +9,28 @@ import { INITIAL_SHELL, shellStore } from "@/lib/shell";
 import { requestArcadeLeave, requestCommand } from "@/lib/shell-request";
 import { profile } from "@/content/profile";
 import { useSystem } from "@/components/system/SystemProvider";
-import { navDoor, navItems as items } from "@/content/nav";
+import { ARCADE_HOLD_MS, navDoor, navShown as items } from "@/content/nav";
 
 const getServerShell = () => INITIAL_SHELL;
 
 /**
- * `cd arcade` is the one control here that is not a link, because the arcade
- * is not a page. It is a program the terminal hosts, so this asks the shell to
- * run the door command and makes sure the drawer is there to hear it. `open` rather than
- * `toggle`, because a drawer that is already open must stay open to run it.
- *
- * Pressed while the arcade is up, it leaves the way Escape does (2026-09-28):
- * the room has no header of its own, and a phone has no Escape key, so this is
- * a touch screen's way out. Closing the shell is the fallback for a room that
- * is not listening yet.
+ * The arcade is not a page. It is a program the terminal hosts, so this asks
+ * the shell to run the door command and makes sure the terminal is up to hear
+ * it: `open` rather than `toggle`, because a terminal that is already open must
+ * stay open to run it.
  */
-function toggleArcade(): void {
-  if (shellStore.get().arcade !== "closed") {
-    if (!requestArcadeLeave()) shellStore.dispatch({ type: "close" });
-    return;
-  }
+function openArcade(): void {
   requestCommand(navDoor.command);
   shellStore.dispatch({ type: "open" });
+}
+
+/**
+ * Leaves the room the way Escape does. The room has no header of its own and a
+ * phone has no Escape key, so the top bar carries this while the room is up.
+ * Closing the shell is the fallback for a room that is not listening yet.
+ */
+function leaveArcadeRoom(): void {
+  if (!requestArcadeLeave()) shellStore.dispatch({ type: "close" });
 }
 
 export default function Nav() {
@@ -40,11 +40,35 @@ export default function Nav() {
   const arcadeOpen = shell.arcade !== "closed";
   const shownPath = arcadeOpen ? "~/arcade" : path === "/" ? "~" : path;
   const listRef = useRef<HTMLUListElement>(null);
+  const holdTimer = useRef<number | null>(null);
+  const [holding, setHolding] = useState(false);
   const leaveArcade = () => {
     shellStore.dispatch({ type: "close" });
     setGravity(false);
     setEjected(false);
   };
+
+  // Press and hold `fergus@portfolio` for three seconds to open the arcade
+  // (Fergus, 2026-11-25). The fill that sweeps the name while it is held is the
+  // feedback: a hold with nothing to show for it would read as a dead control.
+  // Letting go, sliding off or the browser taking the gesture for a scroll all
+  // cancel it.
+  const cancelHold = () => {
+    if (holdTimer.current !== null) window.clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+    setHolding(false);
+  };
+  const startHold = (event: ReactPointerEvent<HTMLSpanElement>) => {
+    if (event.button !== 0 || arcadeOpen) return;
+    cancelHold();
+    setHolding(true);
+    holdTimer.current = window.setTimeout(() => {
+      holdTimer.current = null;
+      setHolding(false);
+      openArcade();
+    }, ARCADE_HOLD_MS);
+  };
+  useEffect(() => cancelHold, []);
 
   // On a phone the list scrolls sideways, and the link for the page you are on
   // may start off its edge. Move the list's own scroll position, never
@@ -66,15 +90,25 @@ export default function Nav() {
         `components/PromptLine.tsx`: this is costume, it sits above the headline
         on every route, and it was the first thing a text extractor read. The
         links below stay as real text because they are real navigation and a
-        crawler has to follow them.
+        crawler has to follow them. It is also the arcade's hidden door, held
+        rather than clicked, and stays aria-hidden because `cd arcade` in the
+        terminal is the way in for everyone else.
       */}
       <span
-        className="nav__prompt"
+        className={`nav__prompt${holding ? " is-holding" : ""}`}
         aria-hidden="true"
+        onPointerDown={startHold}
+        onPointerUp={cancelHold}
+        onPointerLeave={cancelHold}
+        onPointerCancel={cancelHold}
+        onContextMenu={(event) => {
+          if (holdTimer.current !== null) event.preventDefault();
+        }}
         style={
           {
             "--nav-user": JSON.stringify(`${profile.user}@${profile.host}`),
             "--nav-path": JSON.stringify(shownPath),
+            "--hold-ms": `${ARCADE_HOLD_MS}ms`,
           } as CSSProperties
         }
       >
@@ -99,19 +133,18 @@ export default function Nav() {
             </li>
           );
         })}
-        <li>
-          <Magnetic pull={0.28}>
+        {arcadeOpen && (
+          <li>
             <button
               type="button"
-              className={`nav__link nav__link--cmd${arcadeOpen ? " is-active" : ""}`}
-              onClick={toggleArcade}
-              aria-current={arcadeOpen ? "location" : undefined}
-              aria-label={arcadeOpen ? navDoor.leaveLabel : undefined}
+              className="nav__link nav__link--cmd is-active"
+              onClick={leaveArcadeRoom}
+              aria-label={navDoor.leaveLabel}
             >
-              {navDoor.command}
+              {navDoor.leave}
             </button>
-          </Magnetic>
-        </li>
+          </li>
+        )}
       </ul>
     </nav>
   );

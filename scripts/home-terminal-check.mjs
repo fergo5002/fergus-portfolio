@@ -3,6 +3,19 @@ import assert from "node:assert/strict";
 import { mkdir, readFile } from "node:fs/promises";
 import { chromium, webkit } from "playwright";
 
+/**
+ * The arcade's door since 2026-11-25: hold fergus@portfolio for three seconds.
+ * Pointer events are dispatched rather than a real press, so a touch emulation
+ * and a mouse both reach React's handlers the same way.
+ */
+async function holdDoor(page) {
+  const prompt = page.locator(".nav__prompt");
+  const init = { pointerType: "mouse", isPrimary: true, button: 0, pointerId: 1 };
+  await prompt.dispatchEvent("pointerdown", init);
+  await page.waitForTimeout(3300);
+  await prompt.dispatchEvent("pointerup", init);
+}
+
 const base = process.env.REVISION_BASE || "http://localhost:3213";
 const out = ".revision-check/home-terminal";
 await mkdir(out, { recursive: true });
@@ -38,7 +51,15 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
     if (probe) console.log(width, "instrument", await page.evaluate(probe));
     assert.equal(await page.locator("main .term--inline").count(), 1, "shell restored below About");
     assert.equal(await page.locator(".meeting-card").count(), 0, "home has only the contact button");
-    assert.equal(await page.locator(".contact-invitation").innerText(), "Get in touch");
+    // The home invitation also carries LinkedIn and GitHub (Fergus, 2026-11-25):
+    // phosphor at rest, the real brand colour on hover.
+    assert.equal(await page.locator(".contact-invitation").innerText(), "Get in touch\nLinkedIn\nGitHub");
+    const linkedin = page.locator(".contact-invitation .social__link--linkedin");
+    assert.equal(await linkedin.getAttribute("href"), "https://www.linkedin.com/in/patrickfergusoreilly/");
+    assert.notEqual(await linkedin.evaluate(el => getComputedStyle(el).backgroundColor), "rgb(10, 102, 194)");
+    await linkedin.hover();
+    await page.waitForFunction(() => getComputedStyle(document.querySelector(".contact-invitation .social__link--linkedin")).backgroundColor === "rgb(10, 102, 194)", null, { timeout: 3000 });
+    await page.mouse.move(0, 0);
     const order = await page.evaluate(() => {
       const about = document.querySelector(".about").getBoundingClientRect();
       const terminal = document.querySelector(".term--inline").getBoundingClientRect();
@@ -54,7 +75,7 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
     await command(inline, "cd arcade");
     assert.equal(await page.locator(".shell").count(), 0, "reduced motion declines inline without opening drawer");
     assert.equal(await page.locator(".arcade-room").count(), 0);
-    await page.locator(".statusbar__prompt").click();
+    await page.locator(".term-handle").click();
     await page.locator(drawer).waitFor();
     assert.equal(await page.locator(".term__input").count(), 2);
     const ids = await page.locator(".term__input").evaluateAll(els => els.map(el => ({ id: el.id, label: el.labels?.length, help: !!document.getElementById(el.getAttribute("aria-describedby")) })));
@@ -78,9 +99,8 @@ for (const [width, engine] of [[1440, chromium], [390, webkit], [320, webkit]]) 
     await command(drawer, "history");
     const history = await page.locator(".shell .term__entry").last().locator(".term__out").allTextContents();
     assert.equal(history.filter(line => line.trim().endsWith("cd arcade poker")).length, 1, "forwarded command recorded once");
-    await page.locator(".shell__close").click();
-    await page.locator(".nav__list").evaluate(el => { el.scrollLeft = el.scrollWidth; });
-    await page.locator(".nav__link--cmd").click();
+    await page.locator(".shell__light--close").click();
+    await holdDoor(page);
     await page.locator(".arcade-room").waitFor();
     assert.equal(await page.locator(".shell .term--program").count(), 1, "nav request belongs to drawer");
     await page.locator(".arcade-entrance").waitFor({ state: "detached", timeout: 12000 });

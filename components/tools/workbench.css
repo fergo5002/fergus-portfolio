@@ -25,6 +25,8 @@
 .bench-head { display: grid; gap: 10px; }
 .tool-workbench .page__title { margin: 0; font-size: clamp(2.5rem, 6vw, 4rem); line-height: 1; }
 .bench-head .page__lede { margin: 0; max-width: 62ch; font-size: 1rem; line-height: 1.55; }
+.bench-mcp { margin: 0; color: var(--green); }
+.bench-mcp a { display: inline-flex; align-items: center; min-height: 44px; color: var(--amber); text-underline-offset: 4px; }
 
 /* ── the stage: the instrument, at the full width of the page ────────── */
 
@@ -72,7 +74,7 @@
    land above the fixed status bar, not under it. Measured: with JavaScript
    off, the headline form's submit button settled under the bar and could not
    be clicked. */
-.bench-stage :is(button, input, select, textarea, summary, label) { scroll-margin-bottom: calc(var(--status-h) + var(--sp-3)); }
+.bench-stage :is(button, input, select, textarea, summary, label) { scroll-margin-bottom: calc(var(--dock-clear) + var(--sp-3)); }
 .bench-stage :is(button, a, input, select, textarea, summary):not([class*="inst-"]):focus-visible {
   outline: 2px solid var(--amber);
   outline-offset: 3px;

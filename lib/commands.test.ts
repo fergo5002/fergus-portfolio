@@ -162,7 +162,8 @@ describe("informational commands", () => {
   it("date uses the injected clock so it is deterministic", () => {
     const now = new Date("2026-08-03T09:00:00Z");
     const res = runCommand("date", { now });
-    if (res.type === "output") expect(res.lines[0]).toBe(now.toString());
+    expect(res.type).toBe("output");
+    if (res.type === "output") expect(res.lines[0]).toBe("Mon 3 Aug 2026, 10:00 Irish time");
   });
 
   it("history lists prior commands, and says so when there are none", () => {
@@ -247,7 +248,7 @@ describe("open", () => {
   it("reports a miss rather than navigating somewhere wrong", () => {
     const res = runCommand("open nonsense");
     expect(res.type).toBe("output");
-    if (res.type === "output") expect(res.lines[0]).toContain("no project matching");
+    if (res.type === "output") expect(res.lines[0]).toContain("nothing called 'nonsense'");
   });
 });
 

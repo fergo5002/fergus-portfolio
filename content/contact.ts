@@ -1,70 +1,26 @@
-export type ContactFieldCopy = {
-  /** The wire name. Must match what `lib/contact-server.ts` reads. */
-  name: "name" | "email" | "message";
-  label: string;
-  placeholder: string;
-  /** Passed straight through to the input, so a browser can fill it properly. */
-  autoComplete: string;
-  multiline?: boolean;
-  inputType?: "text" | "email";
-};
-
 /**
  * Every word on `/contact`, per the house rule that copy lives in `content/`
  * and never in a component.
  *
- * The tone is the same as the call to action it replaced: an invitation with no
- * agenda attached. The failure copy is the part worth reading twice. It says
- * plainly whose fault it is, states that nothing typed has been lost, and
- * offers the mail-app link and the copy button as equals, because the whole
- * reason this page exists is that a `mailto:` link silently does nothing on
- * most machines.
+ * Since 2026-11-25 the page is two cards (a coffee, a call, both booked
+ * straight into Fergus's calendar) and three smaller boxes under them:
+ * LinkedIn, GitHub and email. The message form is gone; the meeting form
+ * still sends through the same Resend path when a time cannot be booked, and
+ * keeps the same honeypot.
  */
 export const contactCopy = {
   command: "./say-hello",
   path: "~/contact",
-  title: "contact",
-  lede: "This lands in my inbox and I answer it myself. No agenda needed.",
-
-  fields: [
-    {
-      name: "name",
-      label: "name",
-      placeholder: "who's writing",
-      autoComplete: "name",
-      inputType: "text",
-    },
-    {
-      name: "email",
-      label: "email",
-      placeholder: "where I reply",
-      autoComplete: "email",
-      inputType: "email",
-    },
-    {
-      name: "message",
-      label: "message",
-      placeholder: "what's on your mind",
-      autoComplete: "off",
-      multiline: true,
-    },
-  ] satisfies ContactFieldCopy[],
-
-  submit: "send",
-  sending: "sending",
-
-  sentTitle: "Sent.",
-  sentBody: "That's in my inbox. I'll come back to you, usually within a day or two.",
-  sendAnother: "Send another",
-
-  failedTitle: "That didn't send.",
-  failedBody:
-    "My end, not yours, and nothing you wrote is lost. The button below opens the same message in your mail app. If that does nothing, copy it instead.",
-  failedOpen: "Open it in your mail app",
-  failedCopy: "Copy the message",
-  failedCopied: "Copied",
-  failedCopyFailed: "That didn't copy either. Select the message above and copy it yourself.",
-
-  directLabel: "Or reach me directly",
+  title: "get in touch",
   honeypotLabel: "Leave this field empty",
+} as const;
+
+/** The LinkedIn, GitHub and email links on the home page and `/contact`. */
+export const socialCopy = {
+  label: "Find me elsewhere",
+  names: {
+    linkedin: "LinkedIn",
+    github: "GitHub",
+    email: "Email",
+  },
 } as const;

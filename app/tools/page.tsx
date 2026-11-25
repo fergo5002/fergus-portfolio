@@ -91,6 +91,10 @@ export default function ToolsPage() {
         ))}
       </ul>
 
+      <p className="bench-mcp">
+        {workbenchCopy.mcp} <Link href="/mcp">{workbenchCopy.mcpLink}</Link>
+      </p>
+
       <Talk line="If one of these is nearly what you need but not quite, tell me and I'll have a look." />
     </div>
   );

@@ -70,6 +70,31 @@ export function complete(input: string): string | null {
   return `${head.join(" ")} ${completed}`;
 }
 
+/**
+ * Every completion still open for what has been typed, when there is more than
+ * one. A real shell lists them on a second Tab; here the Terminal shows them
+ * under the prompt as you type, because Tab with nothing to add has to move
+ * focus on (the keyboard-trap rule in `components/Terminal.tsx`). Empty when
+ * there is nothing to choose between.
+ */
+export function candidates(input: string): string[] {
+  const hasTrailingSpace = /\s$/.test(input);
+  const parts = input.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return [];
+  let hits: string[];
+  if (parts.length === 1 && !hasTrailingSpace) {
+    const prefix = parts[0].toLowerCase();
+    hits = COMMANDS.filter((c) => c.startsWith(prefix));
+  } else {
+    const def = findCommand(parts[0].toLowerCase());
+    if (!def || def.hidden || !def.argPool || (parts.length > 2 || (parts.length === 2 && hasTrailingSpace))) return [];
+    const pool = typeof def.argPool === "function" ? def.argPool({}) : def.argPool;
+    const argPrefix = hasTrailingSpace ? "" : (parts[1]?.toLowerCase() ?? "");
+    hits = pool.filter((p) => p.startsWith(argPrefix));
+  }
+  return hits.length > 1 ? hits : [];
+}
+
 /** Longest common prefix of the candidates, never shorter than what was typed. */
 function sharedPrefix(candidates: string[], typed: string): string {
   if (candidates.length === 1) return candidates[0];

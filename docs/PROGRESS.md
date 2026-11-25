@@ -1,3 +1,36 @@
+## 2026-11-25: quieter, a terminal dock, and booking into the calendar
+
+Fergus's eleven-point list, all in one branch (`tweaks-25/11/2026`).
+
+- [x] LinkedIn and GitHub buttons beside Get in touch on the home page, phosphor at rest and the
+  real brand colour on hover (`components/SocialLinks.tsx`, `components/social.css`).
+- [x] Every ambient effect at 75%: `EFFECT_STRENGTH` in `lib/system.ts` and `--fx` in
+  `globals.css`, read by the shader as `FX` (`docs/agents/machine.md`).
+- [x] About rewritten in his words; Experience: Hatch105 links to hatch105.com, his Hatch line,
+  "idea to paying customers in 5 weeks", and the Merged-codebases, wound-down, WhatsApp and Loira
+  CI lines gone.
+- [x] Articles rewritten in his voice. "Why we wound Presterly down" retired completely (301 to
+  /writing, slug gone from tests and docs). With four articles left, Drift's reference floor went
+  from five to four at his choice, for visitors too.
+- [x] `cd arcade` and `cd mcp` off the top bar. Holding `fergus@portfolio` for three seconds opens
+  the arcade; `/mcp` is linked from `/tools` and the eject dial.
+- [x] Status bar gone. A handle in the bottom right grows the terminal out as a Mac-style window
+  (`components/TermDock.tsx`, `lib/dock.ts`). Terminal cleaned up: real prompt path, clickable
+  links, narrow columns, Tab candidates, `exit`, `book`, `status`, `open github`, `cd ..`.
+- [x] No screensaver, no idle animation.
+- [x] `/contact`: coffee and call cards, then LinkedIn, GitHub and email boxes. No message form. A
+  pick books straight into his Google calendar (free/busy across Gmail, Draft and Family), with a
+  Meet link for calls and an invite to the visitor (`lib/calendar.ts`, `docs/agents/contact.md`).
+
+Decisions: weekdays 10:00 to 17:30 Dublin time; auto-book capped at three a visitor, eight a day
+and twelve upcoming, counted in the calendar by a private tag, because the project has no Redis in
+production. A pick with no timing field or a link in it becomes an emailed request instead.
+OAuth client "fergusoreilly.dev booking" in Google Cloud project "My First Project"; its four
+`GOOGLE_CALENDAR_*` variables are on Vercel for production only, copies in the Keychain.
+
+Open: Irish bank holidays are not blocked. Pre-existing faults seen on the live baseline and left
+alone: the boot skip button at 2.62:1 contrast, experience meta at about 2.6:1 on a phone.
+
 ## 2026-10-03: Under the Campanile live link
 
 - [x] Add a `live` link to Under the Campanile's existing project card, pointing

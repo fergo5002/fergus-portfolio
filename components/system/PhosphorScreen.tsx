@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Mesh, Program, RenderTarget, Renderer, Triangle } from "ogl";
-import { MAX_FRAME_IMPACTS, THEME_PHOSPHOR } from "@/lib/system";
+import { EFFECT_STRENGTH, MAX_FRAME_IMPACTS, THEME_PHOSPHOR } from "@/lib/system";
 import {
   boxToGl,
   ejectCase,
@@ -276,6 +276,8 @@ uniform vec2  uLean;       // the pointer's lean, -1..1, y down as CSS has it, s
 uniform float uLineFade;   // 1, except once the monitor's own switch has turned the tube off
 
 const vec3 BASE = vec3(0.039, 0.055, 0.039);
+// EFFECT_STRENGTH from lib/system.ts: the ambient effects drawn in this pass.
+const float FX = ${EFFECT_STRENGTH.toFixed(3)};
 
 /* GL uv to the room's space: viewport heights, centred, y up. */
 vec2 toQ(vec2 p) {
@@ -367,8 +369,8 @@ vec3 tubeImage(vec2 suv, float lineScale) {
     toP.x *= uAspect;
     float d = length(toP);
     float ripple = sin(d * 34.0 - t * 2.6) * exp(-d * 7.0);
-    uv += normalize(toP + 1e-5) * ripple * 0.0045 * uPointerActive;
-    glow += exp(-d * 5.0) * 0.025 * uPointerActive;
+    uv += normalize(toP + 1e-5) * ripple * 0.0045 * FX * uPointerActive;
+    glow += exp(-d * 5.0) * 0.025 * FX * uPointerActive;
   }
 
   if (uTap < 1.6) {
@@ -397,7 +399,7 @@ vec3 tubeImage(vec2 suv, float lineScale) {
 
   float absVel = min(abs(uScrollVel), 1.6);
   float r = rain(uv, t, absVel * 0.9) * uRain * rainGain;
-  float hum = pow(sin((uv.y + t * 0.045) * 6.2831) * 0.5 + 0.5, 14.0) * 0.05;
+  float hum = pow(sin((uv.y + t * 0.045) * 6.2831) * 0.5 + 0.5, 14.0) * 0.05 * FX;
 
   vec3 col = BASE + uPhosphor * (r + hum + glow);
 
@@ -411,7 +413,7 @@ vec3 tubeImage(vec2 suv, float lineScale) {
   col += uPhosphor * ghost;
 
   if (uMobile < 0.5) {
-    float ca = absVel * 0.0022;
+    float ca = absVel * 0.0022 * FX;
     float rr = rain(uv + vec2(ca, 0.0), t, absVel * 0.9) * uRain * rainGain;
     float bb = rain(uv - vec2(ca, 0.0), t, absVel * 0.9) * uRain * rainGain;
     col.r += uPhosphor.r * (rr - r) * 0.8;
@@ -797,7 +799,7 @@ export default function PhosphorScreen() {
         uEmit: { value: 1 },
         uBurnRate: { value: 0.00035 },
         uNavBand: { value: [0.94, 1.0] },
-        uStatusBand: { value: [0.0, 0.04] },
+        uStatusBand: { value: [0.0, 0.0] },
         uBeamPts: { value: new Array(MAX_BEAM_POINTS * 2).fill(0) },
         uBeamCount: { value: 0 },
         uBeamGain: { value: 0 },
@@ -890,9 +892,11 @@ export default function PhosphorScreen() {
       // so changing --nav-h does not silently misplace the ghost.
       const cs = getComputedStyle(document.documentElement);
       const navH = parseFloat(cs.getPropertyValue("--nav-h")) || 44;
-      const statusH = parseFloat(cs.getPropertyValue("--status-h")) || 26;
       su.uNavBand.value = [1 - navH / h, 1];
-      su.uStatusBand.value = [0, statusH / h];
+      // No band at the bottom since the status strip went (2026-11-25): the
+      // terminal's handle is too small to burn in. Kept as a uniform so the
+      // sim pass reads the same either way.
+      su.uStatusBand.value = [0, 0];
 
       sizeTargets(gl.canvas.width, gl.canvas.height);
     };
@@ -925,8 +929,8 @@ export default function PhosphorScreen() {
       shared.uGravity.value = f.gravity;
 
       pu.uIntensity.value = s.crtEnabled ? 1 : 0;
-      pu.uScanlines.value = s.scanlines;
-      pu.uRain.value = now < f.rainBoostUntil ? 1 : 0.32;
+      pu.uScanlines.value = s.scanlines * EFFECT_STRENGTH;
+      pu.uRain.value = (now < f.rainBoostUntil ? 1 : 0.32) * EFFECT_STRENGTH;
       pu.uPower.value = f.boot;
       pu.uEject.value = f.eject;
 
@@ -1051,7 +1055,7 @@ export default function PhosphorScreen() {
     if (reducedMotion) {
       // No persistence loop at all: one sim frame to seed the buffer, one
       // present. The texture and the mask are the look; the motion is not.
-      pu.uRain.value = 0.22;
+      pu.uRain.value = 0.22 * EFFECT_STRENGTH;
       su.uBurnRate.value = 0;
       draw(0);
       draw(16);

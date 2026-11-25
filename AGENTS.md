@@ -65,11 +65,11 @@ Old `AGENTS.md` section names are in quotes, so a comment that cites one leads h
 
 | Before touching | Read |
 | --- | --- |
-| The boot, any animation or reveal, the shader and phosphor, gravity, eject, the screensaver, the beam, the status strip, hover previews, the pixel sprites, the writing figures, the `/mcp` console, the 404 card ("The September 2026 redesign", "Two boots", "Animate only what the visitor has not seen", "One frame clock", v4 "Phosphor", v5 "Mass") | `docs/agents/machine.md` |
+| The boot, any animation or reveal, the shader and phosphor, gravity, eject, the effect strength, the terminal's dock, the beam, hover previews, the pixel sprites, the writing figures, the `/mcp` console, the 404 card ("The September 2026 redesign", "Two boots", "Animate only what the visitor has not seen", "One frame clock", v4 "Phosphor", v5 "Mass") | `docs/agents/machine.md` |
 | Text effects, decorative strings, SEO and GEO (`lib/seo.ts`, robots, sitemap, `llms.txt`, feed), `middleware.ts`, `next.config.ts`, Vercel Analytics, PostHog, crawler detection ("the rule that keeps biting", "decorative text belongs in CSS", "Analytics") | `docs/agents/text-and-search.md` |
-| `/contact`, the contact and meeting forms, spam handling, Resend and `lib/contact.ts` ("the /contact rule") | `docs/agents/contact.md`, then `docs/DEVELOPING.md` |
+| `/contact`, the meeting form, the Google Calendar booking (`lib/calendar.ts`), spam handling, Resend and `lib/contact.ts` ("the /contact rule") | `docs/agents/contact.md`, then `docs/DEVELOPING.md` |
 | Any tool under `/tools`, `/api/mcp`, headline-check's fetch fence, Overlap, local and session storage, server state, a tool's stylesheet, dependencies ("What the site may keep, and where", Drift, Relief) | `docs/agents/tools-and-storage.md` |
-| The arcade, the boards, the command registry, `Terminal.tsx`, the shell drawer and the inline homepage terminal ("The arcade room sits inside the tube", "The terminal is a real subsystem") | `docs/agents/arcade-and-terminal.md` |
+| The arcade, the boards, the command registry, `Terminal.tsx`, the terminal's dock and window, the arcade's hold door and the inline homepage terminal ("The arcade room sits inside the tube", "The terminal is a real subsystem") | `docs/agents/arcade-and-terminal.md` |
 | Phone layout, the nav on a phone, tap targets, contrast, `(hover: none)` rules, wide screens, `scripts/phone-check.mjs`, `scripts/wide-check.mjs` ("Wide screens") | `docs/agents/phone-and-wide.md` |
 | `content/`, traction figures, the Hatch105 entry, `public/`, the ownership proof files, IndexNow, `scripts/build-images.mjs` ("Keeping the numbers honest", "Images") | `docs/agents/content-and-images.md` |
 | Deploying, verifying a deploy, CI, the mutation check, the repo layout ("Commands", "Layout of the repo") | `docs/agents/shipping.md` |

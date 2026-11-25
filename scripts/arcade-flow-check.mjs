@@ -20,7 +20,7 @@ try {
     await page.route(`${new URL(base).origin}/**`, route => route.continue({ headers: { ...route.request().headers(), "x-vercel-protection-bypass": process.env.ARCADE_PREVIEW_BYPASS } }));
   }
   await page.goto(base + "/experience", { waitUntil: "networkidle", timeout: 120000 });
-  await page.locator(".statusbar__prompt").click(); await page.locator(".term__input").fill("cd arcade poker"); await page.locator(".term__input").press("Enter");
+  await page.locator(".term-handle").click(); await page.locator(".term__input").fill("cd arcade poker"); await page.locator(".term__input").press("Enter");
   // Sound lives in the game view now that the room's header bar is gone.
   await page.getByRole("button", { name: /start solo run/i }).click(); await page.locator(".arcade-canvas").waitFor();
   await page.locator(".arcade-play").getByRole("button", { name: /^sound off$/i }).click(); await page.locator(".arcade-play").getByRole("button", { name: /^sound on$/i }).waitFor();

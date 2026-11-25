@@ -63,16 +63,6 @@ export const articleFigures: Record<string, FigurePart[]> = {
     { kind: "rect", x: 66, y: 38, w: 28, h: 24, tone: "ink", fill: true },
   ],
 
-  // Fast growth, then the end: three founders pulling three ways.
-  "why-presterly-wound-down": [
-    { kind: "path", d: "M12 86 H148", tone: "dim" },
-    { kind: "path", d: "M12 84 C40 82 58 62 76 42 S94 24 100 22", tone: "ink", draw: true },
-    { kind: "circle", cx: 100, cy: 22, r: 3.5, tone: "accent", fill: true, delay: 700 },
-    { kind: "path", d: arrow(104, 22, 132, 12), tone: "dim", draw: true, delay: 850 },
-    { kind: "path", d: arrow(104, 24, 134, 34), tone: "dim", draw: true, delay: 900 },
-    { kind: "path", d: arrow(102, 26, 118, 52), tone: "dim", draw: true, delay: 950 },
-  ],
-
   // A beam painting phosphor: a bright spot, the decaying trail behind it,
   // and the ghost of what the tube has shown for too long.
   "a-crt-that-behaves-like-a-crt": [

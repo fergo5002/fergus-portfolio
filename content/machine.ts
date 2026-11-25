@@ -1,33 +1,26 @@
 /**
- * The machine's version, as the BIOS prints it on a cold boot. Bumped to 6.0
- * with the 2026-09 redesign. One place, so the next bump is one line.
+ * The machine's version, as the BIOS prints it on a cold boot and `help`,
+ * `neofetch` and `status` print it in the terminal. Bumped to 6.0 with the
+ * 2026-09 redesign. One place, so the next bump is one line.
  */
 export const SYSTEM_VERSION = "6.0";
 
-/** Labels for the controls built into the tube. */
+/**
+ * Labels for the terminal's dock: the handle in the bottom right that opens
+ * the terminal window, the window's own buttons, and the two ways back that
+ * appear only while gravity or eject is on. The bottom status bar these used to
+ * live in went on 2026-11-25; everything it did is a terminal command now.
+ */
 export const machineCopy = {
-  controls: "Machine controls",
   terminal: "terminal",
   openTerminal: "Open the terminal (backtick)",
-  closeTerminal: "Close the terminal (Escape)",
-  close: "close",
-  soundOn: "sound on",
-  soundOff: "sound off",
-  mute: "Mute the tube",
-  unmute: "Turn on sound. Key clicks, relays and the tube, silent at rest.",
-  gravity: "gravity",
-  restore: "restore",
-  dropPage: "Gravity. Drag or throw the pieces. Escape puts them back.",
+  closeTerminal: "Minimise the terminal (Escape)",
+  /** The red light. It minimises too, as on a Mac, but says close. */
+  closeWindow: "Close the terminal window",
+  zoomIn: "Make the terminal bigger",
+  zoomOut: "Make the terminal smaller",
+  restore: "restore page",
   restorePage: "Put the page back together",
-  eject: "eject",
-  dock: "enter",
-  viewMachine: "Eject. Step out of the screen and use the machine itself.",
+  dock: "back in",
   viewPage: "Back into the screen",
-} as const;
-
-/** The screensaver: the line under the beam's figure, and the plate shown when there is no tube to draw on. */
-export const saverCopy = {
-  wake: "move to wake",
-  plateTitle: "FergusOS",
-  plateSub: "no signal · move to wake",
 } as const;

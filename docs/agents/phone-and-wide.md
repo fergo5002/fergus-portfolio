@@ -36,11 +36,12 @@ a menu). The `ul` scrolls and the fixed bar does not, so the reading-progress li
 `.nav::after` stays put; the list snaps to a link and `Nav.tsx` scrolls the active one into
 view by writing `scrollLeft`, never `scrollIntoView`. There is deliberately no fade at the
 trailing edge: the first version had one and the phone check read the clipped link under it at
-1.23:1, which was correct. The cut is the affordance. `cd arcade` sits at the end of the row as a
-`<button>` dressed as a link, because the arcade is not a page: it asks the shell to run the door
-command through `lib/shell-request.ts` (one slot, taken once) and the Terminal mounted in the
-common drawer runs it on every route. The drawer is opened with `open`, not
-`toggle`, so a drawer that is already up stays up to run it.
+1.23:1, which was correct. The cut is the affordance. Since 2026-11-25 `cd arcade` and `cd mcp`
+are off the row; the arcade's door is a three-second press on `fergus@portfolio`, which the phone
+nav now shows for that reason (44px tall, with `user-select` and the touch callout off so a long
+press does not select the name). The door asks the shell to run `cd arcade` through
+`lib/shell-request.ts` (one slot, taken once) and the Terminal in the window runs it on every
+route. The window is opened with `open`, not `toggle`, so one that is already up stays up.
 
 ## Wide screens: the page fills and tiles (2026-10-19)
 

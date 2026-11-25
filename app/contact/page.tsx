@@ -2,15 +2,17 @@ import type { Metadata } from "next";
 import JsonLd from "@/components/JsonLd";
 import PromptLine from "@/components/PromptLine";
 import Scramble from "@/components/Scramble";
-import ContactForm from "@/components/ContactForm";
 import MeetingCalendar from "@/components/MeetingCalendar";
 import MeetingCards from "@/components/MeetingCards";
+import SocialLinks from "@/components/SocialLinks";
 import { meetingCopy } from "@/content/meeting";
 import { contactCopy } from "@/content/contact";
 import { profile } from "@/content/profile";
+import { availability } from "@/lib/calendar";
+import { takenSlots } from "@/lib/meeting";
 import { OG_IMAGE, breadcrumbSchema, canonical, contactPageSchema } from "@/lib/seo";
 
-const DESCRIPTION = `Get in touch with ${profile.shortName}, ${profile.jobTitle.toLowerCase()} in ${profile.location}. Send a message from the page, or email him directly.`;
+const DESCRIPTION = `Grab a coffee or jump on a call with ${profile.shortName}, booked straight into his calendar, or find him on LinkedIn, GitHub or email.`;
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name.
@@ -28,22 +30,22 @@ export const metadata: Metadata = {
 };
 
 /**
- * `/contact`.
+ * `/contact`: a coffee or a call, then LinkedIn, GitHub and email
+ * (Fergus, 2026-11-25: "there should just be grab a coffee, jump on a call and
+ * then under it 3 more smaller boxes").
  *
- * **Why there is a page here at all.** The call to action at the bottom of every
- * other page used to be a `mailto:` link labelled "Email me". On a machine with
- * no mail client registered, which is most of them now, clicking it does
- * nothing whatsoever: no error, no new tab, no feedback. Fergus reported it as
- * a dead button. A page cannot fail that way.
- *
- * The direct address is printed underneath the form on purpose, and it is not a
- * hedge. A visitor who does not want to type into a stranger's form should not
- * have to, and if the send ever fails, the address they need is already on
- * screen rather than behind another click.
+ * `?meet=coffee` or `?meet=call` opens the calendar. Its free times are read
+ * from Fergus's Google calendars on the server (`lib/calendar.ts`), and a pick
+ * is booked there by the server action. The page is sent only which offered
+ * half hours are taken (`takenSlots`), never the calendars' own busy times. With no calendar to read, production
+ * says so and prints the email address rather than offering a time it made
+ * up; `MeetingCalendar` draws that state.
  */
 export default async function ContactPage({ searchParams }: { searchParams: Promise<{ meet?: string }> }) {
   const { meet } = await searchParams;
   const kind = meet === "coffee" || meet === "call" ? meet : null;
+  const now = new Date();
+  const calendar = kind ? await availability(now) : null;
   return (
     <div className={`stack contact-page${kind ? " contact-page--meet" : ""}`}>
       <JsonLd
@@ -61,31 +63,21 @@ export default async function ContactPage({ searchParams }: { searchParams: Prom
       </h1>
       {kind && <p className="page__lede">{meetingCopy.intro}</p>}
 
-      {kind ? <MeetingCalendar key={kind} kind={kind} now={new Date().toISOString()} /> : <>
-        <ContactForm />
-        <div className="contact-meetings"><MeetingCards /></div>
-      </>}
-
-      <section className="cdirect" aria-labelledby="contact-direct">
-        <h2 id="contact-direct" className="cdirect__title">
-          {contactCopy.directLabel}
-        </h2>
-        <ul className="contact">
-          {profile.contact.map((c) => (
-            <li key={c.label} className="contact__row">
-              <span className="contact__k">{c.label}</span>
-              <a
-                href={c.href}
-                {...(c.href.startsWith("http")
-                  ? { target: "_blank", rel: "me noreferrer" }
-                  : {})}
-              >
-                {c.value}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {kind && calendar ? (
+        <MeetingCalendar
+          key={kind}
+          kind={kind}
+          now={now.toISOString()}
+          busy={calendar.mode === "down" ? null : takenSlots(now, calendar.busy)}
+        />
+      ) : (
+        <>
+          <div className="contact-meetings">
+            <MeetingCards />
+          </div>
+          <SocialLinks variant="boxes" networks={["linkedin", "github", "email"]} />
+        </>
+      )}
     </div>
   );
 }

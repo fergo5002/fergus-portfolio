@@ -20,14 +20,14 @@ describe("the constants", () => {
     expect(Math.ceil(5 * MIN_DOCUMENT_SHARE)).toBe(3);
   });
 
-  it("floors the population at five, where ceil-half is a strict majority", () => {
-    expect(MIN_REFERENCE_DOCUMENTS).toBe(5);
-    expect(Math.ceil(MIN_REFERENCE_DOCUMENTS * MIN_DOCUMENT_SHARE)).toBeGreaterThan(
-      MIN_REFERENCE_DOCUMENTS / 2,
-    );
-    // Four documents: the threshold is two, which is exactly half and filters
-    // nothing. That is the argument for five, written as an assertion.
-    expect(Math.ceil(4 * MIN_DOCUMENT_SHARE)).toBe(4 / 2);
+  it("floors the population at four, Fergus's choice on 2026-11-25", () => {
+    // It was five, where ceil-half is a strict majority. At four it is exactly
+    // half: a marker needs two of the four documents. Lowered knowingly, so the
+    // site's own four articles still carry the worked example.
+    expect(MIN_REFERENCE_DOCUMENTS).toBe(4);
+    expect(Math.ceil(MIN_REFERENCE_DOCUMENTS * MIN_DOCUMENT_SHARE)).toBe(2);
+    // Three documents would let one piece set every sigma, so it stays refused.
+    expect(MIN_REFERENCE_DOCUMENTS).toBeGreaterThan(3);
   });
 });
 

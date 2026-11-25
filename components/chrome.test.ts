@@ -33,7 +33,7 @@ const read = (...parts: string[]) => readFileSync(join(process.cwd(), ...parts),
 
 const promptLine = read("components", "PromptLine.tsx");
 const markdown = read("components", "Markdown.tsx");
-const statusBar = read("components", "system", "StatusBar.tsx");
+const dock = read("components", "TermDock.tsx");
 const css = read("app", "globals.css");
 
 /** Strip comments and docblocks so a rule is not satisfied by prose about it. */
@@ -139,27 +139,27 @@ describe("the prompt costume is drawn once", () => {
   });
 });
 
-describe("the status bar prompt writes no costume into the document", () => {
-  // The button shipped as `<span aria-hidden="true">$</span>` beside its label.
-  // That is the same shape as the prompt-line bug measured on 2026-08-21, and
-  // `aria-hidden` does not take text out of extraction. The status bar is on
-  // every route, so the glyph sat in front of every page's words.
+describe("the terminal's handle writes no costume into the document", () => {
+  // The status bar's button shipped as `<span aria-hidden="true">$</span>`
+  // beside its label, which is the prompt-line bug measured on 2026-08-21:
+  // `aria-hidden` does not take text out of extraction. The handle that
+  // replaced the bar on 2026-11-25 is on every route, so the same holds.
   //
-  // `.shell__title` ("fsh") is deliberately not covered here. It renders only
-  // while the drawer is open, which takes a client gesture, so it is never in
-  // the server HTML a crawler or a text extractor reads.
-  const source = code(statusBar);
+  // The window's title is drawn from a custom property too, but it renders
+  // only once the window is open, which takes a client gesture.
+  const source = code(dock);
 
-  it("renders no element whose text is the dollar", () => {
-    expect(/>\s*\$\s*</.exec(source)?.[0], "a status bar element has $ as its text").toBeUndefined();
+  it("renders no element whose text is the prompt glyph", () => {
+    expect(/>\s*\$_?\s*</.exec(source)?.[0], "a dock element has $ as its text").toBeUndefined();
   });
 
-  it("keeps the button's accessible name, which was never the problem", () => {
-    expect(source).toContain('<span className="statusbar__prompt-label">{copy.terminal}</span>');
+  it("keeps the handle's word in the button, and its accessible name", () => {
+    expect(source).toContain('<span className="term-handle__label">{copy.terminal}</span>');
+    expect(source).toMatch(/aria-label=\{state\.open \? copy\.closeTerminal : copy\.openTerminal\}/);
   });
 
   it("leaves the glyph to the stylesheet", () => {
-    expect(css).toMatch(/\.statusbar__prompt::before\s*\{[^}]*content:\s*"\$"/);
+    expect(css).toMatch(/\.term-handle::before\s*\{[^}]*content:\s*"\$_"/);
   });
 });
 

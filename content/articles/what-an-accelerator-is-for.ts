@@ -4,48 +4,48 @@ export const acceleratorWorth: Article = {
   slug: "what-an-accelerator-is-for",
   title: "What an accelerator is actually for",
   description:
-    "One of nine from about 1,700 applicants, ten weeks in, company wound down. What the programme was genuinely worth, and what it could never have fixed.",
+    "One of nine out of about 1,700 who applied. What Hatch was actually worth to me, and what no programme could fix.",
   date: "2026-09-03",
 
-  updated: "2026-09-13",
+  updated: "2026-11-25",
   tags: ["Startups", "Accelerators", "Founders"],
   summary:
-    "An honest account of what a startup accelerator provides and what it cannot: forced deadlines, access and credibility are real value, while product direction and founder alignment are not things a programme can supply. Written by someone whose company went through one and wound down anyway.",
-  body: `I got into [Hatch105](https://hatch105.com) as one of nine from around 1,700 applicants. The company I took through it doesn't exist any more. That makes me a reasonable person to ask whether it was worth it, because I have no programme to sell and no outcome to protect. Short answer: yes, and not for the reasons in the brochure.
+    "What a startup accelerator actually gives you and what it can't. A date you can't move, the right people and founders at your stage are worth a lot, but no programme fixes direction or co-founders pulling apart. From someone whose company went through Hatch105 and didn't make it.",
+  body: `I got into [Hatch105](https://hatch105.com) earlier this year, one of nine out of around 1,700 who applied. The target was $10k a month in revenue by week ten. We didn't hit it and the company doesn't exist any more. But I learned more at Hatch than anywhere or anything I'd done before, and that was the real value.
 
-## What did it genuinely give us?
+People ask me if it was worth it. It was, just not for the reasons on the website. So here's what I actually got out of it, and what it couldn't do for us.
 
-A deadline that wasn't ours. That is most of the value and it is the least discussed.
+## What did Hatch actually give us?
 
-Left alone, founders extend. There is always a reason the demo should be next week instead. A date you didn't choose and can't move compresses decisions that would otherwise drift for a month. We went from first commit to live merchant brands in six weeks, and we would not have done that on our own timeline.
+The biggest thing Hatch gave us was a date we didn't pick and couldn't move. Nobody really talks about that part.
 
-Then access, which is the unglamorous kind rather than the headline mentors: somebody who has dealt with the same payments provider, somebody who can tell you in five minutes what a compliance process actually involves rather than what the documentation claims.
+When it's just you and your co-founders, everything slides. There's always a reason the demo can wait another week. Having a hard date meant we made calls in days that would have dragged on for a month otherwise. We went from idea to paying customers in 5 weeks, and I don't think we'd have done that on our own. (The Shopify side of that is [its own post](/writing/multi-tenant-shopify-apps).)
 
-And being around people at the same stage, which is worth more than it sounds. The value is calibration. You find out the thing you thought was uniquely hard is normal, and the thing you thought was going fine is not. You don't get that from advisors, who are being kind, or from the internet, which is performing.
+## Who was actually useful?
 
-## What could it not do?
+The mentors were great, but the most useful conversations were way less glamorous. Someone who'd already fought with the same payments provider. Someone who could tell me in five minutes what a compliance process actually involves, not what the docs say it involves.
 
-Everything that actually decides whether the company lives. Nobody was hiding that, and I would have said the same at the time, but it is worth writing down plainly, because the brochure implies otherwise.
+The other founders were honestly the best part. You'd find out the thing you thought was only hard for you was completely normal, and the thing you thought was going grand wasn't. I haven't found that anywhere else.
 
-It can set a deadline you cannot move, open a door in five minutes, tell you what is normal and lend you its credibility. It cannot fix founder-product fit, make you check the economics, make you ring a customer, or tell you the company should not exist.
+## What couldn't it fix?
 
-Three of us pulling in different directions for ten weeks is [why the company ended](/writing/why-presterly-wound-down). No programme solves that. Nobody in the building knows your co-founders well enough to see it, and by the time it is visible from outside, it is visible because the company has already stopped working.
+Hatch can't decide whether your company works. Nobody there pretended it could, but it's easy to walk in hoping it will.
 
-The economics were ours to check too. Nobody asks you to open the spreadsheet, because everyone assumes you did in week one. And given a choice between selling and building, I will build. That is about me rather than the programme.
+We ended because the three of us were pulling in different directions for ten weeks. No programme fixes that. Nobody there knew us well enough to spot it early, and we didn't want to see it.
 
-## What do people get wrong about applying?
+The numbers were on us too. Nobody asks you to open the spreadsheet because everyone assumes you did it in week one. And if I'm choosing between selling and building, I'll build every time. That one's on me.
 
-The application is not a test of your idea. Everyone's idea is roughly equally unproven at that stage and the people reading them know it.
+## Any advice if you're applying?
 
-It is a test of whether you can explain something clearly and whether you look like someone who will still be doing this in six months. The ideas that get in are not better. The founders are more legible.
+I think most people treat the application like the idea is what's being tested. It's not really. Everyone's idea is unproven at that stage and the people reading them know that.
 
-So be specific, and be honest about what you haven't done. A padded traction slide reads instantly to anyone who has seen a hundred, and costs you more than the empty slide would have. "No revenue, and here is exactly what we would need to learn to get some" is the stronger answer.
+What they want to see is whether you can explain something clearly and whether you'll still be at it in six months. So be specific and be honest about what you haven't done yet. A padded traction slide is really obvious to someone who's read hundreds of them. "No revenue yet, and this is what we need to figure out to get some" is a way better answer.
 
-## Would I do another one?
+And apply even if you don't feel ready. Nobody does. Just writing the application makes you put down on paper what you're actually doing and why, and that's worth it whether you get in or not.
 
-Not right now. A programme is worth most when your constraint is speed, access or credibility, and mine isn't any of those any more.
+## Would I do it again?
 
-My constraint is commercial, and specifically that I keep taking the technical half and hoping the other half is handled. A programme won't fix that. It is arguably the wrong tool, because it hands you a structure to be busy inside, and being busy is how I have avoided that problem twice.
+Hatch, yes, no question. Another programme right now, probably not, and the reason is about me more than any programme.
 
-I would still do it again for Presterly. It compressed ten weeks of learning into ten weeks, which is exactly what it says it does. It just doesn't say the ten weeks might teach you the company shouldn't exist. That is a real outcome, and it is worth having early.`,
+My problem now is the commercial side. I keep taking the technical half and hoping someone else covers the rest. A programme won't fix that. If anything it makes it easier to hide, because there's always something to be busy with, and I've dodged it that way twice already. At least with Hatch I found out in ten weeks and not two years.`,
 };

@@ -1,17 +1,14 @@
 import type { ReactNode } from "react";
 import PhosphorScreen from "./system/PhosphorScreen";
-import StatusBar from "./system/StatusBar";
-import ShellDrawer from "./ShellDrawer";
+import TermDock from "./TermDock";
 import Nav from "./Nav";
-import Screensaver from "./system/Screensaver";
 import RouteTransition from "./system/RouteTransition";
 import EjectRig from "./system/EjectRig";
 import GravityStage from "./physics/GravityStage";
 
 /**
  * The physical machine: the tube (WebGL phosphor), the glass sitting in front of
- * it (scanlines, vignette, specular sheen), and the chrome bolted around it
- * (status bar, screensaver, channel-change transitions).
+ * it (scanlines, vignette, specular sheen), and the channel-change transitions.
  *
  * Ordering matters. `PhosphorScreen` is behind everything at z-0, content sits at
  * z-1, and the glass layers ride above at z-9000 so they fall across the content
@@ -19,14 +16,14 @@ import GravityStage from "./physics/GravityStage";
  *
  * v5 adds `.crt__assembly` around everything the tube displays. It is inert while
  * docked (no transform, no containing block, no cost) and becomes the thing the
- * camera pulls back from when ejected. Grouping the glass layers and the status
- * strip inside it is what lets the whole display shrink into the bezel as one
- * object instead of the content sliding out from under its own reflections.
+ * camera pulls back from when ejected. Grouping the glass layers inside it is
+ * what lets the whole display shrink into the bezel as one object instead of
+ * the content sliding out from under its own reflections.
  *
- * The shell drawer sits here too, beside the status bar it hangs from, and
- * deliberately not inside `.crt__screen`: that div is a stacking context and,
- * ejected, a transformed containing block that follows the scroll, so a fixed
- * drawer inside it could neither rise above the glass nor stay on the display.
+ * The terminal's dock (its handle, its window and the ways back from gravity
+ * and eject) sits outside the assembly on purpose: it is the visitor's way out
+ * of whatever the machine is doing, so it stays where they left it while the
+ * display shrinks or falls apart.
  */
 export default function CrtShell({ children }: { children: ReactNode }) {
   return (
@@ -40,11 +37,9 @@ export default function CrtShell({ children }: { children: ReactNode }) {
         <div className="crt__glass" aria-hidden="true" />
         <div className="crt__flicker" aria-hidden="true" />
         <RouteTransition />
-        <Screensaver />
         <GravityStage />
-        <ShellDrawer />
-        <StatusBar />
       </div>
+      <TermDock />
       <EjectRig />
     </div>
   );

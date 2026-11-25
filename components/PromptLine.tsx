@@ -13,9 +13,9 @@ import { profile } from "@/content/profile";
  * like this:
  *
  * ```
- * fergus @ portfolio : /writing/why-presterly-wound-down $ cd ~ cd experience
+ * fergus @ portfolio : /writing/multi-tenant-shopify-apps $ cd ~ cd experience
  * cd projects cd writing fergus @ portfolio : ~/writing $ cat
- * ./writing/why-presterly-wound-down.md Why we wound Presterly down
+ * ./writing/multi-tenant-shopify-apps.md What I'd get right first in a multi-tenant Shopify app
  * ```
  *
  * Roughly 150 characters of terminal costume in front of the first real word,

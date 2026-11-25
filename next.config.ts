@@ -24,6 +24,8 @@ export const RETIRED_ARTICLES = [
   "a-qualcomm-overlay-appeared-in-our-dungeon",
   // Retired 2026-10-27 at Fergus's request.
   "the-timer-is-not-the-reservation",
+  // Retired 2026-11-25 at Fergus's request.
+  "why-presterly-wound-down",
 ] as const;
 
 const nextConfig: NextConfig = {

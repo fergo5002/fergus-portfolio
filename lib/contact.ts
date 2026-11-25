@@ -10,7 +10,7 @@
  * now goes to a page, and this module is the page's logic.
  *
  * **Client-safe by construction.** Nothing here reads an environment variable
- * or holds a secret, because `components/ContactForm.tsx` imports it for the
+ * or holds a secret, because `components/MeetingCalendar.tsx` imports it for the
  * field limits and ships it to the browser. The half that needs a key lives in
  * `lib/contact-server.ts`, which nothing client-side may import.
  *
@@ -44,7 +44,7 @@ export type FailureReason = "unconfigured" | "rejected" | "unreachable";
  * What the action hands back, and therefore what the form renders.
  *
  * Declared on this side of the split rather than beside the code that produces
- * it, because `components/ContactForm.tsx` needs the initial value and pulling
+ * it, because `components/MeetingCalendar.tsx` needs the initial value and pulling
  * it from `lib/contact-server.ts` would drag a module that reads `process.env`
  * into the browser bundle.
  *

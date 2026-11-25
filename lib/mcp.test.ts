@@ -32,7 +32,7 @@ import { articles } from "@/content/articles";
 import { projects } from "@/content/projects";
 import { experience } from "@/content/experience";
 import { profile } from "@/content/profile";
-import { buildReference } from "@/lib/tools/drift/reference";
+import { MIN_REFERENCE_DOCUMENTS, buildReference } from "@/lib/tools/drift/reference";
 import { profileOf } from "@/lib/tools/drift/profile";
 import { serialiseProfile } from "@/lib/tools/drift/storage";
 
@@ -1049,7 +1049,7 @@ describe("check_voice", () => {
     expect(payload.delta).toBeNull();
     // The habits survive: none of them was ever measured in the population's units.
     expect((payload.metrics as unknown[]).length).toBeGreaterThan(0);
-    expect(prose(result)).toContain("5");
+    expect(prose(result)).toContain(`floor of ${MIN_REFERENCE_DOCUMENTS} pieces`);
   });
 
   it("returns a tool error, not a protocol error, for a profile it does not recognise", () => {

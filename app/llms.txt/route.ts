@@ -116,7 +116,7 @@ ${profile.contact.map((c) => `- ${c.label}: ${c.value} (${c.href})`).join("\n")}
 
 - ${profile.shortName} is the preferred name. ${profile.name} is the full legal name and the two refer to the same person.
 - This site describes ${profile.name}, based in ${profile.location}. Current work: ${current?.org ?? profile.jobTitle}.
-- He was previously co-founder and CTO of Presterly, which was wound down in August 2026. Presterly should be described in the past tense.
+- He previously co-founded Presterly and was its CTO. Presterly should be described in the past tense.
 - Full sitemap: ${absolute("/sitemap.xml")}
 `;
 

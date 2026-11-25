@@ -3,10 +3,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 /**
- * Coupling checks for the shell drawer, in the pattern of `lib/boot.test.ts`.
- * The behaviour is in `lib/shell.ts` and tested there; these prove the
- * component, the CRT shell, the status bar and the stylesheet are wired to it.
+ * Coupling checks for the terminal's dock, in the pattern of `lib/boot.test.ts`.
+ * The behaviour is in `lib/shell.ts` and `lib/dock.ts` and tested there; these
+ * prove the component, the CRT shell and the stylesheet are wired to it.
  * Comments are stripped first so prose cannot satisfy a check for code.
+ *
+ * The dock replaced the status bar and its drawer on 2026-11-25: one handle in
+ * the bottom right that grows the terminal out of itself as a window.
  */
 const read = (...parts: string[]) => readFileSync(join(process.cwd(), ...parts), "utf8");
 function code(source: string): string {
@@ -15,69 +18,84 @@ function code(source: string): string {
 
 const layout = code(read("app", "layout.tsx"));
 const crtShell = code(read("components", "CrtShell.tsx"));
-const drawer = code(read("components", "ShellDrawer.tsx"));
+const dock = code(read("components", "TermDock.tsx"));
 const css = read("app", "globals.css");
 
-describe("the crt shell mounts the drawer", () => {
-  it("imports ShellDrawer and renders it in the assembly, outside the screen, before the status bar", () => {
-    // Outside `.crt__screen` on purpose. That div is a stacking context
-    // (`z-index: 1`) and, ejected, a transformed containing block that follows
-    // the scroll, so a fixed drawer inside it could neither rise above the
-    // glass nor stay anchored to the display. Beside the status bar it does
-    // both, the same way the status bar itself does.
-    expect(crtShell).toMatch(/import ShellDrawer from "\.\/ShellDrawer";/);
-    const screenOpen = crtShell.indexOf('<div className="crt__screen">');
-    const screenClose = crtShell.indexOf("</div>", screenOpen);
-    const at = crtShell.indexOf("<ShellDrawer />");
-    const bar = crtShell.indexOf("<StatusBar />");
-    expect(screenOpen).toBeGreaterThan(-1);
-    expect(at).toBeGreaterThan(screenClose);
-    expect(at).toBeLessThan(bar);
-  });
-
-  it("leaves the layout alone: the drawer is chrome on the machine, not a page", () => {
-    expect(layout).not.toMatch(/ShellDrawer/);
+describe("Vercel Analytics", () => {
+  it("mounts on Vercel and only there, where the script it loads exists", () => {
+    // Vercel sets VERCEL=1 at build and run time. Off Vercel the script 404s.
+    expect(layout).toMatch(/\{process\.env\.VERCEL \? <Analytics \/> : null\}/);
   });
 });
 
-describe("the drawer", () => {
-  it("routes the backtick through the pure predicate and closes on Escape", () => {
-    expect(drawer).toMatch(/isShellHotkey\(e\.key, e, /);
-    expect(drawer).toMatch(/e\.key === "Escape"/);
-    expect(drawer).toMatch(/shellStore\.dispatch\(\{ type: "close" \}\)/);
+describe("the crt shell mounts the dock", () => {
+  it("renders it outside the tube's assembly, so an ejected or fallen page keeps its way out", () => {
+    expect(crtShell).toMatch(/import TermDock from "\.\/TermDock";/);
+    const assemblyOpen = crtShell.indexOf('<div className="crt__assembly">');
+    const at = crtShell.indexOf("<TermDock />");
+    const assemblyClose = crtShell.lastIndexOf("</div>", at);
+    expect(assemblyOpen).toBeGreaterThan(-1);
+    expect(at).toBeGreaterThan(assemblyClose);
   });
 
-  it("offers the same drawer on every route", () => {
-    expect(drawer).not.toContain("usePathname");
-    expect(drawer).not.toContain("inline");
+  it("has no status bar and no drawer left in it", () => {
+    expect(crtShell).not.toMatch(/StatusBar|ShellDrawer|Screensaver/);
   });
 
-  it("renders nothing while closed, so no hidden input is ever focusable", () => {
-    expect(drawer).toMatch(/if \(!state\.open\) return null;/);
+  it("leaves the layout alone: the dock is chrome on the machine, not a page", () => {
+    expect(layout).not.toMatch(/TermDock/);
+  });
+});
+
+describe("the dock", () => {
+  it("routes the backtick through the pure predicate and minimises on Escape", () => {
+    expect(dock).toMatch(/isShellHotkey\(e\.key, e, /);
+    expect(dock).toMatch(/e\.key === "Escape"/);
+    expect(dock).toMatch(/shellStore\.dispatch\(\{ type: "close" \}\)/);
   });
 
-  it("mounts the one Terminal, in drawer dress, with focus", () => {
-    expect(drawer).toMatch(/<Terminal variant="drawer" autoFocus \/>/);
+  it("renders no window while closed, so no hidden input is ever focusable", () => {
+    expect(dock).toMatch(/\{phase !== "closed" && \(/);
+  });
+
+  it("keeps the window through its genie, and lets the animation's end move it on", () => {
+    expect(dock).toMatch(/dockPhaseFor\(current, state\.open, reducedMotion\)/);
+    expect(dock).toMatch(/onAnimationEnd=\{onAnimationEnd\}/);
+    expect(dock).toMatch(/inert=\{phase === "closing" \? true : undefined\}/);
+  });
+
+  it("mounts the one Terminal, in window dress, with focus", () => {
+    expect(dock).toMatch(/<Terminal variant="drawer" autoFocus \/>/);
   });
 
   it("swallows the backtick so it is not typed into the input it just focused", () => {
-    expect(drawer).toMatch(/isShellHotkey\([\s\S]{0,120}\)\) return;\s*e\.preventDefault\(\);/);
+    expect(dock).toMatch(/isShellHotkey\([\s\S]{0,120}\)\) return;\s*e\.preventDefault\(\);/);
   });
 
   it("hydrates from a closed server snapshot", () => {
-    expect(drawer).toMatch(/useSyncExternalStore\(shellStore\.subscribe, shellStore\.get, getServerShell\)/);
+    expect(dock).toMatch(/useSyncExternalStore\(shellStore\.subscribe, shellStore\.get, getServerShell\)/);
+  });
+
+  it("offers the way back from gravity and eject only while there is one to take", () => {
+    expect(dock).toMatch(/\{gravityOn && \(/);
+    expect(dock).toMatch(/\{ejected && \(/);
   });
 });
 
-describe("summonShell", () => {
-  it("toggles one drawer on every route", () => {
-    expect(drawer).toMatch(/export function summonShell\(\): void \{\s*shellStore\.dispatch\(\{ type: "toggle" \}\);\s*\}/);
+describe("the handle", () => {
+  it("is a real button that toggles the one terminal", () => {
+    expect(dock).toMatch(/export function summonShell\(\): void \{\s*shellStore\.dispatch\(\{ type: "toggle" \}\);\s*\}/);
+    expect(dock).toMatch(/<button\s+type="button"\s+className="term-handle"\s+onClick=\{summonShell\}/);
   });
 
-  it("restores the handle only on keyboard or explicit-close dismissal", () => {
-    const pointer = drawer.slice(drawer.indexOf("const onPointerDown"), drawer.indexOf('document.addEventListener("pointerdown"'));
-    expect(pointer).not.toContain(".focus(");
-    expect(drawer).toContain('querySelector<HTMLElement>(".statusbar__prompt")?.focus()');
+  it("says whether the window is up", () => {
+    expect(dock).toMatch(/aria-expanded=\{state\.open\}/);
+  });
+
+  it("gets focus back on keyboard or explicit minimise, never on a click elsewhere", () => {
+    const pointer = dock.slice(dock.indexOf("const onPointerDown"), dock.indexOf('document.addEventListener("pointerdown"'));
+    expect(pointer).not.toContain("focus");
+    expect(dock).toContain('querySelector<HTMLElement>(".term-handle")?.focus()');
   });
 });
 
@@ -101,60 +119,22 @@ describe("the stylesheet", () => {
     }
   };
 
-  it("draws the drawer on the status bar, above the glass and below the chrome", () => {
-    const rule = /\.shell \{([^}]*)\}/.exec(css)?.[1] ?? "";
+  it("floats the window above the glass and the nav, under the boot", () => {
+    const rule = /\n\.shell \{([^}]*)\}/.exec(css)?.[1] ?? "";
     expect(rule).toMatch(/position: fixed;/);
-    expect(rule).toMatch(/bottom: var\(--status-h\);/);
-    expect(rule).toMatch(/z-index: 9050;/);
+    expect(rule).toMatch(/z-index: 9140;/);
+    const dockRule = /\n\.term-dock \{([^}]*)\}/.exec(css)?.[1] ?? "";
+    expect(dockRule).toMatch(/z-index: 9150;/);
   });
 
-  it("slides only for people who have not asked for stillness", () => {
-    expect(css).toMatch(/@keyframes shell-rise/);
-    expect(insideMedia("@media (prefers-reduced-motion: no-preference)", "animation: shell-rise")).toBe(true);
-    expect(css.split("animation: shell-rise").length - 1).toBe(1);
+  it("plays the genie only for people who have not asked for stillness", () => {
+    expect(insideMedia("@media (prefers-reduced-motion: no-preference)", "animation: genie-in")).toBe(true);
+    expect(insideMedia("@media (prefers-reduced-motion: no-preference)", "animation: genie-out")).toBe(true);
+    expect(css.split("animation: genie-in").length - 1).toBe(1);
   });
 
-  it("scrolls instantly for them too, which is the drawer's other animation", () => {
-    // `summonShell` calls scrollIntoView with no `behavior`, so it inherits
-    // `html { scroll-behavior }`. Under `reduce` Lenis is never mounted, so the
-    // rule that hands scrolling to Lenis never applies and this one does.
-    expect(insideMedia("@media (prefers-reduced-motion: no-preference)", "scroll-behavior: smooth")).toBe(
-      true,
-    );
+  it("scrolls instantly for them too", () => {
+    expect(insideMedia("@media (prefers-reduced-motion: no-preference)", "scroll-behavior: smooth")).toBe(true);
     expect(css.split("scroll-behavior: smooth").length - 1).toBe(1);
-  });
-
-  it("shrinks with the display when ejected, like the status bar", () => {
-    expect(css).toMatch(/html\.is-ejecting \.shell \{\r?\n\s*position: absolute;/);
-  });
-});
-
-describe("the status bar prompt", () => {
-  const statusBar = code(read("components", "system", "StatusBar.tsx"));
-
-  it("is a real button that summons the shell", () => {
-    expect(statusBar).toMatch(/className="statusbar__prompt"/);
-    expect(statusBar).toMatch(/onClick=\{summonShell\}/);
-    expect(statusBar).toMatch(/<button\s+type="button"\s+className="statusbar__prompt"/);
-  });
-
-  it("says whether the drawer is open on every page", () => {
-    expect(statusBar).toMatch(/aria-expanded=\{shell\.open\}/);
-    expect(statusBar).toMatch(/useSyncExternalStore\(shellStore\.subscribe, shellStore\.get, getServerShell\)/);
-  });
-
-  it("is 44px both ways on touch, in a rule that wins on order", () => {
-    // Since 2026-09-06 the floors live in the `(hover: none)` block with the
-    // other thumb rules, and the narrow block only lays the button out:
-    // stretched to the bar's height and centred in it. The old narrow rule
-    // hung the `$` on the bar's bottom edge, written for a 22px bar and still
-    // applied to the 44px touch one.
-    const mobile = /\.statusbar__prompt \{[^}]*min-height: 44px;[^}]*\}/.exec(css);
-    expect(mobile).not.toBeNull();
-    expect(mobile?.[0]).toMatch(/min-width: 44px;/);
-    const narrow = /\.statusbar__prompt \{[^}]*align-self: stretch;[^}]*\}/.exec(css);
-    expect(narrow?.[0]).toMatch(/align-items: center;/);
-    expect(narrow?.[0]).not.toMatch(/flex-end/);
-    expect(css).toMatch(/\.statusbar__readouts \{\r?\n\s*display: flex;/);
   });
 });

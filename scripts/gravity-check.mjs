@@ -26,10 +26,14 @@ try {
   // the stage measures whatever is there when the switch is pressed.
   await page.locator(".heroname__ch").first().waitFor();
 
-  const control = page.locator(".machine__motion .machine__btn").first();
-  assert.equal((await control.locator(".machine__label").innerText()).trim(), "gravity");
-  await control.click();
+  // Since 2026-11-25 gravity lives in the terminal, and while it is on the dock
+  // offers "restore page" beside the handle.
+  await page.locator(".term-handle").click();
+  await page.locator(".shell .term__input").fill("gravity");
+  await page.locator(".shell .term__input").press("Enter");
   await page.locator(".gravity__piece").first().waitFor();
+  const restore = page.locator(".dock-pill", { hasText: "restore page" });
+  await restore.waitFor();
 
   const pieces = await page.evaluate(() => [...document.querySelectorAll(".gravity__piece")].map((el) => el.textContent ?? ""));
   const name = await page.evaluate(() => document.querySelector(".heroname .vh")?.textContent ?? "");
@@ -38,9 +42,9 @@ try {
   assert.deepEqual(doubled, [], `hidden text fell as whole words: ${doubled.join(", ")}`);
   assert.ok(pieces.some((t) => t === "P"), "the visible letters of the name still fall");
 
-  await page.keyboard.press("Escape");
+  await restore.click();
   await page.waitForFunction(() => document.querySelectorAll(".gravity__piece").length === 0, null, { timeout: 15_000 });
-  assert.equal((await control.getAttribute("aria-pressed")), "false");
+  await restore.waitFor({ state: "detached" });
   assert.deepEqual(errors, []);
   console.log(`gravity: ${pieces.length} pieces, none hidden, restored`);
 } finally {

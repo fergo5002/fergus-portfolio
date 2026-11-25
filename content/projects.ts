@@ -30,12 +30,12 @@ export const projects: Project[] = [
   {
     slug: "tigh-sauna",
     title: "Tigh Sauna",
-    tagline: "Operations & Growth solutions for Saunas",
+    tagline: "The operating and growth layer for saunas.",
     role: "Ex-co-founder & CTO",
     year: "2026",
     bullets: [
-      "Every site and system is built bespoke in collaboration with saunas.",
-      "Built to be the last software your sauna needs, helping you run the day-to-day and bring guests back.",
+      "Every site and system was built with the saunas themselves.",
+      "Bookings, payments and the messages that bring guests back, all in one place.",
     ],
     stack: ["Next.js", "TypeScript", "Fastify", "PostgreSQL", "Supabase", "Shopify", "Railway", "Vercel"],
     links: [{ label: "live", href: "https://tighsauna.com" }],
@@ -51,7 +51,7 @@ export const projects: Project[] = [
     year: "2026",
     bullets: [
       "34 stores, 423,000 customers, nearly €19M of order history analysed.",
-      "Wound down in August 2026.",
+      "We went from idea to paying customers in 5 weeks.",
     ],
     stack: ["TypeScript", "React Router 7", "Prisma", "PostgreSQL", "Shopify", "Klaviyo", "Twilio", "Railway"],
     links: [{ label: "live", href: "https://presterly.com" }],
@@ -63,7 +63,7 @@ export const projects: Project[] = [
     title: "Loira AI (Larry)",
     tagline: "AI project management. Turns what gets said in meetings into tracked work.",
     role: "Founding Engineer",
-    year: "Feb – Jun 2026",
+    year: "Feb to Jun 2026",
     bullets: [
       "Founding engineer in Stockholm. I built the pipeline that reads the meeting and files the work.",
     ],
@@ -79,7 +79,7 @@ export const projects: Project[] = [
     role: "Full-stack / AI",
     year: "HackEurope 2026",
     bullets: [
-      "Semantic search finds the threads where people already describe the problem, growth momentum shows whether interest is building, and an agent turns it into positioning.",
+      "It finds the Reddit threads where people already complain about your problem, checks whether interest is growing, then an agent turns that into positioning.",
     ],
     stack: ["Next.js", "React 19", "FastAPI", "Supabase", "pgvector", "OpenAI", "Anthropic"],
     links: [{ label: "live", href: "https://nybblers.vercel.app" }],

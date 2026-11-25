@@ -1,14 +1,15 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { EFFECT_STRENGTH } from "@/lib/system";
 
 /**
  * Brightness guards on the tube's two shader passes.
  *
  * **What this cannot do.** Vitest runs in a `node` environment, there is no
  * WebGL context, and the GLSL here is a template literal. Nothing below renders
- * anything: these are greps, the same kind `lib/boot.test.ts` and the
- * `ContactForm` block in `lib/contact.test.ts` carry, and for the same reason.
+ * anything: these are greps, the same kind `lib/boot.test.ts` and
+ * `components/shell.test.ts` carry, and for the same reason.
  * A magic number in a shader is the least reviewable line in the codebase and
  * the easiest to nudge.
  *
@@ -89,15 +90,29 @@ describe("the light around the pointer is half strength", () => {
     expect(SIM).toContain("add += exp(-length(toP) * 9.0) * 0.05 * uEmit * uPointerActive;");
   });
 
-  it("adds half as much immediate glow in the present pass", () => {
-    expect(PRESENT).toContain("glow += exp(-d * 5.0) * 0.025 * uPointerActive;");
+  it("adds half as much immediate glow in the present pass, then the quarter off every ambient effect", () => {
+    expect(PRESENT).toContain("glow += exp(-d * 5.0) * 0.025 * FX * uPointerActive;");
   });
 
-  it("leaves the deflection ripple exactly as it was", () => {
-    // Fergus was asked and chose the light only. The ripple is geometry, not
-    // brightness: it is what makes the glass read as something the cursor is
-    // pressing on, and it is not what "too much light" describes.
-    expect(PRESENT).toContain("uv += normalize(toP + 1e-5) * ripple * 0.0045 * uPointerActive;");
+  it("keeps the ripple's shape and scales only its size with the ambient effects", () => {
+    // Fergus chose the light only when the glow was halved. On 2026-11-25 he
+    // asked for every effect a quarter quieter, which takes the ripple too:
+    // its constants stay, and FX scales the whole of it.
+    expect(PRESENT).toContain("uv += normalize(toP + 1e-5) * ripple * 0.0045 * FX * uPointerActive;");
+  });
+});
+
+describe("the ambient effects are a quarter quieter (2026-11-25)", () => {
+  it("bakes EFFECT_STRENGTH into the shader as FX", () => {
+    expect(src).toMatch(/const float FX = \$\{EFFECT_STRENGTH\.toFixed\(3\)\};/);
+    expect(EFFECT_STRENGTH).toBe(0.75);
+  });
+
+  it("scales the hum, the chromatic split, the rain and the scanlines by it", () => {
+    expect(PRESENT).toContain("* 0.05 * FX;");
+    expect(PRESENT).toContain("float ca = absVel * 0.0022 * FX;");
+    expect(src).toContain("pu.uScanlines.value = s.scanlines * EFFECT_STRENGTH;");
+    expect(src).toContain("pu.uRain.value = (now < f.rainBoostUntil ? 1 : 0.32) * EFFECT_STRENGTH;");
   });
 });
 

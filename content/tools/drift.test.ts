@@ -31,7 +31,7 @@ describe("the registry entry", () => {
     expect(joined).toContain("meaning");
     expect(joined).toContain("register");
     expect(joined).toContain("150 words");
-    expect(joined).toContain("five pieces");
+    expect(joined).toContain("four pieces");
     expect(joined).toContain("praise");
   });
 });

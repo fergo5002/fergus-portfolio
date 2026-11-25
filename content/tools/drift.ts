@@ -18,7 +18,7 @@ import type { ToolEntry } from "./types";
 export const driftCopy = {
   samplesLabel: "Things you wrote",
   samplesHint:
-    "Paste at least five pieces, separated by a line of three dashes. A thousand words is a useful starting point, not a calibrated threshold.",
+    "Paste at least four pieces, separated by a line of three dashes. A thousand words is a useful starting point, not a calibrated threshold.",
   samplesPlaceholder: "Paste something you wrote\n---\nAnd another one",
   draftLabel: "The draft",
   draftHint:
@@ -50,7 +50,7 @@ export const driftCopy = {
   tooShort:
     "This tool uses 150 words as a conservative, uncalibrated floor because marker counts are sparse in short drafts. It will not print a distance below that floor. Counts still hold, and they are below.",
   tooFewPieces:
-    "Fewer than 5 separate pieces. Five is this tool's conservative, uncalibrated floor for estimating your between-piece variation, so it will not print a distance. Your habits are still below, and so are the counts.",
+    "Fewer than 4 separate pieces. Four is this tool's uncalibrated floor for estimating your between-piece variation, so it will not print a distance. Your habits are still below, and so are the counts.",
   noPulls:
     "No sentence contains an overused marker word or one of the fixed flags. Underused words contribute to the distance but cannot honestly be assigned to one sentence.",
   noSubstitutions:
@@ -80,7 +80,7 @@ export const driftCopy = {
   announceDemo: "Worked example restored. Build your own profile before measuring your draft.",
 
   demoNote:
-    "Example: my draft measured against the five articles at /writing. Build a profile from your pieces to compare your own draft.",
+    "Example: my draft measured against the four articles at /writing. Build a profile from your pieces to compare your own draft.",
   referenceNote:
     "The distance is Burrows's Delta, and a Delta is measured in standard deviations, so it needs a population whose standard deviations they are. That population is your pieces: your own commonest words, and your own variation from one piece to the next. Which is why the number reads in units of your writing and not mine, and why the spread of your own pieces is printed beside it.",
   substitutionNote:
@@ -125,7 +125,7 @@ export const drift: ToolEntry = {
     "Meaning. Every number here counts how often words and marks turn up, and none of them knows what any of it says.",
     "Register shifts inside one writer. A note to a friend and a note to a bank are two voices from the same person, and this would call the second one drift.",
     "Anything under 150 words. The tool uses that conservative floor because short drafts make marker counts sparse; it refuses to print a distance and says why.",
-    "Anything from fewer than five pieces. Five is a conservative, uncalibrated floor for estimating variation, so the tool refuses a distance below it and says why.",
+    "Anything from fewer than four pieces. Four is an uncalibrated floor for estimating variation, so the tool refuses a distance below it and says why.",
     "Whether the writing is any good. A low distance means your commonest words turn up at similar rates. That is not praise, and it is not a verdict on the draft.",
     "A substitution that is not on its list. The near-synonyms come from a fixed table written into this page, not from a dictionary and not from a model.",
   ],

@@ -10,6 +10,7 @@ import { profile } from "@/content/profile";
 import { homeCopy } from "@/content/home";
 import JsonLd from "@/components/JsonLd";
 import Talk from "@/components/Talk";
+import SocialLinks from "@/components/SocialLinks";
 import Terminal from "@/components/Terminal";
 import { profilePageSchema } from "@/lib/seo";
 import "./home.css";
@@ -39,6 +40,6 @@ export default function Home() {
       <div className="about__routes"><p>{homeCopy.aboutLinks}</p><div><Link href="/projects">{homeCopy.projects}</Link><Link href="/experience">{homeCopy.experience}</Link></div></div>
     </Window></RasterReveal>
     <Terminal />
-    <RasterReveal className="home__talk"><Talk /></RasterReveal>
+    <RasterReveal className="home__talk"><Talk><SocialLinks variant="buttons" networks={["linkedin", "github"]} /></Talk></RasterReveal>
   </div></BootSequence>;
 }

@@ -246,13 +246,10 @@ export default function GravityStage() {
       }
       host.appendChild(fragment);
 
-      // Walls. The floor sits on top of the status strip rather than on the
-      // bottom of the viewport: the strip is opaque and holds the control that
-      // turns this off, so a pile that settles underneath it loses both the
-      // bottom of itself and its own way out.
-      const statusH =
-        parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--status-h")) || 26;
-      const floorY = vh - statusH;
+      // Walls. The floor is the bottom of the viewport. It sat on top of the
+      // status strip until that went on 2026-11-25; the way out is now a
+      // button beside the terminal's handle, which floats over the pile.
+      const floorY = vh;
       world.add(
         createBody({ x: vw / 2, y: floorY + WALL, hw: vw * 2, hh: WALL, mass: 0, friction: 0.7 }),
       );
