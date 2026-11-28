@@ -52,7 +52,10 @@ export function absolute(path: string): string {
 
 /** The `alternates` block every route spreads into its `metadata` export. */
 export function canonical(path: string) {
-  return { canonical: absolute(path) } as const;
+  // The feed rides along because a route that sets `alternates` replaces the
+  // root layout's whole block: until 2026-11-28 only `/` and `/writing`
+  // advertised the feed, and no article did.
+  return { canonical: absolute(path), types: { "application/rss+xml": "/feed.xml" } } as const;
 }
 
 /**
@@ -124,7 +127,7 @@ export function personSchema(): JsonLdObject {
     url: absolute("/"),
     image: absolute(profile.portrait),
     jobTitle: profile.jobTitle,
-    description: profile.bio[0],
+    description: profile.search.description,
     /**
      * The property that exists purely to tell two people with the same name
      * apart, and it is here because the baseline run on 2026-08-21 found that
@@ -133,14 +136,13 @@ export function personSchema(): JsonLdObject {
      * Every field this graph was relying on to identify its subject is a field
      * they share.
      *
-     * So this one is built from what is not shared: the full legal name, the
-     * current venture, and the fact that the degree is in progress rather than
-     * finished. Derived from `content/profile.ts` like everything else here, so
-     * it cannot quietly stop being true.
+     * So this one is built from what is not shared: the full legal name, what
+     * he is doing now, and the fact that the degree is in progress rather than
+     * finished. Plain phrases from `profile.search`, because the display strings
+     * carry glyphs ("@", "· 1.1") and a company label ("Stealth") that read as
+     * junk in a sentence.
      */
-    disambiguatingDescription: `${profile.name}, a technical founder in ${profile.location} building ${
-      experience[0]?.org ?? "software"
-    }, currently studying ${profile.education}.`,
+    disambiguatingDescription: `${profile.name}, a ${profile.jobTitle.toLowerCase()} in ${profile.location}, ${profile.search.now}, and studying ${profile.search.education}.`,
     address: {
       "@type": "PostalAddress",
       addressLocality: "Dublin",
@@ -160,7 +162,7 @@ export function personSchema(): JsonLdObject {
     // rather than being a bare string. A named organisation with no identity
     // behind it is a label; one with an `@id` and a `sameAs` is an entity that
     // other statements, here and elsewhere, can attach themselves to.
-    worksFor: current
+    worksFor: current && !current.unnamed
       ? prune({
           "@type": "Organization",
           "@id": current.link ? `${current.link.href}/#organization` : undefined,
@@ -181,7 +183,7 @@ export function websiteSchema(): JsonLdObject {
     "@id": WEBSITE_ID,
     url: absolute("/"),
     name: SITE_NAME,
-    description: profile.tagline,
+    description: profile.search.description,
     inLanguage: "en",
     publisher: { "@id": PERSON_ID },
   });

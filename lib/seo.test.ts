@@ -26,6 +26,7 @@ import {
 } from "./seo";
 import { articles } from "@/content/articles";
 import { profile } from "@/content/profile";
+import { experience } from "@/content/experience";
 import { questionPairs } from "@/lib/faq";
 
 describe("absolute", () => {
@@ -57,7 +58,11 @@ describe("absolute", () => {
 
 describe("canonical", () => {
   it("returns an absolute canonical for the metadata block", () => {
-    expect(canonical("/writing")).toEqual({ canonical: `${SITE_URL}/writing` });
+    expect(canonical("/writing").canonical).toBe(`${SITE_URL}/writing`);
+  });
+
+  it("advertises the feed on every route that sets its own canonical", () => {
+    expect(canonical("/tools/drift").types).toEqual({ "application/rss+xml": "/feed.xml" });
   });
 
   it("always points at production, never at a preview host", () => {
@@ -134,9 +139,24 @@ describe("personSchema", () => {
     expect((person.sameAs as string[]).length).toBeGreaterThan(0);
   });
 
-  it("names the current employer, not a wound-down one", () => {
-    const worksFor = person.worksFor as JsonLdObject;
-    expect(worksFor.name).toBe("Stealth");
+  it("names no employer while the current company is unnamed", () => {
+    // "Stealth" is a state, not an organisation. Published as `worksFor` it
+    // told every engine he works at a company called Stealth (2026-11-28).
+    expect(experience[0].unnamed).toBe(true);
+    expect(person.worksFor).toBeUndefined();
+    expect(JSON.stringify(person)).not.toMatch(/"name":"Stealth"/);
+  });
+
+  it("describes him in plain search text, not the page's own voice", () => {
+    expect(person.description).toBe(profile.search.description);
+    expect(String(person.description)).not.toMatch(/years old/);
+  });
+
+  it("disambiguates without display glyphs or a company called Stealth", () => {
+    const text = String(person.disambiguatingDescription);
+    expect(text).toContain(profile.name);
+    expect(text).toContain("Trinity College Dublin");
+    expect(text).not.toMatch(/building Stealth|at Stealth|·|@|1\.1/);
   });
 
   it("declares subjects it can evidence", () => {

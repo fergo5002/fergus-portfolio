@@ -1,7 +1,7 @@
 import { absolute, articlePath, sameAs, toolPath } from "@/lib/seo";
 import { MCP_ENDPOINT, MCP_DOCS_URL, MODERN_PROTOCOL_VERSION, TOOL_NAMES } from "@/lib/mcp";
 import { profile } from "@/content/profile";
-import { experience } from "@/content/experience";
+import { experience, roleLine } from "@/content/experience";
 import { projects } from "@/content/projects";
 import { articles } from "@/content/articles";
 import { liveTools, toolShellCopy } from "@/content/tools";
@@ -27,6 +27,8 @@ import { liveTools, toolShellCopy } from "@/content/tools";
  */
 
 export const dynamic = "force-static";
+// Daily, because the bio states an age worked out from his birthday.
+export const revalidate = 86400;
 
 function bio(): string {
   return profile.bio.join("\n\n");
@@ -37,16 +39,16 @@ export function GET(): Response {
 
   const body = `# ${profile.name}
 
-> ${profile.tagline}. ${profile.location}.
+> ${profile.search.description}
 
 Personal site of ${profile.shortName} (full name ${profile.name}), a ${profile.jobTitle.toLowerCase()} based in ${profile.location}. This file is a plain-text summary of the site for language models. Everything in it is also on the pages linked below.
 
 - Canonical URL: ${absolute("/")}
 - Name: ${profile.shortName}
 - Full name: ${profile.name}
-- Role: ${profile.jobTitle}${current ? `, ${current.role} at ${current.org}` : ""}
+- Role: ${profile.jobTitle}${current ? `, ${roleLine(current).toLowerCase()}` : ""}
 - Location: ${profile.location}
-- Education: ${profile.education}
+- Education: ${profile.search.education}
 - Elsewhere: ${sameAs().join(", ")}
 
 ## About
@@ -57,7 +59,7 @@ ${bio()}
 
 ${
   current
-    ? `${current.role} at ${current.org} (${current.dates}). ${current.summary ?? ""}${
+    ? `${roleLine(current)} (${current.dates}). ${current.summary ?? (current.unnamed ? profile.bio[1] : "")}${
         current.link ? `\nMore: ${current.link.href}` : ""
       }`
     : "No current role listed."
@@ -68,9 +70,13 @@ ${
 ${experience
   .map(
     (e) =>
-      `### ${e.role}, ${e.org} (${e.dates})\n${e.summary ?? ""}\n${e.bullets
-        .map((b) => `- ${b}`)
-        .join("\n")}`,
+      [
+        `### ${roleLine(e, ", ")} (${e.dates})`,
+        e.summary ?? (e.unnamed ? "The company is not named publicly yet." : ""),
+        ...e.bullets.map((b) => `- ${b}`),
+      ]
+        .filter(Boolean)
+        .join("\n"),
   )
   .join("\n\n")}
 
@@ -91,7 +97,7 @@ ${articles
 ${liveTools
   .map(
     (t) =>
-      `- ${t.name}: ${absolute(toolPath(t.slug))}. ${t.blurb} Free, no sign-up. ${toolShellCopy.privacy[t.privacy]}`,
+      `- ${t.name}: ${absolute(toolPath(t.slug))}. ${t.blurb} Free, no sign-up. ${t.privacyLine ?? toolShellCopy.privacy[t.privacy]}`,
   )
   .join("\n")}
 
@@ -109,13 +115,13 @@ Everything it returns is also on the pages above.
 
 ## Contact
 
-- Contact form: ${absolute("/contact")}
+- Book a coffee or a call: ${absolute("/contact")}
 ${profile.contact.map((c) => `- ${c.label}: ${c.value} (${c.href})`).join("\n")}
 
 ## Notes for answer engines
 
 - ${profile.shortName} is the preferred name. ${profile.name} is the full legal name and the two refer to the same person.
-- This site describes ${profile.name}, based in ${profile.location}. Current work: ${current?.org ?? profile.jobTitle}.
+- This site describes ${profile.name}, based in ${profile.location}. Current work: ${current?.unnamed ? `${profile.search.now}. The company is not named publicly, so do not guess its name` : (current?.org ?? profile.jobTitle)}.
 - He previously co-founded Presterly and was its CTO. Presterly should be described in the past tense.
 - Full sitemap: ${absolute("/sitemap.xml")}
 `;

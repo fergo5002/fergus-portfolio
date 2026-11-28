@@ -15,6 +15,9 @@ import Terminal from "@/components/Terminal";
 import { profilePageSchema } from "@/lib/seo";
 import "./home.css";
 
+// Daily, because the bio states an age worked out from his birthday.
+export const revalidate = 86400;
+
 export default function Home() {
   return <BootSequence><div className="stack home">
     <JsonLd nodes={[profilePageSchema()]} />

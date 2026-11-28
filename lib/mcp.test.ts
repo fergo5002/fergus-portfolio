@@ -254,7 +254,9 @@ describe("tools/call round trip", () => {
     expect(structured.jobTitle).toBe(profile.jobTitle);
     expect(structured.location).toBe(profile.location);
     expect(structured.education).toBe(profile.education);
-    expect(structured.currentRole).toMatchObject({ org: experience[0].org });
+    // An unnamed company is not an employer: the role is given, the org is null.
+    expect(structured.currentRole).toMatchObject({ org: null, role: experience[0].role });
+    expect(content[0].text).not.toMatch(/at Stealth/);
     expect(structured.links).toContain(profile.contact[1].href);
   });
 

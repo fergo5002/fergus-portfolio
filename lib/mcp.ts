@@ -72,7 +72,7 @@
  */
 
 import { profile } from "@/content/profile";
-import { experience } from "@/content/experience";
+import { experience, roleLine } from "@/content/experience";
 import { analyse as analyseDrift } from "@/lib/tools/drift/report";
 import { parseProfile as parseDriftProfile } from "@/lib/tools/drift/storage";
 import { projects } from "@/content/projects";
@@ -566,7 +566,7 @@ const TOOLS: ToolDefinition[] = [
         knowsAbout: profile.knowsAbout,
         currentRole: current
           ? {
-              org: current.org,
+              org: current.unnamed ? null : current.org,
               role: current.role,
               dates: current.dates,
               summary: current.summary ?? null,
@@ -581,7 +581,7 @@ const TOOLS: ToolDefinition[] = [
         payload,
         [
           `${profile.shortName} (full name ${profile.name}). ${profile.jobTitle}, ${profile.location}.`,
-          current ? `Currently ${current.role} at ${current.org} (${current.dates}).` : "",
+          current ? `Currently ${roleLine(current).toLowerCase()} (${current.dates}).` : "",
           profile.education,
           "",
           profile.bio.join("\n\n"),

@@ -58,6 +58,15 @@ export const articles: Article[] = [
   crtThatBehaves,
 ].sort((a, b) => b.date.localeCompare(a.date));
 
+/**
+ * The date of the newest revision of anything in the list. Not `articles[0]`:
+ * that is the newest by publish date, and an older piece can be the one that
+ * was last rewritten. The sitemap and the feed both date themselves by this.
+ */
+export function newestArticleDate(): string | undefined {
+  return articles.map((a) => a.updated ?? a.date).sort().at(-1);
+}
+
 export function articleBySlug(slug: string): Article | undefined {
   return articles.find((a) => a.slug === slug);
 }

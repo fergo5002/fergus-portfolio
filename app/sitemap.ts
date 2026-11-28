@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { absolute, articlePath, toolPath } from "@/lib/seo";
-import { articles } from "@/content/articles";
+import { articles, newestArticleDate } from "@/content/articles";
+import { pageUpdated, toolsUpdated } from "@/content/pages";
 import { liveTools } from "@/content/tools";
 
 /**
@@ -11,21 +12,23 @@ import { liveTools } from "@/content/tools";
  * exists, and that it last changed on a date that is a lie. Deriving it from the
  * article list means publishing a post is the only step.
  *
- * `lastModified` uses the article's own revision date, not the build time.
+ * `lastModified` uses each page's own revision date (`content/pages.ts`, and
+ * each article's `updated`), not the build time.
  * Stamping every URL with "now" on each deploy is the standard way to teach a
  * crawler that your dates mean nothing, at which point it stops using them.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const newestArticle = articles[0]?.updated ?? articles[0]?.date;
+  const newestArticle = newestArticleDate();
+  const on = (path: string) => new Date(pageUpdated[path]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: absolute("/"), changeFrequency: "monthly", priority: 1 },
-    { url: absolute("/projects"), changeFrequency: "monthly", priority: 0.8 },
-    { url: absolute("/experience"), changeFrequency: "monthly", priority: 0.8 },
+    { url: absolute("/"), lastModified: on("/"), changeFrequency: "monthly", priority: 1 },
+    { url: absolute("/projects"), lastModified: on("/projects"), changeFrequency: "monthly", priority: 0.8 },
+    { url: absolute("/experience"), lastModified: on("/experience"), changeFrequency: "monthly", priority: 0.8 },
     // Listed despite having no nav entry. It is the destination of the call to
     // action on every other page, so a crawler that only follows the nav would
     // never reach it.
-    { url: absolute("/contact"), changeFrequency: "yearly", priority: 0.6 },
+    { url: absolute("/contact"), lastModified: on("/contact"), changeFrequency: "yearly", priority: 0.6 },
     {
       url: absolute("/writing"),
       changeFrequency: "weekly",
@@ -40,8 +43,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     // This comment said the opposite for one commit, describing a state of the
     // world that the nav change in the same push had already made false. See the
     // entry in [[coding-mistakes]].
-    { url: absolute("/tools"), changeFrequency: "monthly", priority: 0.6 },
-    { url: absolute("/mcp"), changeFrequency: "monthly", priority: 0.6 },
+    { url: absolute("/tools"), lastModified: on("/tools"), changeFrequency: "monthly", priority: 0.6 },
+    { url: absolute("/mcp"), lastModified: on("/mcp"), changeFrequency: "monthly", priority: 0.6 },
   ];
 
   const articleRoutes: MetadataRoute.Sitemap = articles.map((a) => ({
@@ -56,6 +59,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // failure the docblock above is about.
   const toolRoutes: MetadataRoute.Sitemap = liveTools.map((t) => ({
     url: absolute(toolPath(t.slug)),
+    lastModified: new Date(toolsUpdated),
     changeFrequency: "monthly",
     priority: 0.7,
   }));

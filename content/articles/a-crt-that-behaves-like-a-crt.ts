@@ -7,7 +7,7 @@ export const crtThatBehaves: Article = {
     "Most CRT effects are a scanline overlay and some glow. I built mine from one idea, a beam painting phosphor, and it looks way better for it.",
   date: "2026-08-07",
 
-  updated: "2026-09-13",
+  updated: "2026-11-25",
   tags: ["WebGL", "Motion", "Frontend", "Craft"],
   summary:
     "How I built a CRT-styled website from one physical idea instead of a stack of effects: a ping-pong persistence buffer for phosphor decay and burn-in, scroll speed as beam speed, one shared frame clock, and reduced motion that drops to a single still frame.",

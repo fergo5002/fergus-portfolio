@@ -60,7 +60,7 @@ export function consoleSummary(preset: McpPreset, body: unknown): string[] {
   const data = isObj(result.structuredContent) ? result.structuredContent : {};
   switch (preset.tool) {
     case "get_profile": {
-      const now = isObj(data.currentRole) ? `${str(data.currentRole.role)} at ${str(data.currentRole.org)}` : "";
+      const now = isObj(data.currentRole) ? (data.currentRole.org ? `${str(data.currentRole.role)} at ${str(data.currentRole.org)}` : str(data.currentRole.role)) : "";
       const knows = Array.isArray(data.knowsAbout) ? data.knowsAbout.slice(0, 4).join(", ") : "";
       return [str(data.shortName), `${str(data.jobTitle)}, ${str(data.location)}`, now && `now: ${now}`, knows && `knows about: ${knows}`].filter(Boolean);
     }
