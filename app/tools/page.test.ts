@@ -24,7 +24,14 @@ describe("/tools reads the registry", () => {
     expect(src).toMatch(/row\.href \?/);
   });
 
-  it("builds the JSON-LD list from the same featured tools a person sees", () => {
-    expect(src).toMatch(/featuredTools\.map\(/);
+
+  // 2026-11-28: five live tools were in the sitemap with no link from any page.
+  it("links the tools that are not on the shelf, in a second list", () => {
+    expect(src).toMatch(/toolListing\(moreTools\)/);
+    expect(src).toMatch(/className="bench-more"/);
+  });
+
+  it("describes every live tool in the JSON-LD list, not only the shelf", () => {
+    expect(src).toMatch(/\[\.\.\.featuredTools, \.\.\.moreTools\]\.map\(/);
   });
 });

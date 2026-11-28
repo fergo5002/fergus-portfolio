@@ -3,6 +3,8 @@ import type { ToolEntry } from "./types";
 export const pocketRedact: ToolEntry = {
   "slug": "pocket-redact",
   "name": "Pocket Redact",
+  "searchTitle": "Pocket Redact: redact a PDF in your browser",
+  "appCategory": "SecurityApplication",
   "blurb": "Cover sensitive areas of a PDF or image, then create and reopen a fresh flattened document to inspect the result.",
   "purpose": "Cover what is private in a PDF or image, then check the clean copy before you share it.",
   "method": [

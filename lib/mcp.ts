@@ -1108,7 +1108,7 @@ export function bodyTooLargeReply(): McpReply {
 /** Plain-text notes for the human who pasted the endpoint into a browser. */
 export function humanReadableSummary(): string {
   const tools = toolDescriptors()
-    .map((tool) => `  ${tool.name.padEnd(16)} ${tool.description.split(". ")[0]}.`)
+    .map((tool) => `  ${tool.name.padEnd(16)} ${tool.description.split(". ")[0].replace(/\.$/, "")}.`)
     .join("\n");
 
   return `${SERVER_INFO.name} · Model Context Protocol server

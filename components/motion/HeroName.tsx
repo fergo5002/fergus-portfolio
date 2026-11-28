@@ -167,6 +167,9 @@ export default function HeroName({ text, className }: { text: string; className?
             content being deliberately withheld from users.
           */}
           <span className="vh">{text}</span>
+          {/* A space between the two copies, so a rendered snapshot never reads
+              "O'ReillyPatrick" as one token. */}
+          {" "}
           <span aria-hidden="true">
         {splitWordsWithOffsets(display).map(({ word, start }, w) => (
           <span key={w} className="heroname__word">

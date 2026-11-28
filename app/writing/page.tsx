@@ -11,7 +11,7 @@ import { profile } from "@/content/profile";
 import { canonical, blogSchema, breadcrumbSchema, articlePath, OG_IMAGE } from "@/lib/seo";
 
 const DESCRIPTION =
-  "Writing by Fergus O'Reilly.";
+  "Articles by Fergus O'Reilly on multi-tenant Shopify apps, customer retention, what an accelerator is worth, and building a CRT screen in WebGL.";
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name. Spelling

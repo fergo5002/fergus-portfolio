@@ -117,6 +117,8 @@ export const driftCopy = {
 export const drift: ToolEntry = {
   slug: "drift",
   name: "Drift",
+  searchTitle: "Drift: compare a draft to your writing style",
+  appCategory: "UtilitiesApplication",
   blurb:
     "This is not an AI detector. Paste things you have written, then a draft, and see how far the draft has drifted from you.",
   purpose: "Not an AI detector: measure how far a draft has drifted from the way you write.",

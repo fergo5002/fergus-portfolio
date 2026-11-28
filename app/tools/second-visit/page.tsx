@@ -16,11 +16,11 @@ const DESCRIPTION =
   "Drop a bookings or orders export and get an honest estimate of how many first-time customers come back, with the uncertainty printed beside it. Runs entirely in your browser.";
 
 export const metadata: Metadata = {
-  title: tool.name,
+  title: tool.searchTitle,
   description: DESCRIPTION,
   alternates: canonical(PATH),
   openGraph: {
-    title: `${tool.name} · ${profile.shortName}`,
+    title: `${tool.searchTitle} · ${profile.shortName}`,
     description: DESCRIPTION,
     type: "website",
     url: PATH,

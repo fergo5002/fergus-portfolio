@@ -141,7 +141,8 @@ because a plain `node` script sees nothing Next loads.
 
 ## Ownership proofs
 
-`public/google9622a76d3e2fd7ba.html` and `public/1e1c07d6835b43b5ae97096bb927a1ee.txt` are both
+`public/google65a96a4c77cd2e63.html` (Search Console, personal Google account, added 2026-11-28),
+`public/google9622a76d3e2fd7ba.html` and `public/1e1c07d6835b43b5ae97096bb927a1ee.txt` are all
 committed on purpose. Neither is a secret: the first proves Search Console ownership, the second
 proves IndexNow ownership, and both work precisely by being publicly fetchable.
 

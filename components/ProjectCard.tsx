@@ -42,6 +42,10 @@ export default function ProjectCard({ project, index = 0 }: { project: Project; 
           />
           <h2 className="project__title">
             <Scramble text={project.title} trigger="view" speed={22} />
+            {/* The space is content: without it the heading reads "Tigh Sauna2026"
+                to anything that takes the text. The heading is a flex row, so
+                the space draws nothing. */}
+            {project.year && " "}
             {project.year && <span className="project__year">{project.year}</span>}
           </h2>
           <p className="project__tagline">{project.tagline}</p>

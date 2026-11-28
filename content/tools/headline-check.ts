@@ -12,6 +12,8 @@ import type { ToolEntry } from "./types";
 export const headlineCheck: ToolEntry = {
   slug: "headline-check",
   name: "Headline check",
+  searchTitle: "Headline check: how a crawler reads your h1",
+  appCategory: "DeveloperApplication",
   blurb:
     "Paste a URL and see how its h1 reads to something that never runs the JavaScript. Catches split-text animations that shred a headline into loose letters.",
   purpose: "See whether a crawler reads your h1 as whole words or as loose letters.",

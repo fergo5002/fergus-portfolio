@@ -13,11 +13,11 @@ import "./tool.css";
 const PATH = "/tools/drift";
 
 export const metadata: Metadata = {
-  title: "Drift",
+  title: drift.searchTitle,
   description: drift.blurb,
   alternates: canonical(PATH),
   openGraph: {
-    title: `Drift · ${profile.shortName}`,
+    title: `${drift.searchTitle} · ${profile.shortName}`,
     description: drift.blurb,
     type: "website",
     url: PATH,

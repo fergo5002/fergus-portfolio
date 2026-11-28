@@ -9,7 +9,7 @@ import Talk from "@/components/Talk";
 import { canonical, projectsPageSchema, breadcrumbSchema, OG_IMAGE } from "@/lib/seo";
 
 const DESCRIPTION =
-  "Tigh Sauna, Presterly, Loira AI, Remand, Under the Campanile, and ContraBot. Booking platforms, Shopify apps, AI tooling, and a game engine's lighting system.";
+  "Things Fergus O'Reilly has built: Tigh Sauna, Presterly, Loira AI, Remand, ContraBot and Under the Campanile, a dungeon crawler made at Trinity with Qualcomm.";
 
 export const metadata: Metadata = {
   title: "Projects",

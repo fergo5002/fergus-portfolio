@@ -10,11 +10,11 @@ const PATH = toolPath(overlap.slug);
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name.
-  title: overlap.name,
+  title: overlap.searchTitle,
   description: overlap.blurb,
   alternates: canonical(PATH),
   openGraph: {
-    title: `${overlap.name} · ${profile.shortName}`,
+    title: `${overlap.searchTitle} · ${profile.shortName}`,
     description: overlap.blurb,
     type: "website",
     url: PATH,

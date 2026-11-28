@@ -10,7 +10,7 @@ import Talk from "@/components/Talk";
 import { canonical, experiencePageSchema, breadcrumbSchema, OG_IMAGE } from "@/lib/seo";
 
 const DESCRIPTION =
-  "Tigh Sauna (Co-Founder), Hatch105, Presterly (Co-Founder & CTO), and Loira AI (Founding Engineer).";
+  "Where Fergus O'Reilly has worked: in stealth now, before that co-founder and CTO at Tigh Sauna and Presterly, Hatch105, and founding engineer at Loira AI.";
 
 export const metadata: Metadata = {
   title: "Experience",

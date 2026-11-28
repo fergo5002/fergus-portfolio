@@ -27,7 +27,7 @@ import "./mcp.css";
  */
 
 const DESCRIPTION =
-  "This site runs a Model Context Protocol server. Point an MCP client at one URL and an agent can search the writing, read a full article, and pull the profile, projects and experience as structured data.";
+  "Fergus O'Reilly's site runs a public MCP server. Point a client at one URL to search the writing, read an article, and pull his profile and projects.";
 
 const TOOLS = toolDescriptors();
 

@@ -107,6 +107,8 @@ export const reliefCopy = {
 export const relief: ToolEntry = {
   slug: "relief",
   name: "Relief",
+  searchTitle: "Relief: a year of activity as a ridgeline",
+  appCategory: "DesignApplication",
   blurb:
     "Turn a year of your activity into a landscape, one ridge a week, then take it away as an image, a pen-plotter drawing or a 3D mesh.",
   purpose: "Turn a year of dated activity into terrain, one ridge a week, then take it away as an image, a plot or a mesh.",

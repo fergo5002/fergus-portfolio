@@ -26,6 +26,7 @@ import { projects } from "@/content/projects";
 import type { Article } from "@/content/articles";
 import type { QuestionPair } from "@/lib/faq";
 import type { ToolEntry } from "@/content/tools/types";
+import { toolsUpdated } from "@/content/pages";
 
 export const SITE_URL = "https://fergusoreilly.dev";
 export const SITE_NAME = `${profile.shortName} · Terminal`;
@@ -430,7 +431,7 @@ export function toolPath(slug: string): string {
  * headline checker's article), and may not rename the tool in the graph.
  */
 export function toolPageSchema(
-  tool: Pick<ToolEntry, "slug" | "name" | "blurb">,
+  tool: Pick<ToolEntry, "slug" | "name" | "blurb" | "appCategory">,
   extra: JsonLdObject = {},
 ): JsonLdObject {
   const url = absolute(toolPath(tool.slug));
@@ -441,8 +442,11 @@ export function toolPageSchema(
     name: tool.name,
     url,
     description: tool.blurb,
-    applicationCategory: "DeveloperApplication",
+    applicationCategory: tool.appCategory ?? "UtilitiesApplication",
     operatingSystem: "Any",
+    browserRequirements: "Requires JavaScript",
+    isAccessibleForFree: true,
+    dateModified: toolsUpdated,
     isPartOf: { "@id": WEBSITE_ID },
     author: { "@id": PERSON_ID },
     offers: { "@type": "Offer", price: "0", priceCurrency: "EUR" },

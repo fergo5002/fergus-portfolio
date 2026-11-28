@@ -10,6 +10,21 @@ top of the CRT premise and does not bend to it. Every route carries a canonical 
 hand-maintained. `lib/seo.ts` is the only place a URL or a schema.org object is built. Read
 `docs/superpowers/specs/2026-08-20-seo-geo-growth-design.md` before touching any of it.
 
+## Search text is separate from the page's words
+
+Since 2026-11-28 (Fergus's choice) the pages speak in his voice and search engines read
+`profile.search` in `content/profile.ts`: the meta description, the Person node's `description`
+and `disambiguatingDescription`, and the first line of `/llms.txt`. Do not point any of those back
+at `profile.tagline` or `profile.bio`. A company with no public name is marked `unnamed` in
+`content/experience.ts`; `roleLine()` and `personSchema()` then leave its label out, because
+"Building in stealth at Stealth" and an organisation called Stealth were both published for a
+month. Each tool has a `searchTitle` (its `<title>`) and an `appCategory`; the h1 stays the slug.
+
+Dates: `content/pages.ts` holds the `lastmod` of every page that is not an article, changed by
+hand in the commit that changes the page. An article's `updated` is the date its text last
+changed. `/writing` and the feed date themselves with `newestArticleDate()`, never `articles[0]`.
+`canonical()` carries the feed link, so every route advertises it.
+
 ## Text effects must leave the words in the server HTML
 
 **The rule that keeps biting:** a visual effect that fragments text also fragments it for

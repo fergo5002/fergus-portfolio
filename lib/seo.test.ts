@@ -364,7 +364,7 @@ describe("tool schemas", () => {
   });
 
   it("declares a tool as a free WebApplication by the person, on the site", () => {
-    const node = toolPageSchema({ slug: "x", name: "X", blurb: "Does x." });
+    const node = toolPageSchema({ slug: "x", name: "X", blurb: "Does x.", appCategory: "GameApplication" });
     expect(node["@type"]).toBe("WebApplication");
     expect(node["@id"]).toBe(`${SITE_URL}/tools/x#app`);
     expect(node.url).toBe(`${SITE_URL}/tools/x`);
@@ -378,14 +378,14 @@ describe("tool schemas", () => {
     // The headline checker's `isBasedOn` points at the article it came from.
     // That relationship is the page's, not the registry's.
     const node = toolPageSchema(
-      { slug: "x", name: "X", blurb: "Does x." },
+      { slug: "x", name: "X", blurb: "Does x.", appCategory: "GameApplication" },
       { isBasedOn: absolute("/writing/y") },
     );
     expect(node.isBasedOn).toBe(`${SITE_URL}/writing/y`);
   });
 
   it("keeps the registry's identity even when extra tries to change it", () => {
-    const node = toolPageSchema({ slug: "x", name: "X", blurb: "Does x." }, { name: "Other" });
+    const node = toolPageSchema({ slug: "x", name: "X", blurb: "Does x.", appCategory: "GameApplication" }, { name: "Other" });
     expect(node.name).toBe("X");
   });
 });

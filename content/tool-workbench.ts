@@ -30,6 +30,8 @@ export const workbenchCopy = {
   back: "All tools",
   open: "Open tool",
   noAccount: "No account. No installation.",
+  /** The heading over the tools that are not on the shelf. */
+  more: "More tools",
   /** The one internal link to `/mcp` since it left the top bar on 2026-11-25. */
   mcp: "Using an AI agent? There's an MCP server too.",
   mcpLink: "cd mcp",

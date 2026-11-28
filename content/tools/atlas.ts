@@ -8,6 +8,8 @@ import type { ToolEntry } from "./types";
 export const atlas: ToolEntry = {
   "slug": "atlas",
   "name": "Atlas",
+  "searchTitle": "Atlas: turn a folder or repo into a graph",
+  "appCategory": "DeveloperApplication",
   "blurb": "Turn files, folders, archives or a public GitHub repository into a draggable knowledge graph. Follow references, shared words and the files behind them.",
   "purpose": "Turn files, folders or a public GitHub repository into a map of how they connect.",
   "method": [

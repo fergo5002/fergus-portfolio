@@ -3,6 +3,8 @@ import type { ToolEntry } from "./types";
 export const proveIt: ToolEntry = {
   "slug": "prove-it",
   "name": "Prove It",
+  "searchTitle": "Prove It: a reasoning game of twelve cases",
+  "appCategory": "GameApplication",
   "blurb": "Twelve case files. Collect evidence, track your confidence and discover what would change your mind.",
   "purpose": "Twelve short cases: spend a small budget on evidence, then put your confidence on the record.",
   "method": [
