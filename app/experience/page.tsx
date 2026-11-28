@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageDescriptions } from "@/content/pages";
 import PromptLine from "@/components/PromptLine";
 import ExperienceItem from "@/components/ExperienceItem";
 import Scramble from "@/components/Scramble";
@@ -9,8 +10,7 @@ import JsonLd from "@/components/JsonLd";
 import Talk from "@/components/Talk";
 import { canonical, experiencePageSchema, breadcrumbSchema, OG_IMAGE } from "@/lib/seo";
 
-const DESCRIPTION =
-  "Tigh Sauna (Co-Founder), Hatch105, Presterly (Co-Founder & CTO), and Loira AI (Founding Engineer).";
+const DESCRIPTION = pageDescriptions.experience;
 
 export const metadata: Metadata = {
   title: "Experience",

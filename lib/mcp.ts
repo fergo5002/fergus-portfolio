@@ -72,7 +72,7 @@
  */
 
 import { profile } from "@/content/profile";
-import { experience } from "@/content/experience";
+import { experience, roleLine } from "@/content/experience";
 import { analyse as analyseDrift } from "@/lib/tools/drift/report";
 import { parseProfile as parseDriftProfile } from "@/lib/tools/drift/storage";
 import { projects } from "@/content/projects";
@@ -566,7 +566,7 @@ const TOOLS: ToolDefinition[] = [
         knowsAbout: profile.knowsAbout,
         currentRole: current
           ? {
-              org: current.org,
+              org: current.unnamed ? null : current.org,
               role: current.role,
               dates: current.dates,
               summary: current.summary ?? null,
@@ -581,7 +581,7 @@ const TOOLS: ToolDefinition[] = [
         payload,
         [
           `${profile.shortName} (full name ${profile.name}). ${profile.jobTitle}, ${profile.location}.`,
-          current ? `Currently ${current.role} at ${current.org} (${current.dates}).` : "",
+          current ? `Currently ${roleLine(current, " at ", true)} (${current.dates}).` : "",
           profile.education,
           "",
           profile.bio.join("\n\n"),
@@ -629,7 +629,7 @@ const TOOLS: ToolDefinition[] = [
         count: experience.length,
         experience: experience.map((entry) => ({
           id: entry.id,
-          org: entry.org,
+          org: entry.unnamed ? null : entry.org,
           role: entry.role,
           dates: entry.dates,
           location: entry.location ?? null,
@@ -1108,7 +1108,7 @@ export function bodyTooLargeReply(): McpReply {
 /** Plain-text notes for the human who pasted the endpoint into a browser. */
 export function humanReadableSummary(): string {
   const tools = toolDescriptors()
-    .map((tool) => `  ${tool.name.padEnd(16)} ${tool.description.split(". ")[0]}.`)
+    .map((tool) => `  ${tool.name.padEnd(16)} ${tool.description.split(". ")[0].replace(/\.$/, "")}.`)
     .join("\n");
 
   return `${SERVER_INFO.name} · Model Context Protocol server

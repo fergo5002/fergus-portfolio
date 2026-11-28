@@ -64,10 +64,14 @@ Re-check before any application or outreach push, and never round upward.
   founder", Jun to Aug 2026. The build-challenge ranker was his selection task, but he asked for
   it to stay off the page.
 
-## Two files in `public/` are ownership proofs. Do not delete them.
+## Three files in `public/` are ownership proofs. Do not delete them.
 
 Nothing in the code imports either, which is exactly the shape a later cleanup deletes.
 
+- **`google65a96a4c77cd2e63.html`** verifies the same URL-prefix property for Fergus's personal
+  Google account (`oreillferg@gmail.com`), added 2026-11-28 because the first proof belongs to the
+  Tigh Sauna account and the search data should not live only in a dormant venture's login.
+  Deleting it un-verifies that owner.
 - **`google9622a76d3e2fd7ba.html`** verifies the `https://fergusoreilly.dev/` URL-prefix property
   in Google Search Console, owned by **`fergus@tighsauna.com`**. Google re-checks it periodically,
   so removing it un-verifies the property and the search performance data stops arriving. Its

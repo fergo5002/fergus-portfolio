@@ -3,6 +3,8 @@ import type { ToolEntry } from "./types";
 export const resonance: ToolEntry = {
   "slug": "resonance",
   "name": "Resonance",
+  "searchTitle": "Resonance: a browser step sequencer synth",
+  "appCategory": "MultimediaApplication",
   "blurb": "Play four voices, shape a live sixteen-step sequence and perform with an XY surface. Save a patch or render eight bars to WAV.",
   "purpose": "Play four synthesised voices over sixteen steps, and keep the patch or eight bars as a WAV.",
   "method": [

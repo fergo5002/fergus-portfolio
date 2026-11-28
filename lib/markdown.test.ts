@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  toHtml,
   parseInline,
   parseMarkdown,
   slugify,
@@ -383,5 +384,41 @@ describe("chart fences", () => {
     expect(text).toContain("4096");
     expect(text).toContain("312");
     expect(text).toContain("Measured on 2 Sep 2026.");
+  });
+});
+
+describe("toHtml", () => {
+  it("renders the blocks an article uses, escaped", () => {
+    const html = toHtml(
+      "## A <b> & c\n\nSome **bold**, *soft*, `x < y` and [a link](https://example.com/?a=1&b=2).\n\n- one\n- two\n\n> said\n\n| a | b |\n| --- | --- |\n| 1 | 2 |\n\n```ts\nconst a = 1 < 2;\n```",
+    );
+    expect(html).toContain("<h2>A &lt;b&gt; &amp; c</h2>");
+    expect(html).toContain("<strong>bold</strong>");
+    expect(html).toContain("<em>soft</em>");
+    expect(html).toContain("<code>x &lt; y</code>");
+    expect(html).toContain('<a href="https://example.com/?a=1&amp;b=2">a link</a>');
+    expect(html).toContain("<ul><li>one</li><li>two</li></ul>");
+    expect(html).toContain("<blockquote><p>said</p></blockquote>");
+    expect(html).toContain("<th>a</th>");
+    expect(html).toContain("<td>2</td>");
+    expect(html).toContain("<pre><code>const a = 1 &lt; 2;</code></pre>");
+  });
+
+  it("makes site-relative links absolute, because a feed reader has no base", () => {
+    expect(toHtml("[t](/tools/drift)", "https://fergusoreilly.dev")).toContain(
+      'href="https://fergusoreilly.dev/tools/drift"',
+    );
+  });
+});
+
+describe("toHtml links", () => {
+  it("writes an unsafe scheme as plain text, as the page renderer does", () => {
+    const html = toHtml("[x](javascript:alert(1)) and [y](data:text/html,hi)");
+    expect(html).not.toContain("<a ");
+    expect(html).toContain("x");
+  });
+
+  it("leaves a protocol-relative link alone", () => {
+    expect(toHtml("[x](//cdn.example/y)", "https://fergusoreilly.dev")).not.toContain("fergusoreilly.dev//");
   });
 });

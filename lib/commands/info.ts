@@ -1,6 +1,6 @@
 import { profile } from "@/content/profile";
 import { projects } from "@/content/projects";
-import { experience } from "@/content/experience";
+import { experience, roleLine } from "@/content/experience";
 import { articles } from "@/content/articles";
 import { arcadeCopy, GAME_TITLES } from "@/content/arcade";
 import { formatBoards } from "@/lib/arcade/board";
@@ -32,7 +32,7 @@ function neofetch(ctx: CommandContext): string[] {
     `Display  ${ctx.theme ?? "green"} phosphor · 4:3`,
     // Derived, not typed: this line said "Co-Founder & CTO, Presterly" for a
     // month after that stopped being true.
-    `Role     ${experience[0] ? `${experience[0].role} · ${experience[0].org}` : profile.jobTitle}`,
+    `Role     ${experience[0] ? roleLine(experience[0], " · ") : profile.jobTitle}`,
     `Work     ${projects.length} projects · ${articles.length} posts`,
     // By label, not by index: `contact` has grown before and index 0 only
     // happens to be the email.
@@ -90,7 +90,7 @@ function resume(cols?: number): string[] {
     profile.education,
     "",
     "experience/",
-    ...columns(experience.map((item) => [item.dates, `${item.org} · ${item.role}`]), cols),
+    ...columns(experience.map((item) => [item.dates, item.unnamed ? item.role : `${item.org} · ${item.role}`]), cols),
     "",
     "projects/",
     ...columns(projects.map((p) => [p.slug, p.tagline]), cols),

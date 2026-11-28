@@ -32,6 +32,13 @@ export const liveTools: ToolEntry[] = tools.filter((t) => t.status === "live");
 /** The front shelf. Unlisted tools retain their routes and discovery records. */
 export const featuredTools = [atlas, pocketRedact, groupLore, relief, resonance];
 
+/**
+ * The live tools that are not on the shelf, listed under it in plain text.
+ * Until 2026-11-28 they had routes and sitemap entries and no link from any
+ * page, which is a page a crawler is told about and given no reason to rank.
+ */
+export const moreTools: ToolEntry[] = liveTools.filter((t) => !featuredTools.includes(t));
+
 export function toolBySlug(slug: string): ToolEntry | undefined {
   return tools.find((t) => t.slug === slug);
 }

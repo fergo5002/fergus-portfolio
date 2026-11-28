@@ -37,3 +37,21 @@ describe("retired article redirects", () => {
     }
   });
 });
+
+/**
+ * 2026-11-28: the site sent HSTS (Vercel's) and nothing else, a finding that
+ * had been open since the August baseline. No Content-Security-Policy yet: the
+ * boot script and the JSON-LD are inline, so that one needs nonces and its own
+ * change.
+ */
+describe("security headers", () => {
+  it("sends the three that cost nothing on every route", async () => {
+    const rules = await nextConfig.headers!();
+    const all = rules.find((r) => r.source === "/:path*");
+    expect(all).toBeDefined();
+    const sent = Object.fromEntries(all!.headers.map((h) => [h.key.toLowerCase(), h.value]));
+    expect(sent["x-content-type-options"]).toBe("nosniff");
+    expect(sent["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+    expect(sent["x-frame-options"]).toBe("SAMEORIGIN");
+  });
+});

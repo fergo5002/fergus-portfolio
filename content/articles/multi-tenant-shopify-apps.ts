@@ -7,7 +7,7 @@ export const multiTenantShopify: Article = {
     "What I learned building multi-tenant Shopify apps: the decisions that were a pain to change later, and the ones that didn't matter at all.",
   date: "2026-07-23",
 
-  updated: "2026-09-13",
+  updated: "2026-11-25",
   tags: ["Shopify", "Multi-tenant", "Architecture", "TypeScript"],
   summary:
     "What I'd get right first in a multi-tenant Shopify app: scope every query by shop, handle duplicate and out-of-order webhooks with idempotency keys, store money in the shop's own currency, survive token revocation, and treat uninstall as a soft state rather than a delete.",

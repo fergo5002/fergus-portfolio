@@ -60,7 +60,7 @@ export function consoleSummary(preset: McpPreset, body: unknown): string[] {
   const data = isObj(result.structuredContent) ? result.structuredContent : {};
   switch (preset.tool) {
     case "get_profile": {
-      const now = isObj(data.currentRole) ? `${str(data.currentRole.role)} at ${str(data.currentRole.org)}` : "";
+      const now = isObj(data.currentRole) ? (data.currentRole.org ? `${str(data.currentRole.role)} at ${str(data.currentRole.org)}` : str(data.currentRole.role)) : "";
       const knows = Array.isArray(data.knowsAbout) ? data.knowsAbout.slice(0, 4).join(", ") : "";
       return [str(data.shortName), `${str(data.jobTitle)}, ${str(data.location)}`, now && `now: ${now}`, knows && `knows about: ${knows}`].filter(Boolean);
     }
@@ -70,7 +70,7 @@ export function consoleSummary(preset: McpPreset, body: unknown): string[] {
       return rows.length > shown.length ? [...shown, `and ${rows.length - shown.length} more`] : shown;
     }
     case "list_experience":
-      return list(data.experience).slice(0, 5).map((e) => `${str(e.dates)}  ${str(e.role)}, ${str(e.org)}`);
+      return list(data.experience).slice(0, 5).map((e) => `${str(e.dates)}  ${str(e.role)}${e.org ? `, ${str(e.org)}` : ""}`);
     case "search_writing": {
       const hits = list(data.results);
       const head = `${hits.length} ${hits.length === 1 ? "article matches" : "articles match"} "${str(data.query)}"`;

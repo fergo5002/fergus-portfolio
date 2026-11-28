@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { pageDescriptions } from "@/content/pages";
 import type { Metadata } from "next";
 import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
@@ -8,12 +9,11 @@ import { workbenchCopy } from "@/content/tool-workbench";
 import "@/components/tools/workbench.css";
 import Talk from "@/components/Talk";
 import { profile } from "@/content/profile";
-import { featuredTools, toolShellCopy } from "@/content/tools";
+import { featuredTools, moreTools, toolShellCopy } from "@/content/tools";
 import { OG_IMAGE, breadcrumbSchema, canonical, collectionPageSchema, toolPath } from "@/lib/seo";
 import { toolListing } from "@/lib/tools/listing";
 
-const DESCRIPTION =
-  "Small free tools, each one built because something went wrong here first.";
+const DESCRIPTION = pageDescriptions.tools;
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name.
@@ -40,6 +40,7 @@ export const metadata: Metadata = {
  */
 export default function ToolsPage() {
   const rows = toolListing(featuredTools);
+  const more = toolListing(moreTools);
 
   return (
     <div className="stack tools-workbench">
@@ -50,7 +51,7 @@ export default function ToolsPage() {
             name: `Tools · ${profile.shortName}`,
             description: DESCRIPTION,
             itemType: "WebApplication",
-            items: featuredTools.map((t) => ({
+            items: [...featuredTools, ...moreTools].map((t) => ({
               name: t.name,
               url: toolPath(t.slug),
               description: t.blurb,
@@ -90,6 +91,20 @@ export default function ToolsPage() {
           </li>
         ))}
       </ul>
+
+      {more.length > 0 && (
+        <section className="bench-more" aria-labelledby="bench-more-title">
+          <h2 id="bench-more-title">{workbenchCopy.more}</h2>
+          <ul>
+            {more.map((row) => (
+              <li key={row.slug}>
+                {row.href ? <Link href={row.href}>{row.name}</Link> : <span>{row.name}</span>}
+                <span className="bench-more__purpose">{row.purpose}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <p className="bench-mcp">
         {workbenchCopy.mcp} <Link href="/mcp">{workbenchCopy.mcpLink}</Link>

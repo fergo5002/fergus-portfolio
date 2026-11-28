@@ -17,11 +17,11 @@ const DESCRIPTION =
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name.
-  title: tool.name,
+  title: tool.searchTitle,
   description: DESCRIPTION,
   alternates: canonical(PATH),
   openGraph: {
-    title: `${tool.name} · ${profile.shortName}`,
+    title: `${tool.searchTitle} · ${profile.shortName}`,
     description: DESCRIPTION,
     type: "website",
     url: PATH,

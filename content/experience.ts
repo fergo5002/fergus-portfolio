@@ -14,7 +14,23 @@ export type ExperienceEntry = {
   summary?: string;
   bullets: string[];
   link?: ExperienceLink;
+  /**
+   * True while the company has no public name. `org` is then a label for the
+   * card ("Stealth"), never an employer: `roleLine` and `lib/seo.ts` leave it
+   * out, because "Building in stealth at Stealth" and a schema.org
+   * organisation called Stealth were both published until 2026-11-28.
+   */
+  unnamed?: boolean;
 };
+
+/** "Role at Org", or the role alone for a company with no public name. */
+export function roleLine(entry: ExperienceEntry, join = " at ", lowerRole = false): string {
+  // `lowerRole` is for a role mid-sentence. It never touches the organisation:
+  // lowering the whole line would publish "acme credit" the day the company
+  // gets a name.
+  const role = lowerRole ? entry.role.toLowerCase() : entry.role;
+  return entry.unnamed ? role : `${role}${join}${entry.org}`;
+}
 
 export const experience: ExperienceEntry[] = [
   {
@@ -23,6 +39,7 @@ export const experience: ExperienceEntry[] = [
     role: "Building in stealth",
     dates: "Oct 2026 to Present",
     location: "Ireland",
+    unnamed: true,
     bullets: [],
   },
   {

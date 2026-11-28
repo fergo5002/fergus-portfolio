@@ -18,6 +18,20 @@ export type Profile = {
   education: string;
   /** Bio paragraphs — first person. */
   bio: string[];
+  /**
+   * What search engines and answer engines are told, kept apart from the
+   * page's own words (Fergus, 2026-11-28). The page speaks in his voice; a
+   * search result has to tell him from the other Fergus O'Reillys in one line,
+   * so it carries the place, the college and the accelerator.
+   */
+  search: {
+    /** Meta description and the Person node's `description`. 110 to 160 characters. */
+    description: string;
+    /** The degree as a plain phrase, with no display glyphs. */
+    education: string;
+    /** What he is doing now, for a sentence that starts "now". */
+    now: string;
+  };
   contact: ContactLink[];
   /**
    * Public path to your portrait, e.g. "/img/portrait.jpg".
@@ -47,6 +61,28 @@ export type Profile = {
   bookingSubject: string;
 };
 
+/**
+ * His birthday, so the age in the bio is worked out and never goes stale. It
+ * read "20" by hand until a week before it stopped being true.
+ */
+export const BORN = "2005-12-05";
+
+/** His age on a given day, by Dublin's calendar. */
+export function ageOn(now: Date): number {
+  // By part, not by splitting a formatted string: a locale's date pattern is
+  // data that changes between engines, and this runs in visitors' browsers.
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Dublin",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(now);
+  const part = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  const [y, m, d] = [part("year"), part("month"), part("day")];
+  const [by, bm, bd] = BORN.split("-").map(Number);
+  return y - by - (m < bm || (m === bm && d < bd) ? 1 : 0);
+}
+
 export const profile: Profile = {
   name: "Patrick Fergus O'Reilly",
   shortName: "Fergus O'Reilly",
@@ -57,19 +93,27 @@ export const profile: Profile = {
   education: "BA Computer Science & Business @ Trinity College Dublin · 1.1",
   /**
    * Short paragraphs, cut from five long ones on 2026-09-13 because Fergus
-   * read the old version and said it was too much to read. The first one is
-   * load bearing twice over: `lib/seo.ts` publishes it as the Person node's
-   * `description` and it is the first thing under `cat about.txt`, so it has
-   * to survive being read on its own, at about 150 characters, without the
-   * ones beneath it. The second is the page's meta description in
-   * `app/layout.tsx`, so it carries what he is doing now.
+   * read the old version and said it was too much to read. The first is the
+   * first thing under `cat about.txt`, so it has to survive being read on its
+   * own. Search engines no longer read these: `search` below is theirs.
    */
-  bio: [
-    "I am 20 years old from Ireland and I love building businesses.",
+  // A getter, so the age is worked out when the bio is read. As a plain array
+  // it was fixed when the module loaded, and a server that had been up since
+  // the day before his birthday went on saying the old age.
+  get bio() {
+    return [
+    `I am ${ageOn(new Date())} years old from Ireland and I love building businesses.`,
     "I am currently in stealth, working on disrupting the credit space for consumer brands.",
     "Previously I was in Hatch105, which really sparked my love for entrepreneurship, and I built Presterly, an ecom SaaS tool. I also co-founded Tigh Sauna, which is an operating and growth layer for saunas.",
     "Otherwise, I love tennis, playing poker or building random side projects.",
-  ],
+    ];
+  },
+  search: {
+    description:
+      "Fergus O'Reilly is a technical founder in Dublin. Trinity computer science and business student, Hatch105 alumnus, now in stealth on credit for consumer brands.",
+    education: "Computer Science and Business at Trinity College Dublin",
+    now: "building in stealth on credit for consumer brands",
+  },
   /**
    * These links are the site's `sameAs` edges, which is to say they are the
    * evidence that the person described here is the same person found elsewhere.

@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import { parseMarkdown, type Block, type Inline } from "@/lib/markdown";
+import { isSafeHref, parseMarkdown, type Block, type Inline } from "@/lib/markdown";
 import { Chart } from "./Chart";
 
 /**
@@ -11,11 +11,6 @@ import { Chart } from "./Chart";
  * by React. That removes the injection surface entirely rather than sanitising
  * it, which is the whole reason for hand-writing the parser.
  */
-
-/** Absolute http(s), a site-relative path, or an in-page anchor. Nothing else. */
-function isSafeHref(href: string): boolean {
-  return /^https?:\/\//i.test(href) || href.startsWith("/") || href.startsWith("#");
-}
 
 function renderInline(nodes: Inline[]) {
   return nodes.map((node, i) => {

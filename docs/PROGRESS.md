@@ -1,3 +1,27 @@
+## 2026-11-28: the three-month audit, first round of fixes
+
+Fergus asked for a deep look at what is wrong and how to be found. Measured first: Vercel counts
+524 visitors since August (166, 197, 93, 77 by month), 49 from Google in four months and 46 of
+those to `/`, so search finds his name and nothing else. Three audits are summarised in the vault
+note `personal-site`.
+
+- [x] Search text apart from the page's words: `profile.search`, the title gains "Dublin", the
+  Person node no longer works for "Stealth", `llms.txt` no longer says "at Stealth" or "Contact form".
+- [x] The age in the bio is worked out from his birthday (`ageOn`), revalidated daily.
+- [x] Every sitemap entry is dated (`content/pages.ts`); the four articles carry 25 November, the
+  day they were rewritten; `/writing` and the feed use the newest revision.
+- [x] The feed carries each article in full (`toHtml` in `lib/markdown.ts`) and every route
+  advertises it.
+- [x] `/tools` lists the five tools that had no inbound link, in a quieter list under the shelf
+  (his choice over ten cards). Each tool's `<title>` says what it does; schema categories are real.
+- [x] Section descriptions rewritten to fit a result; `/projects` headings no longer fuse the year.
+- [x] `nosniff`, `Referrer-Policy` and `X-Frame-Options` on every route. No CSP yet (inline scripts).
+- [x] A second Search Console proof file, for his personal Google account.
+
+Left for him, because they are his words or his accounts: the Hatch105 bullets, the per-install
+secret claim in the Shopify article, the 66-day figure in the customer article's chart,
+presterly.com still selling while the site says it was wound down, and the README's stale lines.
+
 ## 2026-11-25: quieter, a terminal dock, and booking into the calendar
 
 Fergus's eleven-point list, all in one branch (`tweaks-25/11/2026`).

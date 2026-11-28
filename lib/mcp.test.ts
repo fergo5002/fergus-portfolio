@@ -254,7 +254,9 @@ describe("tools/call round trip", () => {
     expect(structured.jobTitle).toBe(profile.jobTitle);
     expect(structured.location).toBe(profile.location);
     expect(structured.education).toBe(profile.education);
-    expect(structured.currentRole).toMatchObject({ org: experience[0].org });
+    // An unnamed company is not an employer: the role is given, the org is null.
+    expect(structured.currentRole).toMatchObject({ org: null, role: experience[0].role });
+    expect(content[0].text).not.toMatch(/at Stealth/);
     expect(structured.links).toContain(profile.contact[1].href);
   });
 
@@ -301,7 +303,9 @@ describe("tools/call round trip", () => {
     const rows = structured.experience as Record<string, unknown>[];
 
     expect(rows).toHaveLength(experience.length);
-    expect(rows[0].org).toBe(experience[0].org);
+    // The first entry has no public name: its label is not an organisation.
+    expect(rows[0].org).toBeNull();
+    expect(JSON.stringify(call("list_experience", {}))).not.toMatch(/Stealth"|, Stealth| at Stealth/);
     expect(rows[0].bullets).toEqual(experience[0].bullets);
     expect(rows[0].url).toBe(`https://fergusoreilly.dev/experience#${experience[0].id}`);
   });

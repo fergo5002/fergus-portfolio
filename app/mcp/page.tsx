@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageDescriptions } from "@/content/pages";
 import PromptLine from "@/components/PromptLine";
 import Scramble from "@/components/Scramble";
 import JsonLd from "@/components/JsonLd";
@@ -26,8 +27,7 @@ import "./mcp.css";
  * appears without a line in `content/mcp.ts`.
  */
 
-const DESCRIPTION =
-  "This site runs a Model Context Protocol server. Point an MCP client at one URL and an agent can search the writing, read a full article, and pull the profile, projects and experience as structured data.";
+const DESCRIPTION = pageDescriptions.mcp;
 
 const TOOLS = toolDescriptors();
 

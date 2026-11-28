@@ -29,7 +29,7 @@ Each is stated once here; the topic file has the reason and the history.
 - **No audio files.** `lib/audio.ts` synthesises everything, off by default and silent at rest.
 - **Retired names (Firespark, Hearth, Sauna OS) must never reach an outbound link**; `content/links.test.ts` fails the build if one does. They are fine in package or deploy paths.
 - **Wide-screen rules go at the end of the stylesheet that owns the route, inside a `min-width` query of 1560px or more.** `docs/agents/phone-and-wide.md`.
-- **Images in `public/img/` are built by `scripts/build-images.mjs`**: change the script, never the image. Anything in `public/` is served and indexable, and two files there are ownership proofs that must not be deleted. `docs/agents/content-and-images.md`.
+- **Images in `public/img/` are built by `scripts/build-images.mjs`**: change the script, never the image. Anything in `public/` is served and indexable, and three files there are ownership proofs that must not be deleted. `docs/agents/content-and-images.md`.
 - **Presterly's figures are historical**: past tense, never re-verified, rounded down. Tigh Sauna carries no traction numbers on purpose. `docs/agents/content-and-images.md`.
 - **Before shipping a change to a guard, the contact feature or any brightness constant, run `node scripts/mutation-check.mjs`.** A guard that survives its own mutation is decoration. `docs/agents/shipping.md`.
 - **Never tune a shader constant without measuring the pixels** (`gl.readPixels`). `docs/agents/machine.md`.

@@ -1,7 +1,7 @@
 import { absolute, articlePath, SITE_URL } from "@/lib/seo";
 import { profile } from "@/content/profile";
-import { articles } from "@/content/articles";
-import { toPlainText } from "@/lib/markdown";
+import { articles, newestArticleDate } from "@/content/articles";
+import { toHtml } from "@/lib/markdown";
 
 /**
  * `/feed.xml`, RSS 2.0.
@@ -38,18 +38,18 @@ export function GET(): Response {
   const items = articles
     .map((article) => {
       const url = absolute(articlePath(article.slug));
-      // A generous excerpt rather than the whole body: enough for a reader to
-      // decide, not so much that there is no reason to visit.
+      // The whole article. It was the first 600 characters until 2026-11-28,
+      // on the theory that a reader needs a reason to visit; a reader who
+      // cannot read the piece where they read everything else unsubscribes
+      // instead, and a crawler that takes the feed got a seventh of each one.
+      //
       // CDATA is not an escape hatch for everything: the one sequence it
-      // cannot carry is its own terminator. A single `]]>` anywhere in an
-      // excerpt closes the section early and makes the whole document
-      // malformed, and a strict reader drops the entire feed rather than the
-      // item. The standard trick is to split the terminator across two CDATA
-      // sections so neither half is one.
-      const excerpt = toPlainText(article.body)
-        .slice(0, 600)
-        .trim()
-        .replace(/]]>/g, "]]]]><![CDATA[>");
+      // cannot carry is its own terminator. A single `]]>` anywhere in a body
+      // closes the section early and makes the whole document malformed, and
+      // a strict reader drops the entire feed rather than the item. The
+      // standard trick is to split the terminator across two CDATA sections
+      // so neither half is one.
+      const html = toHtml(article.body, SITE_URL).replace(/]]>/g, "]]]]><![CDATA[>");
       return `    <item>
       <title>${escapeXml(article.title)}</title>
       <link>${escapeXml(url)}</link>
@@ -58,12 +58,12 @@ export function GET(): Response {
       <author>${escapeXml(author)}</author>
 ${article.tags.map((t) => `      <category>${escapeXml(t)}</category>`).join("\n")}
       <description>${escapeXml(article.description)}</description>
-      <content:encoded><![CDATA[<p>${excerpt}...</p><p><a href="${url}">Read the rest</a></p>]]></content:encoded>
+      <content:encoded><![CDATA[${html}]]></content:encoded>
     </item>`;
     })
     .join("\n");
 
-  const newest = articles[0]?.date;
+  const newest = newestArticleDate();
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">

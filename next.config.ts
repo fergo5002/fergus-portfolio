@@ -75,6 +75,28 @@ const nextConfig: NextConfig = {
   },
 
   /**
+   * The three security headers that cost nothing. Vercel adds HSTS itself.
+   *
+   * `nosniff` stops a browser guessing a type for the files under `public/`.
+   * `SAMEORIGIN` stops another site putting these pages in a frame. The
+   * referrer policy is the browsers' default, stated so it does not depend on
+   * one. No Content-Security-Policy here: the boot script and the JSON-LD are
+   * inline, so that needs nonces and is its own change.
+   */
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+        ],
+      },
+    ];
+  },
+
+  /**
    * **This line is why `middleware.ts` exists.**
    *
    * PostHog's endpoints end in a slash. Next's default trailing-slash redirect

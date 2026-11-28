@@ -153,6 +153,8 @@ export const secondVisitCopy = {
 export const secondVisit: ToolEntry = {
   slug: "second-visit",
   name: "Second visit",
+  searchTitle: "Second visit: how many first-timers return",
+  appCategory: "BusinessApplication",
   blurb:
     "Drop a bookings export and see how many first-timers come back, with the uncertainty beside the number. The model a real business runs on.",
   purpose: "See how many first-time customers come back, with the uncertainty beside the number.",

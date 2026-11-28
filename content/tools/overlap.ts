@@ -118,6 +118,8 @@ export const overlapCopy = {
 export const overlap: ToolEntry = {
   slug: "overlap",
   name: "Overlap",
+  searchTitle: "Overlap: find mutual LinkedIn connections",
+  appCategory: "SocialNetworkingApplication",
   blurb:
     "Find the people you both know. Compare two LinkedIn exports without either file leaving its own computer.",
   purpose: "Find the people two LinkedIn connection exports have in common.",

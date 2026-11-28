@@ -1,3 +1,4 @@
+import { articleCardAlt } from "@/content/pages";
 import { ImageResponse } from "next/og";
 import { articles, articleBySlug, readingMinutes } from "@/content/articles";
 import { profile } from "@/content/profile";
@@ -17,7 +18,9 @@ import { profile } from "@/content/profile";
  * deliberately, and written down so nobody re-discovers it as a bug.
  */
 
-export const alt = "Article";
+// One alt for every card, so it says what every card is: a file-convention
+// image cannot take a per-article alt without changing its URL.
+export const alt = articleCardAlt;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

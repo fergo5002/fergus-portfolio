@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import sitemap from "@/app/sitemap";
 import { SITE_URL, absolute, articlePath, toolPath } from "@/lib/seo";
-import { articles } from "@/content/articles";
+import { articles, newestArticleDate } from "@/content/articles";
 import { liveTools, tools } from "@/content/tools";
 
 /**
@@ -85,5 +85,25 @@ describe("sitemap", () => {
     for (const t of tools) {
       if (t.status === "soon") expect(urls).not.toContain(absolute(toolPath(t.slug)));
     }
+  });
+
+  /**
+   * 2026-11-28: sixteen of twenty-one entries had no date, and `/writing` said
+   * 11 September three days after every article was rewritten, because it read
+   * the newest by publish date rather than by revision.
+   */
+  it("dates every entry, and never in the future", () => {
+    const tomorrow = Date.now() + 86_400_000;
+    for (const entry of entries) {
+      expect(entry.lastModified, entry.url).toBeInstanceOf(Date);
+      expect((entry.lastModified as Date).getTime(), entry.url).toBeLessThan(tomorrow);
+    }
+  });
+
+  it("dates the writing index by the newest revision, not the newest publish date", () => {
+    const writing = entries.find((e) => e.url === absolute("/writing"))!;
+    expect((writing.lastModified as Date).toISOString().slice(0, 10)).toBe(newestArticleDate());
+    const newestRevision = articles.map((a) => a.updated ?? a.date).sort().at(-1);
+    expect(newestArticleDate()).toBe(newestRevision);
   });
 });

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { liveTools, toolBySlug, toolShellCopy, tools } from "./index";
+import { featuredTools, liveTools, moreTools, toolBySlug, toolShellCopy, tools } from "./index";
 import { reliefCopy } from "./relief";
 
 /**
@@ -184,5 +184,31 @@ describe("second visit's honesty notes (Codex review, 2026-09-28)", () => {
     const body = secondVisitCopy.honesty.body.join(" ");
     expect(body).not.toContain("Nothing is uploaded, stored or sent anywhere");
     expect(body).toContain("The file is not uploaded, stored or sent anywhere");
+  });
+});
+
+describe("what search reads about a tool (2026-11-28)", () => {
+  it.each(tools.map((t) => [t.slug, t] as const))("%s has a title that says what it does", (_slug, t) => {
+    // "Atlas · Fergus O'Reilly" matched nothing anybody types. The name leads
+    // so the brand survives, and the rest is the plain job. The root layout
+    // appends " · Fergus O'Reilly", so 44 keeps the whole title near 60.
+    const title = t.searchTitle ?? "";
+    expect(title.startsWith(`${t.name}: `)).toBe(true);
+    expect(title.length).toBeLessThanOrEqual(44);
+    expect(title).not.toMatch(/[.—–]/);
+  });
+
+  it.each(tools.map((t) => [t.slug, t] as const))("%s names a schema.org application category", (_slug, t) => {
+    expect(t.appCategory).toMatch(/^[A-Z][A-Za-z]+Application$/);
+  });
+
+  it("is not all one category: a synthesiser is not a developer tool", () => {
+    expect(new Set(tools.map((t) => t.appCategory)).size).toBeGreaterThan(2);
+  });
+
+  it("puts every live tool on the index, on the shelf or under it", () => {
+    const listed = [...featuredTools, ...moreTools].map((t) => t.slug).sort();
+    expect(listed).toEqual(liveTools.map((t) => t.slug).sort());
+    expect(moreTools.some((t) => featuredTools.includes(t))).toBe(false);
   });
 });

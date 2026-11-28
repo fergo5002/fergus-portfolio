@@ -28,6 +28,19 @@
 .bench-mcp { margin: 0; color: var(--green); }
 .bench-mcp a { display: inline-flex; align-items: center; min-height: 44px; color: var(--amber); text-underline-offset: 4px; }
 
+/* The tools that are not on the shelf: a plain list under it, name then one
+   line. Quieter than the cards on purpose (Fergus, 2026-11-28), but every name
+   is a real link at a thumb's height. */
+.bench-more { display: grid; gap: 4px; margin-top: 12px; padding-top: 20px; border-top: 1px solid var(--green-line); }
+.bench-more h2 { margin: 0 0 4px; color: var(--green-bright); font-family: var(--font-screen); font-size: 1.5rem; line-height: 1; }
+.bench-more ul { display: grid; margin: 0; padding: 0; list-style: none; }
+.bench-more li { display: grid; grid-template-columns: 16ch minmax(0, 1fr); gap: 4px 24px; align-items: center; min-height: 44px; }
+.bench-more a { display: inline-flex; width: fit-content; align-items: center; min-height: 44px; color: var(--amber); text-underline-offset: 4px; }
+.bench-more__purpose { color: var(--green); font-size: 1rem; line-height: 1.5; }
+@media (max-width: 620px) {
+  .bench-more li { grid-template-columns: 1fr; gap: 0; padding-bottom: 12px; }
+}
+
 /* ── the stage: the instrument, at the full width of the page ────────── */
 
 /* A window of the machine, like the ones on the home and projects pages: a

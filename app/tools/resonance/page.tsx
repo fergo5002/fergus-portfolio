@@ -8,10 +8,10 @@ import "./tool.css";
 
 const PATH = toolPath(tool.slug);
 export const metadata: Metadata = {
-  title: tool.name,
+  title: tool.searchTitle,
   description: tool.blurb,
   alternates: canonical(PATH),
-  openGraph: { title: `${tool.name} · ${profile.shortName}`, description: tool.blurb, type: "website", url: PATH, images: [OG_IMAGE] },
+  openGraph: { title: `${tool.searchTitle} · ${profile.shortName}`, description: tool.blurb, type: "website", url: PATH, images: [OG_IMAGE] },
   twitter: { card: "summary_large_image", images: [OG_IMAGE] },
 };
 export default function Page() {

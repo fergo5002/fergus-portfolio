@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageDescriptions } from "@/content/pages";
 import PromptLine from "@/components/PromptLine";
 import ProjectCard from "@/components/ProjectCard";
 import Scramble from "@/components/Scramble";
@@ -8,8 +9,7 @@ import JsonLd from "@/components/JsonLd";
 import Talk from "@/components/Talk";
 import { canonical, projectsPageSchema, breadcrumbSchema, OG_IMAGE } from "@/lib/seo";
 
-const DESCRIPTION =
-  "Tigh Sauna, Presterly, Loira AI, Remand, Under the Campanile, and ContraBot. Booking platforms, Shopify apps, AI tooling, and a game engine's lighting system.";
+const DESCRIPTION = pageDescriptions.projects;
 
 export const metadata: Metadata = {
   title: "Projects",

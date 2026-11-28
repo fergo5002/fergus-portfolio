@@ -3,6 +3,8 @@ import type { ToolEntry } from "./types";
 export const groupLore: ToolEntry = {
   "slug": "group-lore",
   "name": "Group Lore",
+  "searchTitle": "Group Lore: WhatsApp group chat analyser",
+  "appCategory": "UtilitiesApplication",
   "blurb": "Explore the rhythms and running threads of a chat archive. Filter the messages behind a pattern and make an anonymous portrait.",
   "purpose": "See when a group chat talks, who talks most and what it keeps saying.",
   "method": [

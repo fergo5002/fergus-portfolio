@@ -31,7 +31,9 @@ const display = VT323({
   display: "swap",
 });
 
-const DESCRIPTION = `${profile.name}: ${profile.tagline}. ${profile.bio[1]}`;
+// The search text, not the page's own words: see `profile.search`.
+const DESCRIPTION = profile.search.description;
+const TITLE = `${profile.shortName} · ${profile.jobTitle}, Dublin`;
 
 export const metadata: Metadata = {
   // `metadataBase` is what makes every relative URL below resolve to an
@@ -43,12 +45,11 @@ export const metadata: Metadata = {
   // content layer, and a hand-written duplicate here would quietly go on
   // advertising the old tagline in search results after the hero was updated.
   title: {
-    default: `${profile.shortName} · ${profile.jobTitle}`,
+    default: TITLE,
     // Child routes set a bare title and get the name appended, so every tab and
     // every search result carries the entity this site is about.
     template: `%s · ${profile.shortName}`,
   },
-  // Keep the share and search description aligned with the published bio.
   description: DESCRIPTION,
   applicationName: SITE_NAME,
   authors: [{ name: profile.name, url: SITE_URL }],
@@ -59,7 +60,7 @@ export const metadata: Metadata = {
     types: { "application/rss+xml": "/feed.xml" },
   },
   openGraph: {
-    title: `${profile.shortName} · ${profile.jobTitle}`,
+    title: TITLE,
     description: DESCRIPTION,
     type: "website",
     url: SITE_URL,
@@ -68,7 +69,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: `${profile.shortName} · ${profile.jobTitle}`,
+    title: TITLE,
     description: DESCRIPTION,
   },
   robots: {

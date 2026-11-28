@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageDescriptions } from "@/content/pages";
 import Link from "next/link";
 import PromptLine from "@/components/PromptLine";
 import Scramble from "@/components/Scramble";
@@ -10,8 +11,7 @@ import "./writing.css";
 import { profile } from "@/content/profile";
 import { canonical, blogSchema, breadcrumbSchema, articlePath, OG_IMAGE } from "@/lib/seo";
 
-const DESCRIPTION =
-  "Writing by Fergus O'Reilly.";
+const DESCRIPTION = pageDescriptions.writing;
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name. Spelling

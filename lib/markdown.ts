@@ -389,3 +389,78 @@ export function tableOfContents(source: string): { id: string; text: string; lev
     .filter((b): b is Extract<Block, { type: "heading" }> => b.type === "heading")
     .map((b) => ({ id: b.id, text: b.inline.map((n) => n.value).join(""), level: b.level }));
 }
+
+/** Absolute http(s), a site-relative path, or an in-page anchor. Nothing else. */
+export function isSafeHref(href: string): boolean {
+  return /^https?:\/\//i.test(href) || /^\/(?!\/)/.test(href) || href.startsWith("#");
+}
+
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+/**
+ * A whole document as an HTML string, for `/feed.xml`.
+ *
+ * The pages render through `components/Markdown.tsx`; a feed is a string, so
+ * it needs the same blocks without React. Everything is escaped on the way
+ * out, and `origin` makes site-relative links absolute, because a feed reader
+ * shows the article somewhere that has no base URL. A chart becomes a table of
+ * its own numbers: a reader cannot draw the figure, and the numbers are the
+ * finding.
+ */
+export function toHtml(source: string, origin = ""): string {
+  const inline = (nodes: Inline[]) =>
+    nodes
+      .map((n) => {
+        const text = escapeHtml(n.value);
+        if (n.type === "strong") return `<strong>${text}</strong>`;
+        if (n.type === "em") return `<em>${text}</em>`;
+        if (n.type === "code") return `<code>${text}</code>`;
+        if (n.type === "link") {
+          // The same guard as `components/Markdown.tsx`: anything that is not
+          // http(s), a site path or an anchor is written as its text.
+          if (!isSafeHref(n.href)) return text;
+          const href = /^\/(?!\/)/.test(n.href) ? `${origin}${n.href}` : n.href;
+          return `<a href="${escapeHtml(href)}">${text}</a>`;
+        }
+        return text;
+      })
+      .join("");
+  const cells = (tag: "th" | "td", row: string[]) => `<tr>${row.map((c) => `<${tag}>${c}</${tag}>`).join("")}</tr>`;
+
+  return parseMarkdown(source)
+    .map((block) => {
+      switch (block.type) {
+        case "heading":
+          return `<h${block.level}>${inline(block.inline)}</h${block.level}>`;
+        case "paragraph":
+          return `<p>${inline(block.inline)}</p>`;
+        case "list": {
+          const tag = block.ordered ? "ol" : "ul";
+          return `<${tag}>${block.items.map((it) => `<li>${inline(it)}</li>`).join("")}</${tag}>`;
+        }
+        case "code":
+          return `<pre><code>${escapeHtml(block.value)}</code></pre>`;
+        case "quote":
+          return `<blockquote><p>${inline(block.inline)}</p></blockquote>`;
+        case "table":
+          return `<table><thead>${cells("th", block.head.map(inline))}</thead><tbody>${block.rows
+            .map((row) => cells("td", row.map(inline)))
+            .join("")}</tbody></table>`;
+        case "chart": {
+          const { title, unit, categories, series, caption } = block.spec;
+          const head = cells("th", ["", ...series.map((s) => escapeHtml(s.label))]);
+          const rows = categories
+            .map((c, i) => cells("td", [escapeHtml(c), ...series.map((s) => `${s.values[i]}${unit ? ` ${escapeHtml(unit)}` : ""}`)]))
+            .join("");
+          return `<p><strong>${escapeHtml(title)}</strong></p><table><thead>${head}</thead><tbody>${rows}</tbody></table>${
+            caption ? `<p><em>${escapeHtml(caption)}</em></p>` : ""
+          }`;
+        }
+        case "rule":
+          return "<hr />";
+      }
+    })
+    .join("\n");
+}

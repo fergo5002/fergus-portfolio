@@ -8,6 +8,16 @@ export type ToolEntry = {
   slug: string;
   name: string;
   /**
+   * The page's `<title>`: the name, a colon, and the plain job in words people
+   * type. "Atlas · Fergus O'Reilly" matched no search anybody makes. The h1
+   * stays the slug, the terminal way. 44 characters at most, no full stop.
+   * Optional in the type only because the dev-only lab shares it: every
+   * registered tool must carry one, and `content/tools/index.test.ts` checks.
+   */
+  searchTitle?: string;
+  /** schema.org `applicationCategory`. Every tool said DeveloperApplication, the synthesiser included. */
+  appCategory?: string;
+  /**
    * One or two sentences. The meta description, the JSON-LD description and the
    * `/llms.txt` line, and the lede wherever no `purpose` is given.
    */

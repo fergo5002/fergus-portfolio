@@ -10,11 +10,11 @@ const PATH = toolPath(relief.slug);
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name.
-  title: "Relief",
+  title: relief.searchTitle,
   description: relief.blurb,
   alternates: canonical(PATH),
   openGraph: {
-    title: `Relief · ${profile.shortName}`,
+    title: `${relief.searchTitle} · ${profile.shortName}`,
     description: relief.blurb,
     type: "website",
     url: PATH,
