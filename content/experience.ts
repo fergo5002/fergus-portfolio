@@ -24,8 +24,12 @@ export type ExperienceEntry = {
 };
 
 /** "Role at Org", or the role alone for a company with no public name. */
-export function roleLine(entry: ExperienceEntry, join = " at "): string {
-  return entry.unnamed ? entry.role : `${entry.role}${join}${entry.org}`;
+export function roleLine(entry: ExperienceEntry, join = " at ", lowerRole = false): string {
+  // `lowerRole` is for a role mid-sentence. It never touches the organisation:
+  // lowering the whole line would publish "acme credit" the day the company
+  // gets a name.
+  const role = lowerRole ? entry.role.toLowerCase() : entry.role;
+  return entry.unnamed ? role : `${role}${join}${entry.org}`;
 }
 
 export const experience: ExperienceEntry[] = [

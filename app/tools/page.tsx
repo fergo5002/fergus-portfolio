@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { pageDescriptions } from "@/content/pages";
 import type { Metadata } from "next";
 import Link from "next/link";
 import JsonLd from "@/components/JsonLd";
@@ -12,8 +13,7 @@ import { featuredTools, moreTools, toolShellCopy } from "@/content/tools";
 import { OG_IMAGE, breadcrumbSchema, canonical, collectionPageSchema, toolPath } from "@/lib/seo";
 import { toolListing } from "@/lib/tools/listing";
 
-const DESCRIPTION =
-  "Ten free browser tools by Fergus O'Reilly: redact a PDF, map a repo, read a group chat, check a headline, find mutual connections. No account.";
+const DESCRIPTION = pageDescriptions.tools;
 
 export const metadata: Metadata = {
   // Bare, because the root layout's title template appends the name.

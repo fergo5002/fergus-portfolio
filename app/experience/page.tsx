@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageDescriptions } from "@/content/pages";
 import PromptLine from "@/components/PromptLine";
 import ExperienceItem from "@/components/ExperienceItem";
 import Scramble from "@/components/Scramble";
@@ -9,8 +10,7 @@ import JsonLd from "@/components/JsonLd";
 import Talk from "@/components/Talk";
 import { canonical, experiencePageSchema, breadcrumbSchema, OG_IMAGE } from "@/lib/seo";
 
-const DESCRIPTION =
-  "Where Fergus O'Reilly has worked: in stealth now, before that co-founder and CTO at Tigh Sauna and Presterly, Hatch105, and founding engineer at Loira AI.";
+const DESCRIPTION = pageDescriptions.experience;
 
 export const metadata: Metadata = {
   title: "Experience",

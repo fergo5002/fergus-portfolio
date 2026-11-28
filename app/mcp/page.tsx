@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageDescriptions } from "@/content/pages";
 import PromptLine from "@/components/PromptLine";
 import Scramble from "@/components/Scramble";
 import JsonLd from "@/components/JsonLd";
@@ -26,8 +27,7 @@ import "./mcp.css";
  * appears without a line in `content/mcp.ts`.
  */
 
-const DESCRIPTION =
-  "Fergus O'Reilly's site runs a public MCP server. Point a client at one URL to search the writing, read an article, and pull his profile and projects.";
+const DESCRIPTION = pageDescriptions.mcp;
 
 const TOOLS = toolDescriptors();
 

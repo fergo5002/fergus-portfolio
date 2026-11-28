@@ -70,7 +70,7 @@ export function consoleSummary(preset: McpPreset, body: unknown): string[] {
       return rows.length > shown.length ? [...shown, `and ${rows.length - shown.length} more`] : shown;
     }
     case "list_experience":
-      return list(data.experience).slice(0, 5).map((e) => `${str(e.dates)}  ${str(e.role)}, ${str(e.org)}`);
+      return list(data.experience).slice(0, 5).map((e) => `${str(e.dates)}  ${str(e.role)}${e.org ? `, ${str(e.org)}` : ""}`);
     case "search_writing": {
       const hits = list(data.results);
       const head = `${hits.length} ${hits.length === 1 ? "article matches" : "articles match"} "${str(data.query)}"`;

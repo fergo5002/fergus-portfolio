@@ -410,3 +410,15 @@ describe("toHtml", () => {
     );
   });
 });
+
+describe("toHtml links", () => {
+  it("writes an unsafe scheme as plain text, as the page renderer does", () => {
+    const html = toHtml("[x](javascript:alert(1)) and [y](data:text/html,hi)");
+    expect(html).not.toContain("<a ");
+    expect(html).toContain("x");
+  });
+
+  it("leaves a protocol-relative link alone", () => {
+    expect(toHtml("[x](//cdn.example/y)", "https://fergusoreilly.dev")).not.toContain("fergusoreilly.dev//");
+  });
+});

@@ -90,7 +90,7 @@ function resume(cols?: number): string[] {
     profile.education,
     "",
     "experience/",
-    ...columns(experience.map((item) => [item.dates, `${item.org} · ${item.role}`]), cols),
+    ...columns(experience.map((item) => [item.dates, item.unnamed ? item.role : `${item.org} · ${item.role}`]), cols),
     "",
     "projects/",
     ...columns(projects.map((p) => [p.slug, p.tagline]), cols),

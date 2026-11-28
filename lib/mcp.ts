@@ -581,7 +581,7 @@ const TOOLS: ToolDefinition[] = [
         payload,
         [
           `${profile.shortName} (full name ${profile.name}). ${profile.jobTitle}, ${profile.location}.`,
-          current ? `Currently ${roleLine(current).toLowerCase()} (${current.dates}).` : "",
+          current ? `Currently ${roleLine(current, " at ", true)} (${current.dates}).` : "",
           profile.education,
           "",
           profile.bio.join("\n\n"),
@@ -629,7 +629,7 @@ const TOOLS: ToolDefinition[] = [
         count: experience.length,
         experience: experience.map((entry) => ({
           id: entry.id,
-          org: entry.org,
+          org: entry.unnamed ? null : entry.org,
           role: entry.role,
           dates: entry.dates,
           location: entry.location ?? null,

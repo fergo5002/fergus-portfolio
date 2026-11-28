@@ -21,7 +21,7 @@
  */
 
 import { profile } from "@/content/profile";
-import { experience } from "@/content/experience";
+import { experience, roleLine } from "@/content/experience";
 import { projects } from "@/content/projects";
 import type { Article } from "@/content/articles";
 import type { QuestionPair } from "@/lib/faq";
@@ -326,7 +326,7 @@ export function experiencePageSchema(): JsonLdObject {
     name: `Experience · ${profile.shortName}`,
     description: `Where ${profile.shortName} has worked and what he did there.`,
     items: experience.map((e) => ({
-      name: `${e.role}, ${e.org}`,
+      name: roleLine(e, ", "),
       url: `/experience#${e.id}`,
       description: e.summary,
     })),

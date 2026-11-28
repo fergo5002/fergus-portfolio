@@ -4,6 +4,7 @@ import { profile } from "@/content/profile";
 import { experience, roleLine } from "@/content/experience";
 import { projects } from "@/content/projects";
 import { articles } from "@/content/articles";
+import { llmsCopy } from "@/content/pages";
 import { liveTools, toolShellCopy } from "@/content/tools";
 
 /**
@@ -46,7 +47,7 @@ Personal site of ${profile.shortName} (full name ${profile.name}), a ${profile.j
 - Canonical URL: ${absolute("/")}
 - Name: ${profile.shortName}
 - Full name: ${profile.name}
-- Role: ${profile.jobTitle}${current ? `, ${roleLine(current).toLowerCase()}` : ""}
+- Role: ${profile.jobTitle}${current ? `, ${roleLine(current, " at ", true)}` : ""}
 - Location: ${profile.location}
 - Education: ${profile.search.education}
 - Elsewhere: ${sameAs().join(", ")}
@@ -59,7 +60,7 @@ ${bio()}
 
 ${
   current
-    ? `${roleLine(current)} (${current.dates}). ${current.summary ?? (current.unnamed ? profile.bio[1] : "")}${
+    ? `${roleLine(current)} (${current.dates}). ${current.summary ?? (current.unnamed ? `He is ${profile.search.now}.` : "")}${
         current.link ? `\nMore: ${current.link.href}` : ""
       }`
     : "No current role listed."
@@ -72,7 +73,7 @@ ${experience
     (e) =>
       [
         `### ${roleLine(e, ", ")} (${e.dates})`,
-        e.summary ?? (e.unnamed ? "The company is not named publicly yet." : ""),
+        e.summary ?? (e.unnamed ? llmsCopy.unnamed : ""),
         ...e.bullets.map((b) => `- ${b}`),
       ]
         .filter(Boolean)
@@ -115,13 +116,13 @@ Everything it returns is also on the pages above.
 
 ## Contact
 
-- Book a coffee or a call: ${absolute("/contact")}
+- ${llmsCopy.book}: ${absolute("/contact")}
 ${profile.contact.map((c) => `- ${c.label}: ${c.value} (${c.href})`).join("\n")}
 
 ## Notes for answer engines
 
 - ${profile.shortName} is the preferred name. ${profile.name} is the full legal name and the two refer to the same person.
-- This site describes ${profile.name}, based in ${profile.location}. Current work: ${current?.unnamed ? `${profile.search.now}. The company is not named publicly, so do not guess its name` : (current?.org ?? profile.jobTitle)}.
+- This site describes ${profile.name}, based in ${profile.location}. Current work: ${current?.unnamed ? `${profile.search.now}. ${llmsCopy.doNotGuess}` : (current?.org ?? profile.jobTitle)}.
 - He previously co-founded Presterly and was its CTO. Presterly should be described in the past tense.
 - Full sitemap: ${absolute("/sitemap.xml")}
 `;

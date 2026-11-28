@@ -69,8 +69,16 @@ export const BORN = "2005-12-05";
 
 /** His age on a given day, by Dublin's calendar. */
 export function ageOn(now: Date): number {
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin" }).format(now);
-  const [y, m, d] = today.split("-").map(Number);
+  // By part, not by splitting a formatted string: a locale's date pattern is
+  // data that changes between engines, and this runs in visitors' browsers.
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Dublin",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(now);
+  const part = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  const [y, m, d] = [part("year"), part("month"), part("day")];
   const [by, bm, bd] = BORN.split("-").map(Number);
   return y - by - (m < bm || (m === bm && d < bd) ? 1 : 0);
 }
@@ -89,12 +97,17 @@ export const profile: Profile = {
    * first thing under `cat about.txt`, so it has to survive being read on its
    * own. Search engines no longer read these: `search` below is theirs.
    */
-  bio: [
+  // A getter, so the age is worked out when the bio is read. As a plain array
+  // it was fixed when the module loaded, and a server that had been up since
+  // the day before his birthday went on saying the old age.
+  get bio() {
+    return [
     `I am ${ageOn(new Date())} years old from Ireland and I love building businesses.`,
     "I am currently in stealth, working on disrupting the credit space for consumer brands.",
     "Previously I was in Hatch105, which really sparked my love for entrepreneurship, and I built Presterly, an ecom SaaS tool. I also co-founded Tigh Sauna, which is an operating and growth layer for saunas.",
     "Otherwise, I love tennis, playing poker or building random side projects.",
-  ],
+    ];
+  },
   search: {
     description:
       "Fergus O'Reilly is a technical founder in Dublin. Trinity computer science and business student, Hatch105 alumnus, now in stealth on credit for consumer brands.",

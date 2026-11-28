@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageDescriptions } from "@/content/pages";
 import PromptLine from "@/components/PromptLine";
 import ProjectCard from "@/components/ProjectCard";
 import Scramble from "@/components/Scramble";
@@ -8,8 +9,7 @@ import JsonLd from "@/components/JsonLd";
 import Talk from "@/components/Talk";
 import { canonical, projectsPageSchema, breadcrumbSchema, OG_IMAGE } from "@/lib/seo";
 
-const DESCRIPTION =
-  "Things Fergus O'Reilly has built: Tigh Sauna, Presterly, Loira AI, Remand, ContraBot and Under the Campanile, a dungeon crawler made at Trinity with Qualcomm.";
+const DESCRIPTION = pageDescriptions.projects;
 
 export const metadata: Metadata = {
   title: "Projects",

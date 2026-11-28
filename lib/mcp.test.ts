@@ -303,7 +303,9 @@ describe("tools/call round trip", () => {
     const rows = structured.experience as Record<string, unknown>[];
 
     expect(rows).toHaveLength(experience.length);
-    expect(rows[0].org).toBe(experience[0].org);
+    // The first entry has no public name: its label is not an organisation.
+    expect(rows[0].org).toBeNull();
+    expect(JSON.stringify(call("list_experience", {}))).not.toMatch(/Stealth"|, Stealth| at Stealth/);
     expect(rows[0].bullets).toEqual(experience[0].bullets);
     expect(rows[0].url).toBe(`https://fergusoreilly.dev/experience#${experience[0].id}`);
   });

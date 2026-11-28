@@ -390,6 +390,11 @@ export function tableOfContents(source: string): { id: string; text: string; lev
     .map((b) => ({ id: b.id, text: b.inline.map((n) => n.value).join(""), level: b.level }));
 }
 
+/** Absolute http(s), a site-relative path, or an in-page anchor. Nothing else. */
+export function isSafeHref(href: string): boolean {
+  return /^https?:\/\//i.test(href) || /^\/(?!\/)/.test(href) || href.startsWith("#");
+}
+
 function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -413,7 +418,10 @@ export function toHtml(source: string, origin = ""): string {
         if (n.type === "em") return `<em>${text}</em>`;
         if (n.type === "code") return `<code>${text}</code>`;
         if (n.type === "link") {
-          const href = n.href.startsWith("/") ? `${origin}${n.href}` : n.href;
+          // The same guard as `components/Markdown.tsx`: anything that is not
+          // http(s), a site path or an anchor is written as its text.
+          if (!isSafeHref(n.href)) return text;
+          const href = /^\/(?!\/)/.test(n.href) ? `${origin}${n.href}` : n.href;
           return `<a href="${escapeHtml(href)}">${text}</a>`;
         }
         return text;

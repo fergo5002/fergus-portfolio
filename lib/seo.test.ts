@@ -147,6 +147,10 @@ describe("personSchema", () => {
     expect(JSON.stringify(person)).not.toMatch(/"name":"Stealth"/);
   });
 
+  it("never names the unnamed company on any page's graph", () => {
+    expect(JSON.stringify(experiencePageSchema())).not.toMatch(/, Stealth"|"Stealth"/);
+  });
+
   it("describes him in plain search text, not the page's own voice", () => {
     expect(person.description).toBe(profile.search.description);
     expect(String(person.description)).not.toMatch(/years old/);

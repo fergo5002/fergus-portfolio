@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { ageOn, profile } from "./profile";
 import { experience, roleLine } from "./experience";
 
@@ -11,6 +11,27 @@ describe("the age in the bio", () => {
 
   it("is the age the bio states", () => {
     expect(profile.bio[0]).toContain(`I am ${ageOn(new Date())} years old`);
+  });
+});
+
+describe("the age is worked out when it is read, not when the module loads", () => {
+  it("changes with the clock on a server that has been up since before the birthday", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-12-04T12:00:00Z"));
+      expect(profile.bio[0]).toContain("I am 20 years old");
+      vi.setSystemTime(new Date("2026-12-05T12:00:00Z"));
+      expect(profile.bio[0]).toContain("I am 21 years old");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("roleLine with lowerRole", () => {
+  it("lowers the role and never the organisation's name", () => {
+    const named = experience.find((e) => !e.unnamed)!;
+    expect(roleLine(named, " at ", true)).toBe(`${named.role.toLowerCase()} at ${named.org}`);
   });
 });
 
